@@ -1,0 +1,45 @@
+[tool.poetry]
+name = "unifyai"
+version = "0.3.0"
+readme = "README.md"
+description = "A Python package for interacting with the Unify API"
+authors = ["Unify <hello@unify.com>"]
+repository = "https://github.com/unifyai/unify-llm-python"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+openai = "^1.12.0"
+
+[tool.poetry.dev-dependencies]
+flake8 = "~4.0.1"
+mypy = "^1.1.1"
+isort = "^5.11.4"
+pre-commit = "^3.0.1"
+wemake-python-styleguide = "^0.17.0"
+black = "^24.3.0"
+autoflake = "^1.6.1"
+
+[tool.poetry.group.dev.dependencies]
+types-requests = "*"
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+src_paths = ["orchestra",]
+
+[tool.mypy]
+strict = true
+ignore_missing_imports = true
+allow_subclassing_any = true
+allow_untyped_calls = true
+pretty = true
+show_error_codes = true
+implicit_reexport = true
+allow_untyped_decorators = true
+warn_unused_ignores = false
+warn_return_any = false
+namespace_packages = true
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
