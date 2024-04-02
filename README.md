@@ -98,7 +98,7 @@ unify = Unify(
 )
 stream = unify.generate(messages="Hello Llama! Who was Isaac Newton?", model="llama-2-13b-chat", provider="anyscale", stream=True)
 for chunk in stream:
-    print(x, end="")
+    print(chunk, end="")
 ```
 
 It works in exactly the same way with Async clients.
