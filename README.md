@@ -120,6 +120,12 @@ async def main():
 asyncio.run(main())
 ```
 
+## Get Current Credit Balance
+You can use the `.get_credit_balance` method to the credit balance for the authenticated account as follows:
+```python
+credits = unify.get_credit_balance()
+```
+
 ## Dynamic Routing
 As evidenced by our [benchmarks](https://unify.ai/hub), the optimal provider for each model varies by geographic location and time of day due to fluctuating API performances. With our dynamic routing, we automatically direct your requests to the "top-performing provider" at that moment. To enable this feature, simply replace your query's provider with one of the [available routing modes](https://unify.ai/docs/hub/concepts/runtime_routing.html#available-modes). As an example, you can query the `llama-2-7b-chat` endpoint to get the provider with the lowest input-cost as follows:
 

@@ -2,7 +2,8 @@ import os
 from typing import AsyncGenerator, Dict, Generator, List, Optional, Union
 
 import openai
-from unifyai.exceptions import UnifyError, status_error_map
+import requests
+from unifyai.exceptions import BadRequestError, UnifyError, status_error_map
 
 
 def _validate_api_key(api_key: Optional[str]) -> str:
@@ -84,6 +85,32 @@ class Unify:
             return self._generate_stream(contents, model, provider)
         return self._generate_non_stream(contents, model, provider)
 
+    def get_credit_balance(self) -> Optional[int]:
+        # noqa: DAR201, DAR401
+        """
+        Get the remaining credits left on your account.
+
+        Returns:
+            int or None: The remaining credits on the account
+            if successful, otherwise None.
+        Raises:
+            BadRequestError: If there was an HTTP error.
+            ValueError: If there was an error parsing the JSON response.
+        """
+        url = "https://api.unify.ai/v0/get_credits"
+        headers = {
+            "accept": "application/json",
+            "Authorization": f"Bearer {self.api_key}",
+        }
+        try:
+            response = requests.get(url, headers=headers, timeout=10)
+            response.raise_for_status()
+            return response.json()["credits"]
+        except requests.RequestException as e:
+            raise BadRequestError("There was an error with the request.") from e
+        except (KeyError, ValueError) as e:
+            raise ValueError("Error parsing JSON response.") from e
+
     def _generate_stream(
         self,
         messages: List[Dict[str, str]],
@@ -146,6 +173,33 @@ class AsyncUnify:
             )
         except openai.APIStatusError as e:
             raise UnifyError(f"Failed to initialize Unify client: {str(e)}")
+
+    def get_credit_balance(self) -> Optional[int]:
+        # noqa: DAR201, DAR401
+        """
+        Get the remaining credits left on your account.
+
+        Returns:
+            int or None: The remaining credits on the account
+            if successful, otherwise None.
+
+        Raises:
+            BadRequestError: If there was an HTTP error.
+            ValueError: If there was an error parsing the JSON response.
+        """
+        url = "https://api.unify.ai/v0/get_credits"
+        headers = {
+            "accept": "application/json",
+            "Authorization": f"Bearer {self.api_key}",
+        }
+        try:
+            response = requests.get(url, headers=headers, timeout=10)
+            response.raise_for_status()
+            return response.json()["credits"]
+        except requests.RequestException as e:
+            raise BadRequestError("There was an error with the request.") from e
+        except (KeyError, ValueError) as e:
+            raise ValueError("Error parsing JSON response.") from e
 
     async def generate(  # noqa: WPS234, WPS211
         self,
