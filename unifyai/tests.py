@@ -4,7 +4,7 @@ from types import AsyncGeneratorType, GeneratorType
 from unittest.mock import MagicMock, patch
 
 from unifyai.clients import AsyncUnify, Unify
-from unifyai.exceptions import AuthenticationError, InternalServerError
+from unifyai.exceptions import AuthenticationError, UnifyError
 
 
 class TestUnify(unittest.TestCase):
@@ -25,11 +25,9 @@ class TestUnify(unittest.TestCase):
             Unify()
 
     def test_incorrect_model_name_raises_internal_server_error(self) -> None:
-        # Instantiate Unify with a valid API key
-        unify = Unify(self.valid_api_key)
-        # Provide incorrect model name to generate function
-        with self.assertRaises(InternalServerError):
-            unify.generate(messages="hello", model="llama-chat")
+        # Provide incorrect model name
+        with self.assertRaises(UnifyError):
+            Unify(api_key=self.valid_api_key, model="llama-chat")
 
     def test_generate_returns_string_when_stream_false(self) -> None:
         # Instantiate Unify with a valid API key
@@ -68,11 +66,9 @@ class TestAsyncUnify(unittest.IsolatedAsyncioTestCase):
             await async_unify.generate("hello")
 
     async def test_incorrect_model_name_raises_internal_server_error(self) -> None:
-        # Instantiate AsyncUnify with a valid API key
-        async_unify = AsyncUnify(api_key=self.valid_api_key)
-        # Provide incorrect model name to generate function
-        with self.assertRaises(InternalServerError):
-            await async_unify.generate(messages="hello", model="llama-chat")
+        # Provide incorrect model name
+        with self.assertRaises(UnifyError):
+            AsyncUnify(api_key=self.valid_api_key, model="llama-chat")
 
     async def test_generate_returns_string_when_stream_false(self) -> None:
         # Instantiate AsyncUnify with a valid API key

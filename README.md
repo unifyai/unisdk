@@ -25,16 +25,22 @@ from unifyai import Unify
 unify = Unify(
     # This is the default and optional to include.
     api_key=os.environ.get("UNIFY_KEY")
+    model="llama-2-13b-chat@anyscale"
 )
-response = unify.generate(messages="Hello Llama! Who was Isaac Newton?", model="llama-2-13b-chat", provider="anyscale")
+response = unify.generate(messages="Hello Llama! Who was Isaac Newton?")
 ```
 
 Here, `response` is a string containing the model's output.
 
-You can influence the model's persona using the `system_prompt` argument in the `.generate` function.
+You can influence the model's persona using the `system_prompt` argument in the `.generate` function:
 
 ```python
-response = unify.generate(messages="Hello Llama! Who was Isaac Newton?", system_prompt="You should always talk in rhymes", model="llama-2-13b-chat", provider="anyscale")
+response = unify.generate(messages="Hello Llama! Who was Isaac Newton?", system_prompt="You should always talk in rhymes")
+```
+
+If you want change the model, you can do so by updating the `.model` attribute of the client:
+```python
+client.model = "mistral-7b-instruct-v0.1@deepinfra"
 ```
 
 ### Supported Models
@@ -60,7 +66,7 @@ You can get an API Key from [the Unify console](https://console.unify.ai/)
     {"role": "assistant", "content": "The Los Angeles Dodgers won the World Series in 2020."},
     {"role": "user", "content": "Where was it played?"}
 ]
-res = unify.generate(messages=messages, model="llama-2-7b-chat", provider="anyscale")
+res = unify.generate(messages=messages)
  ```
 
 
@@ -76,10 +82,11 @@ import asyncio
 async_unify = AsyncUnify(
     # This is the default and optional to include.
     api_key=os.environ.get("UNIFY_KEY")
+    model="llama-2-13b-chat@anyscale"
 )
 
 async def main():
-    responses = await async_unify.generate(messages="Hello Llama! Who was Isaac Newton?", model="llama-2-13b-chat", provider="anyscale")
+    responses = await async_unify.generate(messages="Hello Llama! Who was Isaac Newton?")
 
 asyncio.run(main())
 ```
@@ -95,8 +102,9 @@ from unifyai import Unify
 unify = Unify(
     # This is the default and optional to include.
     api_key=os.environ.get("UNIFY_KEY")
+    model="llama-2-13b-chat@anyscale"
 )
-stream = unify.generate(messages="Hello Llama! Who was Isaac Newton?", model="llama-2-13b-chat", provider="anyscale", stream=True)
+stream = unify.generate(messages="Hello Llama! Who was Isaac Newton?")
 for chunk in stream:
     print(chunk, end="")
 ```
@@ -110,10 +118,11 @@ import asyncio
 async_unify = AsyncUnify(
     # This is the default and optional to include.
     api_key=os.environ.get("UNIFY_KEY")
+    model="llama-2-13b-chat@anyscale"
 )
 
 async def main():
-    async_stream = await async_unify.generate(messages="Hello Llama! Who was Isaac Newton?", model="llama-2-13b-chat", provider="anyscale", stream=True)
+    async_stream = await async_unify.generate(messages="Hello Llama! Who was Isaac Newton?")
     async for chunk in async_stream:
         print(chunk, end="")
 
@@ -135,7 +144,14 @@ from unifyai import Unify
 unify = Unify(
     # This is the default and optional to include.
     api_key=os.environ.get("UNIFY_KEY")
+    model="llama-2-13b-chat@lowest-input-cost"
 )
-response = unify.generate(messages="Hello Llama! Who was Isaac Newton?", model="llama-2-13b-chat", provider="lowest-input-cost")
+response = unify.generate(messages="Hello Llama! Who was Isaac Newton?")
 ```
+You can see the provider chosen by printing by `.provider` attribute of the client:
+
+```python
+print(unify.provider)
+```
+
 Dynamic routing works with both Synchronous and Asynchronous clients. For more information on Dynamic Routing, check our [documentation](https://unify.ai/docs/hub/concepts/runtime_routing.html#dynamic-routing).
