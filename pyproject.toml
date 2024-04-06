@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "unifyai"
-version = "0.4.0"
+version = "0.5.0"
 readme = "README.md"
 description = "A Python package for interacting with the Unify API"
 authors = ["Unify <hello@unify.com>"]
@@ -8,6 +8,7 @@ repository = "https://github.com/unifyai/unify-llm-python"
 
 [tool.poetry.dependencies]
 python = "^3.9"
+requests = "^2.31.0"
 openai = "^1.12.0"
 
 [tool.poetry.dev-dependencies]
