@@ -8,6 +8,7 @@ repository = "https://github.com/unifyai/unify-llm-python"
 
 [tool.poetry.dependencies]
 python = "^3.9"
+requests = "^2.31.0"
 openai = "^1.12.0"
 
 [tool.poetry.dev-dependencies]
