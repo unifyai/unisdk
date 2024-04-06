@@ -24,7 +24,7 @@ import os
 from unifyai import Unify
 unify = Unify(
     # This is the default and optional to include.
-    api_key=os.environ.get("UNIFY_KEY")
+    api_key=os.environ.get("UNIFY_KEY"),
     model="llama-2-13b-chat@anyscale"
 )
 response = unify.generate(messages="Hello Llama! Who was Isaac Newton?")
@@ -81,7 +81,7 @@ import os
 import asyncio
 async_unify = AsyncUnify(
     # This is the default and optional to include.
-    api_key=os.environ.get("UNIFY_KEY")
+    api_key=os.environ.get("UNIFY_KEY"),
     model="llama-2-13b-chat@anyscale"
 )
 
@@ -101,7 +101,7 @@ import os
 from unifyai import Unify
 unify = Unify(
     # This is the default and optional to include.
-    api_key=os.environ.get("UNIFY_KEY")
+    api_key=os.environ.get("UNIFY_KEY"),
     model="llama-2-13b-chat@anyscale"
 )
 stream = unify.generate(messages="Hello Llama! Who was Isaac Newton?")
@@ -117,7 +117,7 @@ import os
 import asyncio
 async_unify = AsyncUnify(
     # This is the default and optional to include.
-    api_key=os.environ.get("UNIFY_KEY")
+    api_key=os.environ.get("UNIFY_KEY"),
     model="llama-2-13b-chat@anyscale"
 )
 
@@ -143,7 +143,7 @@ import os
 from unifyai import Unify
 unify = Unify(
     # This is the default and optional to include.
-    api_key=os.environ.get("UNIFY_KEY")
+    api_key=os.environ.get("UNIFY_KEY"),
     model="llama-2-13b-chat@lowest-input-cost"
 )
 response = unify.generate(messages="Hello Llama! Who was Isaac Newton?")
