@@ -148,7 +148,7 @@ unify = Unify(
 )
 response = unify.generate(messages="Hello Llama! Who was Isaac Newton?")
 ```
-You can see the provider chosen by printing by `.provider` attribute of the client:
+You can see the provider chosen by printing the `.provider` attribute of the client:
 
 ```python
 print(unify.provider)
