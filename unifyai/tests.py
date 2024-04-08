@@ -16,7 +16,7 @@ class TestUnify(unittest.TestCase):
         # Instantiate Unify with an invalid API key
         with self.assertRaises(AuthenticationError):
             unify = Unify(api_key="invalid_api_key")
-            unify.generate("hello")
+            unify.generate(user_prompt="hello")
 
     @patch("os.environ.get", return_value=None)
     def test_missing_api_key_raises_key_error(self, mock_get: MagicMock) -> None:
@@ -33,7 +33,7 @@ class TestUnify(unittest.TestCase):
         # Instantiate Unify with a valid API key
         unify = Unify(api_key=self.valid_api_key)
         # Call generate with stream=False
-        result = unify.generate("hello", stream=False)
+        result = unify.generate(user_prompt="hello", stream=False)
         # Assert that the result is a string
         self.assertIsInstance(result, str)
 
@@ -41,7 +41,7 @@ class TestUnify(unittest.TestCase):
         # Instantiate Unify with a valid API key
         unify = Unify(api_key=self.valid_api_key)
         # Call generate with stream=True
-        result = unify.generate("hello", stream=True)
+        result = unify.generate(user_prompt="hello", stream=True)
         # Assert that the result is a generator
         self.assertIsInstance(result, GeneratorType)
 
@@ -55,7 +55,7 @@ class TestAsyncUnify(unittest.IsolatedAsyncioTestCase):
         # Instantiate AsyncUnify with an invalid API key
         with self.assertRaises(AuthenticationError):
             async_unify = AsyncUnify(api_key="invalid_api_key")
-            await async_unify.generate("hello")
+            await async_unify.generate(user_prompt="hello")
 
     @patch("os.environ.get", return_value=None)
     async def test_missing_api_key_raises_key_error(self, mock_get: MagicMock) -> None:
@@ -63,7 +63,7 @@ class TestAsyncUnify(unittest.IsolatedAsyncioTestCase):
         # API key should raise KeyError
         with self.assertRaises(KeyError):
             async_unify = AsyncUnify()
-            await async_unify.generate("hello")
+            await async_unify.generate(user_prompt="hello")
 
     async def test_incorrect_model_name_raises_internal_server_error(self) -> None:
         # Provide incorrect model name
@@ -74,7 +74,7 @@ class TestAsyncUnify(unittest.IsolatedAsyncioTestCase):
         # Instantiate AsyncUnify with a valid API key
         async_unify = AsyncUnify(api_key=self.valid_api_key)
         # Call generate with stream=False
-        result = await async_unify.generate("hello", stream=False)
+        result = await async_unify.generate(user_prompt="hello", stream=False)
         # Assert that the result is a string
         self.assertIsInstance(result, str)
 
@@ -82,7 +82,7 @@ class TestAsyncUnify(unittest.IsolatedAsyncioTestCase):
         # Instantiate AsyncUnify with a valid API key
         async_unify = AsyncUnify(api_key=self.valid_api_key)
         # Call generate with stream=True
-        result = await async_unify.generate("hello", stream=True)
+        result = await async_unify.generate(user_prompt="hello", stream=True)
         # Assert that the result is a generator
         self.assertIsInstance(result, AsyncGeneratorType)
 
