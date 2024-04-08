@@ -116,7 +116,7 @@ unify = Unify(
     api_key=os.environ.get("UNIFY_KEY"),
     endpoint="llama-2-13b-chat@anyscale"
 )
-stream = unify.generate(user_prompt="Hello Llama! Who was Isaac Newton?")
+stream = unify.generate(user_prompt="Hello Llama! Who was Isaac Newton?", stream=True)
 for chunk in stream:
     print(chunk, end="")
 ```
@@ -134,7 +134,7 @@ async_unify = AsyncUnify(
 )
 
 async def main():
-    async_stream = await async_unify.generate(user_prompt="Hello Llama! Who was Isaac Newton?")
+    async_stream = await async_unify.generate(user_prompt="Hello Llama! Who was Isaac Newton?", stream=True)
     async for chunk in async_stream:
         print(chunk, end="")
 
