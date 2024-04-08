@@ -25,22 +25,35 @@ from unifyai import Unify
 unify = Unify(
     # This is the default and optional to include.
     api_key=os.environ.get("UNIFY_KEY"),
-    model="llama-2-13b-chat@anyscale"
+    endpoint="llama-2-13b-chat@anyscale"
 )
-response = unify.generate(messages="Hello Llama! Who was Isaac Newton?")
+response = unify.generate(user_prompt="Hello Llama! Who was Isaac Newton?")
 ```
 
 Here, `response` is a string containing the model's output.
 
+You can also pass the `model` and `provider` as separate arguments as shown below:
+```python
+unify = Unify(
+    # This is the default and optional to include.
+    api_key=os.environ.get("UNIFY_KEY"),
+    model="llama-2-13b-chat",
+    provider="anyscale"
+)
+```
+
 You can influence the model's persona using the `system_prompt` argument in the `.generate` function:
 
 ```python
-response = unify.generate(messages="Hello Llama! Who was Isaac Newton?", system_prompt="You should always talk in rhymes")
+response = unify.generate(user_prompt="Hello Llama! Who was Isaac Newton?", system_prompt="You should always talk in rhymes")
 ```
 
-If you want change the model, you can do so by updating the `.model` attribute of the client:
+If you want change the `endpoint`, `model` or the `provider`, you can do so using the `.set_endpoint`, `.set_model`, `.set_provider` methods respectively.
+
 ```python
-client.model = "mistral-7b-instruct-v0.1@deepinfra"
+unify.set_endpoint("mistral-7b-instruct-v0.1@deepinfra")
+unify.set_model("mistral-7b-instruct-v0.1")
+unify.set_provider("deepinfra")
 ```
 
 ### Supported Models
@@ -57,8 +70,7 @@ You can get an API Key from [the Unify console](https://console.unify.ai/)
 
 ### Sending multiple messages
 
- When a string is passed to the `messages` argument, it is assumed to be the user prompt. However, you can also pass a list of dictionaries containing the message history between
- the `user` and the `assistant`, as shown below:
+If you'd like to send multiple messages using the `.generate` function, you should use the `messages` argument as follows:
 
  ```python
  messages=[
@@ -82,11 +94,11 @@ import asyncio
 async_unify = AsyncUnify(
     # This is the default and optional to include.
     api_key=os.environ.get("UNIFY_KEY"),
-    model="llama-2-13b-chat@anyscale"
+    endpoint="llama-2-13b-chat@anyscale"
 )
 
 async def main():
-    responses = await async_unify.generate(messages="Hello Llama! Who was Isaac Newton?")
+    responses = await async_unify.generate(user_prompt="Hello Llama! Who was Isaac Newton?")
 
 asyncio.run(main())
 ```
@@ -102,9 +114,9 @@ from unifyai import Unify
 unify = Unify(
     # This is the default and optional to include.
     api_key=os.environ.get("UNIFY_KEY"),
-    model="llama-2-13b-chat@anyscale"
+    endpoint="llama-2-13b-chat@anyscale"
 )
-stream = unify.generate(messages="Hello Llama! Who was Isaac Newton?")
+stream = unify.generate(user_prompt="Hello Llama! Who was Isaac Newton?")
 for chunk in stream:
     print(chunk, end="")
 ```
@@ -118,11 +130,11 @@ import asyncio
 async_unify = AsyncUnify(
     # This is the default and optional to include.
     api_key=os.environ.get("UNIFY_KEY"),
-    model="llama-2-13b-chat@anyscale"
+    endpoint="llama-2-13b-chat@anyscale"
 )
 
 async def main():
-    async_stream = await async_unify.generate(messages="Hello Llama! Who was Isaac Newton?")
+    async_stream = await async_unify.generate(user_prompt="Hello Llama! Who was Isaac Newton?")
     async for chunk in async_stream:
         print(chunk, end="")
 
@@ -144,9 +156,9 @@ from unifyai import Unify
 unify = Unify(
     # This is the default and optional to include.
     api_key=os.environ.get("UNIFY_KEY"),
-    model="llama-2-13b-chat@lowest-input-cost"
+    endpoint="llama-2-13b-chat@lowest-input-cost"
 )
-response = unify.generate(messages="Hello Llama! Who was Isaac Newton?")
+response = unify.generate(user_prompt="Hello Llama! Who was Isaac Newton?")
 ```
 You can see the provider chosen by printing the `.provider` attribute of the client:
 
