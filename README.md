@@ -173,6 +173,10 @@ Our `ChatBot` allows you to start an interactive chat session with any of our su
 
 ```python
 from unifyai import ChatBot
-chat = ChatBot(endpoint="llama-2-7b-chat@anyscale")
-chat.run()
+agent = ChatBot(
+    # This is the default and optional to include.
+    api_key=os.environ.get("UNIFY_KEY"),
+    endpoint="llama-2-13b-chat@lowest-input-cost"
+)
+agent.run()
 ```
