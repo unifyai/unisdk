@@ -167,3 +167,12 @@ print(unify.provider)
 ```
 
 Dynamic routing works with both Synchronous and Asynchronous clients. For more information on Dynamic Routing, check our [documentation](https://unify.ai/docs/hub/concepts/runtime_routing.html#dynamic-routing).
+
+## ChatBot Agent
+Our `ChatBot` allows you to start an interactive chat session with any of our supported llm endpoints with only a few lines of code:
+
+```python
+from unifyai import ChatBot
+chat = ChatBot(endpoint="llama-2-7b-chat@anyscale")
+chat.run()
+```
