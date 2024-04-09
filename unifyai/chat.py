@@ -1,22 +1,26 @@
 import sys
 
+from typing import Optional
 from unifyai.clients import Unify
 
 
 class ChatBot:  # noqa: WPS338
     """Agent class represents an LLM chat agent."""
 
-    def __init__(self, endpoint: str) -> None:
+    def __init__(self, api_key: Optional[str] = None, endpoint: Optional[str] = "llama-2-7b-chat@anyscale") -> None:
         """
         Initializes the ChatBot object.
 
         Args:
-            endpoint (str): The endpoint for the chatbot.
+            api_key (optional, str): Your UNIFY key.
+            endpoint (optional, str): The endpoint for the chatbot.
         """
         self._message_history = []
         self._endpoint = endpoint
+        self._api_key = api_key
         self._paused = False
         self._client = Unify(
+            api_key=self._api_key,
             endpoint=self._endpoint,
         )
 

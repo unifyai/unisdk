@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "unifyai"
-version = "0.7.1"
+version = "0.7.2"
 readme = "README.md"
 description = "A Python package for interacting with the Unify API"
 authors = ["Unify <hello@unify.com>"]
