@@ -1,6 +1,6 @@
 import sys
 
-from unifyai import Unify
+from unifyai.clients import Unify
 
 
 class ChatBot:  # noqa: WPS338
