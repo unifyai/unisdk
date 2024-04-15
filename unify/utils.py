@@ -1,7 +1,7 @@
 import os
 from typing import Optional, Tuple
 
-from unifyai.exceptions import UnifyError
+from unify.exceptions import UnifyError
 
 _available_dynamic_modes = [
     "lowest-input-cost",
