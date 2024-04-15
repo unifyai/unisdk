@@ -3,8 +3,8 @@ import unittest
 from types import AsyncGeneratorType, GeneratorType
 from unittest.mock import MagicMock, patch
 
-from unifyai.clients import AsyncUnify, Unify
-from unifyai.exceptions import AuthenticationError, UnifyError
+from unify.clients import AsyncUnify, Unify
+from unify.exceptions import AuthenticationError, UnifyError
 
 
 class TestUnify(unittest.TestCase):

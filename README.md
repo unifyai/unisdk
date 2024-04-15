@@ -21,7 +21,7 @@ pip install unifyai
 ## Basic Usage
 ```python
 import os
-from unifyai import Unify
+from unify import Unify
 unify = Unify(
     # This is the default and optional to include.
     api_key=os.environ.get("UNIFY_KEY"),
@@ -88,7 +88,7 @@ To use the AsyncUnify client, simply import `AsyncUnify` instead
  of `Unify` and use `await` with the `.generate` function.
 
  ```python
-from unifyai import AsyncUnify
+from unify import AsyncUnify
 import os
 import asyncio
 async_unify = AsyncUnify(
@@ -110,7 +110,7 @@ You can enable streaming responses by setting `stream=True` in the `.generate` f
 
 ```python
 import os
-from unifyai import Unify
+from unify import Unify
 unify = Unify(
     # This is the default and optional to include.
     api_key=os.environ.get("UNIFY_KEY"),
@@ -124,7 +124,7 @@ for chunk in stream:
 It works in exactly the same way with Async clients.
 
  ```python
-from unifyai import AsyncUnify
+from unify import AsyncUnify
 import os
 import asyncio
 async_unify = AsyncUnify(
@@ -152,7 +152,7 @@ As evidenced by our [benchmarks](https://unify.ai/hub), the optimal provider for
 
 ```python
 import os
-from unifyai import Unify
+from unify import Unify
 unify = Unify(
     # This is the default and optional to include.
     api_key=os.environ.get("UNIFY_KEY"),
@@ -172,7 +172,7 @@ Dynamic routing works with both Synchronous and Asynchronous clients. For more i
 Our `ChatBot` allows you to start an interactive chat session with any of our supported llm endpoints with only a few lines of code:
 
 ```python
-from unifyai import ChatBot
+from unify import ChatBot
 agent = ChatBot(
     # This is the default and optional to include.
     api_key=os.environ.get("UNIFY_KEY"),
