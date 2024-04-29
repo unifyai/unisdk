@@ -13,7 +13,7 @@ class ChatBot:  # noqa: WPS338
         endpoint: Optional[str] = None,
         model: Optional[str] = None,
         provider: Optional[str] = None,
-        ) -> None:
+    ) -> None:
         """
         Initializes the ChatBot object.
 
@@ -65,7 +65,6 @@ class ChatBot:  # noqa: WPS338
             self._client = value
         else:
             raise UnifyError("Invalid client!")
-
 
     @property
     def model(self) -> str:
@@ -153,7 +152,7 @@ class ChatBot:  # noqa: WPS338
         Yields:
             str: Generated AI response chunks.
         """
-        self._update_message_history(role = "user", content = inp)
+        self._update_message_history(role="user", content=inp)
         initial_credit_balance = self._get_credits()
         stream = self._client.generate(
             messages=self._message_history,
@@ -165,8 +164,8 @@ class ChatBot:  # noqa: WPS338
             yield chunk
 
         self._update_message_history(
-                role = "assistant",
-                content = words,
+            role="assistant",
+            content=words,
         )
         final_credit_balance = self._get_credits()
         if show_credits:

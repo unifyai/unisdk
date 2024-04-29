@@ -20,19 +20,24 @@ _available_dynamic_modes = [
 
 _base_url = "https://api.unify.ai/v0"
 
+
 def _res_to_list(response):
     return json.loads(response.text)
 
+
 def list_models():
     return _res_to_list(requests.get(_base_url + "/models"))
+
 
 def list_endpoints(model: str):
     url = _base_url + "/endpoints_of"
     return _res_to_list(requests.get(url, params={"model": model}))
 
+
 def list_providers(model: str):
     url = _base_url + "/providers_of"
     return _res_to_list(requests.get(url, params={"model": model}))
+
 
 def _validate_api_key(api_key: Optional[str]) -> str:
     if api_key is None:

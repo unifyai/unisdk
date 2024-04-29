@@ -222,9 +222,11 @@ class Unify:
                 messages=messages,  # type: ignore[arg-type]
                 stream=False,
             )
-            self.set_provider(chat_completion.model.split(  # type: ignore[union-attr]
-                "@",
-            )[-1])
+            self.set_provider(
+                chat_completion.model.split(  # type: ignore[union-attr]
+                    "@",
+                )[-1]
+            )
 
             return chat_completion.choices[0].message.content.strip(" ")  # type: ignore # noqa: E501, WPS219
         except openai.APIStatusError as e:
