@@ -166,7 +166,7 @@ class Unify:
             return self._generate_stream(contents, self._endpoint)
         return self._generate_non_stream(contents, self._endpoint)
 
-    def get_credit_balance(self) -> Optional[int]:
+    def get_credit_balance(self) -> float:
         # noqa: DAR201, DAR401
         """
         Get the remaining credits left on your account.
@@ -222,9 +222,11 @@ class Unify:
                 messages=messages,  # type: ignore[arg-type]
                 stream=False,
             )
-            self.set_provider(chat_completion.model.split(  # type: ignore[union-attr]
-                "@",
-            )[-1])
+            self.set_provider(
+                chat_completion.model.split(  # type: ignore[union-attr]
+                    "@",
+                )[-1]
+            )
 
             return chat_completion.choices[0].message.content.strip(" ")  # type: ignore # noqa: E501, WPS219
         except openai.APIStatusError as e:

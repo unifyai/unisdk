@@ -1,6 +1,8 @@
+import json
 import os
-from typing import Optional, Tuple
+from typing import List, Optional, Tuple
 
+import requests
 from unify.exceptions import UnifyError
 
 _available_dynamic_modes = [
@@ -15,6 +17,62 @@ _available_dynamic_modes = [
     "highest-tks-per-sec",
     "tks-per-sec",
 ]
+
+_base_url = "https://api.unify.ai/v0"
+
+
+def _res_to_list(response: requests.Response) -> List[str]:
+    return json.loads(response.text)
+
+
+def list_models() -> List[str]:
+    """
+    Get a list of available models.
+
+    Returns:
+        List[str]: A list of available model names if successful, otherwise an empty list.
+    Raises:
+        BadRequestError: If there was an HTTP error.
+        ValueError: If there was an error parsing the JSON response.
+    """
+    url = f"{_base_url}/models"
+    return _res_to_list(requests.get(url))
+
+
+def list_endpoints(model: str) -> List[str]:
+    """
+    Get a list of endpoints for a specific model.
+
+    Args:
+        model (str): The name of the model.
+
+    Returns:
+        List[str]: A list of endpoint names associated with the model if successful,
+        otherwise an empty list.
+    Raises:
+        BadRequestError: If there was an HTTP error.
+        ValueError: If there was an error parsing the JSON response.
+    """
+    url = f"{_base_url}/endpoints_of"
+    return _res_to_list(requests.get(url, params={"model": model}))
+
+
+def list_providers(model: str) -> List[str]:
+    """
+    Get a list of providers for a specific model.
+
+    Args:
+        model (str): The name of the model.
+
+    Returns:
+        List[str]: A list of provider names associated with the model if successful,
+        otherwise an empty list.
+    Raises:
+        BadRequestError: If there was an HTTP error.
+        ValueError: If there was an error parsing the JSON response.
+    """
+    url = f"{_base_url}/providers_of"
+    return _res_to_list(requests.get(url, params={"model": model}))
 
 
 def _validate_api_key(api_key: Optional[str]) -> str:
