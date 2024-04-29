@@ -1,6 +1,6 @@
 import sys
+from typing import Dict, Generator, List, Optional
 
-from typing import Generator, Optional, List, Dict
 from unify.clients import Unify
 from unify.exceptions import UnifyError
 
