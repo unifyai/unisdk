@@ -1,7 +1,8 @@
 import sys
 
-from typing import Optional
+from typing import Generator, Optional, List, Dict
 from unify.clients import Unify
+from unify.exceptions import UnifyError
 
 
 class ChatBot:  # noqa: WPS338
@@ -35,7 +36,7 @@ class ChatBot:  # noqa: WPS338
         Raises:
             UnifyError: If the API key is missing.
         """
-        self._message_history = []
+        self._message_history: List[Dict[str, str]] = []
         self._paused = False
         self._client = Unify(
             api_key=api_key,
@@ -45,7 +46,7 @@ class ChatBot:  # noqa: WPS338
         )
 
     @property
-    def client(self) -> str:
+    def client(self) -> Unify:
         """
         Get the client object.  # noqa: DAR201.
 
@@ -108,7 +109,7 @@ class ChatBot:  # noqa: WPS338
             value (str): The provider name.
         """
         self._client.set_provider(value)
-        self._client.set_endpoint("@".join([self._model, value]))
+        self._client.set_endpoint("@".join([self._client._model, value]))
 
     @property
     def endpoint(self) -> str:
@@ -131,7 +132,7 @@ class ChatBot:  # noqa: WPS338
         self._client.set_model(value.split("@")[0])
         self._client.set_provider(value.split("@")[1])
 
-    def _get_credits(self):
+    def _get_credits(self) -> float:
         """
         Retrieves the current credit balance from associated with the UNIFY account.
 
@@ -140,7 +141,7 @@ class ChatBot:  # noqa: WPS338
         """
         return self._client.get_credit_balance()
 
-    def _process_input(self, inp: str, show_credits: bool, show_provider: bool):
+    def _process_input(self, inp: str, show_credits: bool, show_provider: bool) -> Generator[str, None, None]:
         """
         Processes the user input to generate AI response.
 
@@ -177,7 +178,7 @@ class ChatBot:  # noqa: WPS338
         if show_provider:
             sys.stdout.write("\n(provider: {})".format(self._client.provider))
 
-    def _update_message_history(self, role: str, content: str):
+    def _update_message_history(self, role: str, content: str) -> None:
         """
         Updates message history with user input.
 
@@ -192,11 +193,11 @@ class ChatBot:  # noqa: WPS338
             },
         )
 
-    def clear_chat_history(self):
+    def clear_chat_history(self) -> None:
         """Clears the chat history."""
         self._message_history.clear()
 
-    def run(self, show_credits: bool = False, show_provider: bool = False):
+    def run(self, show_credits: bool = False, show_provider: bool = False) -> None:
         """
         Starts the chat interaction loop.
 

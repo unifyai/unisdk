@@ -1,7 +1,7 @@
 import os
 import requests
 import json
-from typing import Optional, Tuple
+from typing import Optional, Tuple, List
 
 from unify.exceptions import UnifyError
 
@@ -21,20 +21,20 @@ _available_dynamic_modes = [
 _base_url = "https://api.unify.ai/v0"
 
 
-def _res_to_list(response):
+def _res_to_list(response: requests.Response) -> List[str]:
     return json.loads(response.text)
 
 
-def list_models():
+def list_models() -> List[str]:
     return _res_to_list(requests.get(_base_url + "/models"))
 
 
-def list_endpoints(model: str):
+def list_endpoints(model: str) -> List[str]:
     url = _base_url + "/endpoints_of"
     return _res_to_list(requests.get(url, params={"model": model}))
 
 
-def list_providers(model: str):
+def list_providers(model: str) -> List[str]:
     url = _base_url + "/providers_of"
     return _res_to_list(requests.get(url, params={"model": model}))
 

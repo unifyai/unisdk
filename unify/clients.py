@@ -166,7 +166,7 @@ class Unify:
             return self._generate_stream(contents, self._endpoint)
         return self._generate_non_stream(contents, self._endpoint)
 
-    def get_credit_balance(self) -> Optional[int]:
+    def get_credit_balance(self) -> float:
         # noqa: DAR201, DAR401
         """
         Get the remaining credits left on your account.
