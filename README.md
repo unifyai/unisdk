@@ -59,6 +59,14 @@ unify.set_provider("deepinfra")
 ### Supported Models
 The list of supported models and providers is available in [the platform](https://unify.ai/hub).
 
+You can also get this information directly in Python using `list_models()`, `list_providers()` and `list_endpoints()`.
+
+```python
+models = unify.list_models()
+providers = unify.list_providers("mistral-7b-instruct-v0.1")
+endpoints = unify.list_endpoints("mistral-7b-instruct-v0.1")
+```
+
 ### API Key
 You can get an API Key from [the Unify console](https://console.unify.ai/)
 
