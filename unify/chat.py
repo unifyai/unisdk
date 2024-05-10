@@ -19,11 +19,6 @@ class ChatBot:  # noqa: WPS338
         Initializes the ChatBot object.
 
         Args:
-            api_key (str, optional): API key for accessing the Unify API.
-                If None, it attempts to retrieve the API key from the
-                environment variable UNIFY_KEY.
-                Defaults to None.
-
             endpoint (str, optional): Endpoint name in OpenAI API format:
                 <uploaded_by>/<model_name>@<provider_name>
                 Defaults to None.
@@ -33,6 +28,12 @@ class ChatBot:  # noqa: WPS338
 
             provider (str, optional): Name of the provider. If None,
             endpoint must be provided.
+
+            api_key (str, optional): API key for accessing the Unify API.
+                If None, it attempts to retrieve the API key from the
+                environment variable UNIFY_KEY.
+                Defaults to None.
+
         Raises:
             UnifyError: If the API key is missing.
         """
