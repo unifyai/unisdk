@@ -10,10 +10,10 @@ class ChatBot:  # noqa: WPS338
 
     def __init__(
         self,
-        api_key: Optional[str] = None,
         endpoint: Optional[str] = None,
         model: Optional[str] = None,
         provider: Optional[str] = None,
+        api_key: Optional[str] = None,
     ) -> None:
         """
         Initializes the ChatBot object.
