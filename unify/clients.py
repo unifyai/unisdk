@@ -15,10 +15,10 @@ class Unify:
 
     def __init__(
         self,
-        api_key: Optional[str] = None,
         endpoint: Optional[str] = None,
         model: Optional[str] = None,
         provider: Optional[str] = None,
+        api_key: Optional[str] = None,
     ) -> None:  # noqa: DAR101, DAR401
         """Initialize the Unify client.
 
@@ -238,10 +238,10 @@ class AsyncUnify:
 
     def __init__(
         self,
-        api_key: Optional[str] = None,
         endpoint: Optional[str] = None,
         model: Optional[str] = None,
         provider: Optional[str] = None,
+        api_key: Optional[str] = None,
     ) -> None:  # noqa:DAR101, DAR401
         """Initialize the AsyncUnify client.
 
