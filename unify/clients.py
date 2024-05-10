@@ -23,11 +23,6 @@ class Unify:
         """Initialize the Unify client.
 
         Args:
-            api_key (str, optional): API key for accessing the Unify API.
-                If None, it attempts to retrieve the API key from the
-                environment variable UNIFY_KEY.
-                Defaults to None.
-
             endpoint (str, optional): Endpoint name in OpenAI API format:
                 <uploaded_by>/<model_name>@<provider_name>
                 Defaults to None.
@@ -37,6 +32,12 @@ class Unify:
 
             provider (str, optional): Name of the provider. If None,
             endpoint must be provided.
+
+            api_key (str, optional): API key for accessing the Unify API.
+                If None, it attempts to retrieve the API key from the
+                environment variable UNIFY_KEY.
+                Defaults to None.
+
         Raises:
             UnifyError: If the API key is missing.
         """
@@ -122,22 +123,22 @@ class Unify:
 
     def generate(  # noqa: WPS234, WPS211
         self,
-        messages: Optional[List[Dict[str, str]]] = None,
         user_prompt: Optional[str] = None,
         system_prompt: Optional[str] = None,
+        messages: Optional[List[Dict[str, str]]] = None,
         stream: bool = False,
     ) -> Union[Generator[str, None, None], str]:  # noqa: DAR101, DAR201, DAR401
         """Generate content using the Unify API.
 
         Args:
-            messages (List[Dict[str, str]]): A list of dictionaries containing the
-            conversation history. If provided, user_prompt must be None.
-
             user_prompt (Optional[str]): A string containing the user prompt.
             If provided, messages must be None.
 
             system_prompt (Optional[str]): An optional string containing the
             system prompt.
+
+            messages (List[Dict[str, str]]): A list of dictionaries containing the
+            conversation history. If provided, user_prompt must be None.
 
             stream (bool): If True, generates content as a stream.
             If False, generates content as a single response.
@@ -246,11 +247,6 @@ class AsyncUnify:
         """Initialize the AsyncUnify client.
 
         Args:
-            api_key (str, optional): API key for accessing the Unify API.
-            If None, it attempts to retrieve the API key from
-            the environment variable UNIFY_KEY.
-            Defaults to None.
-
             endpoint (str, optional): Endpoint name in OpenAI API format:
             <uploaded_by>/<model_name>@<provider_name>
             Defaults to None.
@@ -260,6 +256,11 @@ class AsyncUnify:
 
             provider (str, optional): Name of the provider. If None,
             endpoint must be provided.
+
+            api_key (str, optional): API key for accessing the Unify API.
+            If None, it attempts to retrieve the API key from
+            the environment variable UNIFY_KEY.
+            Defaults to None.
 
         Raises:
             UnifyError: If the API key is missing.
@@ -375,22 +376,22 @@ class AsyncUnify:
 
     async def generate(  # noqa: WPS234, WPS211
         self,
-        messages: Optional[List[Dict[str, str]]] = None,
         user_prompt: Optional[str] = None,
         system_prompt: Optional[str] = None,
+        messages: Optional[List[Dict[str, str]]] = None,
         stream: bool = False,
     ) -> Union[AsyncGenerator[str, None], str]:  # noqa: DAR101, DAR201, DAR401
         """Generate content asynchronously using the Unify API.
 
         Args:
-            messages (List[Dict[str, str]]): A list of dictionaries containing the
-            conversation history. If provided, user_prompt must be None.
-
             user_prompt (Optional[str]): A string containing the user prompt.
             If provided, messages must be None.
 
             system_prompt (Optional[str]): An optional string containing the
             system prompt.
+
+            messages (List[Dict[str, str]]): A list of dictionaries containing the
+            conversation history. If provided, user_prompt must be None.
 
             stream (bool): If True, generates content as a stream.
             If False, generates content as a single response.
