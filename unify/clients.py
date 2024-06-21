@@ -227,6 +227,7 @@ class Unify:
                 temperature=temperature,
                 stop=stop,
                 stream=True,
+                extra_body={"signature": "package"}
             )
             for chunk in chat_completion:
                 content = chunk.choices[0].delta.content  # type: ignore[union-attr]
@@ -252,6 +253,7 @@ class Unify:
                 temperature=temperature,
                 stop=stop,
                 stream=False,
+                extra_body={"signature": "package"}
             )
             self.set_provider(
                 chat_completion.model.split(  # type: ignore[union-attr]
@@ -479,6 +481,7 @@ class AsyncUnify:
                 temperature=temperature,
                 stop=stop,
                 stream=True,
+                extra_body={"signature": "package"}
             )
             async for chunk in async_stream:  # type: ignore[union-attr]
                 self.set_provider(chunk.model.split("@")[-1])
@@ -502,6 +505,7 @@ class AsyncUnify:
                 temperature=temperature,
                 stop=stop,
                 stream=False,
+                extra_body={"signature": "package"}
             )
             self.set_provider(async_response.model.split("@")[-1])  # type: ignore
             return async_response.choices[0].message.content.strip(" ")  # type: ignore # noqa: E501, WPS219
