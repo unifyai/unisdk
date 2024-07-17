@@ -146,8 +146,8 @@ class Unify:
             max_tokens (Optional[int]): The max number of output tokens.
             Defaults to the provider's default max_tokens when the value is None.
 
-            temperature (Optional[float]):  What sampling temperature to use, between 0 and 2. 
-            Higher values like 0.8 will make the output more random, 
+            temperature (Optional[float]):  What sampling temperature to use, between 0 and 2.
+            Higher values like 0.8 will make the output more random,
             while lower values like 0.2 will make it more focused and deterministic.
             Defaults to the provider's default max_tokens when the value is None.
 
@@ -176,14 +176,20 @@ class Unify:
             raise UnifyError("You must provider either the user_prompt or messages!")
 
         if stream:
-            return self._generate_stream(contents, self._endpoint,
-                                          max_tokens=max_tokens,
-                                          temperature=temperature,
-                                          stop=stop)
-        return self._generate_non_stream(contents, self._endpoint,
-                                          max_tokens=max_tokens,
-                                          temperature=temperature,
-                                          stop=stop)
+            return self._generate_stream(
+                contents,
+                self._endpoint,
+                max_tokens=max_tokens,
+                temperature=temperature,
+                stop=stop,
+            )
+        return self._generate_non_stream(
+            contents,
+            self._endpoint,
+            max_tokens=max_tokens,
+            temperature=temperature,
+            stop=stop,
+        )
 
     def get_credit_balance(self) -> float:
         # noqa: DAR201, DAR401
@@ -227,7 +233,7 @@ class Unify:
                 temperature=temperature,
                 stop=stop,
                 stream=True,
-                extra_body={"signature": "package"}
+                extra_body={"signature": "package"},
             )
             for chunk in chat_completion:
                 content = chunk.choices[0].delta.content  # type: ignore[union-attr]
@@ -253,7 +259,7 @@ class Unify:
                 temperature=temperature,
                 stop=stop,
                 stream=False,
-                extra_body={"signature": "package"}
+                extra_body={"signature": "package"},
             )
             self.set_provider(
                 chat_completion.model.split(  # type: ignore[union-attr]
@@ -431,8 +437,8 @@ class AsyncUnify:
             max_tokens (Optional[int]): The max number of output tokens, defaults
             to the provider's default max_tokens when the value is None.
 
-            temperature (Optional[float]):  What sampling temperature to use, between 0 and 2. 
-            Higher values like 0.8 will make the output more random, 
+            temperature (Optional[float]):  What sampling temperature to use, between 0 and 2.
+            Higher values like 0.8 will make the output more random,
             while lower values like 0.2 will make it more focused and deterministic.
             Defaults to the provider's default max_tokens when the value is None.
 
@@ -462,8 +468,20 @@ class AsyncUnify:
             raise UnifyError("You must provide either the user_prompt or messages!")
 
         if stream:
-            return self._generate_stream(contents, self._endpoint, max_tokens=max_tokens, stop=stop, temperature=temperature)
-        return await self._generate_non_stream(contents, self._endpoint, max_tokens=max_tokens, stop=stop, temperature=temperature)
+            return self._generate_stream(
+                contents,
+                self._endpoint,
+                max_tokens=max_tokens,
+                stop=stop,
+                temperature=temperature,
+            )
+        return await self._generate_non_stream(
+            contents,
+            self._endpoint,
+            max_tokens=max_tokens,
+            stop=stop,
+            temperature=temperature,
+        )
 
     async def _generate_stream(
         self,
@@ -481,7 +499,7 @@ class AsyncUnify:
                 temperature=temperature,
                 stop=stop,
                 stream=True,
-                extra_body={"signature": "package"}
+                extra_body={"signature": "package"},
             )
             async for chunk in async_stream:  # type: ignore[union-attr]
                 self.set_provider(chunk.model.split("@")[-1])
@@ -505,7 +523,7 @@ class AsyncUnify:
                 temperature=temperature,
                 stop=stop,
                 stream=False,
-                extra_body={"signature": "package"}
+                extra_body={"signature": "package"},
             )
             self.set_provider(async_response.model.split("@")[-1])  # type: ignore
             return async_response.choices[0].message.content.strip(" ")  # type: ignore # noqa: E501, WPS219

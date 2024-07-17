@@ -1,6 +1,6 @@
 import json
 import os
-from typing import List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import requests
 from unify.exceptions import UnifyError
@@ -23,6 +23,54 @@ _base_url = "https://api.unify.ai/v0"
 
 def _res_to_list(response: requests.Response) -> List[str]:
     return json.loads(response.text)
+
+
+def _validate_api_key(api_key: Optional[str]) -> str:
+    if api_key is None:
+        api_key = os.environ.get("UNIFY_KEY")
+    if api_key is None:
+        raise KeyError(
+            "UNIFY_KEY is missing. Please make sure it is set correctly!",
+        )
+    return api_key
+
+
+def _validate_endpoint_name(value: str) -> Tuple[str, str]:
+    error_message = "endpoint string must use OpenAI API format: <model_name>@<provider_name>"  # noqa: E501
+
+    if not isinstance(value, str):
+        raise UnifyError(error_message)
+
+    try:
+        model_name, provider_name = value.split("/")[-1].split("@")
+    except ValueError:
+        raise UnifyError(error_message)
+
+    if not model_name or not provider_name:
+        raise UnifyError(error_message)
+    return (model_name, provider_name)
+
+
+def _validate_endpoint(  # noqa: WPS231
+    endpoint: Optional[str] = None,
+    model: Optional[str] = None,
+    provider: Optional[str] = None,
+) -> Tuple[str, str, Optional[str]]:
+    error_message = (
+        "You must either provide an endpoint or the model and provider names!"
+    )
+    if endpoint:
+        if model or provider:
+            raise UnifyError(error_message)
+        model, provider = _validate_endpoint_name(endpoint)  # noqa: WPS414
+    else:
+        if not model or not provider:
+            raise UnifyError(error_message)
+        endpoint = "@".join([model, provider])
+
+    if provider in _available_dynamic_modes:
+        provider = None
+    return endpoint, model, provider
 
 
 def list_models() -> List[str]:
@@ -75,49 +123,250 @@ def list_providers(model: str) -> List[str]:
     return _res_to_list(requests.get(url, params={"model": model}))
 
 
-def _validate_api_key(api_key: Optional[str]) -> str:
-    if api_key is None:
-        api_key = os.environ.get("UNIFY_KEY")
-    if api_key is None:
-        raise KeyError(
-            "UNIFY_KEY is missing. Please make sure it is set correctly!",
-        )
-    return api_key
+def upload_dataset_from_file(
+    name: str, path: str, api_key: Optional[str] = None
+) -> str:
+    """
+    Uploads a local file as a dataset to the platform.
 
+    Args:
+        name (str): Name given to the uploaded dataset.
+        path (str): Path to the file to be uploaded.
+        api_key (str): If specified, unify API key to be used. Defaults
+        to the value in the `UNIFY_KEY` environment variable.
 
-def _validate_endpoint_name(value: str) -> Tuple[str, str]:
-    error_message = "endpoint string must use OpenAI API format: <uploaded_by>/<model_name>@<provider_name>"  # noqa: E501
-
-    if not isinstance(value, str):
-        raise UnifyError(error_message)
-
-    try:
-        model_name, provider_name = value.split("/")[-1].split("@")
-    except ValueError:
-        raise UnifyError(error_message)
-
-    if not model_name or not provider_name:
-        raise UnifyError(error_message)
-    return (model_name, provider_name)
-
-
-def _validate_endpoint(  # noqa: WPS231
-    endpoint: Optional[str] = None,
-    model: Optional[str] = None,
-    provider: Optional[str] = None,
-) -> Tuple[str, str, Optional[str]]:
-    error_message = (
-        "You must either provide an endpoint or the model and provider names!"
+    Returns:
+        str: Info msg with the response from the HTTP endpoint.
+    Raises:
+        ValueError: If there was an HTTP error.
+    """
+    api_key = _validate_api_key(api_key)
+    headers = {
+        "accept": "application/json",
+        "Authorization": f"Bearer {api_key}",
+    }
+    with open(path, "rb") as f:
+        file_content = f.read()
+    files = {"file": ("dataset", file_content, "application/x-jsonlines")}
+    data = {"name": name}
+    # Send POST request to the /dataset endpoint
+    response = requests.post(
+        _base_url + "/dataset", headers=headers, data=data, files=files
     )
-    if endpoint:
-        if model or provider:
-            raise UnifyError(error_message)
-        model, provider = _validate_endpoint_name(endpoint)  # noqa: WPS414
-    else:
-        if not model or not provider:
-            raise UnifyError(error_message)
-        endpoint = "@".join([model, provider])
+    if response.status_code != 200:
+        raise ValueError(response.text)
+    return json.loads(response.text)["info"]
 
-    if provider in _available_dynamic_modes:
-        provider = None
-    return endpoint, model, provider
+
+def upload_dataset_from_dictionary(
+    name: str, content: List[Dict[str, str]], api_key: Optional[str] = None
+) -> str:
+    """
+    Uploads a list of dictionaries as a dataset to the platform.
+    Each dictionary in the list must contain a `prompt` key.
+
+    Args:
+        name (str): Name given to the uploaded dataset.
+        content List[Dict[str, str]]: Path to the file to be uploaded.
+        api_key (str): If specified, unify API key to be used. Defaults
+        to the value in the `UNIFY_KEY` environment variable.
+
+    Returns:
+        str: Info msg with the response from the HTTP endpoint.
+    Raises:
+        ValueError: If there was an HTTP error.
+    """
+    api_key = _validate_api_key(api_key)
+    headers = {
+        "accept": "application/json",
+        "Authorization": f"Bearer {api_key}",
+    }
+    content_str = "\n".join([json.dumps(d) for d in content])
+    files = {"file": ("dataset", content_str, "application/x-jsonlines")}
+    data = {"name": name}
+    # Send POST request to the /dataset endpoint
+    response = requests.post(
+        _base_url + "/dataset", headers=headers, data=data, files=files
+    )
+    if response.status_code != 200:
+        raise ValueError(response.text)
+    return json.loads(response.text)["info"]
+
+
+def delete_dataset(name: str, api_key: Optional[str] = None) -> str:
+    """
+    Deletes a dataset from the platform.
+
+    Args:
+        name (str): Name given to the uploaded dataset.
+        path (str): Path to the file to be uploaded.
+        api_key (str): If specified, unify API key to be used. Defaults
+        to the value in the `UNIFY_KEY` environment variable.
+
+    Returns:
+        str: Info msg with the response from the HTTP endpoint.
+    Raises:
+        ValueError: If there was an HTTP error.
+    """
+    api_key = _validate_api_key(api_key)
+    headers = {
+        "accept": "application/json",
+        "Authorization": f"Bearer {api_key}",
+    }
+    params = {"name": name}
+    # Send DELETE request to the /dataset endpoint
+    response = requests.delete(_base_url + "/dataset", headers=headers, params=params)
+    if response.status_code != 200:
+        raise ValueError(response.text)
+    return json.loads(response.text)["info"]
+
+
+def download_dataset(
+    name: str, path: Optional[str] = None, api_key: Optional[str] = None
+) -> Optional[str]:
+    """
+    Downloads a dataset from the platform.
+
+    Args:
+        name (str): Name of the dataset to download.
+        path (str): If specified, path to save the dataset.
+        api_key (str): If specified, unify API key to be used. Defaults
+        to the value in the `UNIFY_KEY` environment variable.
+
+    Returns:
+        str: If path is not specified, returns the dataset content, if
+        specified, returns None.
+    Raises:
+        ValueError: If there was an HTTP error.
+    """
+    api_key = _validate_api_key(api_key)
+    headers = {
+        "accept": "application/json",
+        "Authorization": f"Bearer {api_key}",
+    }
+    params = {"name": name}
+    # Send GET request to the /dataset endpoint
+    response = requests.get(_base_url + "/dataset", headers=headers, params=params)
+    if response.status_code != 200:
+        raise ValueError(response.text)
+    if path:
+        with open(path, "w+") as f:
+            f.write("\n".join([json.dumps(d) for d in json.loads(response.text)]))
+            return None
+    return json.loads(response.text)
+
+
+def list_datasets(api_key: Optional[str] = None) -> List[str]:
+    """
+    Fetches a list of all uploaded datasets.
+
+    Args:
+        api_key (str): If specified, unify API key to be used. Defaults
+        to the value in the `UNIFY_KEY` environment variable.
+
+    Returns:
+        List[str]: List with the names of the uploaded datasets.
+    Raises:
+        ValueError: If there was an HTTP error.
+    """
+    api_key = _validate_api_key(api_key)
+    headers = {
+        "accept": "application/json",
+        "Authorization": f"Bearer {api_key}",
+    }
+    # Send GET request to the /dataset/list endpoint
+    response = requests.get(_base_url + "/dataset/list", headers=headers)
+    if response.status_code != 200:
+        raise ValueError(response.text)
+    return _res_to_list(response)
+
+
+def evaluate(dataset: str, endpoints: List[str], api_key: Optional[str] = None) -> str:
+    """
+    Evaluates a list of endpoints on a given dataset.
+
+    Args:
+        name (str): Name of the dataset to be uploaded.
+        endpoints List[str]: List of endpoints.
+        api_key (str): If specified, unify API key to be used. Defaults
+        to the value in the `UNIFY_KEY` environment variable.
+
+    Returns:
+        str: Info msg with the response from the HTTP endpoint.
+    Raises:
+        ValueError: If there was an HTTP error.
+    """
+    api_key = _validate_api_key(api_key)
+    headers = {
+        "accept": "application/json",
+        "Authorization": f"Bearer {api_key}",
+    }
+    for endpoint in endpoints:
+        data = {"dataset": dataset, "endpoint": endpoint}
+        # Send POST request to the /evaluation endpoint
+        response = requests.post(
+            _base_url + "/evaluation", headers=headers, params=data
+        )
+        if response.status_code != 200:
+            raise ValueError(f"Error in endpoint {endpoint}: {response.text}")
+    return json.loads(response.text)["info"]
+
+
+def delete_evaluation(name: str, endpoint: str, api_key: Optional[str] = None) -> str:
+    """
+    Deletes an evaluation from the platform.
+
+    Args:
+        name (str): Name of the dataset in the evaluation.
+        endpoint (str): Name of the endpoint whose evaluation will be removed.
+        api_key (str): If specified, unify API key to be used. Defaults
+        to the value in the `UNIFY_KEY` environment variable.
+
+    Returns:
+        str: Info msg with the response from the HTTP endpoint.
+    Raises:
+        ValueError: If there was an HTTP error.
+    """
+    api_key = _validate_api_key(api_key)
+    headers = {
+        "accept": "application/json",
+        "Authorization": f"Bearer {api_key}",
+    }
+    params = {"dataset": name, "endpoint": endpoint}
+    # Send DELETE request to the /evaluation endpoint
+    response = requests.delete(
+        _base_url + "/evaluation", headers=headers, params=params
+    )
+    if response.status_code != 200:
+        raise ValueError(response.text)
+    return json.loads(response.text)["info"]
+
+
+def list_evaluations(
+    dataset: Optional[str] = None, api_key: Optional[str] = None
+) -> List[str]:
+    """
+    Fetches a list of all evaluations.
+
+    Args:
+        dataset (str): Name of the dataset to fetch evaluation from.
+        If not specified, all evaluations will be returned.
+        api_key (str): If specified, unify API key to be used. Defaults
+        to the value in the `UNIFY_KEY` environment variable.
+
+    Returns:
+        List[Dict[str, List[str]]]: List with the names of the uploaded datasets.
+    Raises:
+        ValueError: If there was an HTTP error.
+    """
+    api_key = _validate_api_key(api_key)
+    headers = {
+        "accept": "application/json",
+        "Authorization": f"Bearer {api_key}",
+    }
+    params = {"dataset": dataset}
+    # Send GET request to the /evaluation/list endpoint
+    response = requests.get(_base_url + "/evaluation/list", headers=headers)
+    if response.status_code != 200:
+        raise ValueError(response.text)
+    return _res_to_list(response)
