@@ -261,11 +261,12 @@ class Unify:
                 stream=False,
                 extra_body={"signature": "package"},
             )
-            self.set_provider(
-                chat_completion.model.split(  # type: ignore[union-attr]
-                    "@",
-                )[-1]
-            )
+            if "router" not in endpoint:
+                self.set_provider(
+                    chat_completion.model.split(  # type: ignore[union-attr]
+                        "@",
+                    )[-1]
+                )
 
             return chat_completion.choices[0].message.content.strip(" ")  # type: ignore # noqa: E501, WPS219
         except openai.APIStatusError as e:
