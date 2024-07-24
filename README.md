@@ -29,11 +29,11 @@ pip install unifyai
 ## Basic Usage
 You can call the Unify API in a couple lines of code by specifying an endpoint Id. Endpoint Ids are a combination of the model Id and provider Id, both of which can be found in the [endpoint benchmarks](https://unify.ai/benchmarks) pages.
 
-For e.g, the [benchmarks for llama-2-13b](https://unify.ai/benchmarks/llama-2-13b-chat) show that the model Id for Llama 2 13B is `llama-2-13b-chat` and the provider Id for Anyscale is `anyscale`. We can then call:
+For e.g, the [benchmarks for llama-2-13b](https://unify.ai/benchmarks/llama-3-8b-chat) show that the model Id for Llama 2 13B is `llama-3-8b-chat` and the provider Id for Anyscale is `anyscale`. We can then call:
 
 ```python
 from unify import Unify
-unify = Unify("llama-2-13b-chat@anyscale")
+unify = Unify("llama-3-8b-chat@anyscale")
 response = unify.generate("Hello Llama! Who was Isaac Newton?")
 ```
 
@@ -42,7 +42,7 @@ response = unify.generate("Hello Llama! Who was Isaac Newton?")
 Instead of passing the endpoint, you can also pass the `model` and `provider` as separate arguments as shown below:
 ```python
 unify = Unify(
-    model="llama-2-13b-chat",
+    model="llama-3-8b-chat",
     provider="anyscale"
 )
 ```
@@ -50,8 +50,8 @@ unify = Unify(
 If you want change the `endpoint`, `model` or the `provider`, you can do so using the `.set_endpoint`, `.set_model`, `.set_provider` methods respectively.
 
 ```python
-unify.set_endpoint("mistral-7b-instruct-v0.1@deepinfra")
-unify.set_model("mistral-7b-instruct-v0.1")
+unify.set_endpoint("mistral-7b-instruct-v0.3@deepinfra")
+unify.set_model("mistral-7b-instruct-v0.3")
 unify.set_provider("deepinfra")
 ```
 
@@ -60,8 +60,8 @@ unify.set_provider("deepinfra")
 >
 >```python
 >models = unify.list_models()
->providers = unify.list_providers("mistral-7b-instruct-v0.1")
->endpoints = unify.list_endpoints("mistral-7b-instruct-v0.1")
+>providers = unify.list_providers("mistral-7b-instruct-v0.3")
+>endpoints = unify.list_endpoints("mistral-7b-instruct-v0.3")
 >```
 
 ### Custom prompting
@@ -93,7 +93,7 @@ To use the AsyncUnify client, simply import `AsyncUnify` instead
  ```python
 from unify import AsyncUnify
 import asyncio
-async_unify = AsyncUnify("llama-2-13b-chat@anyscale")
+async_unify = AsyncUnify("llama-3-8b-chat@anyscale")
 
 async def main():
     responses = await async_unify.generate("Hello Llama! Who was Isaac Newton?")
@@ -108,7 +108,7 @@ You can enable streaming responses by setting `stream=True` in the `.generate` f
 
 ```python
 from unify import Unify
-unify = Unify("llama-2-13b-chat@anyscale")
+unify = Unify("llama-3-8b-chat@anyscale")
 stream = unify.generate("Hello Llama! Who was Isaac Newton?", stream=True)
 for chunk in stream:
     print(chunk, end="")
@@ -119,7 +119,7 @@ It works in exactly the same way with Async clients.
  ```python
 from unify import AsyncUnify
 import asyncio
-async_unify = AsyncUnify("llama-2-13b-chat@anyscale")
+async_unify = AsyncUnify("llama-3-8b-chat@anyscale")
 
 async def main():
     async_stream = await async_unify.generate("Hello Llama! Who was Isaac Newton?", stream=True)
@@ -138,7 +138,7 @@ For e.g, you can query the `llama-2-7b-chat` endpoint to get the provider with t
 
 ```python
 from unify import Unify
-unify = Unify("llama-2-13b-chat@lowest-input-cost")
+unify = Unify("llama-3-8b-chat@lowest-input-cost")
 response = unify.generate("Hello Llama! Who was Isaac Newton?")
 ```
 
@@ -157,6 +157,6 @@ Our `ChatBot` allows you to start an interactive chat session with any of our su
 
 ```python
 from unify import ChatBot
-agent = ChatBot("llama-2-13b-chat@lowest-input-cost")
+agent = ChatBot("llama-3-8b-chat@lowest-input-cost")
 agent.run()
 ```
