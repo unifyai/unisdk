@@ -73,9 +73,12 @@ def _validate_endpoint(  # noqa: WPS231
     return endpoint, model, provider
 
 
-def list_models() -> List[str]:
+def list_models(provider: Optional[str] = None) -> List[str]:
     """
-    Get a list of available models.
+    Get a list of available models, either in total or for a specific provider.
+
+    Args:
+        provider (str): If specified, returns the list of models supporting this provider.
 
     Returns:
         List[str]: A list of available model names if successful, otherwise an empty list.
@@ -84,33 +87,17 @@ def list_models() -> List[str]:
         ValueError: If there was an error parsing the JSON response.
     """
     url = f"{_base_url}/models"
+    if provider:
+        return _res_to_list(requests.get(url, params={"provider": provider}))
     return _res_to_list(requests.get(url))
 
 
-def list_endpoints(model: str) -> List[str]:
+def list_providers(model: Optional[str] = None) -> List[str]:
     """
-    Get a list of endpoints for a specific model.
+    Get a list of available providers, either in total or for a specific model.
 
     Args:
-        model (str): The name of the model.
-
-    Returns:
-        List[str]: A list of endpoint names associated with the model if successful,
-        otherwise an empty list.
-    Raises:
-        BadRequestError: If there was an HTTP error.
-        ValueError: If there was an error parsing the JSON response.
-    """
-    url = f"{_base_url}/endpoints_of"
-    return _res_to_list(requests.get(url, params={"model": model}))
-
-
-def list_providers(model: str) -> List[str]:
-    """
-    Get a list of providers for a specific model.
-
-    Args:
-        model (str): The name of the model.
+        model (str): If specified, returns the list of providers supporting this model.
 
     Returns:
         List[str]: A list of provider names associated with the model if successful,
@@ -120,7 +107,33 @@ def list_providers(model: str) -> List[str]:
         ValueError: If there was an error parsing the JSON response.
     """
     url = f"{_base_url}/providers_of"
-    return _res_to_list(requests.get(url, params={"model": model}))
+    if model:
+        return _res_to_list(requests.get(url, params={"model": model}))
+    return _res_to_list(requests.get(url))
+
+
+def list_endpoints(model: Optional[str] = None, provider: Optional[str] = None) -> List[str]:
+    """
+    Get a list of available endpoints, either in total or for a specific model or provider.
+
+    Args:
+        model (str): If specified, returns the list of endpoints supporting this model.
+        provider (str): If specified, returns the list of endpoints supporting this provider.
+
+    Returns:
+        List[str]: A list of endpoint names if successful, otherwise an empty list.
+    Raises:
+        BadRequestError: If there was an HTTP error.
+        ValueError: If there was an error parsing the JSON response.
+    """
+    url = f"{_base_url}/endpoints_of"
+    if model and provider:
+        raise ValueError("Please specify either model OR provider, not both.")
+    elif model:
+        return _res_to_list(requests.get(url, params={"model": model}))
+    elif provider:
+        return _res_to_list(requests.get(url, params={"provider": provider}))
+    return _res_to_list(requests.get(url))
 
 
 def upload_dataset_from_file(
