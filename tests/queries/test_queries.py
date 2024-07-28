@@ -2,7 +2,6 @@ import os
 import unittest
 from types import AsyncGeneratorType, GeneratorType
 from unittest.mock import MagicMock, patch
-
 from unify.clients import AsyncUnify, Unify
 from unify.exceptions import AuthenticationError, UnifyError
 
