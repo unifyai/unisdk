@@ -86,7 +86,7 @@ def list_models(provider: Optional[str] = None) -> List[str]:
         BadRequestError: If there was an HTTP error.
         ValueError: If there was an error parsing the JSON response.
     """
-    url = f"{_base_url}/models"
+    url = f"{_base_url}/endpoints_of"
     if provider:
         return _res_to_list(requests.get(url, params={"provider": provider}))
     return _res_to_list(requests.get(url))
@@ -106,7 +106,7 @@ def list_providers(model: Optional[str] = None) -> List[str]:
         BadRequestError: If there was an HTTP error.
         ValueError: If there was an error parsing the JSON response.
     """
-    url = f"{_base_url}/providers_of"
+    url = f"{_base_url}/endpoints_of"
     if model:
         return _res_to_list(requests.get(url, params={"model": model}))
     return _res_to_list(requests.get(url))
