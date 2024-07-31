@@ -86,7 +86,7 @@ def list_models(provider: Optional[str] = None) -> List[str]:
         BadRequestError: If there was an HTTP error.
         ValueError: If there was an error parsing the JSON response.
     """
-    url = f"{_base_url}/endpoints_of"
+    url = f"{_base_url}/endpoints"
     if provider:
         return _res_to_list(requests.get(url, params={"provider": provider}))
     return _res_to_list(requests.get(url))
@@ -106,7 +106,7 @@ def list_providers(model: Optional[str] = None) -> List[str]:
         BadRequestError: If there was an HTTP error.
         ValueError: If there was an error parsing the JSON response.
     """
-    url = f"{_base_url}/endpoints_of"
+    url = f"{_base_url}/endpoints"
     if model:
         return _res_to_list(requests.get(url, params={"model": model}))
     return _res_to_list(requests.get(url))
@@ -126,7 +126,7 @@ def list_endpoints(model: Optional[str] = None, provider: Optional[str] = None) 
         BadRequestError: If there was an HTTP error.
         ValueError: If there was an error parsing the JSON response.
     """
-    url = f"{_base_url}/endpoints_of"
+    url = f"{_base_url}/endpoints"
     if model and provider:
         raise ValueError("Please specify either model OR provider, not both.")
     elif model:
