@@ -48,7 +48,12 @@ def _validate_endpoint_name(value: str) -> Tuple[str, str]:
 
     if not model_name or not provider_name:
         raise UnifyError(error_message)
-    return (model_name, provider_name)
+
+    valid_endpoints = unify.utils.list_endpoints()
+    if value not in valid_endpoints:
+        raise UnifyError("endpoint {} is not one of the available options:\n{}".format(value, valid_endpoints))
+
+    return model_name, provider_name
 
 
 def _validate_endpoint(  # noqa: WPS231
