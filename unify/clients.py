@@ -78,7 +78,7 @@ class Unify:
             self._model = value
             return
         supported_models = unify.utils.list_models(self._provider)
-        assert value in supported_models,(
+        assert value in supported_models, (
             "Current provider {} does not support the selected model {}".format(self._provider, value))
         self._model = value
         self._endpoint = "@".join([value, self._provider])
@@ -104,7 +104,7 @@ class Unify:
             self._provider = value
             return
         supported_providers = unify.utils.list_providers(self._model)
-        assert value in supported_providers,(
+        assert value in supported_providers, (
             "Current model {} does not support the selected provider {}".format(self._model, value))
         self._provider = value
         self._endpoint = "@".join([self._model, value])

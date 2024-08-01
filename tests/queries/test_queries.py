@@ -14,11 +14,11 @@ class TestUnify(unittest.TestCase):
     def test_invalid_api_key_raises_authentication_error(self) -> None:
         # Instantiate Unify with an invalid API key
         with self.assertRaises(AuthenticationError):
-            unify = Unify(
+            client = Unify(
                 api_key="invalid_api_key",
                 endpoint="llama-3-8b-chat@together-ai",
             )
-            unify.generate(user_prompt="hello")
+            client.generate(user_prompt="hello")
 
     @patch("os.environ.get", return_value=None)
     def test_missing_api_key_raises_key_error(self, mock_get: MagicMock) -> None:
@@ -33,21 +33,21 @@ class TestUnify(unittest.TestCase):
 
     def test_generate_returns_string_when_stream_false(self) -> None:
         # Instantiate Unify with a valid API key
-        unify = Unify(
+        client = Unify(
             api_key=self.valid_api_key, endpoint="llama-3-8b-chat@together-ai"
         )
         # Call generate with stream=False
-        result = unify.generate(user_prompt="hello", stream=False)
+        result = client.generate(user_prompt="hello", stream=False)
         # Assert that the result is a string
         self.assertIsInstance(result, str)
 
     def test_generate_returns_generator_when_stream_true(self) -> None:
         # Instantiate Unify with a valid API key
-        unify = Unify(
+        client = Unify(
             api_key=self.valid_api_key, endpoint="llama-3-8b-chat@together-ai"
         )
         # Call generate with stream=True
-        result = unify.generate(user_prompt="hello", stream=True)
+        result = client.generate(user_prompt="hello", stream=True)
         # Assert that the result is a generator
         self.assertIsInstance(result, GeneratorType)
 
