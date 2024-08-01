@@ -135,4 +135,4 @@ asyncio.run(main())
 ## Dive Deeper
 
 To learn more about our more advanced API features, benchmarking, and LLM routing,
-go check out our comprehensive `docs <https://unify.ai/docs/>`_!
+go check out our comprehensive [docs](https://unify.ai/docs)!
