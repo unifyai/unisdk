@@ -19,7 +19,7 @@ _available_dynamic_modes = [
 _base_url = "https://api.unify.ai/v0"
 
 
-def _res_to_list(response: requests.Response) -> Dict:
+def _res_to_list(response: requests.Response) -> List:
     return json.loads(response.text)
 
 
