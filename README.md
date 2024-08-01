@@ -1,75 +1,79 @@
-# Unify Python API Library
-The Unify Python Package provides access to the [Unify](https://unify.ai) REST API, allowing you to query Large Language Models (LLMs)
-from any Python 3.7.1+ application.
-It includes Synchronous and Asynchronous clients with Streaming responses support.
+# Unify
 
-Just like the REST API, you can:
+We're on a mission to simplify the LLM landscape, Unify lets you:
 
-- 🔑 **Use any endpoint with a single key**: Access all LLMs at any provider with just one Unify API Key.
+* **🔑 Use any LLM from any Provider**: With a single interface, you can use all LLMs from all providers by simply changing one string. No need to manage several API keys or handle different input-output formats. Unify handles all of that for you!
 
-- 🚀 **Route to the best endpoint**: Each prompt is sent to the endpoint that will yield the best throughput, cost or latency. 
 
-> [!NOTE]
-> You can learn more about routing [here](https://unify.ai/docs/concepts/routing.html)
+* **📊 Improve LLM Performance**: Add your own custom tests and evals, and benchmark your own prompts on all models and providers. Comparing quality, cost and speed, and iterate on your system prompt until all test cases pass, and you can deploy your app!
 
-## Getting started
-To use the API, you first need to get [Sign In](https://console.unify.ai) to get an API key. You can then use pip to install the package as follows:
+
+* **🔀 Route to the Best LLM**: Improve quality, cost and speed by routing to the perfect model and provider for each individual prompt.
+
+## Quickstart
+Simply install the package:
 
 ```bash
 pip install unifyai
 ```
 
+Then [sign up](https://console.unify.ai) to get your API key, then you're ready to go! 🚀
+
+```python
+import unify
+client = unify.Unify("gpt-4o@openai", api_key=<your_key>)
+client.generate("hello world!")
+```
+
 > [!NOTE]
-> At any point, you can pass your key directly in one of the `Unify` clients as the `api_key` keyword argument, but
-> we recommend using [python-dotenv](https://pypi.org/project/python-dotenv/)
-> to add `UNIFY_KEY="My API Key"` to your `.env` file for safety.
+> We recommend using [python-dotenv](https://pypi.org/project/python-dotenv/)
+> to add `UNIFY_KEY="My API Key"` to your `.env` file, avoiding the need to use the `api_key` argument as above.
 > For the rest of the README, **we will assume you set your key as an environment variable.**
 
+### Listing Models, Providers and Endpoints
 
-## Basic Usage
-You can call the Unify API in a couple lines of code by specifying an endpoint Id. Endpoint Ids are a combination of the model Id and provider Id, both of which can be found in the [endpoint benchmarks](https://unify.ai/benchmarks) pages.
-
-For e.g, the [benchmarks for llama-2-13b](https://unify.ai/benchmarks/llama-3-8b-chat) show that the model Id for Llama 2 13B is `llama-3-8b-chat` and the provider Id for Anyscale is `anyscale`. We can then call:
+You can list all models, providers and endpoints (`<model>@<provider>` pair) as follows:
 
 ```python
-from unify import Unify
-unify = Unify("llama-3-8b-chat@anyscale")
-response = unify.generate("Hello Llama! Who was Isaac Newton?")
+models = unify.utils.list_models()
+providers = unify.utils.list_providers()
+endpoints = unify.utils.list_endpoints()
 ```
 
-### Changing models and providers
+You can also filter within these functions as follows:
 
-Instead of passing the endpoint, you can also pass the `model` and `provider` as separate arguments as shown below:
 ```python
-unify = Unify(
-    model="llama-3-8b-chat",
-    provider="anyscale"
-)
+import random
+anthropic_models = unify.utils.list_models("anthropic")
+client.set_endpoint(random.choice(anthropic_models) + "@anthropic")
+
+latest_llama3p1_providers = unify.utils.list_providers("llama-3.1-405b-chat")
+client.set_endpoint("llama-3.1-405b-chat@" + random.choice(latest_llama3p1_providers))
+
+openai_endpoints = unify.utils.list_endpoints("openai")
+client.set_endpoint(random.choice(openai_endpoints))
+
+mixtral8x7b_endpoints = unify.utils.list_endpoints("mixtral-8x7b-instruct-v0.1")
+client.set_endpoint(random.choice(mixtral8x7b_endpoints))
+
 ```
+
+### Changing Models, Providers and Endpoints
 
 If you want change the `endpoint`, `model` or the `provider`, you can do so using the `.set_endpoint`, `.set_model`, `.set_provider` methods respectively.
 
 ```python
-unify.set_endpoint("mistral-7b-instruct-v0.3@deepinfra")
-unify.set_model("mistral-7b-instruct-v0.3")
-unify.set_provider("deepinfra")
+client.set_endpoint("mistral-7b-instruct-v0.3@deepinfra")
+client.set_model("mistral-7b-instruct-v0.3")
+client.set_provider("deepinfra")
 ```
 
->[!NOTE]
-> Besides the benchmarks, you can also get the model and provider Ids directly in Python using `list_models()>`, `list_providers()` and `list_endpoints()` by using:
->
->```python
->models = unify.list_models()
->providers = unify.list_providers("mistral-7b-instruct-v0.3")
->endpoints = unify.list_endpoints("mistral-7b-instruct-v0.3")
->```
-
-### Custom prompting
+### Custom Prompting
 
 You can influence the model's persona using the `system_prompt` argument in the `.generate` function:
 
 ```python
-response = unify.generate(
+response = client.generate(
     user_prompt="Hello Llama! Who was Isaac Newton?",  system_prompt="You should always talk in rhymes"
 )
 ```
@@ -82,7 +86,7 @@ If you'd like to send multiple messages using the `.generate` function, you shou
     {"role": "assistant", "content": "The Los Angeles Dodgers won the World Series in 2020."},
     {"role": "user", "content": "Where was it played?"}
 ]
-res = unify.generate(messages=messages)
+res = client.generate(messages=messages)
  ```
 
 ## Asynchronous Usage
@@ -91,12 +95,12 @@ To use the AsyncUnify client, simply import `AsyncUnify` instead
  of `Unify` and use `await` with the `.generate` function.
 
  ```python
-from unify import AsyncUnify
+import unify
 import asyncio
-async_unify = AsyncUnify("llama-3-8b-chat@anyscale")
+async_client = unify.AsyncUnify("llama-3-8b-chat@anyscale")
 
 async def main():
-    responses = await async_unify.generate("Hello Llama! Who was Isaac Newton?")
+    responses = await async_client.generate("Hello Llama! Who was Isaac Newton?")
 
 asyncio.run(main())
 ```
@@ -107,9 +111,9 @@ Functionality wise, the Async and Sync clients are identical.
 You can enable streaming responses by setting `stream=True` in the `.generate` function.
 
 ```python
-from unify import Unify
-unify = Unify("llama-3-8b-chat@anyscale")
-stream = unify.generate("Hello Llama! Who was Isaac Newton?", stream=True)
+import unify
+client = unify.Unify("llama-3-8b-chat@anyscale")
+stream = client.generate("Hello Llama! Who was Isaac Newton?", stream=True)
 for chunk in stream:
     print(chunk, end="")
 ```
@@ -117,46 +121,18 @@ for chunk in stream:
 It works in exactly the same way with Async clients.
 
  ```python
-from unify import AsyncUnify
+import unify
 import asyncio
-async_unify = AsyncUnify("llama-3-8b-chat@anyscale")
+async_client = unify.AsyncUnify("llama-3-8b-chat@anyscale")
 
 async def main():
-    async_stream = await async_unify.generate("Hello Llama! Who was Isaac Newton?", stream=True)
+    async_stream = await async_client.generate("Hello Llama! Who was Isaac Newton?", stream=True)
     async for chunk in async_stream:
         print(chunk, end="")
 
 asyncio.run(main())
 ```
-## Dynamic Routing
+## Dive Deeper
 
-As evidenced by our [benchmarks](https://unify.ai/benchmarks), the optimal provider for each model varies by geographic location and time of day due to fluctuating API performances.
-
-With dynamic routing, we automatically direct your requests to the "top-performing provider" at that moment. To enable this feature, simply replace your query's provider with one of the [available routing modes](https://unify.ai/docs/api/deploy_router.html#optimizing-a-metric).
-
-For e.g, you can query the `llama-2-7b-chat` endpoint to get the provider with the lowest input-cost as follows:
-
-```python
-from unify import Unify
-unify = Unify("llama-3-8b-chat@lowest-input-cost")
-response = unify.generate("Hello Llama! Who was Isaac Newton?")
-```
-
-You can see the provider chosen by printing the `.provider` attribute of the client:
-
-```python
-print(unify.provider)
-```
-
->[!NOTE]
-> Dynamic routing works with both Synchronous and Asynchronous  clients!
-
-## ChatBot Agent
-
-Our `ChatBot` allows you to start an interactive chat session with any of our supported llm endpoints with only a few lines of code:
-
-```python
-from unify import ChatBot
-agent = ChatBot("llama-3-8b-chat@lowest-input-cost")
-agent.run()
-```
+To learn more about our more advanced API features, benchmarking, and LLM routing,
+go check out our comprehensive `docs <https://unify.ai/docs/>`_!
