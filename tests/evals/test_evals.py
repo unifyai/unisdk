@@ -12,10 +12,5 @@ class TestEvals(unittest.TestCase):
 
     def test_run_eval(self) -> None:
         self._create_test_dataset()
-        # ToDo: replace with below once HTTP API is fixed
-        # endpoint = unify.endpoint.list_endpoints()
-        endpoints = []
-        for model in unify.utils.list_models():
-            endpoints += unify.utils.list_endpoints(model)
-        endpoints = random.sample(endpoints, 10)
+        endpoints = random.sample(unify.endpoint.list_endpoints(), 10)
         unify.utils.evaluate("Test", endpoints)
