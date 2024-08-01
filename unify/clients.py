@@ -51,9 +51,12 @@ class Client(ABC):
         if endpoint and (model or provider):
             raise UnifyError("if the model or provider are passed, then the endpoint must not be passed.")
         self._endpoint, self._model, self._provider = None, None, None
-        self.set_endpoint(endpoint)
-        self.set_provider(provider)
-        self.set_model(model)
+        if endpoint:
+            self.set_endpoint(endpoint)
+        if provider:
+            self.set_provider(provider)
+        if model:
+            self.set_model(model)
         self._client = self._get_client()
 
     @property
