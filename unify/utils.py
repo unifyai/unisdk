@@ -114,11 +114,11 @@ def list_providers(model: Optional[str] = None) -> List[str]:
 
 def list_endpoints(model: Optional[str] = None, provider: Optional[str] = None) -> List[str]:
     """
-    Get a list of available endpoints, either in total or for a specific model or provider.
+    Get a list of available endpoint_availability, either in total or for a specific model or provider.
 
     Args:
-        model (str): If specified, returns the list of endpoints supporting this model.
-        provider (str): If specified, returns the list of endpoints supporting this provider.
+        model (str): If specified, returns the list of endpoint_availability supporting this model.
+        provider (str): If specified, returns the list of endpoint_availability supporting this provider.
 
     Returns:
         List[str]: A list of endpoint names if successful, otherwise an empty list.
@@ -296,11 +296,11 @@ def list_datasets(api_key: Optional[str] = None) -> List[str]:
 
 def evaluate(dataset: str, endpoints: List[str], api_key: Optional[str] = None) -> str:
     """
-    Evaluates a list of endpoints on a given dataset.
+    Evaluates a list of endpoint_availability on a given dataset.
 
     Args:
         name (str): Name of the dataset to be uploaded.
-        endpoints List[str]: List of endpoints.
+        endpoint_availability List[str]: List of endpoint_availability.
         api_key (str): If specified, unify API key to be used. Defaults
         to the value in the `UNIFY_KEY` environment variable.
 

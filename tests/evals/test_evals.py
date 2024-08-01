@@ -13,7 +13,7 @@ class TestEvals(unittest.TestCase):
     def test_run_eval(self) -> None:
         self._create_test_dataset()
         # ToDo: replace with below once HTTP API is fixed
-        # endpoints = unify.utils.list_endpoints()
+        # endpoint_availability = unify.endpoint_availability.list_endpoints()
         endpoints = []
         for model in unify.utils.list_models():
             endpoints += unify.utils.list_endpoints(model)
