@@ -2,6 +2,8 @@ from typing import AsyncGenerator, Dict, Generator, List, Optional, Union
 
 import openai
 import requests
+
+import unify.utils
 from unify.exceptions import BadRequestError, UnifyError, status_error_map
 from unify.utils import (  # noqa:WPS450
     _available_dynamic_modes,
@@ -72,12 +74,14 @@ class Unify:
         Args:
             value (str): The model name.
         """
+        if not self._provider:
+            self._model = value
+            return
+        supported_models = unify.utils.list_models(self._provider)
+        assert value in supported_models,(
+            "Current provider {} does not support the selected model {}".format(self._provider, value))
         self._model = value
-        if self._provider:
-            self._endpoint = "@".join([value, self._provider])
-        else:
-            mode = self._endpoint.split("@")[1]
-            self._endpoint = "@".join([value, mode])
+        self._endpoint = "@".join([value, self._provider])
 
     @property
     def provider(self) -> Optional[str]:
@@ -96,6 +100,12 @@ class Unify:
         Args:
             value (str): The provider name.
         """
+        if not self._model:
+            self._provider = value
+            return
+        supported_providers = unify.utils.list_providers(self._model)
+        assert value in supported_providers,(
+            "Current model {} does not support the selected provider {}".format(self._model, value))
         self._provider = value
         self._endpoint = "@".join([self._model, value])
 
@@ -118,8 +128,6 @@ class Unify:
         """
         self._endpoint = value
         self._model, self._provider = value.split("@")  # noqa: WPS414
-        if self._provider in _available_dynamic_modes:
-            self._provider = None
 
     def generate(  # noqa: WPS234, WPS211
         self,
