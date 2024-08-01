@@ -1,9 +1,7 @@
-import json
 import os
-from typing import Dict, List, Optional, Tuple
-
+import json
 import requests
-from unify.exceptions import UnifyError
+from typing import Dict, List, Optional
 
 _available_dynamic_modes = [
     "lowest-input-cost",
@@ -33,49 +31,6 @@ def _validate_api_key(api_key: Optional[str]) -> str:
             "UNIFY_KEY is missing. Please make sure it is set correctly!",
         )
     return api_key
-
-
-def _validate_endpoint_name(value: str) -> Tuple[str, str]:
-    error_message = "endpoint string must use OpenAI API format: <model_name>@<provider_name>"  # noqa: E501
-
-    if not isinstance(value, str):
-        raise UnifyError(error_message)
-
-    try:
-        model_name, provider_name = value.split("/")[-1].split("@")
-    except ValueError:
-        raise UnifyError(error_message)
-
-    if not model_name or not provider_name:
-        raise UnifyError(error_message)
-
-    valid_endpoints = unify.utils.list_endpoints()
-    if value not in valid_endpoints:
-        raise UnifyError("endpoint {} is not one of the available options:\n{}".format(value, valid_endpoints))
-
-    return model_name, provider_name
-
-
-def _validate_endpoint(  # noqa: WPS231
-    endpoint: Optional[str] = None,
-    model: Optional[str] = None,
-    provider: Optional[str] = None,
-) -> Tuple[str, str, Optional[str]]:
-    error_message = (
-        "You must either provide an endpoint or the model and provider names!"
-    )
-    if endpoint:
-        if model or provider:
-            raise UnifyError(error_message)
-        model, provider = _validate_endpoint_name(endpoint)  # noqa: WPS414
-    else:
-        if not model or not provider:
-            raise UnifyError(error_message)
-        endpoint = "@".join([model, provider])
-
-    if provider in _available_dynamic_modes:
-        provider = None
-    return endpoint, model, provider
 
 
 def list_models(provider: Optional[str] = None) -> List[str]:
