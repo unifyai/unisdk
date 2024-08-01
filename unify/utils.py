@@ -86,10 +86,11 @@ def list_models(provider: Optional[str] = None) -> List[str]:
         BadRequestError: If there was an HTTP error.
         ValueError: If there was an error parsing the JSON response.
     """
+    # ToDo: remove list(set()) hack once HTTP API is fixed
     url = f"{_base_url}/models"
     if provider:
-        return _res_to_list(requests.get(url, params={"provider": provider}))
-    return _res_to_list(requests.get(url))
+        return list(set(_res_to_list(requests.get(url, params={"provider": provider}))))
+    return list(set(_res_to_list(requests.get(url))))
 
 
 def list_providers(model: Optional[str] = None) -> List[str]:
