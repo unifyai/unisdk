@@ -73,14 +73,16 @@ class Client(ABC):
         Args:
             value (str): The model name.
         """
-        if not self._provider:
-            self._model = value
-            return
-        supported_models = unify.utils.list_models(self._provider)
-        assert value in supported_models, (
-            "Current provider {} does not support the selected model {}".format(self._provider, value))
+        valid_models = unify.utils.list_models(self._provider)
+        if value not in valid_models:
+            if self._provider:
+                raise UnifyError("Current provider {} does not support the specified model {},"
+                                 "please select one of: {}".format(self._provider, value, valid_models))
+            raise UnifyError("The specified model {} is not one of the models supported by Unify: {}".format(
+                value, valid_models))
         self._model = value
-        self._endpoint = "@".join([value, self._provider])
+        if self._provider:
+            self._endpoint = "@".join([value, self._provider])
 
     @property
     def provider(self) -> Optional[str]:
@@ -99,14 +101,16 @@ class Client(ABC):
         Args:
             value (str): The provider name.
         """
-        if not self._model:
-            self._provider = value
-            return
-        supported_providers = unify.utils.list_providers(self._model)
-        assert value in supported_providers, (
-            "Current model {} does not support the selected provider {}".format(self._model, value))
+        valid_providers = unify.utils.list_providers(self._model)
+        if value not in valid_providers:
+            if self._model:
+                raise UnifyError("Current model {} does not support the specified provider {},"
+                                 "please select one of: {}".format(self._model, value, valid_providers))
+            raise UnifyError("The specified provider {} is not one of the providers supported by Unify: {}".format(
+                value, valid_providers))
         self._provider = value
-        self._endpoint = "@".join([self._model, value])
+        if self._model:
+            self._endpoint = "@".join([self._model, value])
 
     @property
     def endpoint(self) -> str:
@@ -120,11 +124,15 @@ class Client(ABC):
 
     def set_endpoint(self, value: str) -> None:
         """
-        Set the model name.  # noqa: DAR101.
+        Set the endpoint name.  # noqa: DAR101.
 
         Args:
             value (str): The endpoint name.
         """
+        valid_endpoints = unify.utils.list_endpoints()
+        if value not in valid_endpoints:
+            raise UnifyError("The specified endpoint {} is not one of the endpoints supported by Unify: {}".format(
+                value, valid_endpoints))
         self._endpoint = value
         self._model, self._provider = value.split("@")  # noqa: WPS414
 
