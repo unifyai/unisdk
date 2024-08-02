@@ -1,4 +1,5 @@
 import os
+import json
 import unittest
 from types import AsyncGeneratorType, GeneratorType
 from unittest.mock import MagicMock, patch
@@ -9,6 +10,9 @@ from unify.exceptions import AuthenticationError, UnifyError
 class TestUnify(unittest.TestCase):
     def setUp(self) -> None:
         self.valid_api_key = os.environ.get("UNIFY_KEY")
+
+    # Basic #
+    # ------#
 
     def test_invalid_api_key_raises_authentication_error(self) -> None:
         with self.assertRaises(AuthenticationError):
@@ -40,6 +44,21 @@ class TestUnify(unittest.TestCase):
         )
         result = client.generate(user_prompt="hello", stream=True)
         self.assertIsInstance(result, GeneratorType)
+
+    # Advanced #
+    # ---------#
+
+    def test_json_mode(self) -> None:
+        for endpoint in ["gpt-4o@openai", "claude-3-opus@anthropic"]:
+            client = Unify(
+                api_key=self.valid_api_key, endpoint=endpoint
+            )
+            result = client.generate(system_prompt="You are a helpful assistant designed to output JSON.",
+                                     user_prompt="Who won the world series in 2020?",
+                                     response_format={"type": "json_object"})
+            self.assertIsInstance(result, str)
+            result = json.loads(result)
+            self.assertIsInstance(result, dict)
 
 
 class TestAsyncUnify(unittest.IsolatedAsyncioTestCase):
