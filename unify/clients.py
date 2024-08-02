@@ -238,7 +238,10 @@ class Unify(Client):
                     )[-1]
                 )
             if message_content_only:
-                return chat_completion.choices[0].message.content.strip(" ")  # type: ignore # noqa: E501, WPS219
+                content = chat_completion.choices[0].message.content
+                if content:
+                    return content.strip(" ")
+                return ""
             return chat_completion
         except openai.APIStatusError as e:
             raise status_error_map[e.status_code](e.message) from None
@@ -477,7 +480,10 @@ class AsyncUnify(Client):
             )
             self.set_provider(async_response.model.split("@")[-1])  # type: ignore
             if message_content_only:
-                return async_response.choices[0].message.content.strip(" ")  # type: ignore # noqa: E501, WPS219
+                content = async_response.choices[0].message.content
+                if content:
+                    return content.strip(" ")
+                return ""
             return async_response
         except openai.APIStatusError as e:
             raise status_error_map[e.status_code](e.message) from None
