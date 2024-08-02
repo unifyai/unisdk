@@ -185,6 +185,7 @@ class Unify(Client):
             max_tokens: Optional[int] = 1024,
             temperature: Optional[float] = 1.0,
             stop: Optional[List[str]] = None,
+            message_content_only: bool = True,
             **kwargs
     ) -> Generator[str, None, None]:
         try:
@@ -199,7 +200,10 @@ class Unify(Client):
                 **kwargs
             )
             for chunk in chat_completion:
-                content = chunk.choices[0].delta.content  # type: ignore[union-attr]
+                if message_content_only:
+                    content = chunk.choices[0].delta.content  # type: ignore[union-attr]
+                else:
+                    content = chunk
                 self.set_provider(chunk.model.split("@")[-1])  # type: ignore[union-attr]
                 if content is not None:
                     yield content
@@ -213,6 +217,7 @@ class Unify(Client):
             max_tokens: Optional[int] = 1024,
             temperature: Optional[float] = 1.0,
             stop: Optional[List[str]] = None,
+            message_content_only: bool = True,
             **kwargs
     ) -> str:
         try:
@@ -232,8 +237,9 @@ class Unify(Client):
                         "@",
                     )[-1]
                 )
-
-            return chat_completion.choices[0].message.content.strip(" ")  # type: ignore # noqa: E501, WPS219
+            if message_content_only:
+                return chat_completion.choices[0].message.content.strip(" ")  # type: ignore # noqa: E501, WPS219
+            return chat_completion
         except openai.APIStatusError as e:
             raise status_error_map[e.status_code](e.message) from None
 
@@ -246,6 +252,7 @@ class Unify(Client):
             temperature: Optional[float] = 1.0,
             stop: Optional[List[str]] = None,
             stream: bool = False,
+            message_content_only: bool = True,
             **kwargs
     ) -> Union[Generator[str, None, None], str]:  # noqa: DAR101, DAR201, DAR401
         """Generate content using the Unify API.
@@ -273,6 +280,11 @@ class Unify(Client):
             stream (bool): If True, generates content as a stream.
             If False, generates content as a single response.
             Defaults to False.
+
+            message_content_only (bool): If True, only return the message content
+            chat_completion.choices[0].message.content.strip(" ") from the OpenAI return.
+            Otherwise, the full response chat_completion is returned.
+            Defaults to True.
 
             kwargs: Additional keyword arguments to be passed to the chat.completions.create() method
             of the openai.OpenAI() class, from the OpenAI Python client, which runs under the hood.
@@ -302,6 +314,7 @@ class Unify(Client):
                 max_tokens=max_tokens,
                 temperature=temperature,
                 stop=stop,
+                message_content_only=message_content_only,
                 **kwargs
             )
         return self._generate_non_stream(
@@ -310,6 +323,7 @@ class Unify(Client):
             max_tokens=max_tokens,
             temperature=temperature,
             stop=stop,
+            message_content_only=message_content_only,
             **kwargs
         )
 
@@ -335,6 +349,7 @@ class AsyncUnify(Client):
         temperature: Optional[float] = 1.0,
         stop: Optional[List[str]] = None,
         stream: bool = False,
+        message_content_only: bool = True,
         **kwargs
     ) -> Union[AsyncGenerator[str, None], str]:  # noqa: DAR101, DAR201, DAR401
         """Generate content asynchronously using the Unify API.
@@ -362,6 +377,11 @@ class AsyncUnify(Client):
             stream (bool): If True, generates content as a stream.
             If False, generates content as a single response.
             Defaults to False.
+
+            message_content_only (bool): If True, only return the message content
+            chat_completion.choices[0].message.content.strip(" ") from the OpenAI return.
+            Otherwise, the full response chat_completion is returned.
+            Defaults to True.
 
             kwargs: Additional keyword arguments to be passed to the chat.completions.create() method
             of the openai.OpenAI() class, from the OpenAI Python client, which runs under the hood.
@@ -392,6 +412,7 @@ class AsyncUnify(Client):
                 max_tokens=max_tokens,
                 stop=stop,
                 temperature=temperature,
+                message_content_only=message_content_only,
                 **kwargs
             )
         return await self._generate_non_stream(
@@ -400,6 +421,7 @@ class AsyncUnify(Client):
             max_tokens=max_tokens,
             stop=stop,
             temperature=temperature,
+            message_content_only=message_content_only,
             **kwargs
         )
 
@@ -410,6 +432,7 @@ class AsyncUnify(Client):
         max_tokens: Optional[int] = None,
         temperature: Optional[float] = 1.0,
         stop: Optional[List[str]] = None,
+        message_content_only: bool = True,
         **kwargs
     ) -> AsyncGenerator[str, None]:
         try:
@@ -425,7 +448,9 @@ class AsyncUnify(Client):
             )
             async for chunk in async_stream:  # type: ignore[union-attr]
                 self.set_provider(chunk.model.split("@")[-1])
-                yield chunk.choices[0].delta.content or ""
+                if message_content_only:
+                    yield chunk.choices[0].delta.content or ""
+                yield chunk
         except openai.APIStatusError as e:
             raise status_error_map[e.status_code](e.message) from None
 
@@ -436,6 +461,7 @@ class AsyncUnify(Client):
         max_tokens: Optional[int] = None,
         temperature: Optional[float] = 1.0,
         stop: Optional[List[str]] = None,
+        message_content_only: bool = True,
         **kwargs
     ) -> str:
         try:
@@ -450,6 +476,8 @@ class AsyncUnify(Client):
                 **kwargs
             )
             self.set_provider(async_response.model.split("@")[-1])  # type: ignore
-            return async_response.choices[0].message.content.strip(" ")  # type: ignore # noqa: E501, WPS219
+            if message_content_only:
+                return async_response.choices[0].message.content.strip(" ")  # type: ignore # noqa: E501, WPS219
+            return async_response
         except openai.APIStatusError as e:
             raise status_error_map[e.status_code](e.message) from None
