@@ -185,6 +185,7 @@ class Unify(Client):
             max_tokens: Optional[int] = 1024,
             temperature: Optional[float] = 1.0,
             stop: Optional[List[str]] = None,
+            **kwargs
     ) -> Generator[str, None, None]:
         try:
             chat_completion = self._client.chat.completions.create(
@@ -195,6 +196,7 @@ class Unify(Client):
                 stop=stop,
                 stream=True,
                 extra_body={"signature": "package"},
+                **kwargs
             )
             for chunk in chat_completion:
                 content = chunk.choices[0].delta.content  # type: ignore[union-attr]
@@ -211,6 +213,7 @@ class Unify(Client):
             max_tokens: Optional[int] = 1024,
             temperature: Optional[float] = 1.0,
             stop: Optional[List[str]] = None,
+            **kwargs
     ) -> str:
         try:
             chat_completion = self._client.chat.completions.create(
@@ -221,6 +224,7 @@ class Unify(Client):
                 stop=stop,
                 stream=False,
                 extra_body={"signature": "package"},
+                **kwargs
             )
             if "router" not in endpoint:
                 self.set_provider(
@@ -242,6 +246,7 @@ class Unify(Client):
             temperature: Optional[float] = 1.0,
             stop: Optional[List[str]] = None,
             stream: bool = False,
+            **kwargs
     ) -> Union[Generator[str, None, None], str]:  # noqa: DAR101, DAR201, DAR401
         """Generate content using the Unify API.
 
@@ -269,6 +274,9 @@ class Unify(Client):
             If False, generates content as a single response.
             Defaults to False.
 
+            kwargs: Additional keyword arguments to be passed to the chat.completions.create() method
+            of the openai.OpenAI() class, from the OpenAI Python client, which runs under the hood.
+
         Returns:
             Union[Generator[str, None, None], str]: If stream is True,
              returns a generator yielding chunks of content.
@@ -294,6 +302,7 @@ class Unify(Client):
                 max_tokens=max_tokens,
                 temperature=temperature,
                 stop=stop,
+                **kwargs
             )
         return self._generate_non_stream(
             contents,
@@ -301,6 +310,7 @@ class Unify(Client):
             max_tokens=max_tokens,
             temperature=temperature,
             stop=stop,
+            **kwargs
         )
 
 
@@ -325,6 +335,7 @@ class AsyncUnify(Client):
         temperature: Optional[float] = 1.0,
         stop: Optional[List[str]] = None,
         stream: bool = False,
+        **kwargs
     ) -> Union[AsyncGenerator[str, None], str]:  # noqa: DAR101, DAR201, DAR401
         """Generate content asynchronously using the Unify API.
 
@@ -352,6 +363,9 @@ class AsyncUnify(Client):
             If False, generates content as a single response.
             Defaults to False.
 
+            kwargs: Additional keyword arguments to be passed to the chat.completions.create() method
+            of the openai.OpenAI() class, from the OpenAI Python client, which runs under the hood.
+
         Returns:
             Union[AsyncGenerator[str, None], List[str]]: If stream is True,
             returns an asynchronous generator yielding chunks of content.
@@ -378,6 +392,7 @@ class AsyncUnify(Client):
                 max_tokens=max_tokens,
                 stop=stop,
                 temperature=temperature,
+                **kwargs
             )
         return await self._generate_non_stream(
             contents,
@@ -385,6 +400,7 @@ class AsyncUnify(Client):
             max_tokens=max_tokens,
             stop=stop,
             temperature=temperature,
+            **kwargs
         )
 
     async def _generate_stream(
@@ -394,6 +410,7 @@ class AsyncUnify(Client):
         max_tokens: Optional[int] = None,
         temperature: Optional[float] = 1.0,
         stop: Optional[List[str]] = None,
+        **kwargs
     ) -> AsyncGenerator[str, None]:
         try:
             async_stream = await self._client.chat.completions.create(
@@ -404,6 +421,7 @@ class AsyncUnify(Client):
                 stop=stop,
                 stream=True,
                 extra_body={"signature": "package"},
+                **kwargs
             )
             async for chunk in async_stream:  # type: ignore[union-attr]
                 self.set_provider(chunk.model.split("@")[-1])
@@ -418,6 +436,7 @@ class AsyncUnify(Client):
         max_tokens: Optional[int] = None,
         temperature: Optional[float] = 1.0,
         stop: Optional[List[str]] = None,
+        **kwargs
     ) -> str:
         try:
             async_response = await self._client.chat.completions.create(
@@ -428,6 +447,7 @@ class AsyncUnify(Client):
                 stop=stop,
                 stream=False,
                 extra_body={"signature": "package"},
+                **kwargs
             )
             self.set_provider(async_response.model.split("@")[-1])  # type: ignore
             return async_response.choices[0].message.content.strip(" ")  # type: ignore # noqa: E501, WPS219
