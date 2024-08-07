@@ -22,11 +22,11 @@ class Client(ABC):
         raise NotImplemented
 
     def __init__(
-        self,
-        endpoint: Optional[str] = None,
-        model: Optional[str] = None,
-        provider: Optional[str] = None,
-        api_key: Optional[str] = None,
+            self,
+            endpoint: Optional[str] = None,
+            model: Optional[str] = None,
+            provider: Optional[str] = None,
+            api_key: Optional[str] = None,
     ) -> None:  # noqa: DAR101, DAR401
         """Initialize the Unify client.
 
@@ -49,9 +49,7 @@ class Client(ABC):
         """
         self._api_key = _validate_api_key(api_key)
         if endpoint and (model or provider):
-            raise UnifyError(
-                "if the model or provider are passed, then the endpoint must not be passed.",
-            )
+            raise UnifyError("if the model or provider are passed, then the endpoint must not be passed.")
         self._endpoint, self._model, self._provider = None, None, None
         if endpoint:
             self.set_endpoint(endpoint)
@@ -81,20 +79,10 @@ class Client(ABC):
         valid_models = unify.utils.list_models(self._provider)
         if value not in valid_models:
             if self._provider:
-                raise UnifyError(
-                    "Current provider {} does not support the specified model {},"
-                    "please select one of: {}".format(
-                        self._provider,
-                        value,
-                        valid_models,
-                    ),
-                )
-            raise UnifyError(
-                "The specified model {} is not one of the models supported by Unify: {}".format(
-                    value,
-                    valid_models,
-                ),
-            )
+                raise UnifyError("Current provider {} does not support the specified model {},"
+                                 "please select one of: {}".format(self._provider, value, valid_models))
+            raise UnifyError("The specified model {} is not one of the models supported by Unify: {}".format(
+                value, valid_models))
         self._model = value
         if self._provider:
             self._endpoint = "@".join([value, self._provider])
@@ -119,20 +107,10 @@ class Client(ABC):
         valid_providers = unify.utils.list_providers(self._model)
         if value not in valid_providers:
             if self._model:
-                raise UnifyError(
-                    "Current model {} does not support the specified provider {},"
-                    "please select one of: {}".format(
-                        self._model,
-                        value,
-                        valid_providers,
-                    ),
-                )
-            raise UnifyError(
-                "The specified provider {} is not one of the providers supported by Unify: {}".format(
-                    value,
-                    valid_providers,
-                ),
-            )
+                raise UnifyError("Current model {} does not support the specified provider {},"
+                                 "please select one of: {}".format(self._model, value, valid_providers))
+            raise UnifyError("The specified provider {} is not one of the providers supported by Unify: {}".format(
+                value, valid_providers))
         self._provider = value
         if self._model:
             self._endpoint = "@".join([self._model, value])
@@ -156,12 +134,8 @@ class Client(ABC):
         """
         valid_endpoints = unify.utils.list_endpoints()
         if value not in valid_endpoints:
-            raise UnifyError(
-                "The specified endpoint {} is not one of the endpoints supported by Unify: {}".format(
-                    value,
-                    valid_endpoints,
-                ),
-            )
+            raise UnifyError("The specified endpoint {} is not one of the endpoints supported by Unify: {}".format(
+                value, valid_endpoints))
         self._endpoint = value
         self._model, self._provider = value.split("@")  # noqa: WPS414
 
@@ -205,14 +179,14 @@ class Unify(Client):
             raise UnifyError(f"Failed to initialize Unify client: {str(e)}")
 
     def _generate_stream(
-        self,
-        messages: List[Dict[str, str]],
-        endpoint: str,
-        max_tokens: Optional[int] = 1024,
-        temperature: Optional[float] = 1.0,
-        stop: Optional[List[str]] = None,
-        message_content_only: bool = True,
-        **kwargs,
+            self,
+            messages: List[Dict[str, str]],
+            endpoint: str,
+            max_tokens: Optional[int] = 1024,
+            temperature: Optional[float] = 1.0,
+            stop: Optional[List[str]] = None,
+            message_content_only: bool = True,
+            **kwargs
     ) -> Generator[str, None, None]:
         try:
             chat_completion = self._client.chat.completions.create(
@@ -223,7 +197,7 @@ class Unify(Client):
                 stop=stop,
                 stream=True,
                 extra_body={"signature": "package"},
-                **kwargs,
+                **kwargs
             )
             for chunk in chat_completion:
                 if message_content_only:
@@ -237,14 +211,14 @@ class Unify(Client):
             raise status_error_map[e.status_code](e.message) from None
 
     def _generate_non_stream(
-        self,
-        messages: List[Dict[str, str]],
-        endpoint: str,
-        max_tokens: Optional[int] = 1024,
-        temperature: Optional[float] = 1.0,
-        stop: Optional[List[str]] = None,
-        message_content_only: bool = True,
-        **kwargs,
+            self,
+            messages: List[Dict[str, str]],
+            endpoint: str,
+            max_tokens: Optional[int] = 1024,
+            temperature: Optional[float] = 1.0,
+            stop: Optional[List[str]] = None,
+            message_content_only: bool = True,
+            **kwargs
     ) -> str:
         try:
             chat_completion = self._client.chat.completions.create(
@@ -255,13 +229,13 @@ class Unify(Client):
                 stop=stop,
                 stream=False,
                 extra_body={"signature": "package"},
-                **kwargs,
+                **kwargs
             )
             if "router" not in endpoint:
                 self.set_provider(
                     chat_completion.model.split(  # type: ignore[union-attr]
                         "@",
-                    )[-1],
+                    )[-1]
                 )
             if message_content_only:
                 content = chat_completion.choices[0].message.content
@@ -273,16 +247,16 @@ class Unify(Client):
             raise status_error_map[e.status_code](e.message) from None
 
     def generate(  # noqa: WPS234, WPS211
-        self,
-        user_prompt: Optional[str] = None,
-        system_prompt: Optional[str] = None,
-        messages: Optional[List[Dict[str, str]]] = None,
-        max_tokens: Optional[int] = 1024,
-        temperature: Optional[float] = 1.0,
-        stop: Optional[List[str]] = None,
-        stream: bool = False,
-        message_content_only: bool = True,
-        **kwargs,
+            self,
+            user_prompt: Optional[str] = None,
+            system_prompt: Optional[str] = None,
+            messages: Optional[List[Dict[str, str]]] = None,
+            max_tokens: Optional[int] = 1024,
+            temperature: Optional[float] = 1.0,
+            stop: Optional[List[str]] = None,
+            stream: bool = False,
+            message_content_only: bool = True,
+            **kwargs
     ) -> Union[Generator[str, None, None], str]:  # noqa: DAR101, DAR201, DAR401
         """Generate content using the Unify API.
 
@@ -344,7 +318,7 @@ class Unify(Client):
                 temperature=temperature,
                 stop=stop,
                 message_content_only=message_content_only,
-                **kwargs,
+                **kwargs
             )
         return self._generate_non_stream(
             contents,
@@ -353,7 +327,7 @@ class Unify(Client):
             temperature=temperature,
             stop=stop,
             message_content_only=message_content_only,
-            **kwargs,
+            **kwargs
         )
 
 
@@ -379,7 +353,7 @@ class AsyncUnify(Client):
         stop: Optional[List[str]] = None,
         stream: bool = False,
         message_content_only: bool = True,
-        **kwargs,
+        **kwargs
     ) -> Union[AsyncGenerator[str, None], str]:  # noqa: DAR101, DAR201, DAR401
         """Generate content asynchronously using the Unify API.
 
@@ -442,7 +416,7 @@ class AsyncUnify(Client):
                 stop=stop,
                 temperature=temperature,
                 message_content_only=message_content_only,
-                **kwargs,
+                **kwargs
             )
         return await self._generate_non_stream(
             contents,
@@ -451,7 +425,7 @@ class AsyncUnify(Client):
             stop=stop,
             temperature=temperature,
             message_content_only=message_content_only,
-            **kwargs,
+            **kwargs
         )
 
     async def _generate_stream(
@@ -462,7 +436,7 @@ class AsyncUnify(Client):
         temperature: Optional[float] = 1.0,
         stop: Optional[List[str]] = None,
         message_content_only: bool = True,
-        **kwargs,
+        **kwargs
     ) -> AsyncGenerator[str, None]:
         try:
             async_stream = await self._client.chat.completions.create(
@@ -473,7 +447,7 @@ class AsyncUnify(Client):
                 stop=stop,
                 stream=True,
                 extra_body={"signature": "package"},
-                **kwargs,
+                **kwargs
             )
             async for chunk in async_stream:  # type: ignore[union-attr]
                 self.set_provider(chunk.model.split("@")[-1])
@@ -491,7 +465,7 @@ class AsyncUnify(Client):
         temperature: Optional[float] = 1.0,
         stop: Optional[List[str]] = None,
         message_content_only: bool = True,
-        **kwargs,
+        **kwargs
     ) -> str:
         try:
             async_response = await self._client.chat.completions.create(
@@ -502,7 +476,7 @@ class AsyncUnify(Client):
                 stop=stop,
                 stream=False,
                 extra_body={"signature": "package"},
-                **kwargs,
+                **kwargs
             )
             self.set_provider(async_response.model.split("@")[-1])  # type: ignore
             if message_content_only:
