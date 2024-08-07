@@ -32,7 +32,7 @@ class Client(ABC):
 
         Args:
             endpoint (str, optional): Endpoint name in OpenAI API format:
-                <model_name>@<provider_name>
+                \<model_name\>@\<provider_name\>
                 Defaults to None.
 
             model (str, optional): Name of the model.
