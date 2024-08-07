@@ -25,10 +25,7 @@ def process_output():
             f.write("".join(section_content[1:]))
     for idx, data in enumerate(mint["navigation"]):
         if data["group"] == "":
-            mint["navigation"][idx] = {
-                "group": "",
-                "pages": modules
-            }
+            mint["navigation"][idx] = {"group": "", "pages": modules}
             break
     with open("mint.json", "w") as f:
         json.dump(mint, f)
