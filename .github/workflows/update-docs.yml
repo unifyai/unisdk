@@ -1,0 +1,14 @@
+name: Publish docs
+on:
+  push:
+    branches:
+    - main
+  workflow_dispatch:
+permissions:
+  contents: write
+
+jobs:
+  publish-docs:
+    name: Update docs
+    uses: unifyai/workflows/.github/workflows/publish-docs-new.yml@main
+    secrets: inherit
