@@ -1,9 +1,14 @@
 import json
-from typing import List
+
+
+replace = {
+    "<uploaded_by>/<model_name>@<provider_name>": r"\<uploaded_by\>/\<model_name\>@\<provider_name\>",
+    "<model_name>@<provider_name>": r"\<model_name\>@\<provider_name\>",
+}
 
 
 def process_output():
-    with open("result.txt") as f:
+    with open("output/result.txt") as f:
         content = f.readlines()
     with open("mint.json") as f:
         mint = json.load(f)
@@ -20,9 +25,12 @@ def process_output():
     for section_content in section_wise_content:
         module_name = section_content[0].strip("\n")[2:]
         modules.append(f"python/{module_name}")
-        with open(f"{module_name}.mdx", "w") as f:
+        with open(f"output/{module_name}.mdx", "w") as f:
             f.write(f"---\ntitle: '{module_name}'\n---\n")
-            f.write("".join(section_content[1:]))
+            final_content = "".join(section_content[1:])
+            for key, value in replace.items():
+                final_content = final_content.replace(key, value)
+            f.write(final_content)
     for idx, data in enumerate(mint["navigation"]):
         if data["group"] == "":
             mint["navigation"][idx] = {"group": "", "pages": modules}

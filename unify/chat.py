@@ -20,7 +20,7 @@ class ChatBot:  # noqa: WPS338
 
         Args:
             endpoint (str, optional): Endpoint name in OpenAI API format:
-                \<uploaded_by\>/\<model_name\>@\<provider_name\>
+                <uploaded_by>/<model_name>@<provider_name>
                 Defaults to None.
 
             model (str, optional): Name of the model. If None,
