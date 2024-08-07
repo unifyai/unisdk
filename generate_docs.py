@@ -2,7 +2,9 @@ import json
 from typing import List
 
 
-def process_output(content: List[str]):
+def process_output():
+    with open("result.txt") as f:
+        content = f.readlines()
     with open("mint.json") as f:
         mint = json.load(f)
     sections, modules = [], []
@@ -33,6 +35,4 @@ def process_output(content: List[str]):
 
 
 if __name__ == "__main__":
-    with open("result.txt") as f:
-        results = f.readlines()
-    process_output(results)
+    process_output()
