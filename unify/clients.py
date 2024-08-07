@@ -50,7 +50,7 @@ class Client(ABC):
         self._api_key = _validate_api_key(api_key)
         if endpoint and (model or provider):
             raise UnifyError(
-                "if the model or provider are passed, then the endpoint must not be passed."
+                "if the model or provider are passed, then the endpoint must not be passed.",
             )
         self._endpoint, self._model, self._provider = None, None, None
         if endpoint:
@@ -84,13 +84,16 @@ class Client(ABC):
                 raise UnifyError(
                     "Current provider {} does not support the specified model {},"
                     "please select one of: {}".format(
-                        self._provider, value, valid_models
-                    )
+                        self._provider,
+                        value,
+                        valid_models,
+                    ),
                 )
             raise UnifyError(
                 "The specified model {} is not one of the models supported by Unify: {}".format(
-                    value, valid_models
-                )
+                    value,
+                    valid_models,
+                ),
             )
         self._model = value
         if self._provider:
@@ -119,13 +122,16 @@ class Client(ABC):
                 raise UnifyError(
                     "Current model {} does not support the specified provider {},"
                     "please select one of: {}".format(
-                        self._model, value, valid_providers
-                    )
+                        self._model,
+                        value,
+                        valid_providers,
+                    ),
                 )
             raise UnifyError(
                 "The specified provider {} is not one of the providers supported by Unify: {}".format(
-                    value, valid_providers
-                )
+                    value,
+                    valid_providers,
+                ),
             )
         self._provider = value
         if self._model:
@@ -152,8 +158,9 @@ class Client(ABC):
         if value not in valid_endpoints:
             raise UnifyError(
                 "The specified endpoint {} is not one of the endpoints supported by Unify: {}".format(
-                    value, valid_endpoints
-                )
+                    value,
+                    valid_endpoints,
+                ),
             )
         self._endpoint = value
         self._model, self._provider = value.split("@")  # noqa: WPS414
@@ -254,7 +261,7 @@ class Unify(Client):
                 self.set_provider(
                     chat_completion.model.split(  # type: ignore[union-attr]
                         "@",
-                    )[-1]
+                    )[-1],
                 )
             if message_content_only:
                 content = chat_completion.choices[0].message.content

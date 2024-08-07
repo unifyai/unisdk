@@ -143,7 +143,10 @@ class ChatBot:  # noqa: WPS338
         return self._client.get_credit_balance()
 
     def _process_input(
-        self, inp: str, show_credits: bool, show_provider: bool
+        self,
+        inp: str,
+        show_credits: bool,
+        show_provider: bool,
     ) -> Generator[str, None, None]:
         """
         Processes the user input to generate AI response.
