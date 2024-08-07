@@ -1,0 +1,21 @@
+loader:
+  - type: package
+    packages:
+      - unify  # Replace with your package name
+
+renderer:
+  type: markdown
+  options:
+    output: docs  # Output directory for generated Markdown files
+    template: |
+      # {{ module_name }}
+
+      {{ module_doc }}
+
+      ## Classes
+
+      {{ classes }}
+
+      ## Functions
+
+      {{ functions }}
