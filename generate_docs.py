@@ -4,6 +4,7 @@ import json
 replace = {
     "<uploaded_by>/<model_name>@<provider_name>": r"\<uploaded_by\>/\<model_name\>@\<provider_name\>",
     "<model_name>@<provider_name>": r"\<model_name\>@\<provider_name\>",
+    "# noqa: DAR101.": ""
 }
 
 
