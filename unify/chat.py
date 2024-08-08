@@ -95,7 +95,7 @@ class ChatBot:  # noqa: WPS338
     @property
     def provider(self) -> Optional[str]:
         """
-        Get the provider name.  # noqa :DAR201.
+        Get the provider name.  # noqa: DAR201.
 
         Returns:
             str: The provider name.
