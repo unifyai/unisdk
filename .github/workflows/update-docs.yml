@@ -10,5 +10,5 @@ permissions:
 jobs:
   publish-docs:
     name: Update docs
-    uses: unifyai/workflows/.github/workflows/publish-docs-new.yml@main
+    uses: unifyai/workflows/.github/workflows/publish-docs.yml@main
     secrets: inherit
