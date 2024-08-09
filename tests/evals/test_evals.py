@@ -6,7 +6,7 @@ import unittest
 def _create_test_dataset():
     if "Test" in unify.utils.list_datasets():
         unify.utils.delete_dataset("Test")
-    unify.utils.upload_dataset_from_file("Test", "prompts.jsonl")
+    unify.utils.upload_dataset_from_file("Test", "./tests/evals/prompts.jsonl")
 
 
 class TestEvals(unittest.TestCase):
