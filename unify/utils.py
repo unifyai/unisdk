@@ -73,7 +73,9 @@ def list_providers(model: Optional[str] = None) -> List[str]:
     return _res_to_list(requests.get(url))
 
 
-def list_endpoints(model: Optional[str] = None, provider: Optional[str] = None) -> List[str]:
+def list_endpoints(
+    model: Optional[str] = None, provider: Optional[str] = None
+) -> List[str]:
     """
     Get a list of available endpoint, either in total or for a specific model or provider.
 
@@ -346,9 +348,7 @@ def list_evaluations(
     return _res_to_list(response)
 
 
-def get_credits(
-    api_key: Optional[str] = None
-) -> float:
+def get_credits(api_key: Optional[str] = None) -> float:
     """
     Returns the credits remaining in the user account, in USD.
 

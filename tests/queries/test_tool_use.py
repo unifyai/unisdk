@@ -3,7 +3,9 @@ import json
 import unittest
 from openai.types.chat.chat_completion_message_tool_call import Function
 from openai.types.chat.chat_completion_message import ChatCompletionMessage
-from openai.types.chat.chat_completion_message_tool_call import ChatCompletionMessageToolCall
+from openai.types.chat.chat_completion_message_tool_call import (
+    ChatCompletionMessageToolCall,
+)
 
 from unify.clients import Unify
 
@@ -36,22 +38,21 @@ class TestUnifyToolUse(unittest.TestCase):
                             "num_days": {
                                 "type": "integer",
                                 "description": "The number of days to forecast",
-                            }
+                            },
                         },
-                        "required": ["location", "format", "num_days"]
+                        "required": ["location", "format", "num_days"],
                     },
-                }
+                },
             },
         ]
 
-        client = Unify(
-            api_key=self.valid_api_key, endpoint="gpt-4o@openai"
-        )
+        client = Unify(api_key=self.valid_api_key, endpoint="gpt-4o@openai")
         result = client.generate(
             user_prompt="What is the weather going to be like in Glasgow, Scotland over the next 5 days?",
             tool_choice="required",
             tools=tools,
-            message_content_only=False)
+            message_content_only=False,
+        )
         message = result.choices[0].message
         self.assertIsInstance(message, ChatCompletionMessage)
         tool_calls = message.tool_calls
@@ -91,21 +92,20 @@ class TestUnifyToolUse(unittest.TestCase):
                         "num_days": {
                             "type": "integer",
                             "description": "The number of days to forecast",
-                        }
+                        },
                     },
-                    "required": ["location", "format", "num_days"]
+                    "required": ["location", "format", "num_days"],
                 },
             },
         ]
 
-        client = Unify(
-            api_key=self.valid_api_key, endpoint="claude-3-opus@anthropic"
-        )
+        client = Unify(api_key=self.valid_api_key, endpoint="claude-3-opus@anthropic")
         client.generate(
             user_prompt="What is the weather going to be like in Glasgow, Scotland over the next 5 days?",
             tool_choice={"type": "any"},
             tools=tools,
-            message_content_only=False)
+            message_content_only=False,
+        )
 
 
 if __name__ == "__main__":
