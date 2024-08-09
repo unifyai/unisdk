@@ -78,7 +78,7 @@ class Client(ABC):
         Args:
             value (str): The model name.
         """
-        valid_models = unify.utils.list_models(self._provider)
+        valid_models = unify.utils.list_models(self._provider, api_key=self._api_key)
         if value not in valid_models:
             if self._provider:
                 raise UnifyError(
@@ -113,7 +113,7 @@ class Client(ABC):
         Args:
             value (str): The provider name.
         """
-        valid_providers = unify.utils.list_providers(self._model)
+        valid_providers = unify.utils.list_providers(self._model, api_key=self._api_key)
         if value not in valid_providers:
             if self._model:
                 raise UnifyError(
@@ -148,7 +148,7 @@ class Client(ABC):
         Args:
             value (str): The endpoint name.
         """
-        valid_endpoints = unify.utils.list_endpoints()
+        valid_endpoints = unify.utils.list_endpoints(api_key=self._api_key)
         if value not in valid_endpoints:
             raise UnifyError(
                 "The specified endpoint {} is not one of the endpoints supported by Unify: {}".format(
