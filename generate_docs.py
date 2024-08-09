@@ -39,7 +39,7 @@ def process_output():
             mint["navigation"][idx] = {"group": "", "pages": sorted(modules)}
             break
     with open("mint.json", "w") as f:
-        json.dump(mint, f, 4)
+        json.dump(mint, f, indent=4)
 
 
 if __name__ == "__main__":
