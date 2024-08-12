@@ -1,4 +1,5 @@
 import json
+import re
 
 
 replace = {
@@ -30,6 +31,9 @@ def process_output():
         modules.append(f"python/{module_name}")
         with open(f"output/{module_name}.mdx", "w") as f:
             f.write(f"---\ntitle: '{module_name}'\n---\n")
+            for i, content in enumerate(section_content):
+                if re.findall(r"^##.*Objects\n$", content):
+                    section_content[i] = section_content[i].replace(" Objects", "")
             final_content = "".join(section_content[1:])
             for key, value in replace.items():
                 final_content = final_content.replace(key, value)
