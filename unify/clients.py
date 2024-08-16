@@ -202,8 +202,8 @@ class Unify(Client):
         messages: List[Dict[str, str]],
         endpoint: str,
         max_tokens: Optional[int] = 1024,
-        temperature: Optional[float] = 1.0,
         stop: Optional[List[str]] = None,
+        temperature: Optional[float] = 1.0,
         message_content_only: bool = True,
         **kwargs,
     ) -> Generator[str, None, None]:
@@ -212,9 +212,9 @@ class Unify(Client):
                 model=endpoint,
                 messages=messages,  # type: ignore[arg-type]
                 max_tokens=max_tokens,
-                temperature=temperature,
                 stop=stop,
                 stream=True,
+                temperature=temperature,
                 extra_body={"signature": "package"},
                 **kwargs,
             )
@@ -234,8 +234,8 @@ class Unify(Client):
         messages: List[Dict[str, str]],
         endpoint: str,
         max_tokens: Optional[int] = 1024,
-        temperature: Optional[float] = 1.0,
         stop: Optional[List[str]] = None,
+        temperature: Optional[float] = 1.0,
         message_content_only: bool = True,
         **kwargs,
     ) -> str:
@@ -244,9 +244,9 @@ class Unify(Client):
                 model=endpoint,
                 messages=messages,  # type: ignore[arg-type]
                 max_tokens=max_tokens,
-                temperature=temperature,
                 stop=stop,
                 stream=False,
+                temperature=temperature,
                 extra_body={"signature": "package"},
                 **kwargs,
             )
@@ -335,8 +335,8 @@ class Unify(Client):
                 contents,
                 self._endpoint,
                 max_tokens=max_tokens,
-                temperature=temperature,
                 stop=stop,
+                temperature=temperature,
                 message_content_only=message_content_only,
                 **kwargs,
             )
@@ -344,8 +344,8 @@ class Unify(Client):
             contents,
             self._endpoint,
             max_tokens=max_tokens,
-            temperature=temperature,
             stop=stop,
+            temperature=temperature,
             message_content_only=message_content_only,
             **kwargs,
         )
@@ -454,8 +454,8 @@ class AsyncUnify(Client):
         messages: List[Dict[str, str]],
         endpoint: str,
         max_tokens: Optional[int] = None,
-        temperature: Optional[float] = 1.0,
         stop: Optional[List[str]] = None,
+        temperature: Optional[float] = 1.0,
         message_content_only: bool = True,
         **kwargs,
     ) -> AsyncGenerator[str, None]:
@@ -464,9 +464,9 @@ class AsyncUnify(Client):
                 model=endpoint,
                 messages=messages,  # type: ignore[arg-type]
                 max_tokens=max_tokens,
-                temperature=temperature,
                 stop=stop,
                 stream=True,
+                temperature=temperature,
                 extra_body={"signature": "package"},
                 **kwargs,
             )
@@ -483,8 +483,8 @@ class AsyncUnify(Client):
         messages: List[Dict[str, str]],
         endpoint: str,
         max_tokens: Optional[int] = None,
-        temperature: Optional[float] = 1.0,
         stop: Optional[List[str]] = None,
+        temperature: Optional[float] = 1.0,
         message_content_only: bool = True,
         **kwargs,
     ) -> str:
@@ -493,9 +493,9 @@ class AsyncUnify(Client):
                 model=endpoint,
                 messages=messages,  # type: ignore[arg-type]
                 max_tokens=max_tokens,
-                temperature=temperature,
                 stop=stop,
                 stream=False,
+                temperature=temperature,
                 extra_body={"signature": "package"},
                 **kwargs,
             )
