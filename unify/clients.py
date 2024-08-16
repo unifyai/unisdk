@@ -513,6 +513,9 @@ class Unify(Client):
         else:
             raise UnifyError("You must provider either the user_prompt or messages!")
 
+        if tools:
+            message_content_only = False
+
         if stream:
             return self._generate_stream(
                 contents,
