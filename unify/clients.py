@@ -254,11 +254,11 @@ class Unify(Client):
                 presence_penalty=presence_penalty,
                 response_format=response_format,
                 seed=seed,
-                stream_options=stream_options,
+                # stream_options=stream_options, # ToDo: uncomment once openai upgraded
                 top_p=top_p,
                 tools=tools,
                 tool_choice=tool_choice,
-                parallel_tool_calls=parallel_tool_calls,
+                # parallel_tool_calls=parallel_tool_calls, # ToDo: uncomment once openai upgraded
                 # platform arguments
                 use_custom_keys=use_custom_keys,
                 tags=tags,
@@ -330,11 +330,11 @@ class Unify(Client):
                 presence_penalty=presence_penalty,
                 response_format=response_format,
                 seed=seed,
-                stream_options=stream_options,
+                # stream_options=stream_options, # ToDo: uncomment once openai upgraded
                 top_p=top_p,
                 tools=tools,
                 tool_choice=tool_choice,
-                parallel_tool_calls=parallel_tool_calls,
+                # parallel_tool_calls=parallel_tool_calls, # ToDo: uncomment once openai upgraded
                 # platform arguments
                 use_custom_keys=use_custom_keys,
                 tags=tags,
@@ -809,11 +809,11 @@ class AsyncUnify(Client):
                 presence_penalty=presence_penalty,
                 response_format=response_format,
                 seed=seed,
-                stream_options=stream_options,
+                # stream_options=stream_options, # ToDo: uncomment once openai upgraded
                 top_p=top_p,
                 tools=tools,
                 tool_choice=tool_choice,
-                parallel_tool_calls=parallel_tool_calls,
+                # parallel_tool_calls=parallel_tool_calls, # ToDo: uncomment once openai upgraded
                 # platform arguments
                 use_custom_keys=use_custom_keys,
                 tags=tags,
@@ -882,11 +882,11 @@ class AsyncUnify(Client):
                 presence_penalty=presence_penalty,
                 response_format=response_format,
                 seed=seed,
-                stream_options=stream_options,
+                # stream_options=stream_options, # ToDo: uncomment once openai upgraded
                 top_p=top_p,
                 tools=tools,
                 tool_choice=tool_choice,
-                parallel_tool_calls=parallel_tool_calls,
+                # parallel_tool_calls=parallel_tool_calls, # ToDo: uncomment once openai upgraded
                 # platform arguments
                 use_custom_keys=use_custom_keys,
                 tags=tags,
