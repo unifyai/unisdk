@@ -1,5 +1,6 @@
 # global
 import openai
+from openai._types import Headers, Query
 from openai.types.chat import (
     ChatCompletionToolParam,
     ChatCompletionToolChoiceOptionParam,
@@ -232,6 +233,8 @@ class Unify(Client):
         # python client arguments
         message_content_only: bool = True,
         # passthrough arguments
+        extra_headers: Optional[Headers] = None,
+        extra_query: Optional[Query] = None,
         **kwargs,
     ) -> Generator[str, None, None]:
         try:
@@ -262,8 +265,9 @@ class Unify(Client):
                 # python client arguments
                 message_content_only=message_content_only,
                 # passthrough arguments
-                extra_body={"signature": "package"},
-                **kwargs,
+                extra_headers=extra_headers,
+                extra_query=extra_query,
+                extra_body={"signature": "package", **kwargs},
             )
             for chunk in chat_completion:
                 if message_content_only:
@@ -305,6 +309,8 @@ class Unify(Client):
         # python client arguments
         message_content_only: bool = True,
         # passthrough arguments
+        extra_headers: Optional[Headers] = None,
+        extra_query: Optional[Query] = None,
         **kwargs,
     ) -> str:
         try:
@@ -335,8 +341,9 @@ class Unify(Client):
                 # python client arguments
                 message_content_only=message_content_only,
                 # passthrough arguments
-                extra_body={"signature": "package"},
-                **kwargs,
+                extra_headers=extra_headers,
+                extra_query=extra_query,
+                extra_body={"signature": "package", **kwargs},
             )
             if "router" not in endpoint:
                 self.set_provider(
@@ -385,6 +392,8 @@ class Unify(Client):
         # python client arguments
         message_content_only: bool = True,
         # passthrough arguments
+        extra_headers: Optional[Headers] = None,
+        extra_query: Optional[Query] = None,
         **kwargs,
     ) -> Union[Generator[str, None, None], str]:  # noqa: DAR101, DAR201, DAR401
         """Generate content using the Unify API.
@@ -476,8 +485,14 @@ class Unify(Client):
             Otherwise, the full response chat_completion is returned.
             Defaults to True.
 
-            kwargs: Additional keyword "passthrough" arguments which are provider-specific, and are not part of the
-            OpenAI standard. They will be handled by the provider-specific API without any other handling in between.
+            extra_headers: Additional "passthrough" headers for the request which are provider-specific, and are not
+            part of the OpenAI standard. They are handled by the provider-specific API.
+
+            extra_query: Additional "passthrough" query parameters for the request which are provider-specific, and are
+            not part of the OpenAI standard. They are handled by the provider-specific API.
+
+            kwargs: Additional "passthrough" JSON properties for the body of the request, which are provider-specific,
+            and are not part of the OpenAI standard. They will be handled by the provider-specific API.
 
         Returns:
             If stream is True, returns a generator yielding chunks of content.
@@ -561,6 +576,8 @@ class AsyncUnify(Client):
         # python client arguments
         message_content_only: bool = True,
         # passthrough arguments
+        extra_headers: Optional[Headers] = None,
+        extra_query: Optional[Query] = None,
         **kwargs,
     ) -> Union[AsyncGenerator[str, None], str]:  # noqa: DAR101, DAR201, DAR401
         """Generate content asynchronously using the Unify API.
@@ -653,8 +670,14 @@ class AsyncUnify(Client):
             Otherwise, the full response chat_completion is returned.
             Defaults to True.
 
-            kwargs: Additional keyword "passthrough" arguments which are provider-specific, and are not part of the
-            OpenAI standard. They will be handled by the provider-specific API without any other handling in between.
+            extra_headers: Additional "passthrough" headers for the request which are provider-specific, and are not
+            part of the OpenAI standard. They are handled by the provider-specific API.
+
+            extra_query: Additional "passthrough" query parameters for the request which are provider-specific, and are
+            not part of the OpenAI standard. They are handled by the provider-specific API.
+
+            kwargs: Additional "passthrough" JSON properties for the body of the request, which are provider-specific,
+            and are not part of the OpenAI standard. They will be handled by the provider-specific API.
 
         Returns:
             If stream is True, returns an asynchronous generator yielding chunks of content.
@@ -701,6 +724,8 @@ class AsyncUnify(Client):
                 # python client arguments
                 message_content_only=message_content_only,
                 # passthrough arguments
+                extra_headers=extra_headers,
+                extra_query=extra_query,
                 ** kwargs
             )
         return await self._generate_non_stream(
@@ -729,6 +754,8 @@ class AsyncUnify(Client):
             # python client arguments
             message_content_only=message_content_only,
             # passthrough arguments
+            extra_headers=extra_headers,
+            extra_query=extra_query,
             **kwargs
         )
 
@@ -761,6 +788,8 @@ class AsyncUnify(Client):
         # python client arguments
         message_content_only: bool = True,
         # passthrough arguments
+        extra_headers: Optional[Headers] = None,
+        extra_query: Optional[Query] = None,
         **kwargs,
     ) -> AsyncGenerator[str, None]:
         try:
@@ -791,8 +820,9 @@ class AsyncUnify(Client):
                 # python client arguments
                 message_content_only=message_content_only,
                 # passthrough arguments
-                extra_body={"signature": "package"},
-                **kwargs,
+                extra_headers=extra_headers,
+                extra_query=extra_query,
+                extra_body={"signature": "package", **kwargs},
             )
             async for chunk in async_stream:  # type: ignore[union-attr]
                 self.set_provider(chunk.model.split("@")[-1])
@@ -831,6 +861,8 @@ class AsyncUnify(Client):
         # python client arguments
         message_content_only: bool = True,
         # passthrough arguments
+        extra_headers: Optional[Headers] = None,
+        extra_query: Optional[Query] = None,
         **kwargs,
     ) -> str:
         try:
@@ -861,8 +893,9 @@ class AsyncUnify(Client):
                 # python client arguments
                 message_content_only=message_content_only,
                 # passthrough arguments
-                extra_body={"signature": "package"},
-                **kwargs,
+                extra_headers=extra_headers,
+                extra_query=extra_query,
+                extra_body={"signature": "package", **kwargs},
             )
             self.set_provider(async_response.model.split("@")[-1])  # type: ignore
             if message_content_only:
