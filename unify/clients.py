@@ -260,11 +260,12 @@ class Unify(Client):
                 tool_choice=tool_choice,
                 # parallel_tool_calls=parallel_tool_calls, # ToDo: uncomment once openai upgraded
                 extra_body={  # platform arguments
-                            "signature": "package",
-                            "use_custom_keys": use_custom_keys,
-                            "tags": tags,
-                              # passthrough json arguments
-                            **kwargs},
+                    "signature": "package",
+                    "use_custom_keys": use_custom_keys,
+                    "tags": tags,
+                    # passthrough json arguments
+                    **kwargs,
+                },
                 # other passthrough arguments
                 extra_headers=extra_headers,
                 extra_query=extra_query,
@@ -336,11 +337,12 @@ class Unify(Client):
                 tool_choice=tool_choice,
                 # parallel_tool_calls=parallel_tool_calls, # ToDo: uncomment once openai upgraded
                 extra_body={  # platform arguments
-                            "signature": "package",
-                            "use_custom_keys": use_custom_keys,
-                            "tags": tags,
-                              # passthrough json arguments
-                            **kwargs},
+                    "signature": "package",
+                    "use_custom_keys": use_custom_keys,
+                    "tags": tags,
+                    # passthrough json arguments
+                    **kwargs,
+                },
                 # other passthrough arguments
                 extra_headers=extra_headers,
                 extra_query=extra_query,
@@ -381,7 +383,7 @@ class Unify(Client):
         response_format: Optional[ResponseFormat] = None,
         seed: Optional[int] = None,
         # stream_options: Optional[ChatCompletionStreamOptionsParam] = None, # ToDo: uncomment once openai upgraded
-        stream_options = None,
+        stream_options=None,
         top_p: Optional[float] = None,
         tools: Optional[Iterable[ChatCompletionToolParam]] = None,
         tool_choice: Optional[ChatCompletionToolChoiceOptionParam] = None,
@@ -540,7 +542,7 @@ class Unify(Client):
                 # passthrough arguments
                 extra_headers=extra_headers,
                 extra_query=extra_query,
-                ** kwargs
+                **kwargs,
             )
         return self._generate_non_stream(
             contents,
@@ -570,7 +572,7 @@ class Unify(Client):
             # passthrough arguments
             extra_headers=extra_headers,
             extra_query=extra_query,
-            **kwargs
+            **kwargs,
         )
 
 
@@ -642,11 +644,12 @@ class AsyncUnify(Client):
                 tool_choice=tool_choice,
                 # parallel_tool_calls=parallel_tool_calls, # ToDo: uncomment once openai upgraded
                 extra_body={  # platform arguments
-                            "signature": "package",
-                            "use_custom_keys": use_custom_keys,
-                            "tags": tags,
-                              # passthrough json arguments
-                            **kwargs},
+                    "signature": "package",
+                    "use_custom_keys": use_custom_keys,
+                    "tags": tags,
+                    # passthrough json arguments
+                    **kwargs,
+                },
                 # other passthrough arguments
                 extra_headers=extra_headers,
                 extra_query=extra_query,
@@ -715,11 +718,12 @@ class AsyncUnify(Client):
                 tool_choice=tool_choice,
                 # parallel_tool_calls=parallel_tool_calls, # ToDo: uncomment once openai upgraded
                 extra_body={  # platform arguments
-                            "signature": "package",
-                            "use_custom_keys": use_custom_keys,
-                            "tags": tags,
-                              # passthrough json arguments
-                            **kwargs},
+                    "signature": "package",
+                    "use_custom_keys": use_custom_keys,
+                    "tags": tags,
+                    # passthrough json arguments
+                    **kwargs,
+                },
                 # other passthrough arguments
                 extra_headers=extra_headers,
                 extra_query=extra_query,
@@ -755,7 +759,7 @@ class AsyncUnify(Client):
         response_format: Optional[ResponseFormat] = None,
         seed: Optional[int] = None,
         # stream_options: Optional[ChatCompletionStreamOptionsParam] = None, # ToDo: uncomment once openai upgraded
-        stream_options = None,
+        stream_options=None,
         top_p: Optional[float] = None,
         tools: Optional[Iterable[ChatCompletionToolParam]] = None,
         tool_choice: Optional[ChatCompletionToolChoiceOptionParam] = None,
@@ -916,7 +920,7 @@ class AsyncUnify(Client):
                 # passthrough arguments
                 extra_headers=extra_headers,
                 extra_query=extra_query,
-                ** kwargs
+                **kwargs,
             )
         return await self._generate_non_stream(
             contents,
@@ -946,5 +950,5 @@ class AsyncUnify(Client):
             # passthrough arguments
             extra_headers=extra_headers,
             extra_query=extra_query,
-            **kwargs
+            **kwargs,
         )
