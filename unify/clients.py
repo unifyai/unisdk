@@ -271,9 +271,9 @@ class Unify(Client):
         system_prompt: Optional[str] = None,
         messages: Optional[List[Dict[str, str]]] = None,
         max_tokens: Optional[int] = 1024,
-        temperature: Optional[float] = 1.0,
         stop: Optional[List[str]] = None,
         stream: bool = False,
+        temperature: Optional[float] = 1.0,
         message_content_only: bool = True,
         **kwargs,
     ) -> Union[Generator[str, None, None], str]:  # noqa: DAR101, DAR201, DAR401
@@ -292,16 +292,16 @@ class Unify(Client):
             max_tokens (Optional[int]): The max number of output tokens.
             Defaults to the provider's default max_tokens when the value is None.
 
-            temperature (Optional[float]):  What sampling temperature to use, between 0 and 2.
-            Higher values like 0.8 will make the output more random,
-            while lower values like 0.2 will make it more focused and deterministic.
-            Defaults to the provider's default max_tokens when the value is None.
-
             stop (Optional[List[str]]): Up to 4 sequences where the API will stop generating further tokens.
 
             stream (bool): If True, generates content as a stream.
             If False, generates content as a single response.
             Defaults to False.
+
+            temperature (Optional[float]):  What sampling temperature to use, between 0 and 2.
+            Higher values like 0.8 will make the output more random,
+            while lower values like 0.2 will make it more focused and deterministic.
+            Defaults to the provider's default max_tokens when the value is None.
 
             message_content_only (bool): If True, only return the message content
             chat_completion.choices[0].message.content.strip(" ") from the OpenAI return.
@@ -368,9 +368,9 @@ class AsyncUnify(Client):
         system_prompt: Optional[str] = None,
         messages: Optional[List[Dict[str, str]]] = None,
         max_tokens: Optional[int] = None,
-        temperature: Optional[float] = 1.0,
         stop: Optional[List[str]] = None,
         stream: bool = False,
+        temperature: Optional[float] = 1.0,
         message_content_only: bool = True,
         **kwargs,
     ) -> Union[AsyncGenerator[str, None], str]:  # noqa: DAR101, DAR201, DAR401
@@ -389,16 +389,16 @@ class AsyncUnify(Client):
             max_tokens (Optional[int]): The max number of output tokens, defaults
             to the provider's default max_tokens when the value is None.
 
-            temperature (Optional[float]):  What sampling temperature to use, between 0 and 2.
-            Higher values like 0.8 will make the output more random,
-            while lower values like 0.2 will make it more focused and deterministic.
-            Defaults to the provider's default max_tokens when the value is None.
-
             stop (Optional[List[str]]): Up to 4 sequences where the API will stop generating further tokens.
 
             stream (bool): If True, generates content as a stream.
             If False, generates content as a single response.
             Defaults to False.
+
+            temperature (Optional[float]):  What sampling temperature to use, between 0 and 2.
+            Higher values like 0.8 will make the output more random,
+            while lower values like 0.2 will make it more focused and deterministic.
+            Defaults to the provider's default max_tokens when the value is None.
 
             message_content_only (bool): If True, only return the message content
             chat_completion.choices[0].message.content.strip(" ") from the OpenAI return.
