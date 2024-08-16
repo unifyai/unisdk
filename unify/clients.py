@@ -259,15 +259,15 @@ class Unify(Client):
                 tools=tools,
                 tool_choice=tool_choice,
                 # parallel_tool_calls=parallel_tool_calls, # ToDo: uncomment once openai upgraded
-                # platform arguments
-                use_custom_keys=use_custom_keys,
-                tags=tags,
-                # python client arguments
-                message_content_only=message_content_only,
-                # passthrough arguments
+                extra_body={  # platform arguments
+                            "signature": "package",
+                            "use_custom_keys": use_custom_keys,
+                            "tags": tags,
+                              # passthrough json arguments
+                            **kwargs},
+                # other passthrough arguments
                 extra_headers=extra_headers,
                 extra_query=extra_query,
-                extra_body={"signature": "package", **kwargs},
             )
             for chunk in chat_completion:
                 if message_content_only:
@@ -335,15 +335,15 @@ class Unify(Client):
                 tools=tools,
                 tool_choice=tool_choice,
                 # parallel_tool_calls=parallel_tool_calls, # ToDo: uncomment once openai upgraded
-                # platform arguments
-                use_custom_keys=use_custom_keys,
-                tags=tags,
-                # python client arguments
-                message_content_only=message_content_only,
-                # passthrough arguments
+                extra_body={  # platform arguments
+                            "signature": "package",
+                            "use_custom_keys": use_custom_keys,
+                            "tags": tags,
+                              # passthrough json arguments
+                            **kwargs},
+                # other passthrough arguments
                 extra_headers=extra_headers,
                 extra_query=extra_query,
-                extra_body={"signature": "package", **kwargs},
             )
             if "router" not in endpoint:
                 self.set_provider(
@@ -518,8 +518,29 @@ class Unify(Client):
                 max_tokens=max_tokens,
                 stop=stop,
                 temperature=temperature,
+                # partially unified arguments
+                frequency_penalty=frequency_penalty,
+                logit_bias=logit_bias,
+                logprobs=logprobs,
+                top_logprobs=top_logprobs,
+                n=n,
+                presence_penalty=presence_penalty,
+                response_format=response_format,
+                seed=seed,
+                stream_options=stream_options,
+                top_p=top_p,
+                tools=tools,
+                tool_choice=tool_choice,
+                parallel_tool_calls=parallel_tool_calls,
+                # platform arguments
+                use_custom_keys=use_custom_keys,
+                tags=tags,
+                # python client arguments
                 message_content_only=message_content_only,
-                **kwargs,
+                # passthrough arguments
+                extra_headers=extra_headers,
+                extra_query=extra_query,
+                ** kwargs
             )
         return self._generate_non_stream(
             contents,
@@ -527,8 +548,29 @@ class Unify(Client):
             max_tokens=max_tokens,
             stop=stop,
             temperature=temperature,
+            # partially unified arguments
+            frequency_penalty=frequency_penalty,
+            logit_bias=logit_bias,
+            logprobs=logprobs,
+            top_logprobs=top_logprobs,
+            n=n,
+            presence_penalty=presence_penalty,
+            response_format=response_format,
+            seed=seed,
+            stream_options=stream_options,
+            top_p=top_p,
+            tools=tools,
+            tool_choice=tool_choice,
+            parallel_tool_calls=parallel_tool_calls,
+            # platform arguments
+            use_custom_keys=use_custom_keys,
+            tags=tags,
+            # python client arguments
             message_content_only=message_content_only,
-            **kwargs,
+            # passthrough arguments
+            extra_headers=extra_headers,
+            extra_query=extra_query,
+            **kwargs
         )
 
 
@@ -543,6 +585,154 @@ class AsyncUnify(Client):
             )
         except openai.APIStatusError as e:
             raise UnifyError(f"Failed to initialize Unify client: {str(e)}")
+
+    async def _generate_stream(
+        self,
+        messages: List[Dict[str, str]],
+        endpoint: str,
+        # unified arguments
+        max_tokens: Optional[int] = 1024,
+        stop: Union[Optional[str], List[str]] = None,
+        temperature: Optional[float] = 1.0,
+        # partially unified arguments
+        frequency_penalty: Optional[float] = 0.0,
+        logit_bias: Optional[Dict[str, int]] = None,
+        logprobs: Optional[bool] = False,
+        top_logprobs: Optional[int] = None,
+        n: Optional[int] = 1,
+        presence_penalty: Optional[float] = 0.0,
+        response_format: Optional[ResponseFormat] = None,
+        seed: Optional[int] = None,
+        # stream_options: Optional[ChatCompletionStreamOptionsParam] = None, # ToDo: uncomment once openai upgraded
+        stream_options=None,
+        top_p: Optional[float] = 1.0,
+        tools: Optional[Iterable[ChatCompletionToolParam]] = None,
+        tool_choice: Optional[ChatCompletionToolChoiceOptionParam] = None,
+        parallel_tool_calls: Optional[bool] = True,
+        # platform arguments
+        use_custom_keys: bool = False,
+        tags: Optional[List[str]] = None,
+        # python client arguments
+        message_content_only: bool = True,
+        # passthrough arguments
+        extra_headers: Optional[Headers] = None,
+        extra_query: Optional[Query] = None,
+        **kwargs,
+    ) -> AsyncGenerator[str, None]:
+        try:
+            async_stream = await self._client.chat.completions.create(
+                model=endpoint,
+                messages=messages,  # type: ignore[arg-type]
+                max_tokens=max_tokens,
+                stop=stop,
+                stream=True,
+                temperature=temperature,
+                # partially unified arguments
+                frequency_penalty=frequency_penalty,
+                logit_bias=logit_bias,
+                logprobs=logprobs,
+                top_logprobs=top_logprobs,
+                n=n,
+                presence_penalty=presence_penalty,
+                response_format=response_format,
+                seed=seed,
+                # stream_options=stream_options, # ToDo: uncomment once openai upgraded
+                top_p=top_p,
+                tools=tools,
+                tool_choice=tool_choice,
+                # parallel_tool_calls=parallel_tool_calls, # ToDo: uncomment once openai upgraded
+                extra_body={  # platform arguments
+                            "signature": "package",
+                            "use_custom_keys": use_custom_keys,
+                            "tags": tags,
+                              # passthrough json arguments
+                            **kwargs},
+                # other passthrough arguments
+                extra_headers=extra_headers,
+                extra_query=extra_query,
+            )
+            async for chunk in async_stream:  # type: ignore[union-attr]
+                self.set_provider(chunk.model.split("@")[-1])
+                if message_content_only:
+                    yield chunk.choices[0].delta.content or ""
+                yield chunk
+        except openai.APIStatusError as e:
+            raise status_error_map[e.status_code](e.message) from None
+
+    async def _generate_non_stream(
+        self,
+        messages: List[Dict[str, str]],
+        endpoint: str,
+        # unified arguments
+        max_tokens: Optional[int] = 1024,
+        stop: Union[Optional[str], List[str]] = None,
+        temperature: Optional[float] = 1.0,
+        # partially unified arguments
+        frequency_penalty: Optional[float] = 0.0,
+        logit_bias: Optional[Dict[str, int]] = None,
+        logprobs: Optional[bool] = False,
+        top_logprobs: Optional[int] = None,
+        n: Optional[int] = 1,
+        presence_penalty: Optional[float] = 0.0,
+        response_format: Optional[ResponseFormat] = None,
+        seed: Optional[int] = None,
+        # stream_options: Optional[ChatCompletionStreamOptionsParam] = None, # ToDo: uncomment once openai upgraded
+        stream_options=None,
+        top_p: Optional[float] = 1.0,
+        tools: Optional[Iterable[ChatCompletionToolParam]] = None,
+        tool_choice: Optional[ChatCompletionToolChoiceOptionParam] = None,
+        parallel_tool_calls: Optional[bool] = True,
+        # platform arguments
+        use_custom_keys: bool = False,
+        tags: Optional[List[str]] = None,
+        # python client arguments
+        message_content_only: bool = True,
+        # passthrough arguments
+        extra_headers: Optional[Headers] = None,
+        extra_query: Optional[Query] = None,
+        **kwargs,
+    ) -> str:
+        try:
+            async_response = await self._client.chat.completions.create(
+                model=endpoint,
+                messages=messages,  # type: ignore[arg-type]
+                max_tokens=max_tokens,
+                stop=stop,
+                stream=False,
+                temperature=temperature,
+                # partially unified arguments
+                frequency_penalty=frequency_penalty,
+                logit_bias=logit_bias,
+                logprobs=logprobs,
+                top_logprobs=top_logprobs,
+                n=n,
+                presence_penalty=presence_penalty,
+                response_format=response_format,
+                seed=seed,
+                # stream_options=stream_options, # ToDo: uncomment once openai upgraded
+                top_p=top_p,
+                tools=tools,
+                tool_choice=tool_choice,
+                # parallel_tool_calls=parallel_tool_calls, # ToDo: uncomment once openai upgraded
+                extra_body={  # platform arguments
+                            "signature": "package",
+                            "use_custom_keys": use_custom_keys,
+                            "tags": tags,
+                              # passthrough json arguments
+                            **kwargs},
+                # other passthrough arguments
+                extra_headers=extra_headers,
+                extra_query=extra_query,
+            )
+            self.set_provider(async_response.model.split("@")[-1])  # type: ignore
+            if message_content_only:
+                content = async_response.choices[0].message.content
+                if content:
+                    return content.strip(" ")
+                return ""
+            return async_response
+        except openai.APIStatusError as e:
+            raise status_error_map[e.status_code](e.message) from None
 
     async def generate(  # noqa: WPS234, WPS211
         self,
@@ -758,151 +948,3 @@ class AsyncUnify(Client):
             extra_query=extra_query,
             **kwargs
         )
-
-    async def _generate_stream(
-        self,
-        messages: List[Dict[str, str]],
-        endpoint: str,
-        # unified arguments
-        max_tokens: Optional[int] = 1024,
-        stop: Union[Optional[str], List[str]] = None,
-        temperature: Optional[float] = 1.0,
-        # partially unified arguments
-        frequency_penalty: Optional[float] = 0.0,
-        logit_bias: Optional[Dict[str, int]] = None,
-        logprobs: Optional[bool] = False,
-        top_logprobs: Optional[int] = None,
-        n: Optional[int] = 1,
-        presence_penalty: Optional[float] = 0.0,
-        response_format: Optional[ResponseFormat] = None,
-        seed: Optional[int] = None,
-        # stream_options: Optional[ChatCompletionStreamOptionsParam] = None, # ToDo: uncomment once openai upgraded
-        stream_options=None,
-        top_p: Optional[float] = 1.0,
-        tools: Optional[Iterable[ChatCompletionToolParam]] = None,
-        tool_choice: Optional[ChatCompletionToolChoiceOptionParam] = None,
-        parallel_tool_calls: Optional[bool] = True,
-        # platform arguments
-        use_custom_keys: bool = False,
-        tags: Optional[List[str]] = None,
-        # python client arguments
-        message_content_only: bool = True,
-        # passthrough arguments
-        extra_headers: Optional[Headers] = None,
-        extra_query: Optional[Query] = None,
-        **kwargs,
-    ) -> AsyncGenerator[str, None]:
-        try:
-            async_stream = await self._client.chat.completions.create(
-                model=endpoint,
-                messages=messages,  # type: ignore[arg-type]
-                max_tokens=max_tokens,
-                stop=stop,
-                stream=True,
-                temperature=temperature,
-                # partially unified arguments
-                frequency_penalty=frequency_penalty,
-                logit_bias=logit_bias,
-                logprobs=logprobs,
-                top_logprobs=top_logprobs,
-                n=n,
-                presence_penalty=presence_penalty,
-                response_format=response_format,
-                seed=seed,
-                # stream_options=stream_options, # ToDo: uncomment once openai upgraded
-                top_p=top_p,
-                tools=tools,
-                tool_choice=tool_choice,
-                # parallel_tool_calls=parallel_tool_calls, # ToDo: uncomment once openai upgraded
-                # platform arguments
-                use_custom_keys=use_custom_keys,
-                tags=tags,
-                # python client arguments
-                message_content_only=message_content_only,
-                # passthrough arguments
-                extra_headers=extra_headers,
-                extra_query=extra_query,
-                extra_body={"signature": "package", **kwargs},
-            )
-            async for chunk in async_stream:  # type: ignore[union-attr]
-                self.set_provider(chunk.model.split("@")[-1])
-                if message_content_only:
-                    yield chunk.choices[0].delta.content or ""
-                yield chunk
-        except openai.APIStatusError as e:
-            raise status_error_map[e.status_code](e.message) from None
-
-    async def _generate_non_stream(
-        self,
-        messages: List[Dict[str, str]],
-        endpoint: str,
-        # unified arguments
-        max_tokens: Optional[int] = 1024,
-        stop: Union[Optional[str], List[str]] = None,
-        temperature: Optional[float] = 1.0,
-        # partially unified arguments
-        frequency_penalty: Optional[float] = 0.0,
-        logit_bias: Optional[Dict[str, int]] = None,
-        logprobs: Optional[bool] = False,
-        top_logprobs: Optional[int] = None,
-        n: Optional[int] = 1,
-        presence_penalty: Optional[float] = 0.0,
-        response_format: Optional[ResponseFormat] = None,
-        seed: Optional[int] = None,
-        # stream_options: Optional[ChatCompletionStreamOptionsParam] = None, # ToDo: uncomment once openai upgraded
-        stream_options=None,
-        top_p: Optional[float] = 1.0,
-        tools: Optional[Iterable[ChatCompletionToolParam]] = None,
-        tool_choice: Optional[ChatCompletionToolChoiceOptionParam] = None,
-        parallel_tool_calls: Optional[bool] = True,
-        # platform arguments
-        use_custom_keys: bool = False,
-        tags: Optional[List[str]] = None,
-        # python client arguments
-        message_content_only: bool = True,
-        # passthrough arguments
-        extra_headers: Optional[Headers] = None,
-        extra_query: Optional[Query] = None,
-        **kwargs,
-    ) -> str:
-        try:
-            async_response = await self._client.chat.completions.create(
-                model=endpoint,
-                messages=messages,  # type: ignore[arg-type]
-                max_tokens=max_tokens,
-                stop=stop,
-                stream=False,
-                temperature=temperature,
-                # partially unified arguments
-                frequency_penalty=frequency_penalty,
-                logit_bias=logit_bias,
-                logprobs=logprobs,
-                top_logprobs=top_logprobs,
-                n=n,
-                presence_penalty=presence_penalty,
-                response_format=response_format,
-                seed=seed,
-                # stream_options=stream_options, # ToDo: uncomment once openai upgraded
-                top_p=top_p,
-                tools=tools,
-                tool_choice=tool_choice,
-                # parallel_tool_calls=parallel_tool_calls, # ToDo: uncomment once openai upgraded
-                # platform arguments
-                use_custom_keys=use_custom_keys,
-                tags=tags,
-                # python client arguments
-                message_content_only=message_content_only,
-                # passthrough arguments
-                extra_headers=extra_headers,
-                extra_query=extra_query,
-                extra_body={"signature": "package", **kwargs},
-            )
-            self.set_provider(async_response.model.split("@")[-1])  # type: ignore
-            if message_content_only:
-                content = async_response.choices[0].message.content
-                if content:
-                    return content.strip(" ")
-                return ""
-            return async_response
-        except openai.APIStatusError as e:
-            raise status_error_map[e.status_code](e.message) from None
