@@ -40,12 +40,12 @@ def list_models(
     Get a list of available models, either in total or for a specific provider.
 
     Args:
-        provider (str): If specified, returns the list of models supporting this provider.
-        api_key (str): If specified, unify API key to be used. Defaults
+        provider: If specified, returns the list of models supporting this provider.
+        api_key: If specified, unify API key to be used. Defaults
         to the value in the `UNIFY_KEY` environment variable.
 
     Returns:
-        List[str]: A list of available model names if successful, otherwise an empty list.
+        A list of available model names if successful, otherwise an empty list.
     Raises:
         BadRequestError: If there was an HTTP error.
         ValueError: If there was an error parsing the JSON response.
@@ -70,13 +70,12 @@ def list_providers(
     Get a list of available providers, either in total or for a specific model.
 
     Args:
-        model (str): If specified, returns the list of providers supporting this model.
-        api_key (str): If specified, unify API key to be used. Defaults
+        model: If specified, returns the list of providers supporting this model.
+        api_key: If specified, unify API key to be used. Defaults
         to the value in the `UNIFY_KEY` environment variable.
 
     Returns:
-        List[str]: A list of provider names associated with the model if successful,
-        otherwise an empty list.
+        A list of provider names associated with the model if successful, otherwise an empty list.
     Raises:
         BadRequestError: If there was an HTTP error.
         ValueError: If there was an error parsing the JSON response.
@@ -101,13 +100,12 @@ def list_endpoints(
     Get a list of available endpoint, either in total or for a specific model or provider.
 
     Args:
-        model (str): If specified, returns the list of endpoint supporting this model.
-        provider (str): If specified, returns the list of endpoint supporting this provider.
-        api_key (str): If specified, unify API key to be used. Defaults
-        to the value in the `UNIFY_KEY` environment variable.
+        model: If specified, returns the list of endpoint supporting this model.
+        provider: If specified, returns the list of endpoint supporting this provider.
+        api_key: If specified, unify API key to be used. Defaults to the value in the `UNIFY_KEY` environment variable.
 
     Returns:
-        List[str]: A list of endpoint names if successful, otherwise an empty list.
+        A list of endpoint names if successful, otherwise an empty list.
     Raises:
         BadRequestError: If there was an HTTP error.
         ValueError: If there was an error parsing the JSON response.
@@ -136,13 +134,12 @@ def upload_dataset_from_file(
     Uploads a local file as a dataset to the platform.
 
     Args:
-        name (str): Name given to the uploaded dataset.
-        path (str): Path to the file to be uploaded.
-        api_key (str): If specified, unify API key to be used. Defaults
-        to the value in the `UNIFY_KEY` environment variable.
+        name: Name given to the uploaded dataset.
+        path: Path to the file to be uploaded.
+        api_key: If specified, unify API key to be used. Defaults to the value in the `UNIFY_KEY` environment variable.
 
     Returns:
-        str: Info msg with the response from the HTTP endpoint.
+        Info msg with the response from the HTTP endpoint.
     Raises:
         ValueError: If there was an HTTP error.
     """
@@ -172,13 +169,12 @@ def upload_dataset_from_dictionary(
     Each dictionary in the list must contain a `prompt` key.
 
     Args:
-        name (str): Name given to the uploaded dataset.
-        content List[Dict[str, str]]: Path to the file to be uploaded.
-        api_key (str): If specified, unify API key to be used. Defaults
-        to the value in the `UNIFY_KEY` environment variable.
+        name: Name given to the uploaded dataset.
+        content: Path to the file to be uploaded.
+        api_key: If specified, unify API key to be used. Defaults to the value in the `UNIFY_KEY` environment variable.
 
     Returns:
-        str: Info msg with the response from the HTTP endpoint.
+        Info msg with the response from the HTTP endpoint.
     Raises:
         ValueError: If there was an HTTP error.
     """
@@ -204,10 +200,8 @@ def delete_dataset(name: str, api_key: Optional[str] = None) -> str:
     Deletes a dataset from the platform.
 
     Args:
-        name (str): Name given to the uploaded dataset.
-        path (str): Path to the file to be uploaded.
-        api_key (str): If specified, unify API key to be used. Defaults
-        to the value in the `UNIFY_KEY` environment variable.
+        name: Name given to the uploaded dataset.
+        api_key: If specified, unify API key to be used. Defaults to the value in the `UNIFY_KEY` environment variable.
 
     Returns:
         str: Info msg with the response from the HTTP endpoint.
@@ -234,14 +228,12 @@ def download_dataset(
     Downloads a dataset from the platform.
 
     Args:
-        name (str): Name of the dataset to download.
-        path (str): If specified, path to save the dataset.
-        api_key (str): If specified, unify API key to be used. Defaults
-        to the value in the `UNIFY_KEY` environment variable.
+        name: Name of the dataset to download.
+        path: If specified, path to save the dataset.
+        api_key: If specified, unify API key to be used. Defaults to the value in the `UNIFY_KEY` environment variable.
 
     Returns:
-        str: If path is not specified, returns the dataset content, if
-        specified, returns None.
+        If path is not specified, returns the dataset content, if specified, returns None.
     Raises:
         ValueError: If there was an HTTP error.
     """
@@ -267,11 +259,10 @@ def list_datasets(api_key: Optional[str] = None) -> List[str]:
     Fetches a list of all uploaded datasets.
 
     Args:
-        api_key (str): If specified, unify API key to be used. Defaults
-        to the value in the `UNIFY_KEY` environment variable.
+        api_key: If specified, unify API key to be used. Defaults to the value in the `UNIFY_KEY` environment variable.
 
     Returns:
-        List[str]: List with the names of the uploaded datasets.
+        List with the names of the uploaded datasets.
     Raises:
         ValueError: If there was an HTTP error.
     """
@@ -292,13 +283,12 @@ def evaluate(dataset: str, endpoints: List[str], api_key: Optional[str] = None) 
     Evaluates a list of endpoint on a given dataset.
 
     Args:
-        name (str): Name of the dataset to be uploaded.
-        endpoint List[str]: List of endpoint.
-        api_key (str): If specified, unify API key to be used. Defaults
-        to the value in the `UNIFY_KEY` environment variable.
+        dataset: Name of the dataset to be uploaded.
+        endpoints: List of endpoints.
+        api_key: If specified, unify API key to be used. Defaults to the value in the `UNIFY_KEY` environment variable.
 
     Returns:
-        str: Info msg with the response from the HTTP endpoint.
+        Info msg with the response from the HTTP endpoint.
     Raises:
         ValueError: If there was an HTTP error.
     """
@@ -323,13 +313,12 @@ def delete_evaluation(name: str, endpoint: str, api_key: Optional[str] = None) -
     Deletes an evaluation from the platform.
 
     Args:
-        name (str): Name of the dataset in the evaluation.
-        endpoint (str): Name of the endpoint whose evaluation will be removed.
-        api_key (str): If specified, unify API key to be used. Defaults
-        to the value in the `UNIFY_KEY` environment variable.
+        name: Name of the dataset in the evaluation.
+        endpoint: Name of the endpoint whose evaluation will be removed.
+        api_key: If specified, unify API key to be used. Defaults to the value in the `UNIFY_KEY` environment variable.
 
     Returns:
-        str: Info msg with the response from the HTTP endpoint.
+        Info msg with the response from the HTTP endpoint.
     Raises:
         ValueError: If there was an HTTP error.
     """
@@ -355,13 +344,11 @@ def list_evaluations(
     Fetches a list of all evaluations.
 
     Args:
-        dataset (str): Name of the dataset to fetch evaluation from.
-        If not specified, all evaluations will be returned.
-        api_key (str): If specified, unify API key to be used. Defaults
-        to the value in the `UNIFY_KEY` environment variable.
+        dataset: Name of the dataset to fetch evaluation from. If not specified, all evaluations will be returned.
+        api_key: If specified, unify API key to be used. Defaults to the value in the `UNIFY_KEY` environment variable.
 
     Returns:
-        List[Dict[str, List[str]]]: List with the names of the uploaded datasets.
+        List with the names of the uploaded datasets.
     Raises:
         ValueError: If there was an HTTP error.
     """
@@ -383,11 +370,10 @@ def get_credits(api_key: Optional[str] = None) -> float:
     Returns the credits remaining in the user account, in USD.
 
     Args:
-        api_key (str): If specified, unify API key to be used. Defaults
-        to the value in the `UNIFY_KEY` environment variable.
+        api_key: If specified, unify API key to be used. Defaults to the value in the `UNIFY_KEY` environment variable.
 
     Returns:
-        float: The credits remaining in USD.
+        The credits remaining in USD.
     Raises:
         ValueError: If there was an HTTP error.
     """

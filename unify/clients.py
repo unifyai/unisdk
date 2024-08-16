@@ -38,15 +38,15 @@ class Client(ABC):
         """Initialize the Unify client.
 
         Args:
-            endpoint (str, optional): Endpoint name in OpenAI API format:
-                <model_name>@<provider_name>
-                Defaults to None.
+            endpoint: Endpoint name in OpenAI API format:
+            <model_name>@<provider_name>
+            Defaults to None.
 
-            model (str, optional): Name of the model.
+            model: Name of the model.
 
-            provider (str, optional): Name of the provider.
+            provider: Name of the provider.
 
-            api_key (str, optional): API key for accessing the Unify API.
+            api_key: API key for accessing the Unify API.
                 If None, it attempts to retrieve the API key from the
                 environment variable UNIFY_KEY.
                 Defaults to None.
@@ -74,7 +74,7 @@ class Client(ABC):
         Get the model name.  # noqa: DAR201.
 
         Returns:
-            str: The model name.
+            The model name.
         """
         return self._model
 
@@ -83,7 +83,7 @@ class Client(ABC):
         Set the model name.  # noqa: DAR101.
 
         Args:
-            value (str): The model name.
+            value: The model name.
         """
         valid_models = unify.utils.list_models(self._provider, api_key=self._api_key)
         if value not in valid_models:
@@ -109,7 +109,7 @@ class Client(ABC):
         Get the provider name.  # noqa: DAR201.
 
         Returns:
-            str: The provider name.
+            The provider name.
         """
         return self._provider
 
@@ -118,7 +118,7 @@ class Client(ABC):
         Set the provider name.  # noqa: DAR101.
 
         Args:
-            value (str): The provider name.
+            value: The provider name.
         """
         valid_providers = unify.utils.list_providers(self._model, api_key=self._api_key)
         if value not in valid_providers:
@@ -144,7 +144,7 @@ class Client(ABC):
         Get the endpoint name.  # noqa: DAR201.
 
         Returns:
-            str: The endpoint name.
+            The endpoint name.
         """
         return self._endpoint
 
@@ -153,7 +153,7 @@ class Client(ABC):
         Set the endpoint name.  # noqa: DAR101.
 
         Args:
-            value (str): The endpoint name.
+            value: The endpoint name.
         """
         valid_endpoints = unify.utils.list_endpoints(api_key=self._api_key)
         if value not in valid_endpoints:
@@ -165,14 +165,13 @@ class Client(ABC):
         self._endpoint = value
         self._model, self._provider = value.split("@")  # noqa: WPS414
 
-    def get_credit_balance(self) -> float:
+    def get_credit_balance(self) -> Union[float, None]:
         # noqa: DAR201, DAR401
         """
         Get the remaining credits left on your account.
 
         Returns:
-            int or None: The remaining credits on the account
-            if successful, otherwise None.
+            The remaining credits on the account if successful, otherwise None.
         Raises:
             BadRequestError: If there was an HTTP error.
             ValueError: If there was an error parsing the JSON response.
@@ -391,93 +390,88 @@ class Unify(Client):
         """Generate content using the Unify API.
 
         Args:
-            user_prompt (Optional[str]): A string containing the user prompt.
+            user_prompt: A string containing the user prompt.
             If provided, messages must be None.
 
-            system_prompt (Optional[str]): An optional string containing the
-            system prompt.
+            system_prompt: An optional string containing the system prompt.
 
-            messages (List[Dict[str, str]]): A list of messages comprising the conversation so far. If provided,
-            user_prompt must be None.
+            messages: A list of messages comprising the conversation so far. If provided, user_prompt must be None.
 
-            max_tokens (Optional[int]): The maximum number of tokens that can be generated in the chat completion.
+            max_tokens: The maximum number of tokens that can be generated in the chat completion.
             The total length of input tokens and generated tokens is limited by the model's context length.
             Defaults to the provider's default max_tokens when the value is None.
 
-            stop (Optional[List[str]]): Up to 4 sequences where the API will stop generating further tokens.
+            stop: Up to 4 sequences where the API will stop generating further tokens.
 
-            stream (bool): If True, generates content as a stream.
-            If False, generates content as a single response.
+            stream: If True, generates content as a stream. If False, generates content as a single response.
             Defaults to False.
 
-            temperature (Optional[float]):  What sampling temperature to use, between 0 and 2.
+            temperature:  What sampling temperature to use, between 0 and 2.
             Higher values like 0.8 will make the output more random,
             while lower values like 0.2 will make it more focused and deterministic.
             It is generally recommended to alter this or top_p, but not both.
             Defaults to the provider's default max_tokens when the value is None.
 
-            frequency_penalty (Optional[float]): Number between -2.0 and 2.0. Positive values penalize new tokens based
-            on their existing frequency in the text so far, decreasing the model's likelihood to repeat the same line
-            verbatim.
+            frequency_penalty: Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing
+            frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim.
 
-            logit_bias (Optional[Dict[str, int]]): Modify the likelihood of specified tokens appearing in the
-            completion.
+            logit_bias: Modify the likelihood of specified tokens appearing in the completion.
             Accepts a JSON object that maps tokens (specified by their token ID in the tokenizer) to an associated bias
             value from -100 to 100. Mathematically, the bias is added to the logits generated by the model prior to
             sampling. The exact effect will vary per model, but values between -1 and 1 should decrease or increase
             likelihood of selection; values like -100 or 100 should result in a ban or exclusive selection of the
             relevant token.
 
-            logprobs (Optional[bool]): Whether to return log probabilities of the output tokens or not. If true, returns
-            the log probabilities of each output token returned in the content of message.
+            logprobs: Whether to return log probabilities of the output tokens or not. If true, returns the log
+            probabilities of each output token returned in the content of message.
 
-            top_logprobs (Optional[int]): An integer between 0 and 20 specifying the number of most likely tokens to
-            return at each token position, each with an associated log probability. logprobs must be set to true if this
-            parameter is used.
+            top_logprobs: An integer between 0 and 20 specifying the number of most likely tokens to return at each
+            token position, each with an associated log probability. logprobs must be set to true if this parameter
+            is used.
 
-            n (Optional[int]): How many chat completion choices to generate for each input message. Note that you will
-            be charged based on the number of generated tokens across all of the choices. Keep n as 1 to minimize costs.
+            n: How many chat completion choices to generate for each input message. Note that you will be charged based
+            on the number of generated tokens across all of the choices. Keep n as 1 to minimize costs.
 
-            presence_penalty (Optional[float]): Number between -2.0 and 2.0. Positive values penalize new tokens based
-            on whether they appear in the text so far, increasing the model's likelihood to talk about new topics.
+            presence_penalty: Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they
+            appear in the text so far, increasing the model's likelihood to talk about new topics.
 
-            response_format (Optional[ResponseFormat]): An object specifying the format that the model must output.
+            response_format: An object specifying the format that the model must output.
             Setting to { "type": "json_schema", "json_schema": {...} } enables Structured Outputs which ensures the
             model will match your supplied JSON schema. Learn more in the Structured Outputs guide.
             Setting to { "type": "json_object" } enables JSON mode, which ensures the message the model generates is
             valid JSON.
 
-            seed (Optional[int]): If specified, a best effort attempt is made to sample deterministically, such that
+            seed: If specified, a best effort attempt is made to sample deterministically, such that
             repeated requests with the same seed and parameters should return the same result. Determinism is not
             guaranteed, and you should refer to the system_fingerprint response parameter to monitor changes in the
             backend.
 
             stream_options: Options for streaming response. Only set this when you set stream: true.
 
-            top_p (Optional[float]): An alternative to sampling with temperature, called nucleus sampling, where the
+            top_p: An alternative to sampling with temperature, called nucleus sampling, where the
             model considers the results of the tokens with top_p probability mass. So 0.1 means only the tokens
             comprising the top 10% probability mass are considered. Generally recommended to alter this or temperature,
             but not both.
 
-            tools (Optional[Iterable[ChatCompletionToolParam]]): A list of tools the model may call. Currently, only
+            tools: A list of tools the model may call. Currently, only
             functions are supported as a tool. Use this to provide a list of functions the model may generate JSON
             inputs for. A max of 128 functions are supported.
 
-            tool_choice (Optional[ChatCompletionToolChoiceOptionParam]): Controls which (if any) tool is called by the
+            tool_choice: Controls which (if any) tool is called by the
             model. none means the model will not call any tool and instead generates a message. auto means the model can
             pick between generating a message or calling one or more tools. required means the model must call one or
             more tools. Specifying a particular tool via {"type": "function", "function": {"name": "my_function"}}
             forces the model to call that tool.
             none is the default when no tools are present. auto is the default if tools are present.
 
-            parallel_tool_calls (Optional[bool]): Whether to enable parallel function calling during tool use.
+            parallel_tool_calls: Whether to enable parallel function calling during tool use.
 
-            use_custom_keys (bool):  Whether to use custom API keys or our unified API keys with the backend provider.
+            use_custom_keys:  Whether to use custom API keys or our unified API keys with the backend provider.
 
-            tags (Optional[List[str]]): Arbitrary number of tags to classify this API query as needed. Helpful for
+            tags: Arbitrary number of tags to classify this API query as needed. Helpful for
             generally grouping queries across tasks and users, for logging purposes.
 
-            message_content_only (bool): If True, only return the message content
+            message_content_only: If True, only return the message content
             chat_completion.choices[0].message.content.strip(" ") from the OpenAI return.
             Otherwise, the full response chat_completion is returned.
             Defaults to True.
@@ -486,9 +480,8 @@ class Unify(Client):
             OpenAI standard. They will be handled by the provider-specific API without any other handling in between.
 
         Returns:
-            Union[Generator[str, None, None], str]: If stream is True,
-             returns a generator yielding chunks of content.
-             If stream is False, returns a single string response.
+            If stream is True, returns a generator yielding chunks of content.
+            If stream is False, returns a single string response.
 
         Raises:
             UnifyError: If an error occurs during content generation.
@@ -573,93 +566,89 @@ class AsyncUnify(Client):
         """Generate content asynchronously using the Unify API.
 
         Args:
-            user_prompt (Optional[str]): A string containing the user prompt.
-            If provided, messages must be None.
+            user_prompt: A string containing the user prompt. If provided, messages must be None.
 
-            system_prompt (Optional[str]): An optional string containing the
-            system prompt.
+            system_prompt: An optional string containing the system prompt.
 
-            messages (List[Dict[str, str]]): A list of messages comprising the conversation so far. If provided,
-            user_prompt must be None.
+            messages: A list of messages comprising the conversation so far. If provided, user_prompt must be None.
 
-            max_tokens (Optional[int]): The maximum number of tokens that can be generated in the chat completion.
+            max_tokens: The maximum number of tokens that can be generated in the chat completion.
             The total length of input tokens and generated tokens is limited by the model's context length.
             Defaults to the provider's default max_tokens when the value is None.
 
-            stop (Optional[List[str]]): Up to 4 sequences where the API will stop generating further tokens.
+            stop: Up to 4 sequences where the API will stop generating further tokens.
 
-            stream (bool): If True, generates content as a stream.
+            stream: If True, generates content as a stream.
             If False, generates content as a single response.
             Defaults to False.
 
-            temperature (Optional[float]):  What sampling temperature to use, between 0 and 2.
+            temperature:  What sampling temperature to use, between 0 and 2.
             Higher values like 0.8 will make the output more random,
             while lower values like 0.2 will make it more focused and deterministic.
             It is generally recommended to alter this or top_p, but not both.
             Defaults to the provider's default max_tokens when the value is None.
 
-            frequency_penalty (Optional[float]): Number between -2.0 and 2.0. Positive values penalize new tokens based
+            frequency_penalty: Number between -2.0 and 2.0. Positive values penalize new tokens based
             on their existing frequency in the text so far, decreasing the model's likelihood to repeat the same line
             verbatim.
 
-            logit_bias (Optional[Dict[str, int]]): Modify the likelihood of specified tokens appearing in the
-            completion.
+            logit_bias: Modify the likelihood of specified tokens appearing in the completion.
             Accepts a JSON object that maps tokens (specified by their token ID in the tokenizer) to an associated bias
             value from -100 to 100. Mathematically, the bias is added to the logits generated by the model prior to
             sampling. The exact effect will vary per model, but values between -1 and 1 should decrease or increase
             likelihood of selection; values like -100 or 100 should result in a ban or exclusive selection of the
             relevant token.
 
-            logprobs (Optional[bool]): Whether to return log probabilities of the output tokens or not. If true, returns
+            logprobs: Whether to return log probabilities of the output tokens or not. If true, returns
             the log probabilities of each output token returned in the content of message.
 
-            top_logprobs (Optional[int]): An integer between 0 and 20 specifying the number of most likely tokens to
+            top_logprobs: An integer between 0 and 20 specifying the number of most likely tokens to
             return at each token position, each with an associated log probability. logprobs must be set to true if this
             parameter is used.
 
-            n (Optional[int]): How many chat completion choices to generate for each input message. Note that you will
+            n: How many chat completion choices to generate for each input message. Note that you will
             be charged based on the number of generated tokens across all of the choices. Keep n as 1 to minimize costs.
 
-            presence_penalty (Optional[float]): Number between -2.0 and 2.0. Positive values penalize new tokens based
+            presence_penalty: Number between -2.0 and 2.0. Positive values penalize new tokens based
             on whether they appear in the text so far, increasing the model's likelihood to talk about new topics.
 
-            response_format (Optional[ResponseFormat]): An object specifying the format that the model must output.
+            response_format: An object specifying the format that the model must output.
             Setting to { "type": "json_schema", "json_schema": {...} } enables Structured Outputs which ensures the
             model will match your supplied JSON schema. Learn more in the Structured Outputs guide.
             Setting to { "type": "json_object" } enables JSON mode, which ensures the message the model generates is
             valid JSON.
 
-            seed (Optional[int]): If specified, a best effort attempt is made to sample deterministically, such that
+            seed: If specified, a best effort attempt is made to sample deterministically, such that
             repeated requests with the same seed and parameters should return the same result. Determinism is not
             guaranteed, and you should refer to the system_fingerprint response parameter to monitor changes in the
             backend.
 
             stream_options: Options for streaming response. Only set this when you set stream: true.
 
-            top_p (Optional[float]): An alternative to sampling with temperature, called nucleus sampling, where the
+            top_p: An alternative to sampling with temperature, called nucleus sampling, where the
             model considers the results of the tokens with top_p probability mass. So 0.1 means only the tokens
             comprising the top 10% probability mass are considered. Generally recommended to alter this or temperature,
             but not both.
 
-            tools (Optional[Iterable[ChatCompletionToolParam]]): A list of tools the model may call. Currently, only
+            tools: A list of tools the model may call. Currently, only
             functions are supported as a tool. Use this to provide a list of functions the model may generate JSON
             inputs for. A max of 128 functions are supported.
 
-            tool_choice (Optional[ChatCompletionToolChoiceOptionParam]): Controls which (if any) tool is called by the
+            tool_choice: Controls which (if any) tool is called by the
             model. none means the model will not call any tool and instead generates a message. auto means the model can
             pick between generating a message or calling one or more tools. required means the model must call one or
             more tools. Specifying a particular tool via {"type": "function", "function": {"name": "my_function"}}
             forces the model to call that tool.
             none is the default when no tools are present. auto is the default if tools are present.
 
-            parallel_tool_calls (Optional[bool]): Whether to enable parallel function calling during tool use.
+            parallel_tool_calls: Whether to enable parallel function calling during tool use.
 
-            use_custom_keys (bool):  Whether to use custom API keys or our unified API keys with the backend provider.
+            use_custom_keys:  Whether to use custom API keys or our unified API keys with the backend provider.
 
-            tags (Optional[List[str]]): Arbitrary number of tags to classify this API query as needed. Helpful for
-            generally grouping queries across tasks and users, for logging purposes.
+            tags: Arbitrary number of tags to classify this API query as needed. Helpful for generally grouping queries
+            across tasks and users, for logging purposes.
 
-            message_content_only (bool): If True, only return the message content
+            message_content_only: If True, only return the message content
             chat_completion.choices[0].message.content.strip(" ") from the OpenAI return.
             Otherwise, the full response chat_completion is returned.
             Defaults to True.
@@ -668,8 +657,7 @@ class AsyncUnify(Client):
             OpenAI standard. They will be handled by the provider-specific API without any other handling in between.
 
         Returns:
-            Union[AsyncGenerator[str, None], List[str]]: If stream is True,
-            returns an asynchronous generator yielding chunks of content.
+            If stream is True, returns an asynchronous generator yielding chunks of content.
             If stream is False, returns a list of string responses.
 
         Raises:

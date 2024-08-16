@@ -19,20 +19,16 @@ class ChatBot:  # noqa: WPS338
         Initializes the ChatBot object.
 
         Args:
-            endpoint (str, optional): Endpoint name in OpenAI API format:
-                <uploaded_by>/<model_name>@<provider_name>
-                Defaults to None.
+            endpoint: Endpoint name in OpenAI API format:
+            <uploaded_by>/<model_name>@<provider_name>
+            Defaults to None.
 
-            model (str, optional): Name of the model. If None,
-            endpoint must be provided.
+            model: Name of the model. If None, endpoint must be provided.
 
-            provider (str, optional): Name of the provider. If None,
-            endpoint must be provided.
+            provider: Name of the provider. If None, endpoint must be provided.
 
-            api_key (str, optional): API key for accessing the Unify API.
-                If None, it attempts to retrieve the API key from the
-                environment variable UNIFY_KEY.
-                Defaults to None.
+            api_key: API key for accessing the Unify API. If None, it attempts to retrieve the API key from the
+            environment variable UNIFY_KEY. Defaults to None.
 
         Raises:
             UnifyError: If the API key is missing.
@@ -52,13 +48,13 @@ class ChatBot:  # noqa: WPS338
         Get the client object.  # noqa: DAR201.
 
         Returns:
-            str: The model name.
+            The client.
         """
         return self._client
 
     def set_client(self, value: Unify) -> None:
         """
-        Set the model name.  # noqa: DAR101.
+        Set the client.  # noqa: DAR101.
 
         Args:
             value: The unify client.
@@ -74,7 +70,7 @@ class ChatBot:  # noqa: WPS338
         Get the model name.  # noqa: DAR201.
 
         Returns:
-            str: The model name.
+            The model name.
         """
         return self._client.model
 
@@ -83,7 +79,7 @@ class ChatBot:  # noqa: WPS338
         Set the model name.  # noqa: DAR101.
 
         Args:
-            value (str): The model name.
+            value: The model name.
         """
         self._client.set_model(value)
         if self._client.provider:
@@ -98,7 +94,7 @@ class ChatBot:  # noqa: WPS338
         Get the provider name.  # noqa: DAR201.
 
         Returns:
-            str: The provider name.
+            The provider name.
         """
         return self._client.provider
 
@@ -107,7 +103,7 @@ class ChatBot:  # noqa: WPS338
         Set the provider name.  # noqa: DAR101.
 
         Args:
-            value (str): The provider name.
+            value: The provider name.
         """
         self._client.set_provider(value)
         self._client.set_endpoint("@".join([self._client._model, value]))
@@ -118,16 +114,16 @@ class ChatBot:  # noqa: WPS338
         Get the endpoint name.  # noqa: DAR201.
 
         Returns:
-            str: The endpoint name.
+            The endpoint name.
         """
         return self._client.endpoint
 
     def set_endpoint(self, value: str) -> None:
         """
-        Set the model name.  # noqa: DAR101.
+        Set the endpoint name.  # noqa: DAR101.
 
         Args:
-            value (str): The endpoint name.
+            value: The endpoint name.
         """
         self._client.set_endpoint(value)
         self._client.set_model(value.split("@")[0])
@@ -138,7 +134,7 @@ class ChatBot:  # noqa: WPS338
         Retrieves the current credit balance from associated with the UNIFY account.
 
         Returns:
-            float: Current credit balance.
+            Current credit balance.
         """
         return self._client.get_credit_balance()
 
@@ -149,12 +145,12 @@ class ChatBot:  # noqa: WPS338
         Processes the user input to generate AI response.
 
         Args:
-            inp (str): User input message.
-            show_credits (bool): Whether to show credit consumption.
-            show_credits (bool): Whether to show provider used.
+            inp: User input message.
+            show_credits: Whether to show credit consumption.
+            show_provider: Whether to show provider used.
 
         Yields:
-            str: Generated AI response chunks.
+            Generated AI response chunks.
         """
         self._update_message_history(role="user", content=inp)
         initial_credit_balance = self._get_credits()
@@ -186,8 +182,8 @@ class ChatBot:  # noqa: WPS338
         Updates message history with user input.
 
         Args:
-            role (str): Either "assistant" or "user".
-            content (str): User input message.
+            role: Either "assistant" or "user".
+            content: User input message.
         """
         self._message_history.append(
             {
@@ -205,10 +201,8 @@ class ChatBot:  # noqa: WPS338
         Starts the chat interaction loop.
 
         Args:
-            show_credits (bool, optional): Whether to show credit consumption.
-            Defaults to False.
-            show_provider (bool, optional): Whether to show the provider used.
-            Defaults to False.
+            show_credits: Whether to show credit consumption. Defaults to False.
+            show_provider: Whether to show the provider used. Defaults to False.
         """
         if not self._paused:
             sys.stdout.write(
