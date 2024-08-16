@@ -445,9 +445,9 @@ class Unify(Client):
             appear in the text so far, increasing the model's likelihood to talk about new topics.
 
             response_format: An object specifying the format that the model must output.
-            Setting to { "type": "json_schema", "json_schema": {...} } enables Structured Outputs which ensures the
+            Setting to `{ "type": "json_schema", "json_schema": {...} }` enables Structured Outputs which ensures the
             model will match your supplied JSON schema. Learn more in the Structured Outputs guide.
-            Setting to { "type": "json_object" } enables JSON mode, which ensures the message the model generates is
+            Setting to `{ "type": "json_object" }` enables JSON mode, which ensures the message the model generates is
             valid JSON.
 
             seed: If specified, a best effort attempt is made to sample deterministically, such that
@@ -469,7 +469,7 @@ class Unify(Client):
             tool_choice: Controls which (if any) tool is called by the
             model. none means the model will not call any tool and instead generates a message. auto means the model can
             pick between generating a message or calling one or more tools. required means the model must call one or
-            more tools. Specifying a particular tool via {"type": "function", "function": {"name": "my_function"}}
+            more tools. Specifying a particular tool via `{"type": "function", "function": {"name": "my_function"}}`
             forces the model to call that tool.
             none is the default when no tools are present. auto is the default if tools are present.
 
@@ -820,9 +820,9 @@ class AsyncUnify(Client):
             on whether they appear in the text so far, increasing the model's likelihood to talk about new topics.
 
             response_format: An object specifying the format that the model must output.
-            Setting to { "type": "json_schema", "json_schema": {...} } enables Structured Outputs which ensures the
+            Setting to `{ "type": "json_schema", "json_schema": {...} }` enables Structured Outputs which ensures the
             model will match your supplied JSON schema. Learn more in the Structured Outputs guide.
-            Setting to { "type": "json_object" } enables JSON mode, which ensures the message the model generates is
+            Setting to `{ "type": "json_object" }` enables JSON mode, which ensures the message the model generates is
             valid JSON.
 
             seed: If specified, a best effort attempt is made to sample deterministically, such that
@@ -844,7 +844,7 @@ class AsyncUnify(Client):
             tool_choice: Controls which (if any) tool is called by the
             model. none means the model will not call any tool and instead generates a message. auto means the model can
             pick between generating a message or calling one or more tools. required means the model must call one or
-            more tools. Specifying a particular tool via {"type": "function", "function": {"name": "my_function"}}
+            more tools. Specifying a particular tool via `{"type": "function", "function": {"name": "my_function"}}`
             forces the model to call that tool.
             none is the default when no tools are present. auto is the default if tools are present.
 
