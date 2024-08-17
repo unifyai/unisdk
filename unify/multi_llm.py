@@ -54,7 +54,7 @@ class MultiLLM:
             del self._clients[endpoint]
 
     @property
-    def endpoints(self) -> Tuple[str]:
+    def endpoints(self) -> Tuple[str, ...]:
         return tuple(self._endpoints)
 
     @property
