@@ -5,7 +5,7 @@ from openai.types.chat import (
     ChatCompletionToolParam,
     ChatCompletionToolChoiceOptionParam,
     ChatCompletionMessageParam,
-    # ChatCompletionStreamOptionsParam,  # ToDo: uncomment once openai version updated
+    ChatCompletionStreamOptionsParam
 )
 from openai.types.chat.completion_create_params import ResponseFormat
 import requests
@@ -46,8 +46,7 @@ class Client(ABC):
         presence_penalty: Optional[float] = None,
         response_format: Optional[ResponseFormat] = None,
         seed: Optional[int] = None,
-        # stream_options: Optional[ChatCompletionStreamOptionsParam] = None, # ToDo: uncomment once openai upgraded
-        stream_options=None,
+        stream_options: Optional[ChatCompletionStreamOptionsParam] = None,
         top_p: Optional[float] = None,
         tools: Optional[Iterable[ChatCompletionToolParam]] = None,
         tool_choice: Optional[ChatCompletionToolChoiceOptionParam] = None,
@@ -361,8 +360,7 @@ class Unify(Client):
         presence_penalty: Optional[float] = None,
         response_format: Optional[ResponseFormat] = None,
         seed: Optional[int] = None,
-        # stream_options: Optional[ChatCompletionStreamOptionsParam] = None, # ToDo: uncomment once openai upgraded
-        stream_options=None,
+        stream_options: Optional[ChatCompletionStreamOptionsParam] = None,
         top_p: Optional[float] = None,
         tools: Optional[Iterable[ChatCompletionToolParam]] = None,
         tool_choice: Optional[ChatCompletionToolChoiceOptionParam] = None,
@@ -394,11 +392,11 @@ class Unify(Client):
                 presence_penalty=presence_penalty,
                 response_format=response_format,
                 seed=seed,
-                # stream_options=stream_options, # ToDo: uncomment once openai upgraded
+                stream_options=stream_options,
                 top_p=top_p,
                 tools=tools,
                 tool_choice=tool_choice,
-                # parallel_tool_calls=parallel_tool_calls, # ToDo: uncomment once openai upgraded
+                parallel_tool_calls=parallel_tool_calls,
                 extra_body={  # platform arguments
                     "signature": "package",
                     "use_custom_keys": use_custom_keys,
@@ -438,8 +436,7 @@ class Unify(Client):
         presence_penalty: Optional[float] = None,
         response_format: Optional[ResponseFormat] = None,
         seed: Optional[int] = None,
-        # stream_options: Optional[ChatCompletionStreamOptionsParam] = None, # ToDo: uncomment once openai upgraded
-        stream_options=None,
+        stream_options: Optional[ChatCompletionStreamOptionsParam] = None,
         top_p: Optional[float] = None,
         tools: Optional[Iterable[ChatCompletionToolParam]] = None,
         tool_choice: Optional[ChatCompletionToolChoiceOptionParam] = None,
@@ -471,11 +468,11 @@ class Unify(Client):
                 presence_penalty=presence_penalty,
                 response_format=response_format,
                 seed=seed,
-                # stream_options=stream_options, # ToDo: uncomment once openai upgraded
+                stream_options=stream_options,
                 top_p=top_p,
                 tools=tools,
                 tool_choice=tool_choice,
-                # parallel_tool_calls=parallel_tool_calls, # ToDo: uncomment once openai upgraded
+                parallel_tool_calls=parallel_tool_calls,
                 extra_body={  # platform arguments
                     "signature": "package",
                     "use_custom_keys": use_custom_keys,
@@ -522,8 +519,7 @@ class Unify(Client):
         presence_penalty: Optional[float] = None,
         response_format: Optional[ResponseFormat] = None,
         seed: Optional[int] = None,
-        # stream_options: Optional[ChatCompletionStreamOptionsParam] = None, # ToDo: uncomment once openai upgraded
-        stream_options=None,
+        stream_options: Optional[ChatCompletionStreamOptionsParam] = None,
         top_p: Optional[float] = None,
         tools: Optional[Iterable[ChatCompletionToolParam]] = None,
         tool_choice: Optional[ChatCompletionToolChoiceOptionParam] = None,
@@ -643,8 +639,7 @@ class AsyncUnify(Client):
         presence_penalty: Optional[float] = None,
         response_format: Optional[ResponseFormat] = None,
         seed: Optional[int] = None,
-        # stream_options: Optional[ChatCompletionStreamOptionsParam] = None, # ToDo: uncomment once openai upgraded
-        stream_options=None,
+        stream_options: Optional[ChatCompletionStreamOptionsParam] = None,
         top_p: Optional[float] = None,
         tools: Optional[Iterable[ChatCompletionToolParam]] = None,
         tool_choice: Optional[ChatCompletionToolChoiceOptionParam] = None,
@@ -676,11 +671,11 @@ class AsyncUnify(Client):
                 presence_penalty=presence_penalty,
                 response_format=response_format,
                 seed=seed,
-                # stream_options=stream_options, # ToDo: uncomment once openai upgraded
+                stream_options=stream_options,
                 top_p=top_p,
                 tools=tools,
                 tool_choice=tool_choice,
-                # parallel_tool_calls=parallel_tool_calls, # ToDo: uncomment once openai upgraded
+                parallel_tool_calls=parallel_tool_calls,
                 extra_body={  # platform arguments
                     "signature": "package",
                     "use_custom_keys": use_custom_keys,
@@ -717,8 +712,7 @@ class AsyncUnify(Client):
         presence_penalty: Optional[float] = None,
         response_format: Optional[ResponseFormat] = None,
         seed: Optional[int] = None,
-        # stream_options: Optional[ChatCompletionStreamOptionsParam] = None, # ToDo: uncomment once openai upgraded
-        stream_options=None,
+        stream_options: Optional[ChatCompletionStreamOptionsParam] = None,
         top_p: Optional[float] = None,
         tools: Optional[Iterable[ChatCompletionToolParam]] = None,
         tool_choice: Optional[ChatCompletionToolChoiceOptionParam] = None,
@@ -750,11 +744,11 @@ class AsyncUnify(Client):
                 presence_penalty=presence_penalty,
                 response_format=response_format,
                 seed=seed,
-                # stream_options=stream_options, # ToDo: uncomment once openai upgraded
+                stream_options=stream_options,
                 top_p=top_p,
                 tools=tools,
                 tool_choice=tool_choice,
-                # parallel_tool_calls=parallel_tool_calls, # ToDo: uncomment once openai upgraded
+                parallel_tool_calls=parallel_tool_calls,
                 extra_body={  # platform arguments
                     "signature": "package",
                     "use_custom_keys": use_custom_keys,
@@ -796,7 +790,7 @@ class AsyncUnify(Client):
         presence_penalty: Optional[float] = None,
         response_format: Optional[ResponseFormat] = None,
         seed: Optional[int] = None,
-        # stream_options: Optional[ChatCompletionStreamOptionsParam] = None, # ToDo: uncomment once openai upgraded
+        stream_options: Optional[ChatCompletionStreamOptionsParam] = None,
         stream_options=None,
         top_p: Optional[float] = None,
         tools: Optional[Iterable[ChatCompletionToolParam]] = None,

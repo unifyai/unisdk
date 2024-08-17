@@ -9,8 +9,7 @@ from openai._types import Headers, Query
 from openai.types.chat import (
     ChatCompletionToolParam,
     ChatCompletionToolChoiceOptionParam,
-    ChatCompletionMessageParam,
-    # ChatCompletionStreamOptionsParam,  # ToDo: uncomment once openai version updated
+    ChatCompletionMessageParam
 )
 from openai.types.chat.completion_create_params import ResponseFormat
 
@@ -116,8 +115,6 @@ class MultiLLMClient(ABC):
         presence_penalty: Optional[float] = None,
         response_format: Optional[ResponseFormat] = None,
         seed: Optional[int] = None,
-        # stream_options: Optional[ChatCompletionStreamOptionsParam] = None, # ToDo: uncomment once openai upgraded
-        stream_options=None,
         top_p: Optional[float] = None,
         tools: Optional[Iterable[ChatCompletionToolParam]] = None,
         tool_choice: Optional[ChatCompletionToolChoiceOptionParam] = None,
@@ -187,8 +184,6 @@ class MultiLLMClient(ABC):
             repeated requests with the same seed and parameters should return the same result. Determinism is not
             guaranteed, and you should refer to the system_fingerprint response parameter to monitor changes in the
             backend.
-
-            stream_options: Options for streaming response. Only set this when you set stream: true.
 
             top_p: An alternative to sampling with temperature, called nucleus sampling, where the
             model considers the results of the tokens with top_p probability mass. So 0.1 means only the tokens
@@ -266,8 +261,6 @@ class MultiLLM(MultiLLMClient):
         presence_penalty: Optional[float] = None,
         response_format: Optional[ResponseFormat] = None,
         seed: Optional[int] = None,
-        # stream_options: Optional[ChatCompletionStreamOptionsParam] = None, # ToDo: uncomment once openai upgraded
-        stream_options=None,
         top_p: Optional[float] = None,
         tools: Optional[Iterable[ChatCompletionToolParam]] = None,
         tool_choice: Optional[ChatCompletionToolChoiceOptionParam] = None,
@@ -299,7 +292,6 @@ class MultiLLM(MultiLLMClient):
                 presence_penalty=presence_penalty,
                 response_format=response_format,
                 seed=seed,
-                # stream_options=stream_options
                 top_p=top_p,
                 tools=tools,
                 tool_choice=tool_choice,
@@ -344,8 +336,6 @@ class MultiLLMAsync(MultiLLMClient):
         presence_penalty: Optional[float] = None,
         response_format: Optional[ResponseFormat] = None,
         seed: Optional[int] = None,
-        # stream_options: Optional[ChatCompletionStreamOptionsParam] = None, # ToDo: uncomment once openai upgraded
-        stream_options=None,
         top_p: Optional[float] = None,
         tools: Optional[Iterable[ChatCompletionToolParam]] = None,
         tool_choice: Optional[ChatCompletionToolChoiceOptionParam] = None,
@@ -377,7 +367,6 @@ class MultiLLMAsync(MultiLLMClient):
                 presence_penalty=presence_penalty,
                 response_format=response_format,
                 seed=seed,
-                # stream_options=stream_options
                 top_p=top_p,
                 tools=tools,
                 tool_choice=tool_choice,
