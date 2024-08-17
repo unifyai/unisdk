@@ -2,7 +2,7 @@
 
 from unify.chat import ChatBot  # noqa: F403
 from unify.clients import AsyncUnify, Unify  # noqa: F403
-from unify.multi_llm import MultiLLM  # noqa: F403
+from unify.multi_llm import MultiLLM, MultiLLMAsync  # noqa: F403
 from unify.utils import (
     list_endpoints,
     list_models,
