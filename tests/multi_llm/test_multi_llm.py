@@ -1,10 +1,10 @@
 import os
 import unittest
-from unify.multi_llm import MultiLLM
 from unify.exceptions import UnifyError
+from unify.multi_llm import MultiLLM, MultiLLMAsync
 
 
-class TestUnifyBasics(unittest.TestCase):
+class TestMultiLLM(unittest.TestCase):
     def setUp(self) -> None:
         self.valid_api_key = os.environ.get("UNIFY_KEY")
 
@@ -45,6 +45,20 @@ class TestUnifyBasics(unittest.TestCase):
         endpoints = ("llama-3-8b-chat@together-ai", "gpt-4o@openai", "claude-3.5-sonnet@anthropic")
         client = MultiLLM(api_key=self.valid_api_key, endpoints=endpoints)
         responses = client.generate("Hello, how it is going?")
+        for endpoint, (response_endpoint, response) in zip(endpoints, responses.items()):
+            assert endpoint == response_endpoint
+            assert isinstance(response, str)
+            assert len(response)
+
+
+class TestAsyncMultiLLM(unittest.IsolatedAsyncioTestCase):
+    def setUp(self) -> None:
+        self.valid_api_key = os.environ.get("UNIFY_KEY")
+
+    async def test_async_generate(self):
+        endpoints = ("llama-3-8b-chat@together-ai", "gpt-4o@openai", "claude-3.5-sonnet@anthropic")
+        client = MultiLLMAsync(api_key=self.valid_api_key, endpoints=endpoints)
+        responses = await client.generate("Hello, how it is going?")
         for endpoint, (response_endpoint, response) in zip(endpoints, responses.items()):
             assert endpoint == response_endpoint
             assert isinstance(response, str)

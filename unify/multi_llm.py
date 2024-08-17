@@ -238,6 +238,15 @@ class MultiLLMClient(ABC):
 
 class MultiLLM(MultiLLMClient):
 
+    def __init__(
+            self,
+            endpoints: Optional[Iterable[str]] = None,
+            api_key: Optional[str] = None,
+    ) -> None:
+        super().__init__(endpoints=endpoints,
+                         asynchronous=False,
+                         api_key=api_key)
+
     def generate(  # noqa: WPS234, WPS211
         self,
         user_prompt: Optional[str] = None,
@@ -276,6 +285,84 @@ class MultiLLM(MultiLLMClient):
         responses = dict()
         for endpoint, client in self._clients.items():
             responses[endpoint] = client.generate(
+                user_prompt=user_prompt,
+                system_prompt=system_prompt,
+                messages=messages,
+                max_tokens=max_tokens,
+                stop=stop,
+                temperature=temperature,
+                frequency_penalty=frequency_penalty,
+                logit_bias=logit_bias,
+                logprobs=logprobs,
+                top_logprobs=top_logprobs,
+                n=n,
+                presence_penalty=presence_penalty,
+                response_format=response_format,
+                seed=seed,
+                # stream_options=stream_options
+                top_p=top_p,
+                tools=tools,
+                tool_choice=tool_choice,
+                parallel_tool_calls=parallel_tool_calls,
+                use_custom_keys=use_custom_keys,
+                tags=tags,
+                message_content_only=message_content_only,
+                extra_headers=extra_headers,
+                extra_query=extra_query,
+                **kwargs
+            )
+        return responses
+
+
+class MultiLLMAsync(MultiLLMClient):
+
+    def __init__(
+            self,
+            endpoints: Optional[Iterable[str]] = None,
+            api_key: Optional[str] = None,
+    ) -> None:
+        super().__init__(endpoints=endpoints,
+                         asynchronous=True,
+                         api_key=api_key)
+
+    async def generate(  # noqa: WPS234, WPS211
+        self,
+        user_prompt: Optional[str] = None,
+        system_prompt: Optional[str] = None,
+        messages: Optional[Iterable[ChatCompletionMessageParam]] = None,
+        *,
+        # unified arguments
+        max_tokens: Optional[int] = 1024,
+        stop: Union[Optional[str], List[str]] = None,
+        temperature: Optional[float] = 1.0,
+        # partially unified arguments
+        frequency_penalty: Optional[float] = None,
+        logit_bias: Optional[Dict[str, int]] = None,
+        logprobs: Optional[bool] = None,
+        top_logprobs: Optional[int] = None,
+        n: Optional[int] = None,
+        presence_penalty: Optional[float] = None,
+        response_format: Optional[ResponseFormat] = None,
+        seed: Optional[int] = None,
+        # stream_options: Optional[ChatCompletionStreamOptionsParam] = None, # ToDo: uncomment once openai upgraded
+        stream_options=None,
+        top_p: Optional[float] = None,
+        tools: Optional[Iterable[ChatCompletionToolParam]] = None,
+        tool_choice: Optional[ChatCompletionToolChoiceOptionParam] = None,
+        parallel_tool_calls: Optional[bool] = None,
+        # platform arguments
+        use_custom_keys: bool = False,
+        tags: Optional[List[str]] = None,
+        # python client arguments
+        message_content_only: bool = True,
+        # passthrough arguments
+        extra_headers: Optional[Headers] = None,
+        extra_query: Optional[Query] = None,
+        **kwargs,
+    ) -> Dict[str, str]:
+        responses = dict()
+        for endpoint, client in self._clients.items():
+            responses[endpoint] = await client.generate(
                 user_prompt=user_prompt,
                 system_prompt=system_prompt,
                 messages=messages,
