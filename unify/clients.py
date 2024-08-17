@@ -791,7 +791,6 @@ class AsyncUnify(Client):
         response_format: Optional[ResponseFormat] = None,
         seed: Optional[int] = None,
         stream_options: Optional[ChatCompletionStreamOptionsParam] = None,
-        stream_options=None,
         top_p: Optional[float] = None,
         tools: Optional[Iterable[ChatCompletionToolParam]] = None,
         tool_choice: Optional[ChatCompletionToolChoiceOptionParam] = None,
