@@ -40,3 +40,12 @@ class TestUnifyBasics(unittest.TestCase):
         assert tuple(client.clients.keys()) == endpoints
         with self.assertRaises(UnifyError):
             client.remove_endpoints("claude-3.5-sonnet@anthropic", ignore_missing=False)
+
+    def test_generate(self):
+        endpoints = ("llama-3-8b-chat@together-ai", "gpt-4o@openai", "claude-3.5-sonnet@anthropic")
+        client = MultiLLM(api_key=self.valid_api_key, endpoints=endpoints)
+        responses = client.generate("Hello, how it is going?")
+        for endpoint, (response_endpoint, response) in zip(endpoints, responses.items()):
+            assert endpoint == response_endpoint
+            assert isinstance(response, str)
+            assert len(response)
