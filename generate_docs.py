@@ -27,7 +27,7 @@ def process_output():
             next_idx = sections[i + 1] - 1 if i < len(sections) - 1 else None
             section_wise_content.append(content[idx:next_idx])
     for section_content in section_wise_content:
-        module_name = section_content[0].strip("\n")[2:]
+        module_name = section_content[0].strip("\n")[2:].replace("\\", "")
         modules.append(f"python/{module_name}")
         with open(f"output/{module_name}.mdx", "w") as f:
             f.write(f"---\ntitle: '{module_name}'\n---\n")
