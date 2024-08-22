@@ -147,3 +147,6 @@ google-cloud-cli-*.tar.gz
 
 # SQL Dump files
 *.dump.sql
+
+# Binaries
+bin/
