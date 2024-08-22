@@ -398,7 +398,7 @@ class Unify(Client):
                 tool_choice=tool_choice,
                 parallel_tool_calls=parallel_tool_calls,
                 extra_body={  # platform arguments
-                    "signature": "package",
+                    "signature": "python",
                     "use_custom_keys": use_custom_keys,
                     "tags": tags,
                     # passthrough json arguments
@@ -474,7 +474,7 @@ class Unify(Client):
                 tool_choice=tool_choice,
                 parallel_tool_calls=parallel_tool_calls,
                 extra_body={  # platform arguments
-                    "signature": "package",
+                    "signature": "python",
                     "use_custom_keys": use_custom_keys,
                     "tags": tags,
                     # passthrough json arguments
@@ -677,7 +677,7 @@ class AsyncUnify(Client):
                 tool_choice=tool_choice,
                 parallel_tool_calls=parallel_tool_calls,
                 extra_body={  # platform arguments
-                    "signature": "package",
+                    "signature": "python",
                     "use_custom_keys": use_custom_keys,
                     "tags": tags,
                     # passthrough json arguments
@@ -750,7 +750,7 @@ class AsyncUnify(Client):
                 tool_choice=tool_choice,
                 parallel_tool_calls=parallel_tool_calls,
                 extra_body={  # platform arguments
-                    "signature": "package",
+                    "signature": "python",
                     "use_custom_keys": use_custom_keys,
                     "tags": tags,
                     # passthrough json arguments
