@@ -11,7 +11,7 @@ from openai.types.chat import (
 from openai.types.chat.completion_create_params import ResponseFormat
 
 # local
-from . import BASE_URL
+from . import base_url
 from unify import Unify, AsyncUnify
 from unify.utils import _validate_api_key
 from unify.exceptions import UnifyError
@@ -77,7 +77,7 @@ class MultiLLMClient(ABC):
             BadRequestError: If there was an HTTP error.
             ValueError: If there was an error parsing the JSON response.
         """
-        url = f"{BASE_URL}/get_credits"
+        url = f"{base_url()}/get_credits"
         headers = {
             "accept": "application/json",
             "Authorization": f"Bearer {self._api_key}",

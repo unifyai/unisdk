@@ -2,7 +2,7 @@ import os
 import json
 import requests
 from typing import Dict, List, Optional
-from . import BASE_URL
+from . import base_url
 
 _available_dynamic_modes = [
     "lowest-input-cost",
@@ -54,7 +54,7 @@ def list_models(
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    url = f"{BASE_URL}/models"
+    url = f"{base_url()}/models"
     if provider:
         return _res_to_list(
             requests.get(url, headers=headers, params={"provider": provider})
@@ -84,7 +84,7 @@ def list_providers(
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    url = f"{BASE_URL}/providers"
+    url = f"{base_url()}/providers"
     if model:
         return _res_to_list(requests.get(url, headers=headers, params={"model": model}))
     return _res_to_list(requests.get(url, headers=headers))
@@ -114,7 +114,7 @@ def list_endpoints(
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    url = f"{BASE_URL}/endpoints"
+    url = f"{base_url()}/endpoints"
     if model and provider:
         raise ValueError("Please specify either model OR provider, not both.")
     elif model:
@@ -153,7 +153,7 @@ def upload_dataset_from_file(
     data = {"name": name}
     # Send POST request to the /dataset endpoint
     response = requests.post(
-        BASE_URL + "/dataset", headers=headers, data=data, files=files
+        base_url() + "/dataset", headers=headers, data=data, files=files
     )
     if response.status_code != 200:
         raise ValueError(response.text)
@@ -187,7 +187,7 @@ def upload_dataset_from_dictionary(
     data = {"name": name}
     # Send POST request to the /dataset endpoint
     response = requests.post(
-        BASE_URL + "/dataset", headers=headers, data=data, files=files
+        base_url() + "/dataset", headers=headers, data=data, files=files
     )
     if response.status_code != 200:
         raise ValueError(response.text)
@@ -214,7 +214,7 @@ def delete_dataset(name: str, api_key: Optional[str] = None) -> str:
     }
     params = {"name": name}
     # Send DELETE request to the /dataset endpoint
-    response = requests.delete(BASE_URL + "/dataset", headers=headers, params=params)
+    response = requests.delete(base_url() + "/dataset", headers=headers, params=params)
     if response.status_code != 200:
         raise ValueError(response.text)
     return json.loads(response.text)["info"]
@@ -243,7 +243,7 @@ def download_dataset(
     }
     params = {"name": name}
     # Send GET request to the /dataset endpoint
-    response = requests.get(BASE_URL + "/dataset", headers=headers, params=params)
+    response = requests.get(base_url() + "/dataset", headers=headers, params=params)
     if response.status_code != 200:
         raise ValueError(response.text)
     if path:
@@ -271,7 +271,7 @@ def list_datasets(api_key: Optional[str] = None) -> List[str]:
         "Authorization": f"Bearer {api_key}",
     }
     # Send GET request to the /dataset/list endpoint
-    response = requests.get(BASE_URL + "/dataset/list", headers=headers)
+    response = requests.get(base_url() + "/dataset/list", headers=headers)
     if response.status_code != 200:
         raise ValueError(response.text)
     return _res_to_list(response)
@@ -300,7 +300,7 @@ def evaluate(dataset: str, endpoints: List[str], api_key: Optional[str] = None) 
         data = {"dataset": dataset, "endpoint": endpoint}
         # Send POST request to the /evaluation endpoint
         response = requests.post(
-            BASE_URL + "/evaluation", headers=headers, params=data
+            base_url() + "/evaluation", headers=headers, params=data
         )
         if response.status_code != 200:
             raise ValueError(f"Error in endpoint {endpoint}: {response.text}")
@@ -329,7 +329,7 @@ def delete_evaluation(name: str, endpoint: str, api_key: Optional[str] = None) -
     params = {"dataset": name, "endpoint": endpoint}
     # Send DELETE request to the /evaluation endpoint
     response = requests.delete(
-        BASE_URL + "/evaluation", headers=headers, params=params
+        base_url() + "/evaluation", headers=headers, params=params
     )
     if response.status_code != 200:
         raise ValueError(response.text)
@@ -358,7 +358,7 @@ def list_evaluations(
     }
     params = {"dataset": dataset}
     # Send GET request to the /evaluation/list endpoint
-    response = requests.get(BASE_URL + "/evaluation/list", headers=headers)
+    response = requests.get(base_url() + "/evaluation/list", headers=headers)
     if response.status_code != 200:
         raise ValueError(response.text)
     return _res_to_list(response)
@@ -382,7 +382,7 @@ def get_credits(api_key: Optional[str] = None) -> float:
         "Authorization": f"Bearer {api_key}",
     }
     # Send GET request to the /get_credits endpoint
-    response = requests.get(BASE_URL + "/get_credits", headers=headers)
+    response = requests.get(base_url() + "/get_credits", headers=headers)
     if response.status_code != 200:
         raise ValueError(response.text)
     return _res_to_list(response)["credits"]
