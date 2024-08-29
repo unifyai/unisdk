@@ -14,7 +14,8 @@ from typing import AsyncGenerator, Dict, Generator, List, Optional, Union, Itera
 
 # local
 import unify.utils
-from unify.utils import _validate_api_key, BASE_URL
+from . import BASE_URL
+from unify.utils import _validate_api_key
 from unify.exceptions import BadRequestError, UnifyError, status_error_map
 
 

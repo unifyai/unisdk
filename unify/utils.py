@@ -2,6 +2,7 @@ import os
 import json
 import requests
 from typing import Dict, List, Optional
+from . import BASE_URL
 
 _available_dynamic_modes = [
     "lowest-input-cost",
@@ -15,8 +16,6 @@ _available_dynamic_modes = [
     "highest-tks-per-sec",
     "tks-per-sec",
 ]
-
-BASE_URL = "https://api.unify.ai/v0"
 
 
 def _res_to_list(response: requests.Response) -> List:
