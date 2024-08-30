@@ -24,8 +24,10 @@ def process_output():
         if line.startswith("# "):
             if (
                 module_str in submods_to_ignore
-                or module_str.startswith(r"\_")
-                and not module_str.startswith(r"\_\_init\_\_")
+                or (
+                    module_str.startswith(r"\_")
+                    and not module_str.startswith(r"\_\_init\_\_")
+                )
             ):
                 ignore_sections.append(idx)
             sections.append(idx)
@@ -33,8 +35,8 @@ def process_output():
     for i, idx in enumerate(sections):
         if r"\_\_init\_\_" not in content[idx]:
             next_idx = sections[i + 1] - 1 if i < len(sections) - 1 else None
-            if i not in ignore_sections:
-               section_wise_content.append(content[idx:next_idx])
+            if idx not in ignore_sections:
+                section_wise_content.append(content[idx:next_idx])
     for section_content in section_wise_content:
         module_name = section_content[0].strip("\n")[2:].replace("\\", "")
         modules.append(f"python/{module_name}")
