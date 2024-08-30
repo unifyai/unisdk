@@ -376,39 +376,41 @@ class Unify(Client):
         extra_query: Optional[Query] = None,
         **kwargs,
     ) -> Generator[str, None, None]:
+        kw = dict(
+            model=endpoint,
+            messages=messages,  # type: ignore[arg-type]
+            max_tokens=max_tokens,
+            stop=stop,
+            stream=True,
+            temperature=temperature,
+            # partially unified arguments
+            frequency_penalty=frequency_penalty,
+            logit_bias=logit_bias,
+            logprobs=logprobs,
+            top_logprobs=top_logprobs,
+            n=n,
+            presence_penalty=presence_penalty,
+            response_format=response_format,
+            seed=seed,
+            stream_options=stream_options,
+            top_p=top_p,
+            tools=tools,
+            tool_choice=tool_choice,
+            parallel_tool_calls=parallel_tool_calls,
+            extra_body={  # platform arguments
+                "signature": "python",
+                "use_custom_keys": use_custom_keys,
+                "tags": tags,
+                # passthrough json arguments
+                **kwargs,
+            },
+            # other passthrough arguments
+            extra_headers=extra_headers,
+            extra_query=extra_query,
+        )
+        kw = {k: v for k, v in kw.items() if v is not None}
         try:
-            chat_completion = self._client.chat.completions.create(
-                model=endpoint,
-                messages=messages,  # type: ignore[arg-type]
-                max_tokens=max_tokens,
-                stop=stop,
-                stream=True,
-                temperature=temperature,
-                # partially unified arguments
-                frequency_penalty=frequency_penalty,
-                logit_bias=logit_bias,
-                logprobs=logprobs,
-                top_logprobs=top_logprobs,
-                n=n,
-                presence_penalty=presence_penalty,
-                response_format=response_format,
-                seed=seed,
-                stream_options=stream_options,
-                top_p=top_p,
-                tools=tools,
-                tool_choice=tool_choice,
-                parallel_tool_calls=parallel_tool_calls,
-                extra_body={  # platform arguments
-                    "signature": "python",
-                    "use_custom_keys": use_custom_keys,
-                    "tags": tags,
-                    # passthrough json arguments
-                    **kwargs,
-                },
-                # other passthrough arguments
-                extra_headers=extra_headers,
-                extra_query=extra_query,
-            )
+            chat_completion = self._client.chat.completions.create(**kw)
             for chunk in chat_completion:
                 if message_content_only:
                     content = chunk.choices[0].delta.content  # type: ignore[union-attr]
@@ -452,39 +454,41 @@ class Unify(Client):
         extra_query: Optional[Query] = None,
         **kwargs,
     ) -> str:
+        kw = dict(
+            model=endpoint,
+            messages=messages,  # type: ignore[arg-type]
+            max_tokens=max_tokens,
+            stop=stop,
+            stream=False,
+            temperature=temperature,
+            # partially unified arguments
+            frequency_penalty=frequency_penalty,
+            logit_bias=logit_bias,
+            logprobs=logprobs,
+            top_logprobs=top_logprobs,
+            n=n,
+            presence_penalty=presence_penalty,
+            response_format=response_format,
+            seed=seed,
+            stream_options=stream_options,
+            top_p=top_p,
+            tools=tools,
+            tool_choice=tool_choice,
+            parallel_tool_calls=parallel_tool_calls,
+            extra_body={  # platform arguments
+                "signature": "python",
+                "use_custom_keys": use_custom_keys,
+                "tags": tags,
+                # passthrough json arguments
+                **kwargs,
+            },
+            # other passthrough arguments
+            extra_headers=extra_headers,
+            extra_query=extra_query,
+        )
+        kw = {k: v for k, v in kw.items() if v is not None}
         try:
-            chat_completion = self._client.chat.completions.create(
-                model=endpoint,
-                messages=messages,  # type: ignore[arg-type]
-                max_tokens=max_tokens,
-                stop=stop,
-                stream=False,
-                temperature=temperature,
-                # partially unified arguments
-                frequency_penalty=frequency_penalty,
-                logit_bias=logit_bias,
-                logprobs=logprobs,
-                top_logprobs=top_logprobs,
-                n=n,
-                presence_penalty=presence_penalty,
-                response_format=response_format,
-                seed=seed,
-                stream_options=stream_options,
-                top_p=top_p,
-                tools=tools,
-                tool_choice=tool_choice,
-                parallel_tool_calls=parallel_tool_calls,
-                extra_body={  # platform arguments
-                    "signature": "python",
-                    "use_custom_keys": use_custom_keys,
-                    "tags": tags,
-                    # passthrough json arguments
-                    **kwargs,
-                },
-                # other passthrough arguments
-                extra_headers=extra_headers,
-                extra_query=extra_query,
-            )
+            chat_completion = self._client.chat.completions.create(**kw)
             if "router" not in endpoint:
                 self.set_provider(
                     chat_completion.model.split(  # type: ignore[union-attr]
@@ -655,39 +659,41 @@ class AsyncUnify(Client):
         extra_query: Optional[Query] = None,
         **kwargs,
     ) -> AsyncGenerator[str, None]:
+        kw = dict(
+            model=endpoint,
+            messages=messages,  # type: ignore[arg-type]
+            max_tokens=max_tokens,
+            stop=stop,
+            stream=True,
+            temperature=temperature,
+            # partially unified arguments
+            frequency_penalty=frequency_penalty,
+            logit_bias=logit_bias,
+            logprobs=logprobs,
+            top_logprobs=top_logprobs,
+            n=n,
+            presence_penalty=presence_penalty,
+            response_format=response_format,
+            seed=seed,
+            stream_options=stream_options,
+            top_p=top_p,
+            tools=tools,
+            tool_choice=tool_choice,
+            parallel_tool_calls=parallel_tool_calls,
+            extra_body={  # platform arguments
+                "signature": "python",
+                "use_custom_keys": use_custom_keys,
+                "tags": tags,
+                # passthrough json arguments
+                **kwargs,
+            },
+            # other passthrough arguments
+            extra_headers=extra_headers,
+            extra_query=extra_query,
+        )
+        kw = {k: v for k, v in kw.items() if v is not None}
         try:
-            async_stream = await self._client.chat.completions.create(
-                model=endpoint,
-                messages=messages,  # type: ignore[arg-type]
-                max_tokens=max_tokens,
-                stop=stop,
-                stream=True,
-                temperature=temperature,
-                # partially unified arguments
-                frequency_penalty=frequency_penalty,
-                logit_bias=logit_bias,
-                logprobs=logprobs,
-                top_logprobs=top_logprobs,
-                n=n,
-                presence_penalty=presence_penalty,
-                response_format=response_format,
-                seed=seed,
-                stream_options=stream_options,
-                top_p=top_p,
-                tools=tools,
-                tool_choice=tool_choice,
-                parallel_tool_calls=parallel_tool_calls,
-                extra_body={  # platform arguments
-                    "signature": "python",
-                    "use_custom_keys": use_custom_keys,
-                    "tags": tags,
-                    # passthrough json arguments
-                    **kwargs,
-                },
-                # other passthrough arguments
-                extra_headers=extra_headers,
-                extra_query=extra_query,
-            )
+            async_stream = await self._client.chat.completions.create(**kw)
             async for chunk in async_stream:  # type: ignore[union-attr]
                 self.set_provider(chunk.model.split("@")[-1])
                 if message_content_only:
@@ -728,39 +734,41 @@ class AsyncUnify(Client):
         extra_query: Optional[Query] = None,
         **kwargs,
     ) -> str:
+        kw = dict(
+            model=endpoint,
+            messages=messages,  # type: ignore[arg-type]
+            max_tokens=max_tokens,
+            stop=stop,
+            stream=False,
+            temperature=temperature,
+            # partially unified arguments
+            frequency_penalty=frequency_penalty,
+            logit_bias=logit_bias,
+            logprobs=logprobs,
+            top_logprobs=top_logprobs,
+            n=n,
+            presence_penalty=presence_penalty,
+            response_format=response_format,
+            seed=seed,
+            stream_options=stream_options,
+            top_p=top_p,
+            tools=tools,
+            tool_choice=tool_choice,
+            parallel_tool_calls=parallel_tool_calls,
+            extra_body={  # platform arguments
+                "signature": "python",
+                "use_custom_keys": use_custom_keys,
+                "tags": tags,
+                # passthrough json arguments
+                **kwargs,
+            },
+            # other passthrough arguments
+            extra_headers=extra_headers,
+            extra_query=extra_query,
+        )
+        kw = {k: v for k, v in kw.items() if v is not None}
         try:
-            async_response = await self._client.chat.completions.create(
-                model=endpoint,
-                messages=messages,  # type: ignore[arg-type]
-                max_tokens=max_tokens,
-                stop=stop,
-                stream=False,
-                temperature=temperature,
-                # partially unified arguments
-                frequency_penalty=frequency_penalty,
-                logit_bias=logit_bias,
-                logprobs=logprobs,
-                top_logprobs=top_logprobs,
-                n=n,
-                presence_penalty=presence_penalty,
-                response_format=response_format,
-                seed=seed,
-                stream_options=stream_options,
-                top_p=top_p,
-                tools=tools,
-                tool_choice=tool_choice,
-                parallel_tool_calls=parallel_tool_calls,
-                extra_body={  # platform arguments
-                    "signature": "python",
-                    "use_custom_keys": use_custom_keys,
-                    "tags": tags,
-                    # passthrough json arguments
-                    **kwargs,
-                },
-                # other passthrough arguments
-                extra_headers=extra_headers,
-                extra_query=extra_query,
-            )
+            async_response = await self._client.chat.completions.create(**kw)
             self.set_provider(async_response.model.split("@")[-1])  # type: ignore
             if message_content_only:
                 content = async_response.choices[0].message.content
