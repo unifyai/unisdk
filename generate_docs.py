@@ -10,7 +10,7 @@ replace = {
     "####": "---\n\n###",
 }
 
-submods_to_ignore = ["\_caching"]
+submods_to_ignore = []
 
 
 def process_output():
@@ -20,9 +20,11 @@ def process_output():
         mint = json.load(f)
     sections, modules = [], []
     for idx, line in enumerate(content):
+        module_str = line.lstrip("# ").rstrip("\n")
         if (
             line.startswith("# ")
-            and line.lstrip("# ").rstrip("\n") not in submods_to_ignore
+            and module_str not in submods_to_ignore
+            and not module_str.startswith("\_")
         ):
             print(line)
             sections.append(idx)
