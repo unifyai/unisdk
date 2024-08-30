@@ -10,7 +10,7 @@ replace = {
     "####": "---\n\n###",
 }
 
-submods_to_ignore = ["_caching"]
+submods_to_ignore = ["\_caching"]
 
 
 def process_output():
