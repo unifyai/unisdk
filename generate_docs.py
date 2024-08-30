@@ -10,6 +10,8 @@ replace = {
     "####": "---\n\n###",
 }
 
+submods_to_ignore = ["caching"]
+
 
 def process_output():
     with open("output/result.txt") as f:
@@ -18,7 +20,10 @@ def process_output():
         mint = json.load(f)
     sections, modules = [], []
     for idx, line in enumerate(content):
-        if line.startswith("# "):
+        if (
+            line.startswith("# ")
+            and line.lstrip("# ").rstrip("\n") not in submods_to_ignore
+        ):
             print(line)
             sections.append(idx)
     section_wise_content = []
