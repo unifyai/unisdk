@@ -43,10 +43,7 @@ def process_output():
             for key, value in replace.items():
                 final_content = final_content.replace(key, value)
             f.write(final_content)
-    for idx, data in enumerate(mint["navigation"]):
-        if data["group"] == "":
-            mint["navigation"][idx] = {"group": "", "pages": sorted(modules)}
-            break
+    mint["navigation"][1] = {"group": "", "pages": sorted(modules)}
     with open("mint.json", "w") as f:
         json.dump(mint, f, indent=4)
 
