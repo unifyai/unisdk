@@ -30,6 +30,7 @@ def process_output():
                 )
             ):
                 ignore_sections.append(idx)
+            print(line)
             sections.append(idx)
     section_wise_content = []
     for i, idx in enumerate(sections):
