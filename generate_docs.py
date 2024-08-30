@@ -18,21 +18,23 @@ def process_output():
         content = f.readlines()
     with open("mint.json") as f:
         mint = json.load(f)
-    sections, modules = [], []
+    sections, ignore_sections, modules = [], [], []
     for idx, line in enumerate(content):
         module_str = line.lstrip("# ").rstrip("\n")
-        if (
-            line.startswith("# ")
-            and module_str not in submods_to_ignore
-            and not module_str.startswith("\_")
-        ):
-            print(line)
+        if line.startswith("# "):
+            if (
+                module_str in submods_to_ignore
+                or module_str.startswith(r"\_")
+                and not module_str.startswith(r"\_\_init\_\_")
+            ):
+                ignore_sections.append(idx)
             sections.append(idx)
     section_wise_content = []
     for i, idx in enumerate(sections):
         if r"\_\_init\_\_" not in content[idx]:
             next_idx = sections[i + 1] - 1 if i < len(sections) - 1 else None
-            section_wise_content.append(content[idx:next_idx])
+            if i not in ignore_sections:
+               section_wise_content.append(content[idx:next_idx])
     for section_content in section_wise_content:
         module_name = section_content[0].strip("\n")[2:].replace("\\", "")
         modules.append(f"python/{module_name}")
