@@ -57,6 +57,7 @@ class Client(ABC):
         tags: Optional[List[str]] = None,
         # python client arguments
         message_content_only: bool = True,
+        cache: bool = False,
         # passthrough arguments
         extra_headers: Optional[Headers] = None,
         extra_query: Optional[Query] = None,
@@ -150,6 +151,11 @@ class Client(ABC):
             chat_completion.choices[0].message.content.strip(" ") from the OpenAI return.
             Otherwise, the full response chat_completion is returned.
             Defaults to True.
+
+            cache: If True, then the arguments will be stored in a local cache file, and any future calls with
+            identical arguments will read from the cache instead of running the LLM query. This can help to
+            save costs and also debug multi-step LLM applications, while keeping early steps fixed.
+            This argument only has any effect when stream=False.
 
             extra_headers: Additional "passthrough" headers for the request which are provider-specific, and are not
             part of the OpenAI standard. They are handled by the provider-specific API.
@@ -449,6 +455,7 @@ class Unify(Client):
         tags: Optional[List[str]] = None,
         # python client arguments
         message_content_only: bool = True,
+        cache: bool = False,
         # passthrough arguments
         extra_headers: Optional[Headers] = None,
         extra_query: Optional[Query] = None,
@@ -487,22 +494,28 @@ class Unify(Client):
             extra_query=extra_query,
         )
         kw = {k: v for k, v in kw.items() if v is not None}
-        try:
-            chat_completion = self._client.chat.completions.create(**kw)
-            if "router" not in endpoint:
-                self.set_provider(
-                    chat_completion.model.split(  # type: ignore[union-attr]
-                        "@",
-                    )[-1]
-                )
-            if message_content_only:
-                content = chat_completion.choices[0].message.content
-                if content:
-                    return content.strip(" ")
-                return ""
-            return chat_completion
-        except openai.APIStatusError as e:
-            raise status_error_map[e.status_code](e.message) from None
+        chat_completion = None
+        if cache:
+            chat_completion = unify.caching.get_cache(kw)
+        if chat_completion is None:
+            try:
+                chat_completion = self._client.chat.completions.create(**kw)
+            except openai.APIStatusError as e:
+                raise status_error_map[e.status_code](e.message) from None
+            if cache:
+                unify.caching.write_to_cache(kw, chat_completion)
+        if "router" not in endpoint:
+            self.set_provider(
+                chat_completion.model.split(  # type: ignore[union-attr]
+                    "@",
+                )[-1]
+            )
+        if message_content_only:
+            content = chat_completion.choices[0].message.content
+            if content:
+                return content.strip(" ")
+            return ""
+        return chat_completion
 
     def generate(  # noqa: WPS234, WPS211
         self,
@@ -534,6 +547,7 @@ class Unify(Client):
         tags: Optional[List[str]] = None,
         # python client arguments
         message_content_only: bool = True,
+        cache: bool = False,
         # passthrough arguments
         extra_headers: Optional[Headers] = None,
         extra_query: Optional[Query] = None,
@@ -608,6 +622,7 @@ class Unify(Client):
             tags=tags,
             # python client arguments
             message_content_only=message_content_only,
+            cache=cache,
             # passthrough arguments
             extra_headers=extra_headers,
             extra_query=extra_query,
@@ -654,6 +669,7 @@ class AsyncUnify(Client):
         tags: Optional[List[str]] = None,
         # python client arguments
         message_content_only: bool = True,
+        cache: bool = False,
         # passthrough arguments
         extra_headers: Optional[Headers] = None,
         extra_query: Optional[Query] = None,
@@ -729,6 +745,7 @@ class AsyncUnify(Client):
         tags: Optional[List[str]] = None,
         # python client arguments
         message_content_only: bool = True,
+        cache: bool = False,
         # passthrough arguments
         extra_headers: Optional[Headers] = None,
         extra_query: Optional[Query] = None,
@@ -767,17 +784,23 @@ class AsyncUnify(Client):
             extra_query=extra_query,
         )
         kw = {k: v for k, v in kw.items() if v is not None}
-        try:
-            async_response = await self._client.chat.completions.create(**kw)
-            self.set_provider(async_response.model.split("@")[-1])  # type: ignore
-            if message_content_only:
-                content = async_response.choices[0].message.content
-                if content:
-                    return content.strip(" ")
-                return ""
-            return async_response
-        except openai.APIStatusError as e:
-            raise status_error_map[e.status_code](e.message) from None
+        chat_completion = None
+        if cache:
+            chat_completion = unify.caching.get_cache(kw)
+        if chat_completion is None:
+            try:
+                async_response = await self._client.chat.completions.create(**kw)
+            except openai.APIStatusError as e:
+                raise status_error_map[e.status_code](e.message) from None
+            if cache:
+                unify.caching.write_to_cache(kw, chat_completion)
+        self.set_provider(async_response.model.split("@")[-1])  # type: ignore
+        if message_content_only:
+            content = async_response.choices[0].message.content
+            if content:
+                return content.strip(" ")
+            return ""
+        return async_response
 
     async def generate(  # noqa: WPS234, WPS211
         self,
@@ -809,6 +832,7 @@ class AsyncUnify(Client):
         tags: Optional[List[str]] = None,
         # python client arguments
         message_content_only: bool = True,
+        cache: bool = False,
         # passthrough arguments
         extra_headers: Optional[Headers] = None,
         extra_query: Optional[Query] = None,
@@ -881,6 +905,7 @@ class AsyncUnify(Client):
             tags=tags,
             # python client arguments
             message_content_only=message_content_only,
+            cache=cache,
             # passthrough arguments
             extra_headers=extra_headers,
             extra_query=extra_query,

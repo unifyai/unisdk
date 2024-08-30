@@ -150,3 +150,6 @@ google-cloud-cli-*.tar.gz
 
 # Binaries
 bin/
+
+# Tests
+.cache.json
