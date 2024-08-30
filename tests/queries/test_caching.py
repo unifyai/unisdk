@@ -3,7 +3,7 @@ import time
 import unittest
 
 from unify.clients import Unify
-from unify.caching import _cache_fpath
+from unify._caching import _cache_fpath
 
 
 class TestUnifyCaching(unittest.TestCase):

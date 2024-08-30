@@ -18,7 +18,7 @@ def _create_cache_if_none():
 
 
 # noinspection PyTypeChecker,PyUnboundLocalVariable
-def get_cache(kw: Dict) -> Union[None, Dict]:
+def _get_cache(kw: Dict) -> Union[None, Dict]:
     _create_cache_if_none()
     kw = {k: v for k, v in kw.items() if v is not None}
     kw_str = json.dumps(kw)
@@ -27,7 +27,7 @@ def get_cache(kw: Dict) -> Union[None, Dict]:
 
 
 # noinspection PyTypeChecker,PyUnresolvedReferences
-def write_to_cache(kw, response):
+def _write_to_cache(kw, response):
     _create_cache_if_none()
     kw = {k: v for k, v in kw.items() if v is not None}
     kw_str = json.dumps(kw)

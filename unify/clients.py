@@ -15,6 +15,7 @@ from typing import AsyncGenerator, Dict, Generator, List, Optional, Union, Itera
 # local
 import unify.utils
 from . import base_url
+from unify._caching import _get_cache, _write_to_cache
 from unify.utils import _validate_api_key
 from unify.exceptions import BadRequestError, UnifyError, status_error_map
 
@@ -496,14 +497,14 @@ class Unify(Client):
         kw = {k: v for k, v in kw.items() if v is not None}
         chat_completion = None
         if cache:
-            chat_completion = unify.caching.get_cache(kw)
+            chat_completion = _get_cache(kw)
         if chat_completion is None:
             try:
                 chat_completion = self._client.chat.completions.create(**kw)
             except openai.APIStatusError as e:
                 raise status_error_map[e.status_code](e.message) from None
             if cache:
-                unify.caching.write_to_cache(kw, chat_completion)
+                _write_to_cache(kw, chat_completion)
         if "router" not in endpoint:
             self.set_provider(
                 chat_completion.model.split(  # type: ignore[union-attr]
@@ -786,14 +787,14 @@ class AsyncUnify(Client):
         kw = {k: v for k, v in kw.items() if v is not None}
         chat_completion = None
         if cache:
-            chat_completion = unify.caching.get_cache(kw)
+            chat_completion = _get_cache(kw)
         if chat_completion is None:
             try:
                 async_response = await self._client.chat.completions.create(**kw)
             except openai.APIStatusError as e:
                 raise status_error_map[e.status_code](e.message) from None
             if cache:
-                unify.caching.write_to_cache(kw, chat_completion)
+                _write_to_cache(kw, chat_completion)
         self.set_provider(async_response.model.split("@")[-1])  # type: ignore
         if message_content_only:
             content = async_response.choices[0].message.content
