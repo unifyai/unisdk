@@ -11,9 +11,9 @@ from openai.types.chat import (
 from openai.types.chat.completion_create_params import ResponseFormat
 
 # local
-from . import base_url
+from unify import base_url
 from unify import Unify, AsyncUnify
-from unify.utils import _validate_api_key
+from unify.utils.helpers import _validate_api_key
 from unify.exceptions import UnifyError
 from unify.exceptions import BadRequestError
 
