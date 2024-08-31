@@ -1,7 +1,7 @@
 import sys
 from typing import Dict, Generator, List, Optional
 
-from unify.clients import Unify
+from unify.queries.clients import Unify
 from unify.exceptions import UnifyError
 
 
