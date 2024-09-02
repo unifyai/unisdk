@@ -381,8 +381,8 @@ def get_credits(api_key: Optional[str] = None) -> float:
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    # Send GET request to the /get_credits endpoint
-    response = requests.get(base_url() + "/get_credits", headers=headers)
+    # Send GET request to the /credits endpoint
+    response = requests.get(base_url() + "/credits", headers=headers)
     if response.status_code != 200:
         raise ValueError(response.text)
     return _res_to_list(response)["credits"]

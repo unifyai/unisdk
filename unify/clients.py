@@ -324,7 +324,7 @@ class Client(ABC):
             BadRequestError: If there was an HTTP error.
             ValueError: If there was an error parsing the JSON response.
         """
-        url = f"{base_url()}/get_credits"
+        url = f"{base_url()}/credits"
         headers = {
             "accept": "application/json",
             "Authorization": f"Bearer {self._api_key}",
