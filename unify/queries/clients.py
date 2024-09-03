@@ -1,6 +1,6 @@
 # global
 import openai
-from openai._types import Headers, Query
+from openai._types import Headers as OpenAIHeaders, Query as OpenAIQuery
 from openai.types.chat import (
     ChatCompletionToolParam,
     ChatCompletionToolChoiceOptionParam,
@@ -15,6 +15,7 @@ from typing import AsyncGenerator, Dict, Generator, List, Optional, Union, Itera
 # local
 import unify
 from unify import BASE_URL
+from unify.queries import Query
 from unify._caching import _get_cache, _write_to_cache
 from unify.utils.helpers import _validate_api_key
 from unify.exceptions import BadRequestError, UnifyError, status_error_map
@@ -34,21 +35,19 @@ class Client(ABC):
         system_prompt: Optional[str] = None,
         messages: Optional[Iterable[ChatCompletionMessageParam]] = None,
         *,
-        # unified arguments
-        max_tokens: Optional[int] = 1024,
-        stop: Union[Optional[str], List[str]] = None,
-        stream: Optional[bool] = False,
-        temperature: Optional[float] = 1.0,
-        # partially unified arguments
         frequency_penalty: Optional[float] = None,
         logit_bias: Optional[Dict[str, int]] = None,
         logprobs: Optional[bool] = None,
         top_logprobs: Optional[int] = None,
+        max_tokens: Optional[int] = 1024,
         n: Optional[int] = None,
         presence_penalty: Optional[float] = None,
         response_format: Optional[ResponseFormat] = None,
         seed: Optional[int] = None,
+        stop: Union[Optional[str], List[str]] = None,
+        stream: Optional[bool] = False,
         stream_options: Optional[ChatCompletionStreamOptionsParam] = None,
+        temperature: Optional[float] = 1.0,
         top_p: Optional[float] = None,
         tools: Optional[Iterable[ChatCompletionToolParam]] = None,
         tool_choice: Optional[ChatCompletionToolChoiceOptionParam] = None,
@@ -60,8 +59,8 @@ class Client(ABC):
         message_content_only: bool = True,
         cache: bool = False,
         # passthrough arguments
-        extra_headers: Optional[Headers] = None,
-        extra_query: Optional[Query] = None,
+        extra_headers: Optional[OpenAIHeaders] = None,
+        extra_query: Optional[OpenAIQuery] = None,
         **kwargs,
     ):
         """Generate content using the Unify API.
@@ -74,22 +73,6 @@ class Client(ABC):
 
             messages: A list of messages comprising the conversation so far.
             If provided, user_prompt must be None.
-
-            max_tokens: The maximum number of tokens that can be generated in the chat
-            completion. The total length of input tokens and generated tokens is limited
-            by the model's context length. Defaults to the provider's default max_tokens
-            when the value is None.
-
-            stop: Up to 4 sequences where the API will stop generating further tokens.
-
-            stream: If True, generates content as a stream. If False, generates content
-            as a single response. Defaults to False.
-
-            temperature:  What sampling temperature to use, between 0 and 2.
-            Higher values like 0.8 will make the output more random,
-            while lower values like 0.2 will make it more focused and deterministic.
-            It is generally recommended to alter this or top_p, but not both.
-            Defaults to the provider's default max_tokens when the value is None.
 
             frequency_penalty: Number between -2.0 and 2.0. Positive values penalize new
             tokens based on their existing frequency in the text so far, decreasing the
@@ -110,6 +93,11 @@ class Client(ABC):
             top_logprobs: An integer between 0 and 20 specifying the number of most
             likely tokens to return at each token position, each with an associated log
             probability. logprobs must be set to true if this parameter is used.
+
+            max_tokens: The maximum number of tokens that can be generated in the chat
+            completion. The total length of input tokens and generated tokens is limited
+            by the model's context length. Defaults to the provider's default max_tokens
+            when the value is None.
 
             n: How many chat completion choices to generate for each input message. Note
             that you will be charged based on the number of generated tokens across all
@@ -132,8 +120,19 @@ class Client(ABC):
             you should refer to the system_fingerprint response parameter to monitor
             changes in the backend.
 
+            stop: Up to 4 sequences where the API will stop generating further tokens.
+
+            stream: If True, generates content as a stream. If False, generates content
+            as a single response. Defaults to False.
+
             stream_options: Options for streaming response. Only set this when you set
             stream: true.
+
+            temperature:  What sampling temperature to use, between 0 and 2.
+            Higher values like 0.8 will make the output more random,
+            while lower values like 0.2 will make it more focused and deterministic.
+            It is generally recommended to alter this or top_p, but not both.
+            Defaults to the provider's default max_tokens when the value is None.
 
             top_p: An alternative to sampling with temperature, called nucleus sampling,
             where the model considers the results of the tokens with top_p probability
@@ -375,20 +374,18 @@ class Unify(Client):
         self,
         messages: List[Dict[str, str]],
         endpoint: str,
-        # unified arguments
-        max_tokens: Optional[int] = 1024,
-        stop: Union[Optional[str], List[str]] = None,
-        temperature: Optional[float] = 1.0,
-        # partially unified arguments
         frequency_penalty: Optional[float] = None,
         logit_bias: Optional[Dict[str, int]] = None,
         logprobs: Optional[bool] = None,
         top_logprobs: Optional[int] = None,
+        max_tokens: Optional[int] = 1024,
         n: Optional[int] = None,
         presence_penalty: Optional[float] = None,
         response_format: Optional[ResponseFormat] = None,
         seed: Optional[int] = None,
+        stop: Union[Optional[str], List[str]] = None,
         stream_options: Optional[ChatCompletionStreamOptionsParam] = None,
+        temperature: Optional[float] = 1.0,
         top_p: Optional[float] = None,
         tools: Optional[Iterable[ChatCompletionToolParam]] = None,
         tool_choice: Optional[ChatCompletionToolChoiceOptionParam] = None,
@@ -399,27 +396,26 @@ class Unify(Client):
         # python client arguments
         message_content_only: bool = True,
         # passthrough arguments
-        extra_headers: Optional[Headers] = None,
-        extra_query: Optional[Query] = None,
+        extra_headers: Optional[OpenAIHeaders] = None,
+        extra_query: Optional[OpenAIQuery] = None,
         **kwargs,
     ) -> Generator[str, None, None]:
         kw = dict(
             model=endpoint,
             messages=messages,  # type: ignore[arg-type]
-            max_tokens=max_tokens,
-            stop=stop,
-            stream=True,
-            temperature=temperature,
-            # partially unified arguments
             frequency_penalty=frequency_penalty,
             logit_bias=logit_bias,
             logprobs=logprobs,
             top_logprobs=top_logprobs,
+            max_tokens=max_tokens,
             n=n,
             presence_penalty=presence_penalty,
             response_format=response_format,
             seed=seed,
+            stop=stop,
+            stream=True,
             stream_options=stream_options,
+            temperature=temperature,
             top_p=top_p,
             tools=tools,
             tool_choice=tool_choice,
@@ -453,20 +449,18 @@ class Unify(Client):
         self,
         messages: List[Dict[str, str]],
         endpoint: str,
-        # unified arguments
-        max_tokens: Optional[int] = 1024,
-        stop: Union[Optional[str], List[str]] = None,
-        temperature: Optional[float] = 1.0,
-        # partially unified arguments
         frequency_penalty: Optional[float] = None,
         logit_bias: Optional[Dict[str, int]] = None,
         logprobs: Optional[bool] = None,
         top_logprobs: Optional[int] = None,
+        max_tokens: Optional[int] = 1024,
         n: Optional[int] = None,
         presence_penalty: Optional[float] = None,
         response_format: Optional[ResponseFormat] = None,
         seed: Optional[int] = None,
+        stop: Union[Optional[str], List[str]] = None,
         stream_options: Optional[ChatCompletionStreamOptionsParam] = None,
+        temperature: Optional[float] = 1.0,
         top_p: Optional[float] = None,
         tools: Optional[Iterable[ChatCompletionToolParam]] = None,
         tool_choice: Optional[ChatCompletionToolChoiceOptionParam] = None,
@@ -478,27 +472,26 @@ class Unify(Client):
         message_content_only: bool = True,
         cache: bool = False,
         # passthrough arguments
-        extra_headers: Optional[Headers] = None,
-        extra_query: Optional[Query] = None,
+        extra_headers: Optional[OpenAIHeaders] = None,
+        extra_query: Optional[OpenAIQuery] = None,
         **kwargs,
     ) -> str:
         kw = dict(
             model=endpoint,
             messages=messages,  # type: ignore[arg-type]
-            max_tokens=max_tokens,
-            stop=stop,
-            stream=False,
-            temperature=temperature,
-            # partially unified arguments
             frequency_penalty=frequency_penalty,
             logit_bias=logit_bias,
             logprobs=logprobs,
             top_logprobs=top_logprobs,
+            max_tokens=max_tokens,
             n=n,
             presence_penalty=presence_penalty,
             response_format=response_format,
             seed=seed,
+            stop=stop,
+            stream=False,
             stream_options=stream_options,
+            temperature=temperature,
             top_p=top_p,
             tools=tools,
             tool_choice=tool_choice,
@@ -544,21 +537,19 @@ class Unify(Client):
         system_prompt: Optional[str] = None,
         messages: Optional[Iterable[ChatCompletionMessageParam]] = None,
         *,
-        # unified arguments
-        max_tokens: Optional[int] = 1024,
-        stop: Union[Optional[str], List[str]] = None,
-        stream: Optional[bool] = False,
-        temperature: Optional[float] = 1.0,
-        # partially unified arguments
         frequency_penalty: Optional[float] = None,
         logit_bias: Optional[Dict[str, int]] = None,
         logprobs: Optional[bool] = None,
         top_logprobs: Optional[int] = None,
+        max_tokens: Optional[int] = 1024,
         n: Optional[int] = None,
         presence_penalty: Optional[float] = None,
         response_format: Optional[ResponseFormat] = None,
         seed: Optional[int] = None,
+        stop: Union[Optional[str], List[str]] = None,
+        stream: Optional[bool] = False,
         stream_options: Optional[ChatCompletionStreamOptionsParam] = None,
+        temperature: Optional[float] = 1.0,
         top_p: Optional[float] = None,
         tools: Optional[Iterable[ChatCompletionToolParam]] = None,
         tool_choice: Optional[ChatCompletionToolChoiceOptionParam] = None,
@@ -570,8 +561,8 @@ class Unify(Client):
         message_content_only: bool = True,
         cache: bool = False,
         # passthrough arguments
-        extra_headers: Optional[Headers] = None,
-        extra_query: Optional[Query] = None,
+        extra_headers: Optional[OpenAIHeaders] = None,
+        extra_query: Optional[OpenAIQuery] = None,
         **kwargs,
     ) -> Union[Generator[str, None, None], str]:  # noqa: DAR101, DAR201, DAR401
         contents = []
@@ -587,23 +578,26 @@ class Unify(Client):
         if tools:
             message_content_only = False
 
+        query = Query(
+
+        )
+
         if stream:
             return self._generate_stream(
                 contents,
                 self._endpoint,
-                max_tokens=max_tokens,
-                stop=stop,
-                temperature=temperature,
-                # partially unified arguments
                 frequency_penalty=frequency_penalty,
                 logit_bias=logit_bias,
                 logprobs=logprobs,
                 top_logprobs=top_logprobs,
+                max_tokens=max_tokens,
                 n=n,
                 presence_penalty=presence_penalty,
                 response_format=response_format,
                 seed=seed,
+                stop=stop,
                 stream_options=stream_options,
+                temperature=temperature,
                 top_p=top_p,
                 tools=tools,
                 tool_choice=tool_choice,
@@ -621,19 +615,18 @@ class Unify(Client):
         return self._generate_non_stream(
             contents,
             self._endpoint,
-            max_tokens=max_tokens,
-            stop=stop,
-            temperature=temperature,
-            # partially unified arguments
             frequency_penalty=frequency_penalty,
             logit_bias=logit_bias,
             logprobs=logprobs,
             top_logprobs=top_logprobs,
+            max_tokens=max_tokens,
             n=n,
             presence_penalty=presence_penalty,
             response_format=response_format,
             seed=seed,
+            stop=stop,
             stream_options=stream_options,
+            temperature=temperature,
             top_p=top_p,
             tools=tools,
             tool_choice=tool_choice,
@@ -668,20 +661,18 @@ class AsyncUnify(Client):
         self,
         messages: List[Dict[str, str]],
         endpoint: str,
-        # unified arguments
-        max_tokens: Optional[int] = 1024,
-        stop: Union[Optional[str], List[str]] = None,
-        temperature: Optional[float] = 1.0,
-        # partially unified arguments
         frequency_penalty: Optional[float] = None,
         logit_bias: Optional[Dict[str, int]] = None,
         logprobs: Optional[bool] = None,
         top_logprobs: Optional[int] = None,
+        max_tokens: Optional[int] = 1024,
         n: Optional[int] = None,
         presence_penalty: Optional[float] = None,
         response_format: Optional[ResponseFormat] = None,
         seed: Optional[int] = None,
+        stop: Union[Optional[str], List[str]] = None,
         stream_options: Optional[ChatCompletionStreamOptionsParam] = None,
+        temperature: Optional[float] = 1.0,
         top_p: Optional[float] = None,
         tools: Optional[Iterable[ChatCompletionToolParam]] = None,
         tool_choice: Optional[ChatCompletionToolChoiceOptionParam] = None,
@@ -693,27 +684,26 @@ class AsyncUnify(Client):
         message_content_only: bool = True,
         cache: bool = False,
         # passthrough arguments
-        extra_headers: Optional[Headers] = None,
-        extra_query: Optional[Query] = None,
+        extra_headers: Optional[OpenAIHeaders] = None,
+        extra_query: Optional[OpenAIQuery] = None,
         **kwargs,
     ) -> AsyncGenerator[str, None]:
         kw = dict(
             model=endpoint,
             messages=messages,  # type: ignore[arg-type]
-            max_tokens=max_tokens,
-            stop=stop,
-            stream=True,
-            temperature=temperature,
-            # partially unified arguments
             frequency_penalty=frequency_penalty,
             logit_bias=logit_bias,
             logprobs=logprobs,
             top_logprobs=top_logprobs,
+            max_tokens=max_tokens,
             n=n,
             presence_penalty=presence_penalty,
             response_format=response_format,
             seed=seed,
+            stop=stop,
+            stream=True,
             stream_options=stream_options,
+            temperature=temperature,
             top_p=top_p,
             tools=tools,
             tool_choice=tool_choice,
@@ -744,20 +734,18 @@ class AsyncUnify(Client):
         self,
         messages: List[Dict[str, str]],
         endpoint: str,
-        # unified arguments
-        max_tokens: Optional[int] = 1024,
-        stop: Union[Optional[str], List[str]] = None,
-        temperature: Optional[float] = 1.0,
-        # partially unified arguments
         frequency_penalty: Optional[float] = None,
         logit_bias: Optional[Dict[str, int]] = None,
         logprobs: Optional[bool] = None,
         top_logprobs: Optional[int] = None,
+        max_tokens: Optional[int] = 1024,
         n: Optional[int] = None,
         presence_penalty: Optional[float] = None,
         response_format: Optional[ResponseFormat] = None,
         seed: Optional[int] = None,
+        stop: Union[Optional[str], List[str]] = None,
         stream_options: Optional[ChatCompletionStreamOptionsParam] = None,
+        temperature: Optional[float] = 1.0,
         top_p: Optional[float] = None,
         tools: Optional[Iterable[ChatCompletionToolParam]] = None,
         tool_choice: Optional[ChatCompletionToolChoiceOptionParam] = None,
@@ -769,27 +757,26 @@ class AsyncUnify(Client):
         message_content_only: bool = True,
         cache: bool = False,
         # passthrough arguments
-        extra_headers: Optional[Headers] = None,
-        extra_query: Optional[Query] = None,
+        extra_headers: Optional[OpenAIHeaders] = None,
+        extra_query: Optional[OpenAIQuery] = None,
         **kwargs,
     ) -> str:
         kw = dict(
             model=endpoint,
             messages=messages,  # type: ignore[arg-type]
-            max_tokens=max_tokens,
-            stop=stop,
-            stream=False,
-            temperature=temperature,
-            # partially unified arguments
             frequency_penalty=frequency_penalty,
             logit_bias=logit_bias,
             logprobs=logprobs,
             top_logprobs=top_logprobs,
+            max_tokens=max_tokens,
             n=n,
             presence_penalty=presence_penalty,
             response_format=response_format,
             seed=seed,
+            stop=stop,
+            stream=False,
             stream_options=stream_options,
+            temperature=temperature,
             top_p=top_p,
             tools=tools,
             tool_choice=tool_choice,
@@ -830,21 +817,19 @@ class AsyncUnify(Client):
         system_prompt: Optional[str] = None,
         messages: Optional[Iterable[ChatCompletionMessageParam]] = None,
         *,
-        # unified arguments
-        max_tokens: Optional[int] = 1024,
-        stop: Union[Optional[str], List[str]] = None,
-        stream: Optional[bool] = False,
-        temperature: Optional[float] = 1.0,
-        # partially unified arguments
         frequency_penalty: Optional[float] = None,
         logit_bias: Optional[Dict[str, int]] = None,
         logprobs: Optional[bool] = None,
         top_logprobs: Optional[int] = None,
+        max_tokens: Optional[int] = 1024,
         n: Optional[int] = None,
         presence_penalty: Optional[float] = None,
         response_format: Optional[ResponseFormat] = None,
         seed: Optional[int] = None,
+        stop: Union[Optional[str], List[str]] = None,
+        stream: Optional[bool] = False,
         stream_options: Optional[ChatCompletionStreamOptionsParam] = None,
+        temperature: Optional[float] = 1.0,
         top_p: Optional[float] = None,
         tools: Optional[Iterable[ChatCompletionToolParam]] = None,
         tool_choice: Optional[ChatCompletionToolChoiceOptionParam] = None,
@@ -856,8 +841,8 @@ class AsyncUnify(Client):
         message_content_only: bool = True,
         cache: bool = False,
         # passthrough arguments
-        extra_headers: Optional[Headers] = None,
-        extra_query: Optional[Query] = None,
+        extra_headers: Optional[OpenAIHeaders] = None,
+        extra_query: Optional[OpenAIQuery] = None,
         **kwargs,
     ) -> Union[AsyncGenerator[str, None], str]:  # noqa: DAR101, DAR201, DAR401
         contents = []
@@ -875,19 +860,18 @@ class AsyncUnify(Client):
             return self._generate_stream(
                 contents,
                 self._endpoint,
-                max_tokens=max_tokens,
-                stop=stop,
-                temperature=temperature,
-                # partially unified arguments
                 frequency_penalty=frequency_penalty,
                 logit_bias=logit_bias,
                 logprobs=logprobs,
                 top_logprobs=top_logprobs,
+                max_tokens=max_tokens,
                 n=n,
                 presence_penalty=presence_penalty,
                 response_format=response_format,
                 seed=seed,
+                stop=stop,
                 stream_options=stream_options,
+                temperature=temperature,
                 top_p=top_p,
                 tools=tools,
                 tool_choice=tool_choice,
@@ -905,19 +889,18 @@ class AsyncUnify(Client):
         return await self._generate_non_stream(
             contents,
             self._endpoint,
-            max_tokens=max_tokens,
-            stop=stop,
-            temperature=temperature,
-            # partially unified arguments
             frequency_penalty=frequency_penalty,
             logit_bias=logit_bias,
             logprobs=logprobs,
             top_logprobs=top_logprobs,
+            max_tokens=max_tokens,
             n=n,
             presence_penalty=presence_penalty,
             response_format=response_format,
             seed=seed,
+            stop=stop,
             stream_options=stream_options,
+            temperature=temperature,
             top_p=top_p,
             tools=tools,
             tool_choice=tool_choice,
