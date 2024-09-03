@@ -1,7 +1,7 @@
 import requests
 from typing import List, Optional
 
-from unify import base_url
+from unify import BASE_URL
 from .helpers import _validate_api_key, _res_to_list
 
 
@@ -28,7 +28,7 @@ def list_providers(
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    url = f"{base_url()}/providers"
+    url = f"{BASE_URL}/providers"
     if model:
         return _res_to_list(requests.get(url, headers=headers, params={"model": model}))
     return _res_to_list(requests.get(url, headers=headers))
@@ -56,7 +56,7 @@ def list_models(
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    url = f"{base_url()}/models"
+    url = f"{BASE_URL}/models"
     if provider:
         return _res_to_list(
             requests.get(url, headers=headers, params={"provider": provider})
@@ -91,7 +91,7 @@ def list_endpoints(
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    url = f"{base_url()}/endpoints"
+    url = f"{BASE_URL}/endpoints"
     if model and provider:
         raise ValueError("Please specify either model OR provider, not both.")
     elif model:

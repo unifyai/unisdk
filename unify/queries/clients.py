@@ -14,7 +14,7 @@ from typing import AsyncGenerator, Dict, Generator, List, Optional, Union, Itera
 
 # local
 import unify
-from unify import base_url
+from unify import BASE_URL
 from unify._caching import _get_cache, _write_to_cache
 from unify.utils.helpers import _validate_api_key
 from unify.exceptions import BadRequestError, UnifyError, status_error_map
@@ -343,7 +343,7 @@ class Client(ABC):
             BadRequestError: If there was an HTTP error.
             ValueError: If there was an error parsing the JSON response.
         """
-        url = f"{base_url()}/credits"
+        url = f"{BASE_URL}/credits"
         headers = {
             "accept": "application/json",
             "Authorization": f"Bearer {self._api_key}",
@@ -365,7 +365,7 @@ class Unify(Client):
     def _get_client(self):
         try:
             return openai.OpenAI(
-                base_url=f"{base_url()}",
+                base_url=f"{BASE_URL}",
                 api_key=self._api_key,
             )
         except openai.OpenAIError as e:
@@ -658,7 +658,7 @@ class AsyncUnify(Client):
     def _get_client(self):
         try:
             return openai.AsyncOpenAI(
-                base_url=f"{base_url()}",
+                base_url=f"{BASE_URL}",
                 api_key=self._api_key,
             )
         except openai.APIStatusError as e:

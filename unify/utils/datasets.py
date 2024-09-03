@@ -2,7 +2,7 @@ import json
 import requests
 from typing import List, Dict, Optional
 
-from unify import base_url
+from unify import BASE_URL
 from .helpers import _validate_api_key, _res_to_list
 
 
@@ -18,7 +18,7 @@ def _upload_dataset_from_str(
     data = {"name": name}
     # Send POST request to the /dataset endpoint
     response = requests.post(
-        base_url() + "/dataset", headers=headers, data=data, files=files
+        BASE_URL + "/dataset", headers=headers, data=data, files=files
     )
     if response.status_code != 200:
         raise ValueError(response.text)
@@ -94,7 +94,7 @@ def download_dataset(
     }
     params = {"name": name}
     # Send GET request to the /dataset endpoint
-    response = requests.get(base_url() + "/dataset", headers=headers, params=params)
+    response = requests.get(BASE_URL + "/dataset", headers=headers, params=params)
     if response.status_code != 200:
         raise ValueError(response.text)
     if path:
@@ -125,7 +125,7 @@ def delete_dataset(name: str, api_key: Optional[str] = None) -> str:
     }
     params = {"name": name}
     # Send DELETE request to the /dataset endpoint
-    response = requests.delete(base_url() + "/dataset", headers=headers, params=params)
+    response = requests.delete(BASE_URL + "/dataset", headers=headers, params=params)
     if response.status_code != 200:
         raise ValueError(response.text)
     return json.loads(response.text)["info"]
@@ -154,7 +154,7 @@ def list_datasets(api_key: Optional[str] = None) -> List[str]:
         "Authorization": f"Bearer {api_key}",
     }
     # Send GET request to the /dataset/list endpoint
-    response = requests.get(base_url() + "/dataset/list", headers=headers)
+    response = requests.get(BASE_URL + "/dataset/list", headers=headers)
     if response.status_code != 200:
         raise ValueError(response.text)
     return _res_to_list(response)

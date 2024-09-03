@@ -1,9 +1,9 @@
-import requests
-from typing import Optional, List, Any, Dict, Union
 import os
+import requests
+from typing import Optional, Any, Dict
 
-from unify import base_url
-from .helpers import _validate_api_key, _res_to_list
+from unify import BASE_URL
+from .helpers import _validate_api_key
 
 
 def trigger_evaluation(
@@ -36,7 +36,7 @@ def trigger_evaluation(
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    url = f"{base_url()}/evaluation"
+    url = f"{BASE_URL}/evaluation"
 
     params = {
         "evaluator": evaluator,
@@ -86,7 +86,7 @@ def admin_trigger_eval(
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    url = f"{base_url()}/evals/admin_trigger"
+    url = f"{BASE_URL}/evals/admin_trigger"
 
     params = {
         "user_id": user_id,
@@ -128,7 +128,7 @@ def get_evaluations(
         "Authorization": f"Bearer {api_key}",
     }
 
-    url = f"{base_url()}/evaluation"
+    url = f"{BASE_URL}/evaluation"
 
     params = {"dataset": dataset, "per_prompt": per_prompt}
 
@@ -172,7 +172,7 @@ def delete_evaluations(
         "Authorization": f"Bearer {api_key}",
     }
 
-    url = f"{base_url()}/evaluation"
+    url = f"{BASE_URL}/evaluation"
 
     params = {
         "dataset": dataset,
@@ -216,7 +216,7 @@ def get_evaluation_status(
         "endpoint": endpoint,
         "evaluator": evaluator,
     }
-    url = f"{base_url()}/evaluation/status"
+    url = f"{BASE_URL}/evaluation/status"
 
     response = requests.get(url, headers=headers, params=params)
     response.raise_for_status()
