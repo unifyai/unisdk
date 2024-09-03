@@ -2,7 +2,7 @@ import unify
 import jsonlines
 from typing import List, Dict, Any, Union, Optional
 from openai.types.chat.chat_completion import ChatCompletion
-from unify.utils.helpers import _validate_api_key
+from unify.helpers import _validate_api_key
 
 
 class Dataset:
@@ -85,7 +85,7 @@ class Dataset:
         Raises:
             UnifyError: If the API key is missing.
         """
-        data = unify.utils.download_dataset(name, api_key=api_key)
+        data = unify.download_dataset(name, api_key=api_key)
         return Dataset(name, data=data, auto_sync=auto_sync, api_key=api_key)
 
     @staticmethod
@@ -134,15 +134,15 @@ class Dataset:
         """
         self._assert_name_exists()
         if overwrite:
-            if self._name in unify.utils.list_datasets(self._api_key):
-                unify.utils.delete_dataset(self._name, self._api_key)
-            unify.utils.upload_dataset_from_dictionary(self._name, self._data)
+            if self._name in unify.list_datasets(self._api_key):
+                unify.delete_dataset(self._name, self._api_key)
+            unify.upload_dataset_from_dictionary(self._name, self._data)
             return
-        upstream_dataset = unify.utils.download_dataset(
+        upstream_dataset = unify.download_dataset(
             self._name, api_key=self._api_key
         )
         unique_local_data = list(set(self._data) - set(upstream_dataset))
-        unify.utils.append_to_dataset_from_dictionary(self._name, unique_local_data)
+        unify.append_to_dataset_from_dictionary(self._name, unique_local_data)
         if self._auto_sync:
             self.download()
 
@@ -158,9 +158,9 @@ class Dataset:
         """
         self._assert_name_exists()
         if overwrite:
-            self._data = unify.utils.download_dataset(self._name, api_key=self._api_key)
+            self._data = unify.download_dataset(self._name, api_key=self._api_key)
             return
-        upstream_dataset = unify.utils.download_dataset(
+        upstream_dataset = unify.download_dataset(
             self._name, api_key=self._api_key
         )
         unique_upstream_data = list(set(upstream_dataset) - set(self._data))
@@ -181,7 +181,7 @@ class Dataset:
         Prints the difference between the local dataset and the upstream dataset.
         """
         self._assert_name_exists()
-        upstream_dataset = unify.utils.download_dataset(
+        upstream_dataset = unify.download_dataset(
             self._name, api_key=self._api_key
         )
         upstream_set = set(upstream_dataset)

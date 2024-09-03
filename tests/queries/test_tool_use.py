@@ -7,7 +7,7 @@ from openai.types.chat.chat_completion_message_tool_call import (
     ChatCompletionMessageToolCall,
 )
 
-from unify.queries.clients import Unify
+from unify.clients import Unify
 
 
 class TestUnifyToolUse(unittest.TestCase):

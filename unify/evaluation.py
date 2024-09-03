@@ -3,7 +3,7 @@ from typing import Union, Optional
 from unify.agent import Agent
 from unify.dataset import Dataset
 from unify.evaluator import Evaluator
-from unify.utils.helpers import _validate_api_key
+from unify.helpers import _validate_api_key
 
 
 class Evaluation:

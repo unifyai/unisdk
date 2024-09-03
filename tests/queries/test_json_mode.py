@@ -2,7 +2,7 @@ import os
 import json
 import unittest
 
-from unify.queries.clients import Unify
+from unify.clients import Unify
 
 
 class TestUnifyJsonMode(unittest.TestCase):

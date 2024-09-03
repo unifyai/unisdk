@@ -2,7 +2,7 @@ import requests
 from typing import List, Optional
 
 from unify import base_url
-from unify.utils.helpers import _validate_api_key, _res_to_list
+from unify.helpers import _validate_api_key, _res_to_list
 
 
 def list_providers(

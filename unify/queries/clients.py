@@ -13,10 +13,10 @@ from abc import ABC, abstractmethod
 from typing import AsyncGenerator, Dict, Generator, List, Optional, Union, Iterable
 
 # local
-import unify.utils
+import unify
 from unify import base_url
 from unify._caching import _get_cache, _write_to_cache
-from unify.utils.helpers import _validate_api_key
+from unify.helpers import _validate_api_key
 from unify.exceptions import BadRequestError, UnifyError, status_error_map
 
 
@@ -254,7 +254,7 @@ class Client(ABC):
         Args:
             value: The model name.
         """
-        valid_models = unify.utils.list_models(self._provider, api_key=self._api_key)
+        valid_models = unify.list_models(self._provider, api_key=self._api_key)
         if value not in valid_models:
             if self._provider:
                 raise UnifyError(
@@ -290,7 +290,7 @@ class Client(ABC):
         Args:
             value: The provider name.
         """
-        valid_providers = unify.utils.list_providers(self._model, api_key=self._api_key)
+        valid_providers = unify.list_providers(self._model, api_key=self._api_key)
         if value not in valid_providers:
             if self._model:
                 raise UnifyError(
@@ -324,7 +324,7 @@ class Client(ABC):
         Args:
             value: The endpoint name.
         """
-        valid_endpoints = unify.utils.list_endpoints(api_key=self._api_key)
+        valid_endpoints = unify.list_endpoints(api_key=self._api_key)
         if value not in valid_endpoints:
             raise UnifyError(
                 "The specified endpoint {} is not one of the endpoints supported by "

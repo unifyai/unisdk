@@ -9,7 +9,6 @@ def base_url():
     return "https://api.unify.ai/v0"
 
 
-from . import queries, utils
 from .queries.chat import *
 from .queries.clients import *
 from .queries.multi_llm import *
