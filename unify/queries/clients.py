@@ -264,7 +264,8 @@ class Client(ABC):
                     )
                 )
             raise UnifyError(
-                "The specified model {} is not one of the models supported by Unify: {}".format(
+                "The specified model {} is not one of the models supported by Unify: {}"
+                .format(
                     value, valid_models
                 )
             )
