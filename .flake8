@@ -86,6 +86,8 @@ ignore =
   E402
   ; complex function names
   C901
+  ; missing docstring in public package
+  D104
 
 per-file-ignores =
   ; all tests
@@ -139,3 +141,4 @@ exclude =
   ./deploy,
   ./var,
   ./.vscode,
+  ./generate_docs.py
