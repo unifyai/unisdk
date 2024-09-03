@@ -2,7 +2,7 @@ import requests
 from typing import Optional
 
 from unify import base_url
-from unify.helpers import _validate_api_key, _res_to_list
+from .helpers import _validate_api_key, _res_to_list
 
 
 def get_credits(api_key: Optional[str] = None) -> float:

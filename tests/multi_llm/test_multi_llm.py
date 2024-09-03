@@ -1,7 +1,7 @@
 import os
 import unittest
 from unify.exceptions import UnifyError
-from unify.multi_llm import MultiLLM, MultiLLMAsync
+from unify import MultiLLM, MultiLLMAsync
 
 
 class TestMultiLLM(unittest.TestCase):

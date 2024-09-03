@@ -3,7 +3,7 @@ import requests
 from typing import Optional, List
 
 from unify import base_url
-from unify.helpers import _validate_api_key, _res_to_list
+from .helpers import _validate_api_key, _res_to_list
 
 
 def trigger_evaluation(

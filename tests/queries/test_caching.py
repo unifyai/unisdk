@@ -2,7 +2,7 @@ import os
 import time
 import unittest
 
-from unify.clients import Unify
+from unify import Unify
 from unify._caching import _cache_fpath
 
 
