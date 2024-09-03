@@ -7,17 +7,16 @@ from unify.utils.helpers import _validate_api_key
 
 
 class Evaluation:
-
     # Constructors #
     # -------------#
 
     def __init__(
-            self,
-            agent: Union[Agent, str],
-            dataset: Union[Dataset, str],
-            evaluator: Union[Evaluator, str],
-            auto_sync: bool = False,
-            api_key: Optional[str] = None,
+        self,
+        agent: Union[Agent, str],
+        dataset: Union[Dataset, str],
+        evaluator: Union[Evaluator, str],
+        auto_sync: bool = False,
+        api_key: Optional[str] = None,
     ):
         """
         Initialize a local evaluation for a dataset of LLM queries.
@@ -40,12 +39,21 @@ class Evaluation:
         Raises:
             UnifyError: If the API key is missing.
         """
-        self._agent = agent if isinstance(agent, Agent) \
+        self._agent = (
+            agent
+            if isinstance(agent, Agent)
             else Agent.from_upstream(agent, auto_sync, api_key)
-        self._dataset = dataset if isinstance(dataset, Dataset) \
+        )
+        self._dataset = (
+            dataset
+            if isinstance(dataset, Dataset)
             else Dataset.from_upstream(dataset, auto_sync, api_key)
-        self._evaluator = evaluator if isinstance(evaluator, Evaluator) \
+        )
+        self._evaluator = (
+            evaluator
+            if isinstance(evaluator, Evaluator)
             else Evaluator.from_upstream(evaluator, auto_sync, api_key)
+        )
         self._auto_sync = auto_sync
         self._api_key = _validate_api_key(api_key)
         if self._auto_sync:
@@ -53,11 +61,11 @@ class Evaluation:
 
     @staticmethod
     def from_upstream(
-            agent: str,
-            dataset: str,
-            evaluator: str,
-            auto_sync: bool = False,
-            api_key: Optional[str] = None,
+        agent: str,
+        dataset: str,
+        evaluator: str,
+        auto_sync: bool = False,
+        api_key: Optional[str] = None,
     ):
         """
         Initialize a local evaluation for a dataset of LLM queries.
@@ -84,11 +92,11 @@ class Evaluation:
 
     @staticmethod
     def from_file(
-            filepath: str,
-            agent: Union[Agent, str],
-            evaluator: Union[Evaluator, str],
-            auto_sync: bool = False,
-            api_key: Optional[str] = None,
+        filepath: str,
+        agent: Union[Agent, str],
+        evaluator: Union[Evaluator, str],
+        auto_sync: bool = False,
+        api_key: Optional[str] = None,
     ):
         """
         Loads the evaluation from a local .jsonl filepath.
@@ -226,4 +234,4 @@ class Evaluation:
         return self.sub(other)
 
     def __repr__(self):
-        raise NotImplemented
+        raise NotImplementedError

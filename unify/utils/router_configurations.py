@@ -1,18 +1,18 @@
 def create_router_config():
-    raise NotImplemented
+    raise NotImplementedError
 
 
 def get_router_config():
-    raise NotImplemented
+    raise NotImplementedError
 
 
 def delete_router_config():
-    raise NotImplemented
+    raise NotImplementedError
 
 
 def rename_router_config():
-    raise NotImplemented
+    raise NotImplementedError
 
 
 def list_router_configs():
-    raise NotImplemented
+    raise NotImplementedError

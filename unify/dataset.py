@@ -6,15 +6,14 @@ from unify.utils.helpers import _validate_api_key
 
 
 class Dataset:
-
     def __init__(
-            self,
-            name: str = None,
-            queries: List[Union[str, ChatCompletion]] = None,
-            extra_fields: Dict[str, List[Any]] = None,
-            data: List[Dict[str, Union[ChatCompletion, Any]]] = None,
-            auto_sync: bool = False,
-            api_key: Optional[str] = None,
+        self,
+        name: str = None,
+        queries: List[Union[str, ChatCompletion]] = None,
+        extra_fields: Dict[str, List[Any]] = None,
+        data: List[Dict[str, Union[ChatCompletion, Any]]] = None,
+        auto_sync: bool = False,
+        api_key: Optional[str] = None,
     ):
         """
         Initialize a local dataset of LLM queries.
@@ -43,8 +42,11 @@ class Dataset:
             UnifyError: If the API key is missing.
         """
         self._name = name
-        assert (queries is None and extra_fields is None) or data is None,\
+        assert (
+            queries is None and extra_fields is None
+        ) or data is None, (
             "if data is specified, then both queries and extra_fields must be None"
+        )
         if data is not None:
             self._data = data
         else:
@@ -53,8 +55,9 @@ class Dataset:
             extra_fields = {} if extra_fields is None else extra_fields
             num_items = len(queries)
             data_as_dict = dict(**{"query": v for v in queries}, **extra_fields)
-            self._data =\
-                [{k: v[i] for k, v in data_as_dict.items()} for i in range(num_items)]
+            self._data = [
+                {k: v[i] for k, v in data_as_dict.items()} for i in range(num_items)
+            ]
         self._api_key = _validate_api_key(api_key)
         self._auto_sync = auto_sync
         if self._auto_sync:
@@ -62,9 +65,9 @@ class Dataset:
 
     @staticmethod
     def from_upstream(
-            name: str,
-            auto_sync: bool = False,
-            api_key: Optional[str] = None,
+        name: str,
+        auto_sync: bool = False,
+        api_key: Optional[str] = None,
     ):
         """
         Initialize a local dataset of LLM queries, from the upstream dataset.
@@ -87,10 +90,10 @@ class Dataset:
 
     @staticmethod
     def from_file(
-            filepath: str,
-            name: str = None,
-            auto_sync: bool = False,
-            api_key: Optional[str] = None,
+        filepath: str,
+        name: str = None,
+        auto_sync: bool = False,
+        api_key: Optional[str] = None,
     ):
         """
         Loads the dataset from a local .jsonl filepath.
@@ -107,16 +110,17 @@ class Dataset:
             retrieve the API key from the environment variable UNIFY_KEY. Defaults to
             None.
         """
-        with jsonlines.open(filepath, mode='r') as reader:
+        with jsonlines.open(filepath, mode="r") as reader:
             data = reader.read()
         return Dataset(name, data=data, auto_sync=auto_sync, api_key=api_key)
 
     def _assert_name_exists(self):
-        assert self._name is not None, \
-            "Dataset name must be specified in order to upload, download, sync or " \
-            "compare to a corresponding dataset in your upstream account. " \
-            "You can simply use .set_name() and set it to the same name as your " \
+        assert self._name is not None, (
+            "Dataset name must be specified in order to upload, download, sync or "
+            "compare to a corresponding dataset in your upstream account. "
+            "You can simply use .set_name() and set it to the same name as your "
             "upstream dataset, or create a new name if it doesn't yet exist upstream."
+        )
 
     def upload(self, overwrite=False):
         """
@@ -132,11 +136,11 @@ class Dataset:
         if overwrite:
             if self._name in unify.utils.list_datasets(self._api_key):
                 unify.utils.delete_dataset(self._name, self._api_key)
-            unify.utils.upload_dataset_from_dictionary(
-                self._name, self._data)
+            unify.utils.upload_dataset_from_dictionary(self._name, self._data)
             return
         upstream_dataset = unify.utils.download_dataset(
-            self._name, api_key=self._api_key)
+            self._name, api_key=self._api_key
+        )
         unique_local_data = list(set(self._data) - set(upstream_dataset))
         unify.utils.append_to_dataset_from_dictionary(self._name, unique_local_data)
         if self._auto_sync:
@@ -157,7 +161,8 @@ class Dataset:
             self._data = unify.utils.download_dataset(self._name, api_key=self._api_key)
             return
         upstream_dataset = unify.utils.download_dataset(
-            self._name, api_key=self._api_key)
+            self._name, api_key=self._api_key
+        )
         unique_upstream_data = list(set(upstream_dataset) - set(self._data))
         self._data += unique_upstream_data
         if self._auto_sync:
@@ -177,15 +182,20 @@ class Dataset:
         """
         self._assert_name_exists()
         upstream_dataset = unify.utils.download_dataset(
-            self._name, api_key=self._api_key)
+            self._name, api_key=self._api_key
+        )
         upstream_set = set(upstream_dataset)
         local_set = set(self._data)
         unique_upstream_data = upstream_set - local_set
-        print("The following {} queries are stored upstream but not locally\n: "
-              "{}".format(len(unique_upstream_data), unique_upstream_data))
+        print(
+            "The following {} queries are stored upstream but not locally\n: "
+            "{}".format(len(unique_upstream_data), unique_upstream_data)
+        )
         unique_local_data = local_set - upstream_set
-        print("The following {} queries are stored upstream but not locally\n: "
-              "{}".format(len(unique_local_data), unique_local_data))
+        print(
+            "The following {} queries are stored upstream but not locally\n: "
+            "{}".format(len(unique_local_data), unique_local_data)
+        )
         if self._auto_sync:
             self.sync()
 
@@ -196,7 +206,7 @@ class Dataset:
         Args:
             filepath: Filepath (.jsonl) to save the dataset to.
         """
-        with jsonlines.open(filepath, mode='w') as writer:
+        with jsonlines.open(filepath, mode="w") as writer:
             writer.write_all(self._data)
         if self._auto_sync:
             self.sync()
@@ -222,9 +232,10 @@ class Dataset:
         """
         self_set = set(self._data)
         other_set = set(other)
-        assert other_set <= self_set,\
-            "cannot subtract dataset B from dataset A unless all queries of dataset " \
+        assert other_set <= self_set, (
+            "cannot subtract dataset B from dataset A unless all queries of dataset "
             "B are also present in dataset A"
+        )
         data = list(self_set - other_set)
         return Dataset(data=data, auto_sync=self._auto_sync, api_key=self._api_key)
 
@@ -250,9 +261,10 @@ class Dataset:
         """
         self_set = set(self._data)
         other_set = set(other)
-        assert other_set <= self_set,\
-            "cannot subtract dataset B from dataset A unless all queries of dataset " \
+        assert other_set <= self_set, (
+            "cannot subtract dataset B from dataset A unless all queries of dataset "
             "B are also present in dataset A"
+        )
         self._data = list(self_set - other_set)
         if self._auto_sync:
             self.sync()
@@ -264,4 +276,4 @@ class Dataset:
         return self.sub(other)
 
     def __repr__(self):
-        raise NotImplemented
+        raise NotImplementedError

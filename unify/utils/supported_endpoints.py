@@ -17,7 +17,8 @@ def list_providers(
         to the value in the `UNIFY_KEY` environment variable.
 
     Returns:
-        A list of provider names associated with the model if successful, otherwise an empty list.
+        A list of provider names associated with the model if successful, otherwise an
+        empty list.
     Raises:
         BadRequestError: If there was an HTTP error.
         ValueError: If there was an error parsing the JSON response.
@@ -69,12 +70,15 @@ def list_endpoints(
     api_key: Optional[str] = None,
 ) -> List[str]:
     """
-    Get a list of available endpoint, either in total or for a specific model or provider.
+    Get a list of available endpoint, either in total or for a specific model or
+    provider.
 
     Args:
         model: If specified, returns the list of endpoint supporting this model.
         provider: If specified, returns the list of endpoint supporting this provider.
-        api_key: If specified, unify API key to be used. Defaults to the value in the `UNIFY_KEY` environment variable.
+
+        api_key: If specified, unify API key to be used. Defaults to the value in the
+        `UNIFY_KEY` environment variable.
 
     Returns:
         A list of endpoint names if successful, otherwise an empty list.

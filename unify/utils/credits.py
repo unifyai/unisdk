@@ -10,7 +10,8 @@ def get_credits(api_key: Optional[str] = None) -> float:
     Returns the credits remaining in the user account, in USD.
 
     Args:
-        api_key: If specified, unify API key to be used. Defaults to the value in the `UNIFY_KEY` environment variable.
+        api_key: If specified, unify API key to be used. Defaults to the value in the
+        `UNIFY_KEY` environment variable.
 
     Returns:
         The credits remaining in USD.
@@ -30,4 +31,4 @@ def get_credits(api_key: Optional[str] = None) -> float:
 
 
 def promo_code():
-    raise NotImplemented
+    raise NotImplementedError
