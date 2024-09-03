@@ -4,7 +4,6 @@ from unify.exceptions import UnifyError
 from unify import MultiLLM, MultiLLMAsync
 
 
-
 class TestMultiLLM(unittest.TestCase):
     def setUp(self) -> None:
         self.valid_api_key = os.environ.get("UNIFY_KEY")
@@ -62,7 +61,8 @@ class TestMultiLLM(unittest.TestCase):
         client = MultiLLM(api_key=self.valid_api_key, endpoints=endpoints)
         responses = client.generate("Hello, how it is going?")
         for endpoint, (response_endpoint, response) in zip(
-            endpoints, responses.items()
+            endpoints,
+            responses.items(),
         ):
             assert endpoint == response_endpoint
             assert isinstance(response, str)
@@ -82,7 +82,8 @@ class TestAsyncMultiLLM(unittest.IsolatedAsyncioTestCase):
         client = MultiLLMAsync(api_key=self.valid_api_key, endpoints=endpoints)
         responses = await client.generate("Hello, how it is going?")
         for endpoint, (response_endpoint, response) in zip(
-            endpoints, responses.items()
+            endpoints,
+            responses.items(),
         ):
             assert endpoint == response_endpoint
             assert isinstance(response, str)
