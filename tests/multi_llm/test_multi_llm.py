@@ -4,6 +4,7 @@ from unify.exceptions import UnifyError
 from unify import MultiLLM, MultiLLMAsync
 
 
+
 class TestMultiLLM(unittest.TestCase):
     def setUp(self) -> None:
         self.valid_api_key = os.environ.get("UNIFY_KEY")
