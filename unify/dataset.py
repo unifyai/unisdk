@@ -138,9 +138,7 @@ class Dataset:
                 unify.delete_dataset(self._name, self._api_key)
             unify.upload_dataset_from_dictionary(self._name, self._data)
             return
-        upstream_dataset = unify.download_dataset(
-            self._name, api_key=self._api_key
-        )
+        upstream_dataset = unify.download_dataset(self._name, api_key=self._api_key)
         unique_local_data = list(set(self._data) - set(upstream_dataset))
         unify.append_to_dataset_from_dictionary(self._name, unique_local_data)
         if self._auto_sync:
@@ -160,9 +158,7 @@ class Dataset:
         if overwrite:
             self._data = unify.download_dataset(self._name, api_key=self._api_key)
             return
-        upstream_dataset = unify.download_dataset(
-            self._name, api_key=self._api_key
-        )
+        upstream_dataset = unify.download_dataset(self._name, api_key=self._api_key)
         unique_upstream_data = list(set(upstream_dataset) - set(self._data))
         self._data += unique_upstream_data
         if self._auto_sync:
@@ -181,9 +177,7 @@ class Dataset:
         Prints the difference between the local dataset and the upstream dataset.
         """
         self._assert_name_exists()
-        upstream_dataset = unify.download_dataset(
-            self._name, api_key=self._api_key
-        )
+        upstream_dataset = unify.download_dataset(self._name, api_key=self._api_key)
         upstream_set = set(upstream_dataset)
         local_set = set(self._data)
         unique_upstream_data = upstream_set - local_set
