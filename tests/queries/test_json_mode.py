@@ -6,7 +6,6 @@ from unify.queries.clients import Unify
 
 
 class TestUnifyJsonMode(unittest.TestCase):
-
     def setUp(self) -> None:
         self.valid_api_key = os.environ.get("UNIFY_KEY")
 

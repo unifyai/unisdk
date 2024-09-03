@@ -3,7 +3,6 @@ import unittest
 
 
 class TestEndpoints(unittest.TestCase):
-
     def test_list_models(self) -> None:
         models = unify.utils.list_models()
         assert isinstance(models, list), "return type was not a list: {}".format(

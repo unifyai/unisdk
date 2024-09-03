@@ -11,12 +11,11 @@ from unify.queries.clients import Unify
 
 
 class TestUnifyToolUse(unittest.TestCase):
-
     def setUp(self) -> None:
         self.valid_api_key = os.environ.get("UNIFY_KEY")
 
     def test_openai_tool_use(self) -> None:
-        # adapted from: https://cookbook.openai.com/examples/how_to_call_functions_with_chat_models
+        # adapted from: https://cookbook.openai.com/examples/how_to_call_functions_with_chat_models # noqa
         tools = [
             {
                 "type": "function",
@@ -28,12 +27,17 @@ class TestUnifyToolUse(unittest.TestCase):
                         "properties": {
                             "location": {
                                 "type": "string",
-                                "description": "The city and state, e.g. San Francisco, CA",
+                                "description": (
+                                    "The city and state, e.g. San Francisco, CA"
+                                ),
                             },
                             "format": {
                                 "type": "string",
                                 "enum": ["celsius", "fahrenheit"],
-                                "description": "The temperature unit to use. Infer this from the users location.",
+                                "description": (
+                                    "The temperature unit to use. Infer this "
+                                    "from the users location."
+                                ),
                             },
                             "num_days": {
                                 "type": "integer",
@@ -48,7 +52,10 @@ class TestUnifyToolUse(unittest.TestCase):
 
         client = Unify(api_key=self.valid_api_key, endpoint="gpt-4o@openai")
         result = client.generate(
-            user_prompt="What is the weather going to be like in Glasgow, Scotland over the next 5 days?",
+            user_prompt=(
+                "What is the weather going to be like in Glasgow, Scotland over "
+                "the next 5 days?"
+            ),
             tool_choice="required",
             tools=tools,
             message_content_only=False,
@@ -71,7 +78,7 @@ class TestUnifyToolUse(unittest.TestCase):
         self.assertIn("num_days", arguments)
 
     def test_anthropic_function_calling(self) -> None:
-        # adapted from: https://cookbook.openai.com/examples/how_to_call_functions_with_chat_models and
+        # adapted from: https://cookbook.openai.com/examples/how_to_call_functions_with_chat_models and # noqa
         # https://docs.anthropic.com/en/docs/build-with-claude/tool-use#single-tool-example
         tools = [
             {
@@ -87,7 +94,10 @@ class TestUnifyToolUse(unittest.TestCase):
                         "format": {
                             "type": "string",
                             "enum": ["celsius", "fahrenheit"],
-                            "description": "The temperature unit to use. Infer this from the users location.",
+                            "description": (
+                                "The temperature unit to use. Infer this from "
+                                "the users location."
+                            ),
                         },
                         "num_days": {
                             "type": "integer",
@@ -101,7 +111,10 @@ class TestUnifyToolUse(unittest.TestCase):
 
         client = Unify(api_key=self.valid_api_key, endpoint="claude-3-opus@anthropic")
         client.generate(
-            user_prompt="What is the weather going to be like in Glasgow, Scotland over the next 5 days?",
+            user_prompt=(
+                "What is the weather going to be like in Glasgow, Scotland"
+                "over the next 5 days?"
+            ),
             tool_choice={"type": "any"},
             tools=tools,
             message_content_only=False,

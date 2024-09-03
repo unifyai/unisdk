@@ -10,7 +10,6 @@ def _create_test_dataset():
 
 
 class TestEvals(unittest.TestCase):
-
     def test_run_eval(self) -> None:
         _create_test_dataset()
         endpoints = random.sample(unify.utils.list_endpoints(), 2)

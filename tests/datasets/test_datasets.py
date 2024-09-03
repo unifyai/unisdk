@@ -3,7 +3,6 @@ import unittest
 
 
 class TestDatasets(unittest.TestCase):
-
     def test_upload_and_delete_dataset_from_file(self) -> None:
         if "TestUploadAndDelete" in unify.utils.list_datasets():
             unify.utils.delete_dataset("TestUploadAndDelete")
