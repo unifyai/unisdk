@@ -1,10 +1,10 @@
 import os
 import json
 import requests
-from typing import List, Optional
+from typing import List, Dict, Optional, Union
 
 
-def _res_to_list(response: requests.Response) -> List:
+def _res_to_list(response: requests.Response) -> Union[List, Dict]:
     return json.loads(response.text)
 
 
