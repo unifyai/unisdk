@@ -25,3 +25,23 @@ from .utils.router_configurations import *
 from .utils.router_deployment import *
 from .utils.router_training import *
 from .utils.supported_endpoints import *
+from .queries import (
+    chat,
+    clients,
+    multi_llm
+)
+from .utils import (
+    credits,
+    custom_api_keys,
+    custom_endpoints,
+    datasets,
+    efficiency_benchmarks,
+    evaluations,
+    evaluators,
+    helpers,
+    logging,
+    router_configurations,
+    router_deployment,
+    router_training,
+    supported_endpoints
+)
