@@ -1,8 +1,8 @@
 import requests
-from typing import Optional, List, Any, Dict, Union
+from typing import Optional, List, Any, Dict
 
-from unify import base_url
-from .helpers import _validate_api_key, _res_to_list
+from unify import BASE_URL
+from .helpers import _validate_api_key
 
 
 def create_evaluator(
@@ -26,7 +26,7 @@ def create_evaluator(
         "Content-Type": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    url = f"{base_url()}/evaluator"
+    url = f"{BASE_URL}/evaluator"
 
     response = requests.post(url, headers=headers, json=evaluator_config)
     response.raise_for_status()
@@ -54,7 +54,7 @@ def get_evaluator(name: str, api_key: Optional[str] = None) -> Dict[str, Any]:
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    url = f"{base_url()}/evaluator"
+    url = f"{BASE_URL}/evaluator"
 
     params = {"name": name}
 
@@ -84,7 +84,7 @@ def delete_evaluator(name: str, api_key: Optional[str] = None) -> Dict[str, str]
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    url = f"{base_url()}/evaluator"
+    url = f"{BASE_URL}/evaluator"
 
     params = {"name": name}
 
@@ -117,7 +117,7 @@ def rename_evaluator(
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    url = f"{base_url()}/evaluator/rename"
+    url = f"{BASE_URL}/evaluator/rename"
 
     params = {"name": name, "new_name": new_name}
 
@@ -143,7 +143,7 @@ def list_evaluators(api_key: Optional[str] = None) -> List[str]:
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    url = f"{base_url()}/evaluator/list"
+    url = f"{BASE_URL}/evaluator/list"
     response = requests.get(url, headers=headers)
 
     if response.status_code == 200:

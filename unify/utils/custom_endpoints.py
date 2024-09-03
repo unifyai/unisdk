@@ -1,8 +1,8 @@
 import requests
-from typing import Optional, List, Any, Dict, Union
+from typing import Optional, List, Any, Dict
 
-from unify import base_url
-from .helpers import _validate_api_key, _res_to_list
+from unify import BASE_URL
+from .helpers import _validate_api_key
 
 
 def create_custom_endpoint(
@@ -50,7 +50,7 @@ def create_custom_endpoint(
         params["provider"] = provider
 
     response = requests.post(
-        f"{base_url()}/custom_endpoint", headers=headers, params=params
+        f"{BASE_URL}/custom_endpoint", headers=headers, params=params
     )
     response.raise_for_status()
 
@@ -77,7 +77,7 @@ def delete_custom_endpoint(name: str, api_key: Optional[str] = None) -> Dict[str
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    url = f"{base_url()}/custom_endpoint"
+    url = f"{BASE_URL}/custom_endpoint"
 
     params = {"name": name}
 
@@ -110,7 +110,7 @@ def rename_custom_endpoint(
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    url = f"{base_url()}/custom_endpoint/rename"
+    url = f"{BASE_URL}/custom_endpoint/rename"
 
     params = {"name": name, "new_name": new_name}
 
@@ -140,7 +140,7 @@ def list_custom_endpoints(api_key: Optional[str] = None) -> List[Dict[str, str]]
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    url = f"{base_url()}/custom_endpoint/list"
+    url = f"{BASE_URL}/custom_endpoint/list"
 
     response = requests.get(url, headers=headers)
     response.raise_for_status()  # Raises an exception for unsuccessful status codes

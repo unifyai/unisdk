@@ -2,7 +2,7 @@ import unify
 import jsonlines
 from typing import List, Dict, Any, Union, Optional
 from openai.types.chat.chat_completion import ChatCompletion
-from unify.helpers import _validate_api_key
+from .utils.helpers import _validate_api_key
 
 
 class Dataset:

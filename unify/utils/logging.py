@@ -1,8 +1,8 @@
 import requests
 from typing import Optional, List, Any, Dict, Union
 
-from unify import base_url
-from .helpers import _validate_api_key, _res_to_list
+from unify import BASE_URL
+from .helpers import _validate_api_key
 
 
 def get_query_tags(api_key: Optional[str] = None) -> List[str]:
@@ -21,7 +21,7 @@ def get_query_tags(api_key: Optional[str] = None) -> List[str]:
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    url = f"{base_url()}/tags"
+    url = f"{BASE_URL}/tags"
     response = requests.get(url, headers=headers)
 
     if response.status_code == 200:
@@ -68,17 +68,13 @@ def get_query_history(
     if end_time:
         params["end_time"] = end_time
 
-    url = f"{base_url()}/queries"
+    url = f"{BASE_URL}/queries"
     response = requests.get(url, headers=headers, params=params)
 
     if response.status_code == 200:
         return response.json()
     else:
         response.raise_for_status()
-
-
-import requests
-from typing import Optional, Dict, Any
 
 
 def get_query_metrics(
@@ -123,7 +119,7 @@ def get_query_metrics(
     # Remove None values from params
     params = {k: v for k, v in params.items() if v is not None}
 
-    url = f"{base_url()}/metrics"
+    url = f"{BASE_URL}/metrics"
 
     response = requests.get(url, headers=headers, params=params)
     response.raise_for_status()  # Raise an exception for HTTP errors

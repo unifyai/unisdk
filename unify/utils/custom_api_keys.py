@@ -1,8 +1,8 @@
 import requests
-from typing import Optional, List, Any, Dict, Union
+from typing import Optional, List, Any, Dict
 
-from unify import base_url
-from .helpers import _validate_api_key, _res_to_list
+from unify import BASE_URL
+from .helpers import _validate_api_key
 
 
 def create_custom_api_key(
@@ -26,7 +26,7 @@ def create_custom_api_key(
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    url = f"{base_url()}/custom_api_key"
+    url = f"{BASE_URL}/custom_api_key"
 
     params = {"name": name, "value": value}
 
@@ -56,7 +56,7 @@ def get_custom_api_key(name: str, api_key: Optional[str] = None) -> Dict[str, An
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    url = f"{base_url()}/custom_api_key"
+    url = f"{BASE_URL}/custom_api_key"
     params = {"name": name}
 
     response = requests.get(url, headers=headers, params=params)
@@ -86,7 +86,7 @@ def delete_custom_api_key(name: str, api_key: Optional[str] = None) -> Dict[str,
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    url = f"{base_url()}/custom_api_key"
+    url = f"{BASE_URL}/custom_api_key"
 
     params = {"name": name}
 
@@ -124,7 +124,7 @@ def rename_custom_api_key(
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    url = f"{base_url()}/custom_api_key/rename"
+    url = f"{BASE_URL}/custom_api_key/rename"
 
     params = {"name": name, "new_name": new_name}
 
@@ -152,7 +152,7 @@ def list_custom_api_keys(api_key: Optional[str] = None) -> List[Dict[str, str]]:
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    url = f"{base_url()}/custom_api_key/list"
+    url = f"{BASE_URL}/custom_api_key/list"
 
     response = requests.get(url, headers=headers)
 
