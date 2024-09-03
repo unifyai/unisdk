@@ -35,25 +35,25 @@ client.generate("hello world!")
 You can list all models, providers and endpoints (`<model>@<provider>` pair) as follows:
 
 ```python
-models = unify.utils.list_models()
-providers = unify.utils.list_providers()
-endpoints = unify.utils.list_endpoints()
+models = unify.list_models()
+providers = unify.list_providers()
+endpoints = unify.list_endpoints()
 ```
 
 You can also filter within these functions as follows:
 
 ```python
 import random
-anthropic_models = unify.utils.list_models("anthropic")
+anthropic_models = unify.list_models("anthropic")
 client.set_endpoint(random.choice(anthropic_models) + "@anthropic")
 
-latest_llama3p1_providers = unify.utils.list_providers("llama-3.1-405b-chat")
+latest_llama3p1_providers = unify.list_providers("llama-3.1-405b-chat")
 client.set_endpoint("llama-3.1-405b-chat@" + random.choice(latest_llama3p1_providers))
 
-openai_endpoints = unify.utils.list_endpoints("openai")
+openai_endpoints = unify.list_endpoints("openai")
 client.set_endpoint(random.choice(openai_endpoints))
 
-mixtral8x7b_endpoints = unify.utils.list_endpoints("mixtral-8x7b-instruct-v0.1")
+mixtral8x7b_endpoints = unify.list_endpoints("mixtral-8x7b-instruct-v0.1")
 client.set_endpoint(random.choice(mixtral8x7b_endpoints))
 
 ```

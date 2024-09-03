@@ -2,11 +2,10 @@ import os
 import json
 import unittest
 
-from unify.queries.clients import Unify
+from unify import Unify
 
 
 class TestUnifyJsonMode(unittest.TestCase):
-
     def setUp(self) -> None:
         self.valid_api_key = os.environ.get("UNIFY_KEY")
 

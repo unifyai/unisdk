@@ -3,11 +3,11 @@ import requests
 from typing import List, Dict, Optional
 
 from unify import base_url
-from unify.utils.helpers import _validate_api_key, _res_to_list
+from .helpers import _validate_api_key, _res_to_list
 
 
 def _upload_dataset_from_str(
-        name: str, content: str, api_key: Optional[str] = None
+    name: str, content: str, api_key: Optional[str] = None
 ) -> str:
     api_key = _validate_api_key(api_key)
     headers = {
@@ -34,7 +34,8 @@ def upload_dataset_from_file(
     Args:
         name: Name given to the uploaded dataset.
         path: Path to the file to be uploaded.
-        api_key: If specified, unify API key to be used. Defaults to the value in the `UNIFY_KEY` environment variable.
+        api_key: If specified, unify API key to be used. Defaults to the value in the
+        `UNIFY_KEY` environment variable.
 
     Returns:
         Info msg with the response from the HTTP endpoint.
@@ -56,7 +57,8 @@ def upload_dataset_from_dictionary(
     Args:
         name: Name given to the uploaded dataset.
         content: Path to the file to be uploaded.
-        api_key: If specified, unify API key to be used. Defaults to the value in the `UNIFY_KEY` environment variable.
+        api_key: If specified, unify API key to be used. Defaults to the value in the
+        `UNIFY_KEY` environment variable.
 
     Returns:
         Info msg with the response from the HTTP endpoint.
@@ -76,10 +78,12 @@ def download_dataset(
     Args:
         name: Name of the dataset to download.
         path: If specified, path to save the dataset.
-        api_key: If specified, unify API key to be used. Defaults to the value in the `UNIFY_KEY` environment variable.
+        api_key: If specified, unify API key to be used. Defaults to the value in the
+        `UNIFY_KEY` environment variable.
 
     Returns:
-        If path is not specified, returns the dataset content, if specified, returns None.
+        If path is not specified, returns the dataset content, if specified, returns
+        None.
     Raises:
         ValueError: If there was an HTTP error.
     """
@@ -106,7 +110,8 @@ def delete_dataset(name: str, api_key: Optional[str] = None) -> str:
 
     Args:
         name: Name given to the uploaded dataset.
-        api_key: If specified, unify API key to be used. Defaults to the value in the `UNIFY_KEY` environment variable.
+        api_key: If specified, unify API key to be used. Defaults to the value in the
+        `UNIFY_KEY` environment variable.
 
     Returns:
         str: Info msg with the response from the HTTP endpoint.
@@ -127,7 +132,7 @@ def delete_dataset(name: str, api_key: Optional[str] = None) -> str:
 
 
 def rename_dataset():
-    raise NotImplemented
+    raise NotImplementedError
 
 
 def list_datasets(api_key: Optional[str] = None) -> List[str]:
@@ -135,7 +140,8 @@ def list_datasets(api_key: Optional[str] = None) -> List[str]:
     Fetches a list of all uploaded datasets.
 
     Args:
-        api_key: If specified, unify API key to be used. Defaults to the value in the `UNIFY_KEY` environment variable.
+        api_key: If specified, unify API key to be used. Defaults to the value in the
+        `UNIFY_KEY` environment variable.
 
     Returns:
         List with the names of the uploaded datasets.

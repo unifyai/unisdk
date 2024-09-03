@@ -1,14 +1,14 @@
 def train_router():
-    raise NotImplemented
+    raise NotImplementedError
 
 
 def delete_router():
-    raise NotImplemented
+    raise NotImplementedError
 
 
 def rename_router():
-    raise NotImplemented
+    raise NotImplementedError
 
 
 def list_routers():
-    raise NotImplemented
+    raise NotImplementedError

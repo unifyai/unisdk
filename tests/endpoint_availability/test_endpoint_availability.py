@@ -3,9 +3,8 @@ import unittest
 
 
 class TestEndpoints(unittest.TestCase):
-
     def test_list_models(self) -> None:
-        models = unify.utils.list_models()
+        models = unify.list_models()
         assert isinstance(models, list), "return type was not a list: {}".format(
             models
         )  # is list
@@ -15,7 +14,7 @@ class TestEndpoints(unittest.TestCase):
         )  # no duplication
 
     def test_list_providers(self) -> None:
-        providers = unify.utils.list_providers()
+        providers = unify.list_providers()
         assert isinstance(providers, list), "return type was not a list: {}".format(
             providers
         )  # is list
@@ -25,7 +24,7 @@ class TestEndpoints(unittest.TestCase):
         )  # no duplication
 
     def test_list_endpoints(self) -> None:
-        endpoints = unify.utils.list_endpoints()
+        endpoints = unify.list_endpoints()
         assert isinstance(endpoints, list), "return type was not a list: {}".format(
             endpoints
         )  # is list

@@ -1,7 +1,7 @@
 import sys
 from typing import Dict, Generator, List, Optional
 
-from unify.queries.clients import Unify
+from .clients import Unify
 from unify.exceptions import UnifyError
 
 
@@ -27,8 +27,9 @@ class ChatBot:  # noqa: WPS338
 
             provider: Name of the provider. If None, endpoint must be provided.
 
-            api_key: API key for accessing the Unify API. If None, it attempts to retrieve the API key from the
-            environment variable UNIFY_KEY. Defaults to None.
+            api_key: API key for accessing the Unify API. If None, it attempts to
+            retrieve the API key from the environment variable UNIFY_KEY.
+            Defaults to None.
 
         Raises:
             UnifyError: If the API key is missing.

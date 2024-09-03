@@ -1,6 +1,6 @@
 def get_prompt_history():
-    raise NotImplemented
+    raise NotImplementedError
 
 
 def get_query_metrics():
-    raise NotImplemented
+    raise NotImplementedError

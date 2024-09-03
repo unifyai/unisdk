@@ -1,18 +1,18 @@
 def create_evaluator():
-    raise NotImplemented
+    raise NotImplementedError
 
 
 def get_evaluator():
-    raise NotImplemented
+    raise NotImplementedError
 
 
 def delete_evaluator():
-    raise NotImplemented
+    raise NotImplementedError
 
 
 def rename_evaluator():
-    raise NotImplemented
+    raise NotImplementedError
 
 
 def list_evaluators():
-    raise NotImplemented
+    raise NotImplementedError

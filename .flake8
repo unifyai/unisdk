@@ -82,6 +82,12 @@ ignore =
   WPS469,
   ; Found a too complex `f` string
   WPS237,
+  ; Imports not being at top-level
+  E402
+  ; complex function names
+  C901
+  ; missing docstring in public package
+  D104
 
 per-file-ignores =
   ; all tests
@@ -135,3 +141,4 @@ exclude =
   ./deploy,
   ./var,
   ./.vscode,
+  ./generate_docs.py

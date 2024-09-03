@@ -1,10 +1,10 @@
 def append_to_benchmark():
-    raise NotImplemented
+    raise NotImplementedError
 
 
 def get_benchmark():
-    raise NotImplemented
+    raise NotImplementedError
 
 
 def delete_benchmark():
-    raise NotImplemented
+    raise NotImplementedError
