@@ -1,6 +1,8 @@
 # global
 import openai
-from openai._types import Headers as OpenAIHeaders, Query as OpenAIQuery
+from openai._types import Headers as OpenAIHeaders,\
+    Query as OpenAIQuery,\
+    Body as OpenAIBody
 from openai.types.chat import (
     ChatCompletionToolParam,
     ChatCompletionToolChoiceOptionParam,
@@ -10,25 +12,751 @@ from openai.types.chat import (
 from openai.types.chat.completion_create_params import ResponseFormat
 import requests
 from abc import ABC, abstractmethod
-from typing import AsyncGenerator, Dict, Generator, List, Optional, Union, Iterable
+from typing import AsyncGenerator, Mapping, Dict, Generator, List, Optional, Union, \
+    Iterable
 
 # local
 import unify
 from unify import BASE_URL
 from unify.queries import Query
 from unify._caching import _get_cache, _write_to_cache
-from unify.utils.helpers import _validate_api_key
+from unify.utils.helpers import _validate_api_key, _default
 from unify.exceptions import BadRequestError, UnifyError, status_error_map
 
 
 class Client(ABC):
     """Base Abstract class for interacting with the Unify chat completions endpoint."""
 
-    @abstractmethod
-    def _get_client(self):
-        raise NotImplementedError
+    def __init__(
+        self,
+        endpoint: Optional[str] = None,
+        *,
+        model: Optional[str] = None,
+        provider: Optional[str] = None,
+        system_prompt: Optional[str] = None,
+        messages: Optional[Iterable[ChatCompletionMessageParam]] = None,
+        frequency_penalty: Optional[float] = None,
+        logit_bias: Optional[Dict[str, int]] = None,
+        logprobs: Optional[bool] = None,
+        top_logprobs: Optional[int] = None,
+        max_tokens: Optional[int] = 1024,
+        n: Optional[int] = None,
+        presence_penalty: Optional[float] = None,
+        response_format: Optional[ResponseFormat] = None,
+        seed: Optional[int] = None,
+        stop: Union[Optional[str], List[str]] = None,
+        stream: Optional[bool] = False,
+        stream_options: Optional[ChatCompletionStreamOptionsParam] = None,
+        temperature: Optional[float] = 1.0,
+        top_p: Optional[float] = None,
+        tools: Optional[Iterable[ChatCompletionToolParam]] = None,
+        tool_choice: Optional[ChatCompletionToolChoiceOptionParam] = None,
+        parallel_tool_calls: Optional[bool] = None,
+        # platform arguments
+        use_custom_keys: bool = False,
+        tags: Optional[List[str]] = None,
+        api_key: Optional[str] = None,
+        # python client arguments
+        message_content_only: bool = True,
+        cache: bool = False,
+        # passthrough arguments
+        extra_headers: Optional[OpenAIHeaders] = None,
+        extra_query: Optional[OpenAIQuery] = None,
+        **kwargs,
+    ) -> None:  # noqa: DAR101, DAR401
+        """Initialize the Unify client.
 
-    @abstractmethod
+        Args:
+            endpoint: Endpoint name in OpenAI API format:
+            <model_name>@<provider_name>
+            Defaults to None.
+
+            model: Name of the model. Should only be set if endpoint is not set.
+
+            provider: Name of the provider. Should only be set if endpoint is not set.
+
+            system_prompt: An optional string containing the system prompt.
+
+            messages: A list of messages comprising the conversation so far.
+            If provided, user_prompt must be None.
+
+            api_key: API key for accessing the Unify API.
+            If None, it attempts to retrieve the API key from the environment variable
+            UNIFY_KEY. Defaults to None.
+
+        Raises:
+            UnifyError: If the API key is missing.
+        """
+        self._api_key = _validate_api_key(api_key)
+        if endpoint and (model or provider):
+            raise UnifyError(
+                "if the model or provider are passed, then the endpoint must not be"
+                "passed."
+            )
+        self._endpoint = None
+        if endpoint:
+            self.set_endpoint(endpoint)
+        self._provider = None
+        if provider:
+            self.set_provider(provider)
+        self._model = None
+        if model:
+            self.set_model(model)
+        self._system_prompt = None
+        self.set_system_prompt(system_prompt)
+        self._messages = None
+        self.set_messages(messages)
+        self._frequency_penalty = None
+        self.set_frequency_penalty(frequency_penalty)
+        self._logit_bias = None
+        self.set_logit_bias(logit_bias)
+        self._logprobs = None
+        self.set_logprobs(logprobs)
+        self._top_logprobs = None
+        self.set_top_logprobs(top_logprobs)
+        self._max_tokens = None
+        self.set_max_tokens(max_tokens)
+        self._n = None
+        self.set_n(n)
+        self._presence_penalty = None
+        self.set_presence_penalty(presence_penalty)
+        self._response_format = None
+        self.set_response_format(response_format)
+        self._seed = None
+        self.set_seed(seed)
+        self._stop = None
+        self.set_stop(stop)
+        self._stream = None
+        self.set_stream(stream)
+        self._stream_options = None
+        self.set_stream_options(stream_options)
+        self._temperature = None
+        self.set_temperature(temperature)
+        self._top_p = None
+        self.set_top_p(top_p)
+        self._tools = None
+        self.set_tools(tools)
+        self._tool_choice = None
+        self.set_tool_choice(tool_choice)
+        self._parallel_tool_calls = None
+        self.set_parallel_tool_calls(parallel_tool_calls)
+        # platform arguments
+        self._use_custom_keys = None
+        self.set_use_custom_keys(use_custom_keys)
+        self._tags = None
+        self.set_tags(tags)
+        # python client arguments
+        self._message_content_only = None
+        self.set_message_content_only(message_content_only)
+        self._cache = None
+        self.set_cache(cache)
+        # passthrough arguments
+        self._extra_headers = None
+        self.set_extra_headers(extra_headers)
+        self._extra_query = None
+        self.set_extra_query(extra_query)
+        self._extra_body = None
+        self.set_extra_body(kwargs)
+        self._client = self._get_client()
+
+    # Properties #
+    # -----------#
+
+    @property
+    def endpoint(self) -> str:
+        """
+        Get the endpoint name.
+
+        Returns:
+            The endpoint name.
+        """
+        return self._endpoint
+
+    @property
+    def model(self) -> str:
+        """
+        Get the model name.
+
+        Returns:
+            The model name.
+        """
+        return self._model
+
+    @property
+    def provider(self) -> str:
+        """
+        Get the provider name.
+
+        Returns:
+            The provider name.
+        """
+        return self._provider
+
+    @property
+    def system_prompt(self) -> Optional[str]:
+        """
+        Get the default system prompt, if set.
+
+        Returns:
+            The default system prompt.
+        """
+        return self._system_prompt
+
+    @property
+    def messages(self) -> Optional[Iterable[ChatCompletionMessageParam]]:
+        """
+        Get the default messages, if set.
+
+        Returns:
+            The default messages.
+        """
+        return self._messages
+
+    @property
+    def frequency_penalty(self) -> Optional[float]:
+        """
+        Get the default frequency penalty, if set.
+
+        Returns:
+            The default frequency penalty.
+        """
+        return self._frequency_penalty
+
+    @property
+    def logit_bias(self) -> Optional[Dict[str, int]]:
+        """
+        Get the default logit bias, if set.
+
+        Returns:
+            The default logit bias.
+        """
+        return self._logit_bias
+
+    @property
+    def logprobs(self) -> Optional[bool]:
+        """
+        Get the default logprobs, if set.
+
+        Returns:
+            The default logprobs.
+        """
+        return self._logprobs
+
+    @property
+    def top_logprobs(self) -> Optional[int]:
+        """
+        Get the default top logprobs, if set.
+
+        Returns:
+            The default top logprobs.
+        """
+        return self._top_logprobs
+
+    @property
+    def max_tokens(self) -> Optional[int]:
+        """
+        Get the default max tokens, if set.
+
+        Returns:
+            The default max tokens.
+        """
+        return self._max_tokens
+
+    @property
+    def n(self) -> Optional[int]:
+        """
+        Get the default n, if set.
+
+        Returns:
+            The default n value.
+        """
+        return self._n
+
+    @property
+    def presence_penalty(self) -> Optional[float]:
+        """
+        Get the default presence penalty, if set.
+
+        Returns:
+            The default presence penalty.
+        """
+        return self._presence_penalty
+
+    @property
+    def response_format(self) -> Optional[ResponseFormat]:
+        """
+        Get the default response format, if set.
+
+        Returns:
+            The default response format.
+        """
+        return self._response_format
+
+    @property
+    def seed(self) -> Optional[int]:
+        """
+        Get the default seed value, if set.
+
+        Returns:
+            The default seed value.
+        """
+        return self._seed
+
+    @property
+    def stop(self) -> Union[Optional[str], List[str]]:
+        """
+        Get the default stop value, if set.
+
+        Returns:
+            The default stop value.
+        """
+        return self._stop
+
+    @property
+    def stream(self) -> Optional[bool]:
+        """
+         Get the default stream bool, if set.
+
+         Returns:
+             The default stream bool.
+         """
+        return self._stream
+
+    @property
+    def stream_options(self) -> Optional[ChatCompletionStreamOptionsParam]:
+        """
+         Get the default stream options, if set.
+
+         Returns:
+             The default stream options.
+         """
+        return self._stream_options
+
+    @property
+    def temperature(self) -> Optional[float]:
+        """
+         Get the default temperature, if set.
+
+         Returns:
+             The default temperature.
+         """
+        return self._temperature
+
+    @property
+    def top_p(self) -> Optional[float]:
+        """
+         Get the default top p value, if set.
+
+         Returns:
+             The default top p value.
+         """
+        return self._top_p
+
+    @property
+    def tools(self) -> Optional[Iterable[ChatCompletionToolParam]]:
+        """
+         Get the default tools, if set.
+
+         Returns:
+             The default tools.
+         """
+        return self._tools
+
+    @property
+    def tool_choice(self) -> Optional[ChatCompletionToolChoiceOptionParam]:
+        """
+         Get the default tool choice, if set.
+
+         Returns:
+             The default tool choice.
+         """
+        return self._tool_choice
+
+    @property
+    def parallel_tool_calls(self) -> Optional[bool]:
+        """
+         Get the default parallel tool calls bool, if set.
+
+         Returns:
+             The default parallel tool calls bool.
+         """
+        return self._parallel_tool_calls
+
+    @property
+    def use_custom_keys(self) -> bool:
+        """
+         Get the default use custom keys bool, if set.
+
+         Returns:
+             The default use custom keys bool.
+         """
+        return self._use_custom_keys
+
+    @property
+    def tags(self) -> Optional[List[str]]:
+        """
+         Get the default tags, if set.
+
+         Returns:
+             The default tags.
+         """
+        return self._tags
+
+    @property
+    def message_content_only(self) -> bool:
+        """
+          Get the default message content only bool.
+
+          Returns:
+              The default message content only bool.
+          """
+        return self._message_content_only
+
+    @property
+    def cache(self) -> bool:
+        """
+          Get default the cache bool.
+
+          Returns:
+              The default cache bool.
+          """
+        return self._cache
+
+    @property
+    def extra_headers(self) -> Optional[OpenAIHeaders]:
+        """
+         Get the default extra headers, if set.
+
+         Returns:
+             The default extra headers.
+         """
+        return self._extra_headers
+
+    @property
+    def extra_query(self) -> Optional[OpenAIQuery]:
+        """
+         Get the default extra query, if set.
+
+         Returns:
+             The default extra query.
+         """
+        return self._extra_query
+
+    @property
+    def extra_body(self) -> Optional[Mapping[str, str]]:
+        """
+         Get the default extra body, if set.
+
+         Returns:
+             The default extra body.
+         """
+        return self._extra_body
+
+    # Setters #
+    # --------#
+
+    def set_endpoint(self, value: str) -> None:
+        """
+        Set the endpoint name.  # noqa: DAR101.
+
+        Args:
+            value: The endpoint name.
+        """
+        valid_endpoints = unify.list_endpoints(api_key=self._api_key)
+        if value not in valid_endpoints:
+            raise UnifyError(
+                "The specified endpoint {} is not one of the endpoints supported by "
+                "Unify: {}".format(value, valid_endpoints)
+            )
+        self._endpoint = value
+        self._model, self._provider = value.split("@")  # noqa: WPS414
+
+    def set_model(self, value: str) -> None:
+        """
+        Set the model name.  # noqa: DAR101.
+
+        Args:
+            value: The model name.
+        """
+        valid_models = unify.list_models(self._provider, api_key=self._api_key)
+        if value not in valid_models:
+            if self._provider:
+                raise UnifyError(
+                    "Current provider {} does not support the specified model {},"
+                    "please select one of: {}".format(
+                        self._provider, value, valid_models
+                    )
+                )
+            raise UnifyError(
+                "The specified model {} is not one of the models supported by Unify: {}".format(
+                    value, valid_models
+                )
+            )
+        self._model = value
+        if self._provider:
+            self._endpoint = "@".join([value, self._provider])
+
+    def set_provider(self, value: str) -> None:
+        """
+        Set the provider name.  # noqa: DAR101.
+
+        Args:
+            value: The provider name.
+        """
+        valid_providers = unify.list_providers(self._model, api_key=self._api_key)
+        if value not in valid_providers:
+            if self._model:
+                raise UnifyError(
+                    "Current model {} does not support the specified provider {},"
+                    "please select one of: {}".format(
+                        self._model, value, valid_providers
+                    )
+                )
+            raise UnifyError(
+                "The specified provider {} is not one of the providers supported by "
+                "Unify: {}".format(value, valid_providers)
+            )
+        self._provider = value
+        if self._model:
+            self._endpoint = "@".join([self._model, value])
+
+    def set_system_prompt(self, value: str) -> None:
+        """
+        Set the default system prompt.  # noqa: DAR101.
+
+        Args:
+            value: The default system prompt.
+        """
+        self._system_prompt = value
+
+    def set_messages(self, value: Iterable[ChatCompletionMessageParam]) -> None:
+        """
+        Set the default messages.  # noqa: DAR101.
+
+        Args:
+            value: The default messages.
+        """
+        self._messages = value
+
+    def set_frequency_penalty(self, value: float) -> None:
+        """
+        Set the default frequency penalty.  # noqa: DAR101.
+
+        Args:
+            value: The default frequency penalty.
+        """
+        self._frequency_penalty = value
+
+    def set_logit_bias(self, value: Dict[str, int]) -> None:
+        """
+        Set the default logit bias.  # noqa: DAR101.
+
+        Args:
+            value: The default logit bias.
+        """
+        self._logit_bias = value
+
+    def set_logprobs(self, value: bool) -> None:
+        """
+        Set the default logprobs.  # noqa: DAR101.
+
+        Args:
+            value: The default logprobs.
+        """
+        self._logprobs = value
+
+    def set_top_logprobs(self, value: int) -> None:
+        """
+        Set the default top logprobs.  # noqa: DAR101.
+
+        Args:
+            value: The default top logprobs.
+        """
+        self._top_logprobs = value
+
+    def set_max_tokens(self, value: int) -> None:
+        """
+        Set the default max tokens.  # noqa: DAR101.
+
+        Args:
+            value: The default max tokens.
+        """
+        self._max_tokens = value
+
+    def set_n(self, value: int) -> None:
+        """
+        Set the default n value.  # noqa: DAR101.
+
+        Args:
+            value: The default n value.
+        """
+        self._n = value
+
+    def set_presence_penalty(self, value: float) -> None:
+        """
+        Set the default presence penalty.  # noqa: DAR101.
+
+        Args:
+            value: The default presence penalty.
+        """
+        self._presence_penalty = value
+
+    def set_response_format(self, value: ResponseFormat) -> None:
+        """
+        Set the default response format.  # noqa: DAR101.
+
+        Args:
+            value: The default response format.
+        """
+        self._response_format = value
+
+    def set_seed(self, value: int) -> None:
+        """
+        Set the default seed value.  # noqa: DAR101.
+
+        Args:
+            value: The default seed value.
+        """
+        self._seed = value
+
+    def set_stop(self, value: Union[str, List[str]]) -> None:
+        """
+        Set the default stop value.  # noqa: DAR101.
+
+        Args:
+            value: The default stop value.
+        """
+        self._stop = value
+
+    def set_stream(self, value: bool) -> None:
+        """
+        Set the default stream bool.  # noqa: DAR101.
+
+        Args:
+            value: The default stream bool.
+        """
+        self._stream = value
+
+    def set_stream_options(self, value: ChatCompletionStreamOptionsParam) -> None:
+        """
+        Set the default stream options.  # noqa: DAR101.
+
+        Args:
+            value: The default stream options.
+        """
+        self._stream_options = value
+
+    def set_temperature(self, value: float) -> None:
+        """
+        Set the default temperature.  # noqa: DAR101.
+
+        Args:
+            value: The default temperature.
+        """
+        self._temperature = value
+
+    def set_top_p(self, value: float) -> None:
+        """
+        Set the default top p value.  # noqa: DAR101.
+
+        Args:
+            value: The default top p value.
+        """
+        self._top_p = value
+
+    def set_tools(self, value: Iterable[ChatCompletionToolParam]) -> None:
+        """
+        Set the default tools.  # noqa: DAR101.
+
+        Args:
+            value: The default tools.
+        """
+        self._tools = value
+
+    def set_tool_choice(self, value: ChatCompletionToolChoiceOptionParam) -> None:
+        """
+        Set the default tool choice.  # noqa: DAR101.
+
+        Args:
+            value: The default tool choice.
+        """
+        self._tool_choice = value
+
+    def set_parallel_tool_calls(self, value: bool) -> None:
+        """
+        Set the default parallel tool calls bool.  # noqa: DAR101.
+
+        Args:
+            value: The default parallel tool calls bool.
+        """
+        self._parallel_tool_calls = value
+
+    def set_use_custom_keys(self, value: bool) -> None:
+        """
+        Set the default use custom keys bool.  # noqa: DAR101.
+
+        Args:
+            value: The default use custom keys bool.
+        """
+        self._use_custom_keys = value
+
+    def set_tags(self, value: List[str]) -> None:
+        """
+        Set the default tags.  # noqa: DAR101.
+
+        Args:
+            value: The default tags.
+        """
+        self._tags = value
+
+    def set_message_content_only(self, value: bool) -> None:
+        """
+        Set the default message content only bool.  # noqa: DAR101.
+
+        Args:
+            value: The default message content only bool.
+        """
+        self._message_content_only = value
+
+    def set_cache(self, value: bool) -> None:
+        """
+        Set the default cache bool.  # noqa: DAR101.
+
+        Args:
+            value: The default cache bool.
+        """
+        self._cache = value
+
+    def set_extra_headers(self, value: OpenAIHeaders) -> None:
+        """
+        Set the default extra headers.  # noqa: DAR101.
+
+        Args:
+            value: The default extra headers.
+        """
+        self._extra_headers = value
+
+    def set_extra_query(self, value: OpenAIQuery) -> None:
+        """
+        Set the default extra query.  # noqa: DAR101.
+
+        Args:
+            value: The default extra query.
+        """
+        self._extra_query = value
+
+    def set_extra_body(self, value: OpenAIBody) -> None:
+        """
+        Set the default extra body.  # noqa: DAR101.
+
+        Args:
+            value: The default extra body.
+        """
+        self._extra_body = value
+
+    # Generate #
+    # ---------#
+
     def generate(
         self,
         user_prompt: Optional[str] = None,
@@ -193,143 +921,43 @@ class Client(ABC):
         Raises:
             UnifyError: If an error occurs during content generation.
         """
-        raise NotImplementedError
+        return self._generate(
+            user_prompt,
+            _default(system_prompt, self._system_prompt),
+            _default(messages, self._messages),
+            frequency_penalty=_default(frequency_penalty, self._frequency_penalty),
+            logit_bias=_default(logit_bias, self._logit_bias),
+            logprobs=_default(logprobs, self._logprobs),
+            top_logprobs=_default(top_logprobs, self._top_logprobs),
+            max_tokens=_default(max_tokens, self._max_tokens),
+            n=_default(n, self._n),
+            presence_penalty=_default(presence_penalty, self._presence_penalty),
+            response_format=_default(response_format, self._response_format),
+            seed=_default(seed, self._seed),
+            stop=_default(stop, self._stop),
+            stream=_default(stream, self._stream),
+            stream_options=_default(stream_options, self._stream_options),
+            temperature=_default(temperature, self._temperature),
+            top_p=_default(top_p, self._top_p),
+            tools=_default(tools, self._tools),
+            tool_choice=_default(tool_choice, self._tool_choice),
+            parallel_tool_calls=_default(parallel_tool_calls,
+                                         self._parallel_tool_calls),
+            # platform arguments
+            use_custom_keys=_default(use_custom_keys, self._use_custom_keys),
+            tags=_default(tags, self._tags),
+            # python client arguments
+            message_content_only=_default(message_content_only,
+                                          self._message_content_only),
+            cache=_default(cache, self._cache),
+            # passthrough arguments
+            extra_headers=_default(extra_headers, self._extra_headers),
+            extra_query=_default(extra_query, self._extra_query),
+            **{**self._extra_body, **kwargs},
+        )
 
-    def __init__(
-        self,
-        endpoint: Optional[str] = None,
-        model: Optional[str] = None,
-        provider: Optional[str] = None,
-        api_key: Optional[str] = None,
-    ) -> None:  # noqa: DAR101, DAR401
-        """Initialize the Unify client.
-
-        Args:
-            endpoint: Endpoint name in OpenAI API format:
-            <model_name>@<provider_name>
-            Defaults to None.
-
-            model: Name of the model.
-
-            provider: Name of the provider.
-
-            api_key: API key for accessing the Unify API.
-                If None, it attempts to retrieve the API key from the
-                environment variable UNIFY_KEY.
-                Defaults to None.
-
-        Raises:
-            UnifyError: If the API key is missing.
-        """
-        self._api_key = _validate_api_key(api_key)
-        if endpoint and (model or provider):
-            raise UnifyError(
-                "if the model or provider are passed, then the endpoint must not be"
-                "passed."
-            )
-        self._endpoint, self._model, self._provider = None, None, None
-        if endpoint:
-            self.set_endpoint(endpoint)
-        if provider:
-            self.set_provider(provider)
-        if model:
-            self.set_model(model)
-        self._client = self._get_client()
-
-    @property
-    def model(self) -> str:
-        """
-        Get the model name.  # noqa: DAR201.
-
-        Returns:
-            The model name.
-        """
-        return self._model
-
-    def set_model(self, value: str) -> None:
-        """
-        Set the model name.  # noqa: DAR101.
-
-        Args:
-            value: The model name.
-        """
-        valid_models = unify.list_models(self._provider, api_key=self._api_key)
-        if value not in valid_models:
-            if self._provider:
-                raise UnifyError(
-                    "Current provider {} does not support the specified model {},"
-                    "please select one of: {}".format(
-                        self._provider, value, valid_models
-                    )
-                )
-            raise UnifyError(
-                "The specified model {} is not one of the models supported by Unify: {}".format(
-                    value, valid_models
-                )
-            )
-        self._model = value
-        if self._provider:
-            self._endpoint = "@".join([value, self._provider])
-
-    @property
-    def provider(self) -> Optional[str]:
-        """
-        Get the provider name.  # noqa: DAR201.
-
-        Returns:
-            The provider name.
-        """
-        return self._provider
-
-    def set_provider(self, value: str) -> None:
-        """
-        Set the provider name.  # noqa: DAR101.
-
-        Args:
-            value: The provider name.
-        """
-        valid_providers = unify.list_providers(self._model, api_key=self._api_key)
-        if value not in valid_providers:
-            if self._model:
-                raise UnifyError(
-                    "Current model {} does not support the specified provider {},"
-                    "please select one of: {}".format(
-                        self._model, value, valid_providers
-                    )
-                )
-            raise UnifyError(
-                "The specified provider {} is not one of the providers supported by "
-                "Unify: {}".format(value, valid_providers)
-            )
-        self._provider = value
-        if self._model:
-            self._endpoint = "@".join([self._model, value])
-
-    @property
-    def endpoint(self) -> str:
-        """
-        Get the endpoint name.  # noqa: DAR201.
-
-        Returns:
-            The endpoint name.
-        """
-        return self._endpoint
-
-    def set_endpoint(self, value: str) -> None:
-        """
-        Set the endpoint name.  # noqa: DAR101.
-
-        Args:
-            value: The endpoint name.
-        """
-        valid_endpoints = unify.list_endpoints(api_key=self._api_key)
-        if value not in valid_endpoints:
-            raise UnifyError(
-                "The specified endpoint {} is not one of the endpoints supported by "
-                "Unify: {}".format(value, valid_endpoints)
-            )
-        self._endpoint = value
-        self._model, self._provider = value.split("@")  # noqa: WPS414
+    # Credits #
+    # --------#
 
     def get_credit_balance(self) -> Union[float, None]:
         # noqa: DAR201, DAR401
@@ -355,6 +983,50 @@ class Client(ABC):
             raise BadRequestError("There was an error with the request.") from e
         except (KeyError, ValueError) as e:
             raise ValueError("Error parsing JSON response.") from e
+
+    # Abstract Methods #
+    # -----------------#
+
+    @abstractmethod
+    def _get_client(self):
+        raise NotImplementedError
+
+    @abstractmethod
+    def _generate(
+            self,
+            user_prompt: Optional[str] = None,
+            system_prompt: Optional[str] = None,
+            messages: Optional[Iterable[ChatCompletionMessageParam]] = None,
+            *,
+            frequency_penalty: Optional[float] = None,
+            logit_bias: Optional[Dict[str, int]] = None,
+            logprobs: Optional[bool] = None,
+            top_logprobs: Optional[int] = None,
+            max_tokens: Optional[int] = 1024,
+            n: Optional[int] = None,
+            presence_penalty: Optional[float] = None,
+            response_format: Optional[ResponseFormat] = None,
+            seed: Optional[int] = None,
+            stop: Union[Optional[str], List[str]] = None,
+            stream: Optional[bool] = False,
+            stream_options: Optional[ChatCompletionStreamOptionsParam] = None,
+            temperature: Optional[float] = 1.0,
+            top_p: Optional[float] = None,
+            tools: Optional[Iterable[ChatCompletionToolParam]] = None,
+            tool_choice: Optional[ChatCompletionToolChoiceOptionParam] = None,
+            parallel_tool_calls: Optional[bool] = None,
+            # platform arguments
+            use_custom_keys: bool = False,
+            tags: Optional[List[str]] = None,
+            # python client arguments
+            message_content_only: bool = True,
+            cache: bool = False,
+            # passthrough arguments
+            extra_headers: Optional[OpenAIHeaders] = None,
+            extra_query: Optional[OpenAIQuery] = None,
+            **kwargs,
+    ):
+        raise NotImplementedError
 
 
 class Unify(Client):
@@ -467,7 +1139,7 @@ class Unify(Client):
             return ""
         return chat_completion
 
-    def generate(  # noqa: WPS234, WPS211
+    def _generate(  # noqa: WPS234, WPS211
         self,
         user_prompt: Optional[str] = None,
         system_prompt: Optional[str] = None,
@@ -661,7 +1333,7 @@ class AsyncUnify(Client):
             return ""
         return async_response
 
-    async def generate(  # noqa: WPS234, WPS211
+    async def _generate(  # noqa: WPS234, WPS211
         self,
         user_prompt: Optional[str] = None,
         system_prompt: Optional[str] = None,
