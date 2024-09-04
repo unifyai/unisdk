@@ -1,3 +1,4 @@
+from __future__ import annotations
 import unify
 import jsonlines
 from typing import List, Dict, Any, Union, Optional
@@ -8,10 +9,10 @@ from .utils.helpers import _validate_api_key
 class Dataset:
     def __init__(
         self,
-        name: str = None,
         queries: List[Union[str, ChatCompletion]] = None,
         extra_fields: Dict[str, List[Any]] = None,
         data: List[Dict[str, Union[ChatCompletion, Any]]] = None,
+        name: str = None,
         auto_sync: bool = False,
         api_key: Optional[str] = None,
     ):
@@ -19,8 +20,6 @@ class Dataset:
         Initialize a local dataset of LLM queries.
 
         Args:
-            name: The name of the dataset.
-
             queries: List of LLM queries to initialize the dataset with.
 
             extra_fields: Dictionary of lists for arbitrary extra fields contained
@@ -30,6 +29,8 @@ class Dataset:
             be specified instead, which is simply a list of dicts with each first key as
             "query" and all other keys otherwise coming from the `extra_fields`. This is
             the internal representation used by the class.
+
+            name: The name of the dataset.
 
             auto_sync: Whether to automatically keep this dataset fully synchronized
             with the upstream variant at all times.
@@ -205,7 +206,7 @@ class Dataset:
         if self._auto_sync:
             self.sync()
 
-    def add(self, other: __class__):
+    def add(self, other: Dataset):
         """
         Adds another dataset to this one, return a new Dataset instance, with this
         new dataset receiving all unique queries from the other added dataset.
@@ -216,7 +217,7 @@ class Dataset:
         data = list(set(self._data + other))
         return Dataset(data=data, auto_sync=self._auto_sync, api_key=self._api_key)
 
-    def sub(self, other: __class__):
+    def sub(self, other: Dataset):
         """
         Subtracts another dataset from this one, return a new Dataset instance, with
         this new dataset losing all queries from the other subtracted dataset.
