@@ -15,7 +15,7 @@ class DatasetEntry(BaseModel, extra=Extra.allow):
 class Dataset:
     def __init__(
         self,
-        data: Union[str, List[str, Query, DatasetEntry]],
+        data: Union[str, List[Union[str, Query, DatasetEntry]]],
         *,
         name: str = None,
         auto_sync: Union[bool, str] = False,
@@ -59,10 +59,15 @@ class Dataset:
                     messages=[{"role": "user", "content": prompt}]
                 ))
                     for prompt in data]
-        elif _dict_aligns_with_pydantic(data[0], Query):
-            self._data = [DatasetEntry(query=Query(query)) for query in data]
-        elif _dict_aligns_with_pydantic(data[0], DatasetEntry):
+        elif isinstance(data[0], Query):
+            self._data = [DatasetEntry(query=query) for query in data]
+        elif isinstance(data[0], dict) and _dict_aligns_with_pydantic(data[0], Query):
+            self._data = [DatasetEntry(query=Query(**dct)) for dct in data]
+        elif isinstance(data[0], DatasetEntry):
             self._data = data
+        elif isinstance(data[0], dict) and \
+                _dict_aligns_with_pydantic(data[0], DatasetEntry):
+            self._data = self._data = [DatasetEntry(**dct) for dct in data]
         self._api_key = _validate_api_key(api_key)
         self._auto_sync = auto_sync
         self.sync()
