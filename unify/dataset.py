@@ -1,17 +1,22 @@
 from __future__ import annotations
-import unify
 import jsonlines
-from typing import List, Dict, Any, Union, Optional
-from openai.types.chat.chat_completion import ChatCompletion
-from .utils.helpers import _validate_api_key
+from pydantic import BaseModel, Extra
+from typing import List, Union, Optional
+
+import unify
+from unify.queries import Query
+from .utils.helpers import _validate_api_key, _dict_aligns_with_pydantic
+
+
+class DatasetEntry(BaseModel, extra=Extra.allow):
+    query: Query
 
 
 class Dataset:
     def __init__(
         self,
-        queries: List[Union[str, ChatCompletion]] = None,
-        extra_fields: Dict[str, List[Any]] = None,
-        data: List[Dict[str, Union[ChatCompletion, Any]]] = None,
+        data: Union[str, List[str, Query, DatasetEntry]],
+        *,
         name: str = None,
         auto_sync: bool = False,
         api_key: Optional[str] = None,
@@ -20,15 +25,9 @@ class Dataset:
         Initialize a local dataset of LLM queries.
 
         Args:
-            queries: List of LLM queries to initialize the dataset with.
-
-            extra_fields: Dictionary of lists for arbitrary extra fields contained
-            within the dataset.
-
-            data: If neither `queries` nor `extra_fields` are specified, then this can
-            be specified instead, which is simply a list of dicts with each first key as
-            "query" and all other keys otherwise coming from the `extra_fields`. This is
-            the internal representation used by the class.
+            data: The data for populating the dataset. This can either can a string
+            specifying an upstream dataset, a list of user prompts, a list of full
+            queries, or a list of dicts of queries alongside any extra fields.
 
             name: The name of the dataset.
 
@@ -43,22 +42,23 @@ class Dataset:
             UnifyError: If the API key is missing.
         """
         self._name = name
-        assert (
-            queries is None and extra_fields is None
-        ) or data is None, (
-            "if data is specified, then both queries and extra_fields must be None"
-        )
-        if data is not None:
-            self._data = data
+        if isinstance(data, str):
+            self._data = unify.download_dataset(name, api_key=api_key)
         else:
-            queries = [] if queries is None else queries
-            # ToDo: create ChatCompletion objects for any strings passed
-            extra_fields = {} if extra_fields is None else extra_fields
-            num_items = len(queries)
-            data_as_dict = dict(**{"query": v for v in queries}, **extra_fields)
-            self._data = [
-                {k: v[i] for k, v in data_as_dict.items()} for i in range(num_items)
-            ]
+            assert isinstance(data, list),\
+                "data must either be a string representing the dataset name, " \
+                "or a list or prompts, queries or dicts"
+            assert len(data) != 0, "data cannot be an empty list"
+        if isinstance(data[0], str):
+            self._data =\
+                [DatasetEntry(query=Query(
+                    messages=[{"role": "user", "content": prompt}]
+                ))
+                    for prompt in data]
+        elif _dict_aligns_with_pydantic(data[0], Query):
+            self._data = [DatasetEntry(query=Query(query)) for query in data]
+        elif _dict_aligns_with_pydantic(data[0], DatasetEntry):
+            self._data = data
         self._api_key = _validate_api_key(api_key)
         self._auto_sync = auto_sync
         if self._auto_sync:
@@ -270,5 +270,12 @@ class Dataset:
     def __sub__(self, other):
         return self.sub(other)
 
+    def __iter__(self):
+        for x in self._data:
+            yield x
+
+    def __getitem__(self, item):
+        return self._data[item]
+
     def __repr__(self):
-        raise NotImplementedError
+        return str(self._data)
