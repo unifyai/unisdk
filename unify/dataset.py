@@ -18,7 +18,7 @@ class Dataset:
         data: Union[str, List[str, Query, DatasetEntry]],
         *,
         name: str = None,
-        auto_sync: bool = False,
+        auto_sync: Union[bool, str] = False,
         api_key: Optional[str] = None,
     ):
         """
@@ -32,7 +32,11 @@ class Dataset:
             name: The name of the dataset.
 
             auto_sync: Whether to automatically keep this dataset fully synchronized
-            with the upstream variant at all times.
+            with the upstream variant at all times. If `True` or "both" then the sync
+            will be bi-directional, if "upload_only" then all local changes will be
+            uploaded to the upstream account without any downloads, if "download_only"
+            then all upstream changes will be downloaded locally without any uploads.
+            If `False` or "neither" then no synchronization will be done automatically.
 
             api_key: API key for accessing the Unify API. If None, it attempts to
             retrieve the API key from the environment variable UNIFY_KEY. Defaults to
@@ -61,8 +65,7 @@ class Dataset:
             self._data = data
         self._api_key = _validate_api_key(api_key)
         self._auto_sync = auto_sync
-        if self._auto_sync:
-            self.sync()
+        self.sync()
 
     @staticmethod
     def from_upstream(
@@ -142,7 +145,7 @@ class Dataset:
         upstream_dataset = unify.download_dataset(self._name, api_key=self._api_key)
         unique_local_data = list(set(self._data) - set(upstream_dataset))
         unify.append_to_dataset_from_dictionary(self._name, unique_local_data)
-        if self._auto_sync:
+        if self._auto_sync in (True, "both", "download_only"):
             self.download()
 
     def download(self, overwrite=False):
@@ -162,7 +165,7 @@ class Dataset:
         upstream_dataset = unify.download_dataset(self._name, api_key=self._api_key)
         unique_upstream_data = list(set(upstream_dataset) - set(self._data))
         self._data += unique_upstream_data
-        if self._auto_sync:
+        if self._auto_sync in (True, "both", "upload_only"):
             self.upload()
 
     def sync(self):
@@ -170,8 +173,10 @@ class Dataset:
         Synchronize the dataset in both directions, downloading any values missing
         locally, and uploading any values missing from upstream in the account.
         """
-        self.download()
-        self.upload()
+        if self._auto_sync in [True, "both", "download_only"]:
+            self.download()
+        if self._auto_sync in [True, "both", "upload_only"]:
+            self.upload()
 
     def upstream_diff(self):
         """
@@ -191,8 +196,7 @@ class Dataset:
             "The following {} queries are stored upstream but not locally\n: "
             "{}".format(len(unique_local_data), unique_local_data)
         )
-        if self._auto_sync:
-            self.sync()
+        self.sync()
 
     def save_to_file(self, filepath: str):
         """
@@ -203,8 +207,7 @@ class Dataset:
         """
         with jsonlines.open(filepath, mode="w") as writer:
             writer.write_all(self._data)
-        if self._auto_sync:
-            self.sync()
+        self.sync()
 
     def add(self, other: Dataset):
         """
@@ -243,8 +246,7 @@ class Dataset:
             other: The other dataset being added to this one.
         """
         self._data = list(set(self._data + other))
-        if self._auto_sync:
-            self.sync()
+        self.sync()
 
     def __isub__(self, other):
         """
@@ -261,8 +263,7 @@ class Dataset:
             "B are also present in dataset A"
         )
         self._data = list(self_set - other_set)
-        if self._auto_sync:
-            self.sync()
+        self.sync()
 
     def __add__(self, other):
         return self.add(other)
