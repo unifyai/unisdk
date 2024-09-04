@@ -1,5 +1,8 @@
+import os
 import unify
 import unittest
+
+dir_path = os.path.dirname(os.path.realpath(__file__))
 
 
 class TestDatasets(unittest.TestCase):
@@ -7,7 +10,7 @@ class TestDatasets(unittest.TestCase):
         if "TestUploadAndDelete" in unify.list_datasets():
             unify.delete_dataset("TestUploadAndDelete")
         unify.upload_dataset_from_file(
-            "TestUploadAndDelete", "./tests/datasets/prompts.jsonl"
+            "TestUploadAndDelete", os.path.join(dir_path, "prompts.jsonl")
         )
         assert "TestUploadAndDelete" in unify.list_datasets()
         unify.delete_dataset("TestUploadAndDelete")
