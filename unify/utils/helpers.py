@@ -1,6 +1,7 @@
 import os
 import json
 import requests
+from pydantic import BaseModel, ValidationError
 from typing import List, Dict, Optional, Union, Any
 
 
@@ -20,3 +21,11 @@ def _validate_api_key(api_key: Optional[str]) -> str:
 
 def _default(value: Any, default_value: Any) -> Any:
     return value if value is not None else default_value
+
+
+def _dict_aligns_with_pydantic(dict_in: Dict, pydantic_cls: BaseModel) -> bool:
+    try:
+        pydantic_cls.model_validate(dict_in)
+        return True
+    except ValidationError:
+        return False
