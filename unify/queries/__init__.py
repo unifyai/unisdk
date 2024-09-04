@@ -1,10 +1,13 @@
 from pydantic import BaseModel
-from typing import Optional, Iterable, Union, List, Dict
+from typing import Optional, Iterable, Union, List, Dict, Mapping
 from openai.types.chat import (
     ChatCompletionToolParam,
     ChatCompletionToolChoiceOptionParam,
     ChatCompletionMessageParam,
 )
+from openai._types import Headers as OpenAIHeaders,\
+    Query as OpenAIQuery,\
+    Body as OpenAIBody
 from openai.types.chat.completion_create_params import ResponseFormat
 
 
@@ -25,3 +28,7 @@ class Query(BaseModel):
     tools: Optional[Iterable[ChatCompletionToolParam]] = None,
     tool_choice: Optional[ChatCompletionToolChoiceOptionParam] = None,
     parallel_tool_calls: Optional[bool] = None,
+    # extra_headers: Optional[OpenAIHeaders] = None,  # ToDo: fix Omit error
+    extra_headers: Optional[Mapping[str, str]] = None,
+    extra_query: Optional[OpenAIQuery] = None,
+    extra_body: Optional[OpenAIBody] = None

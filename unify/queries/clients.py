@@ -381,14 +381,16 @@ class Unify(Client):
         tags: Optional[List[str]] = None,
         # python client arguments
         message_content_only: bool = True,
-        # passthrough arguments
-        extra_headers: Optional[OpenAIHeaders] = None,
-        extra_query: Optional[OpenAIQuery] = None,
-        **kwargs,
     ) -> Generator[str, None, None]:
+        query_dict = query.model_dump()
+        if "extra_body" in query_dict:
+            extra_body = query_dict["extra_body"]
+            del query_dict["extra_body"]
+        else:
+            extra_body = {}
         kw = dict(
             model=endpoint,
-            **query.model_dump(),
+            **query_dict,
             stream=True,
             stream_options=stream_options,
             extra_body={  # platform arguments
@@ -396,11 +398,8 @@ class Unify(Client):
                 "use_custom_keys": use_custom_keys,
                 "tags": tags,
                 # passthrough json arguments
-                **kwargs,
-            },
-            # other passthrough arguments
-            extra_headers=extra_headers,
-            extra_query=extra_query,
+                **extra_body,
+            }
         )
         kw = {k: v for k, v in kw.items() if v is not None}
         try:
@@ -426,24 +425,23 @@ class Unify(Client):
         # python client arguments
         message_content_only: bool = True,
         cache: bool = False,
-        # passthrough arguments
-        extra_headers: Optional[OpenAIHeaders] = None,
-        extra_query: Optional[OpenAIQuery] = None,
-        **kwargs,
     ) -> str:
+        query_dict = query.model_dump()
+        if "extra_body" in query_dict:
+            extra_body = query_dict["extra_body"]
+            del query_dict["extra_body"]
+        else:
+            extra_body = {}
         kw = dict(
             model=endpoint,
-            **query.model_dump(),
+            **query_dict,
             extra_body={  # platform arguments
                 "signature": "python",
                 "use_custom_keys": use_custom_keys,
                 "tags": tags,
                 # passthrough json arguments
-                **kwargs,
-            },
-            # other passthrough arguments
-            extra_headers=extra_headers,
-            extra_query=extra_query,
+                **extra_body,
+            }
         )
         kw = {k: v for k, v in kw.items() if v is not None}
         chat_completion = None
@@ -533,6 +531,9 @@ class Unify(Client):
             tools=tools,
             tool_choice=tool_choice,
             parallel_tool_calls=parallel_tool_calls,
+            extra_headers=extra_headers,
+            extra_query=extra_query,
+            extra_body=kwargs
         )
         if stream:
             return self._generate_stream(
@@ -544,27 +545,17 @@ class Unify(Client):
                 use_custom_keys=use_custom_keys,
                 tags=tags,
                 # python client arguments
-                message_content_only=message_content_only,
-                # passthrough arguments
-                extra_headers=extra_headers,
-                extra_query=extra_query,
-                **kwargs,
+                message_content_only=message_content_only
             )
         return self._generate_non_stream(
             self._endpoint,
             query,
-            # stream
-            stream_options=stream_options,
             # platform arguments
             use_custom_keys=use_custom_keys,
             tags=tags,
             # python client arguments
             message_content_only=message_content_only,
-            cache=cache,
-            # passthrough arguments
-            extra_headers=extra_headers,
-            extra_query=extra_query,
-            **kwargs,
+            cache=cache
         )
 
 
@@ -592,14 +583,16 @@ class AsyncUnify(Client):
         tags: Optional[List[str]] = None,
         # python client arguments
         message_content_only: bool = True,
-        # passthrough arguments
-        extra_headers: Optional[OpenAIHeaders] = None,
-        extra_query: Optional[OpenAIQuery] = None,
-        **kwargs,
     ) -> AsyncGenerator[str, None]:
+        query_dict = query.model_dump()
+        if "extra_body" in query_dict:
+            extra_body = query_dict["extra_body"]
+            del query_dict["extra_body"]
+        else:
+            extra_body = {}
         kw = dict(
             model=endpoint,
-            **query.model_dump(),
+            **query_dict,
             stream=True,
             stream_options=stream_options,
             extra_body={  # platform arguments
@@ -607,11 +600,8 @@ class AsyncUnify(Client):
                 "use_custom_keys": use_custom_keys,
                 "tags": tags,
                 # passthrough json arguments
-                **kwargs,
-            },
-            # other passthrough arguments
-            extra_headers=extra_headers,
-            extra_query=extra_query,
+                **extra_body,
+            }
         )
         kw = {k: v for k, v in kw.items() if v is not None}
         try:
@@ -633,25 +623,24 @@ class AsyncUnify(Client):
         tags: Optional[List[str]] = None,
         # python client arguments
         message_content_only: bool = True,
-        cache: bool = False,
-        # passthrough arguments
-        extra_headers: Optional[OpenAIHeaders] = None,
-        extra_query: Optional[OpenAIQuery] = None,
-        **kwargs,
+        cache: bool = False
     ) -> str:
+        query_dict = query.model_dump()
+        if "extra_body" in query_dict:
+            extra_body = query_dict["extra_body"]
+            del query_dict["extra_body"]
+        else:
+            extra_body = {}
         kw = dict(
             model=endpoint,
-            **query.model_dump(),
+            **query_dict,
             extra_body={  # platform arguments
                 "signature": "python",
                 "use_custom_keys": use_custom_keys,
                 "tags": tags,
                 # passthrough json arguments
-                **kwargs,
-            },
-            # other passthrough arguments
-            extra_headers=extra_headers,
-            extra_query=extra_query,
+                **extra_body,
+            }
         )
         kw = {k: v for k, v in kw.items() if v is not None}
         chat_completion = None
@@ -733,6 +722,9 @@ class AsyncUnify(Client):
             tools=tools,
             tool_choice=tool_choice,
             parallel_tool_calls=parallel_tool_calls,
+            extra_headers=extra_headers,
+            extra_query=extra_query,
+            extra_body=kwargs
         )
         if stream:
             return self._generate_stream(
@@ -744,11 +736,7 @@ class AsyncUnify(Client):
                 use_custom_keys=use_custom_keys,
                 tags=tags,
                 # python client arguments
-                message_content_only=message_content_only,
-                # passthrough arguments
-                extra_headers=extra_headers,
-                extra_query=extra_query,
-                **kwargs,
+                message_content_only=message_content_only
             )
         return await self._generate_non_stream(
             self._endpoint,
@@ -758,9 +746,5 @@ class AsyncUnify(Client):
             tags=tags,
             # python client arguments
             message_content_only=message_content_only,
-            cache=cache,
-            # passthrough arguments
-            extra_headers=extra_headers,
-            extra_query=extra_query,
-            **kwargs,
+            cache=cache
         )
