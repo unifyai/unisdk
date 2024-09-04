@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional, Iterable, Union, List, Dict, Mapping
+from typing import Optional, Union, List, Dict, Mapping
 from openai.types.chat import (
     ChatCompletionToolParam,
     ChatCompletionToolChoiceOptionParam,
@@ -12,7 +12,7 @@ from openai.types.chat.completion_create_params import ResponseFormat
 
 
 class Query(BaseModel):
-    messages: Optional[Iterable[ChatCompletionMessageParam]] = None,
+    messages: Optional[List[ChatCompletionMessageParam]] = None,
     frequency_penalty: Optional[float] = None,
     logit_bias: Optional[Dict[str, int]] = None,
     logprobs: Optional[bool] = None,
@@ -25,7 +25,7 @@ class Query(BaseModel):
     stop: Union[Optional[str], List[str]] = None,
     temperature: Optional[float] = 1.0,
     top_p: Optional[float] = None,
-    tools: Optional[Iterable[ChatCompletionToolParam]] = None,
+    tools: Optional[List[ChatCompletionToolParam]] = None,
     tool_choice: Optional[ChatCompletionToolChoiceOptionParam] = None,
     parallel_tool_calls: Optional[bool] = None,
     # extra_headers: Optional[OpenAIHeaders] = None,  # ToDo: fix Omit error
