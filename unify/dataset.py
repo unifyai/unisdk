@@ -1,7 +1,7 @@
 from __future__ import annotations
 import jsonlines
 from pydantic import BaseModel, Extra
-from typing import List, Union, Optional
+from typing import List, Dict, Union, Optional
 
 import unify
 from unify.queries import Query
@@ -15,7 +15,7 @@ class DatasetEntry(BaseModel, extra=Extra.allow):
 class Dataset:
     def __init__(
         self,
-        data: Union[str, List[Union[str, Query, DatasetEntry]]],
+        data: Union[str, List[Union[str, Dict, Query, DatasetEntry]]],
         *,
         name: str = None,
         auto_sync: Union[bool, str] = False,
