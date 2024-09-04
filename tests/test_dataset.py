@@ -27,3 +27,15 @@ class TestDatasets(unittest.TestCase):
             )
         ) for prompt in ["a", "b", "c"]])
         self.assertIsInstance(dataset[0], DatasetEntry)
+
+    def test_create_dataset_from_str(self) -> None:
+        if "TestCreateDatasetFromStr" in unify.list_datasets():
+            unify.delete_dataset("TestCreateDatasetFromStr")
+        unify.upload_dataset_from_file(
+            "TestCreateDatasetFromStr", os.path.join(dir_path, "prompts.jsonl")
+        )
+        assert "TestCreateDatasetFromStr" in unify.list_datasets()
+        dataset = unify.Dataset("TestCreateDatasetFromStr")
+        self.assertIsInstance(dataset[0], DatasetEntry)
+        unify.delete_dataset("TestCreateDatasetFromStr")
+        assert "TestCreateDatasetFromStr" not in unify.list_datasets()
