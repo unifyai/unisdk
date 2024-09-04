@@ -124,19 +124,17 @@ class MultiLLMClient(ABC):
         system_prompt: Optional[str] = None,
         messages: Optional[Iterable[ChatCompletionMessageParam]] = None,
         *,
-        # unified arguments
-        max_tokens: Optional[int] = 1024,
-        stop: Union[Optional[str], List[str]] = None,
-        temperature: Optional[float] = 1.0,
-        # partially unified arguments
         frequency_penalty: Optional[float] = None,
         logit_bias: Optional[Dict[str, int]] = None,
         logprobs: Optional[bool] = None,
         top_logprobs: Optional[int] = None,
+        max_tokens: Optional[int] = 1024,
         n: Optional[int] = None,
         presence_penalty: Optional[float] = None,
         response_format: Optional[ResponseFormat] = None,
         seed: Optional[int] = None,
+        stop: Union[Optional[str], List[str]] = None,
+        temperature: Optional[float] = 1.0,
         top_p: Optional[float] = None,
         tools: Optional[Iterable[ChatCompletionToolParam]] = None,
         tool_choice: Optional[ChatCompletionToolChoiceOptionParam] = None,
@@ -162,19 +160,6 @@ class MultiLLMClient(ABC):
             messages: A list of messages comprising the conversation so far. If
             provided, user_prompt must be None.
 
-            max_tokens: The maximum number of tokens that can be generated in the chat
-            completion. The total length of input tokens and generated tokens is limited
-            by the model's context length.
-            Defaults to the provider's default max_tokens when the value is None.
-
-            stop: Up to 4 sequences where the API will stop generating further tokens.
-
-            temperature:  What sampling temperature to use, between 0 and 2.
-            Higher values like 0.8 will make the output more random,
-            while lower values like 0.2 will make it more focused and deterministic.
-            It is generally recommended to alter this or top_p, but not both.
-            Defaults to the provider's default max_tokens when the value is None.
-
             frequency_penalty: Number between -2.0 and 2.0. Positive values penalize new
             tokens based on their existing frequency in the text so far, decreasing the
             model's likelihood to repeat the same line verbatim.
@@ -194,6 +179,11 @@ class MultiLLMClient(ABC):
             top_logprobs: An integer between 0 and 20 specifying the number of most
             likely tokens to return at each token position, each with an associated log
             probability. logprobs must be set to true if this parameter is used.
+
+            max_tokens: The maximum number of tokens that can be generated in the chat
+            completion. The total length of input tokens and generated tokens is limited
+            by the model's context length. Defaults to the provider's default max_tokens
+            when the value is None.
 
             n: How many chat completion choices to generate for each input message. Note
             that you will be charged based on the number of generated tokens across all
@@ -215,6 +205,20 @@ class MultiLLMClient(ABC):
             parameters should return the same result. Determinism is not guaranteed, and
             you should refer to the system_fingerprint response parameter to monitor
             changes in the backend.
+
+            stop: Up to 4 sequences where the API will stop generating further tokens.
+
+            stream: If True, generates content as a stream. If False, generates content
+            as a single response. Defaults to False.
+
+            stream_options: Options for streaming response. Only set this when you set
+            stream: true.
+
+            temperature:  What sampling temperature to use, between 0 and 2.
+            Higher values like 0.8 will make the output more random,
+            while lower values like 0.2 will make it more focused and deterministic.
+            It is generally recommended to alter this or top_p, but not both.
+            Defaults to the provider's default max_tokens when the value is None.
 
             top_p: An alternative to sampling with temperature, called nucleus sampling,
             where the model considers the results of the tokens with top_p probability
@@ -285,19 +289,17 @@ class MultiLLM(MultiLLMClient):
         system_prompt: Optional[str] = None,
         messages: Optional[Iterable[ChatCompletionMessageParam]] = None,
         *,
-        # unified arguments
-        max_tokens: Optional[int] = 1024,
-        stop: Union[Optional[str], List[str]] = None,
-        temperature: Optional[float] = 1.0,
-        # partially unified arguments
         frequency_penalty: Optional[float] = None,
         logit_bias: Optional[Dict[str, int]] = None,
         logprobs: Optional[bool] = None,
         top_logprobs: Optional[int] = None,
+        max_tokens: Optional[int] = 1024,
         n: Optional[int] = None,
         presence_penalty: Optional[float] = None,
         response_format: Optional[ResponseFormat] = None,
         seed: Optional[int] = None,
+        stop: Union[Optional[str], List[str]] = None,
+        temperature: Optional[float] = 1.0,
         top_p: Optional[float] = None,
         tools: Optional[Iterable[ChatCompletionToolParam]] = None,
         tool_choice: Optional[ChatCompletionToolChoiceOptionParam] = None,
@@ -312,34 +314,36 @@ class MultiLLM(MultiLLMClient):
         extra_query: Optional[Query] = None,
         **kwargs,
     ) -> Dict[str, str]:
+        kw = dict(
+            user_prompt=user_prompt,
+            system_prompt=system_prompt,
+            messages=messages,
+            max_tokens=max_tokens,
+            stop=stop,
+            temperature=temperature,
+            frequency_penalty=frequency_penalty,
+            logit_bias=logit_bias,
+            logprobs=logprobs,
+            top_logprobs=top_logprobs,
+            n=n,
+            presence_penalty=presence_penalty,
+            response_format=response_format,
+            seed=seed,
+            top_p=top_p,
+            tools=tools,
+            tool_choice=tool_choice,
+            parallel_tool_calls=parallel_tool_calls,
+            use_custom_keys=use_custom_keys,
+            tags=tags,
+            message_content_only=message_content_only,
+            extra_headers=extra_headers,
+            extra_query=extra_query,
+            **kwargs,
+        )
+        kw = {k: v for k, v in kw.items() if v is not None}
         responses = dict()
         for endpoint, client in self._clients.items():
-            responses[endpoint] = client.generate(
-                user_prompt=user_prompt,
-                system_prompt=system_prompt,
-                messages=messages,
-                max_tokens=max_tokens,
-                stop=stop,
-                temperature=temperature,
-                frequency_penalty=frequency_penalty,
-                logit_bias=logit_bias,
-                logprobs=logprobs,
-                top_logprobs=top_logprobs,
-                n=n,
-                presence_penalty=presence_penalty,
-                response_format=response_format,
-                seed=seed,
-                top_p=top_p,
-                tools=tools,
-                tool_choice=tool_choice,
-                parallel_tool_calls=parallel_tool_calls,
-                use_custom_keys=use_custom_keys,
-                tags=tags,
-                message_content_only=message_content_only,
-                extra_headers=extra_headers,
-                extra_query=extra_query,
-                **kwargs,
-            )
+            responses[endpoint] = client.generate(**kw)
         return responses
 
 
@@ -357,19 +361,17 @@ class MultiLLMAsync(MultiLLMClient):
         system_prompt: Optional[str] = None,
         messages: Optional[Iterable[ChatCompletionMessageParam]] = None,
         *,
-        # unified arguments
-        max_tokens: Optional[int] = 1024,
-        stop: Union[Optional[str], List[str]] = None,
-        temperature: Optional[float] = 1.0,
-        # partially unified arguments
         frequency_penalty: Optional[float] = None,
         logit_bias: Optional[Dict[str, int]] = None,
         logprobs: Optional[bool] = None,
         top_logprobs: Optional[int] = None,
+        max_tokens: Optional[int] = 1024,
         n: Optional[int] = None,
         presence_penalty: Optional[float] = None,
         response_format: Optional[ResponseFormat] = None,
         seed: Optional[int] = None,
+        stop: Union[Optional[str], List[str]] = None,
+        temperature: Optional[float] = 1.0,
         top_p: Optional[float] = None,
         tools: Optional[Iterable[ChatCompletionToolParam]] = None,
         tool_choice: Optional[ChatCompletionToolChoiceOptionParam] = None,
@@ -384,32 +386,34 @@ class MultiLLMAsync(MultiLLMClient):
         extra_query: Optional[Query] = None,
         **kwargs,
     ) -> Dict[str, str]:
+        kw = dict(
+            user_prompt=user_prompt,
+            system_prompt=system_prompt,
+            messages=messages,
+            max_tokens=max_tokens,
+            stop=stop,
+            temperature=temperature,
+            frequency_penalty=frequency_penalty,
+            logit_bias=logit_bias,
+            logprobs=logprobs,
+            top_logprobs=top_logprobs,
+            n=n,
+            presence_penalty=presence_penalty,
+            response_format=response_format,
+            seed=seed,
+            top_p=top_p,
+            tools=tools,
+            tool_choice=tool_choice,
+            parallel_tool_calls=parallel_tool_calls,
+            use_custom_keys=use_custom_keys,
+            tags=tags,
+            message_content_only=message_content_only,
+            extra_headers=extra_headers,
+            extra_query=extra_query,
+            **kwargs,
+        )
+        kw = {k: v for k, v in kw.items() if v is not None}
         responses = dict()
         for endpoint, client in self._clients.items():
-            responses[endpoint] = await client.generate(
-                user_prompt=user_prompt,
-                system_prompt=system_prompt,
-                messages=messages,
-                max_tokens=max_tokens,
-                stop=stop,
-                temperature=temperature,
-                frequency_penalty=frequency_penalty,
-                logit_bias=logit_bias,
-                logprobs=logprobs,
-                top_logprobs=top_logprobs,
-                n=n,
-                presence_penalty=presence_penalty,
-                response_format=response_format,
-                seed=seed,
-                top_p=top_p,
-                tools=tools,
-                tool_choice=tool_choice,
-                parallel_tool_calls=parallel_tool_calls,
-                use_custom_keys=use_custom_keys,
-                tags=tags,
-                message_content_only=message_content_only,
-                extra_headers=extra_headers,
-                extra_query=extra_query,
-                **kwargs,
-            )
+            responses[endpoint] = await client.generate(**kw)
         return responses
