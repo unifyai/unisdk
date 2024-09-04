@@ -36,4 +36,7 @@ from .queries.chat import *
 from .queries.clients import *
 from .queries.multi_llm import *
 
+from .agent import *
 from .dataset import *
+from .evaluation import *
+from .evaluator import *
