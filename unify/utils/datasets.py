@@ -43,8 +43,8 @@ def upload_dataset_from_file(
         ValueError: If there was an HTTP error.
     """
     with open(path, "rb") as f:
-        content_str = f.read()
-    return _upload_dataset_from_str(name, str(content_str), api_key)
+        content_str = f.read().decode()
+    return _upload_dataset_from_str(name, content_str, api_key)
 
 
 def upload_dataset_from_dictionary(
