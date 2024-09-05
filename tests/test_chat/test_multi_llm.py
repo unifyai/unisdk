@@ -67,6 +67,21 @@ class TestMultiLLM(unittest.TestCase):
             self.assertIsInstance(response, str)
             self.assertGreater(len(response), 0)
 
+    def test_default_prompt_handled_correctly(self):
+        endpoints = (
+            "gpt-4o@openai",
+            "gpt-4@openai"
+        )
+        client = MultiLLM(api_key=self.valid_api_key, endpoints=endpoints, n=2,
+                          message_content_only=False)
+        responses = client.generate("Hello, how it is going?")
+        for endpoint, (response_endpoint, response) in zip(
+            endpoints,
+            responses.items(),
+        ):
+            self.assertEqual(endpoint, response_endpoint)
+            self.assertEqual(len(response.choices), 2)
+
 
 class TestAsyncMultiLLM(unittest.IsolatedAsyncioTestCase):
     def setUp(self) -> None:
@@ -87,3 +102,18 @@ class TestAsyncMultiLLM(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(endpoint, response_endpoint)
             self.assertIsInstance(response, str)
             self.assertGreater(len(response), 0)
+
+    async def test_default_prompt_handled_correctly(self):
+        endpoints = (
+            "gpt-4o@openai",
+            "gpt-4@openai"
+        )
+        client = MultiLLMAsync(api_key=self.valid_api_key, endpoints=endpoints, n=2,
+                               message_content_only=False)
+        responses = await client.generate("Hello, how it is going?")
+        for endpoint, (response_endpoint, response) in zip(
+            endpoints,
+            responses.items(),
+        ):
+            self.assertEqual(endpoint, response_endpoint)
+            self.assertEqual(len(response.choices), 2)
