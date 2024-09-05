@@ -1,6 +1,10 @@
 """Unify python module."""
+import os
 
-BASE_URL = "https://api.unify.ai/v0"
+if "UNIFY_BASE_URL" in os.environ.keys():
+    BASE_URL = os.environ["UNIFY_BASE_URL"]
+else:
+    BASE_URL = "https://api.unify.ai/v0"
 
 from .utils import (
     credits,
