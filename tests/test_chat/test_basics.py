@@ -59,37 +59,45 @@ class TestAsyncUnifyBasics(unittest.IsolatedAsyncioTestCase):
 
     async def test_invalid_api_key_raises_authentication_error(self) -> None:
         with self.assertRaises(Exception):
-            async_unify = AsyncUnify(
+            async_client = AsyncUnify(
                 api_key="invalid_api_key",
                 endpoint="llama-3-8b-chat@together-ai",
             )
-            await async_unify.generate(user_message="hello")
+            await async_client.generate(user_message="hello")
 
     @patch("os.environ.get", return_value=None)
     async def test_missing_api_key_raises_key_error(self, mock_get: MagicMock) -> None:
         with self.assertRaises(KeyError):
-            async_unify = AsyncUnify()
-            await async_unify.generate(user_message="hello")
+            async_client = AsyncUnify()
+            await async_client.generate(user_message="hello")
 
     async def test_incorrect_model_name_raises_internal_server_error(self) -> None:
         with self.assertRaises(Exception):
             AsyncUnify(api_key=self.valid_api_key, model="wong-model-name")
 
     async def test_generate_returns_string_when_stream_false(self) -> None:
-        async_unify = AsyncUnify(
+        async_client = AsyncUnify(
             api_key=self.valid_api_key,
             endpoint="llama-3-8b-chat@together-ai",
         )
-        result = await async_unify.generate(user_message="hello", stream=False)
+        result = await async_client.generate(user_message="hello", stream=False)
         self.assertIsInstance(result, str)
 
     async def test_generate_returns_generator_when_stream_true(self) -> None:
-        async_unify = AsyncUnify(
+        async_client = AsyncUnify(
             api_key=self.valid_api_key,
             endpoint="llama-3-8b-chat@together-ai",
         )
-        result = await async_unify.generate(user_message="hello", stream=True)
+        result = await async_client.generate(user_message="hello", stream=True)
         self.assertIsInstance(result, AsyncGeneratorType)
+
+    async def test_default_prompt_handled_correctly(self) -> None:
+        async_client = AsyncUnify(
+            api_key=self.valid_api_key, endpoint="gpt-4o@openai", n=2,
+            message_content_only=False,
+        )
+        result = await async_client.generate(user_message="hello")
+        self.assertEqual(len(result.choices), 2)
 
 
 if __name__ == "__main__":
