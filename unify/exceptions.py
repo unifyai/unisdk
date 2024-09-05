@@ -44,3 +44,9 @@ status_error_map = {
     429: RateLimitError,
     500: InternalServerError,
 }
+
+
+def raise_exception(code: int, message: str):
+    if code not in status_error_map:
+        raise UnifyError(message)
+    raise status_error_map[code](message)
