@@ -1,8 +1,7 @@
 # global
-import openai
-from openai._types import Headers as OpenAIHeaders,\
-    Query as OpenAIQuery,\
-    Body as OpenAIBody
+import abc
+import requests
+from openai._types import Headers, Query, Body
 from openai.types.chat import (
     ChatCompletionToolParam,
     ChatCompletionToolChoiceOptionParam,
@@ -10,18 +9,14 @@ from openai.types.chat import (
     ChatCompletionStreamOptionsParam,
 )
 from openai.types.chat.completion_create_params import ResponseFormat
-import requests
 from abc import ABC, abstractmethod
-from typing import AsyncGenerator, Mapping, Dict, Generator, List, Optional, Union, \
-    Iterable
+from typing import Mapping, Dict, List, Optional, Union, Iterable
 
 # local
 import unify
 from unify import BASE_URL
-from unify.chat import Prompt
-from unify._caching import _get_cache, _write_to_cache
+from unify.exceptions import BadRequestError
 from unify.utils.helpers import _validate_api_key, _default
-from unify.exceptions import BadRequestError, UnifyError, status_error_map
 
 
 class Client(ABC):
@@ -29,10 +24,7 @@ class Client(ABC):
 
     def __init__(
         self,
-        endpoint: Optional[str] = None,
         *,
-        model: Optional[str] = None,
-        provider: Optional[str] = None,
         system_message: Optional[str] = None,
         messages: Optional[Iterable[ChatCompletionMessageParam]] = None,
         frequency_penalty: Optional[float] = None,
@@ -60,21 +52,13 @@ class Client(ABC):
         message_content_only: bool = True,
         cache: bool = False,
         # passthrough arguments
-        extra_headers: Optional[OpenAIHeaders] = None,
-        extra_query: Optional[OpenAIQuery] = None,
+        extra_headers: Optional[Headers] = None,
+        extra_query: Optional[Query] = None,
         **kwargs,
     ) -> None:  # noqa: DAR101, DAR401
-        """Initialize the Unify client.
+        """Initialize the base Unify client.
 
         Args:
-            endpoint: Endpoint name in OpenAI API format:
-            <model_name>@<provider_name>
-            Defaults to None.
-
-            model: Name of the model. Should only be set if endpoint is not set.
-
-            provider: Name of the provider. Should only be set if endpoint is not set.
-
             system_message: An optional string containing the system message.
 
             messages: A list of messages comprising the conversation so far.
@@ -196,20 +180,6 @@ class Client(ABC):
             UnifyError: If the API key is missing.
         """
         self._api_key = _validate_api_key(api_key)
-        if endpoint and (model or provider):
-            raise UnifyError(
-                "if the model or provider are passed, then the endpoint must not be"
-                "passed."
-            )
-        self._endpoint = None
-        if endpoint:
-            self.set_endpoint(endpoint)
-        self._provider = None
-        if provider:
-            self.set_provider(provider)
-        self._model = None
-        if model:
-            self.set_model(model)
         self._system_message = None
         self.set_system_message(system_message)
         self._messages = None
@@ -265,40 +235,9 @@ class Client(ABC):
         self.set_extra_query(extra_query)
         self._extra_body = None
         self.set_extra_body(kwargs)
-        self._client = self._get_client()
 
     # Properties #
     # -----------#
-
-    @property
-    def endpoint(self) -> str:
-        """
-        Get the endpoint name.
-
-        Returns:
-            The endpoint name.
-        """
-        return self._endpoint
-
-    @property
-    def model(self) -> str:
-        """
-        Get the model name.
-
-        Returns:
-            The model name.
-        """
-        return self._model
-
-    @property
-    def provider(self) -> str:
-        """
-        Get the provider name.
-
-        Returns:
-            The provider name.
-        """
-        return self._provider
 
     @property
     def system_message(self) -> Optional[str]:
@@ -531,7 +470,7 @@ class Client(ABC):
         return self._cache
 
     @property
-    def extra_headers(self) -> Optional[OpenAIHeaders]:
+    def extra_headers(self) -> Optional[Headers]:
         """
          Get the default extra headers, if set.
 
@@ -541,7 +480,7 @@ class Client(ABC):
         return self._extra_headers
 
     @property
-    def extra_query(self) -> Optional[OpenAIQuery]:
+    def extra_query(self) -> Optional[Query]:
         """
          Get the default extra query, if set.
 
@@ -562,71 +501,6 @@ class Client(ABC):
 
     # Setters #
     # --------#
-
-    def set_endpoint(self, value: str) -> None:
-        """
-        Set the endpoint name.  # noqa: DAR101.
-
-        Args:
-            value: The endpoint name.
-        """
-        valid_endpoints = unify.list_endpoints(api_key=self._api_key)
-        if value not in valid_endpoints:
-            raise UnifyError(
-                "The specified endpoint {} is not one of the endpoints supported by "
-                "Unify: {}".format(value, valid_endpoints)
-            )
-        self._endpoint = value
-        self._model, self._provider = value.split("@")  # noqa: WPS414
-
-    def set_model(self, value: str) -> None:
-        """
-        Set the model name.  # noqa: DAR101.
-
-        Args:
-            value: The model name.
-        """
-        valid_models = unify.list_models(self._provider, api_key=self._api_key)
-        if value not in valid_models:
-            if self._provider:
-                raise UnifyError(
-                    "Current provider {} does not support the specified model {},"
-                    "please select one of: {}".format(
-                        self._provider, value, valid_models
-                    )
-                )
-            raise UnifyError(
-                "The specified model {} is not one of the models supported by Unify: {}".format(
-                    value, valid_models
-                )
-            )
-        self._model = value
-        if self._provider:
-            self._endpoint = "@".join([value, self._provider])
-
-    def set_provider(self, value: str) -> None:
-        """
-        Set the provider name.  # noqa: DAR101.
-
-        Args:
-            value: The provider name.
-        """
-        valid_providers = unify.list_providers(self._model, api_key=self._api_key)
-        if value not in valid_providers:
-            if self._model:
-                raise UnifyError(
-                    "Current model {} does not support the specified provider {},"
-                    "please select one of: {}".format(
-                        self._model, value, valid_providers
-                    )
-                )
-            raise UnifyError(
-                "The specified provider {} is not one of the providers supported by "
-                "Unify: {}".format(value, valid_providers)
-            )
-        self._provider = value
-        if self._model:
-            self._endpoint = "@".join([self._model, value])
 
     def set_system_message(self, value: str) -> None:
         """
@@ -835,7 +709,7 @@ class Client(ABC):
         """
         self._cache = value
 
-    def set_extra_headers(self, value: OpenAIHeaders) -> None:
+    def set_extra_headers(self, value: Headers) -> None:
         """
         Set the default extra headers.  # noqa: DAR101.
 
@@ -844,7 +718,7 @@ class Client(ABC):
         """
         self._extra_headers = value
 
-    def set_extra_query(self, value: OpenAIQuery) -> None:
+    def set_extra_query(self, value: Query) -> None:
         """
         Set the default extra query.  # noqa: DAR101.
 
@@ -853,7 +727,7 @@ class Client(ABC):
         """
         self._extra_query = value
 
-    def set_extra_body(self, value: OpenAIBody) -> None:
+    def set_extra_body(self, value: Body) -> None:
         """
         Set the default extra body.  # noqa: DAR101.
 
@@ -895,8 +769,8 @@ class Client(ABC):
         message_content_only: bool = True,
         cache: bool = False,
         # passthrough arguments
-        extra_headers: Optional[OpenAIHeaders] = None,
-        extra_query: Optional[OpenAIQuery] = None,
+        extra_headers: Optional[Headers] = None,
+        extra_query: Optional[Query] = None,
         **kwargs,
     ):
         """Generate content using the Unify API.
@@ -1096,10 +970,6 @@ class Client(ABC):
     # -----------------#
 
     @abstractmethod
-    def _get_client(self):
-        raise NotImplementedError
-
-    @abstractmethod
     def _generate(
             self,
             user_message: Optional[str] = None,
@@ -1130,401 +1000,8 @@ class Client(ABC):
             message_content_only: bool = True,
             cache: bool = False,
             # passthrough arguments
-            extra_headers: Optional[OpenAIHeaders] = None,
-            extra_query: Optional[OpenAIQuery] = None,
+            extra_headers: Optional[Headers] = None,
+            extra_query: Optional[Query] = None,
             **kwargs,
     ):
         raise NotImplementedError
-
-
-class Unify(Client):
-    """Class for interacting with the Unify chat completions endpoint in a synchronous
-    manner."""
-
-    def _get_client(self):
-        try:
-            return openai.OpenAI(
-                base_url=f"{BASE_URL}",
-                api_key=self._api_key,
-            )
-        except openai.OpenAIError as e:
-            raise UnifyError(f"Failed to initialize Unify client: {str(e)}")
-
-    def _generate_stream(
-        self,
-        endpoint: str,
-        prompt: Prompt,
-        # stream
-        stream_options: Optional[ChatCompletionStreamOptionsParam] = None,
-        # platform arguments
-        use_custom_keys: bool = False,
-        tags: Optional[List[str]] = None,
-        # python client arguments
-        message_content_only: bool = True,
-    ) -> Generator[str, None, None]:
-        prompt_dict = prompt.model_dump()
-        if "extra_body" in prompt_dict:
-            extra_body = prompt_dict["extra_body"]
-            del prompt_dict["extra_body"]
-        else:
-            extra_body = {}
-        kw = dict(
-            model=endpoint,
-            **prompt_dict,
-            stream=True,
-            stream_options=stream_options,
-            extra_body={  # platform arguments
-                "signature": "python",
-                "use_custom_keys": use_custom_keys,
-                "tags": tags,
-                # passthrough json arguments
-                **extra_body,
-            }
-        )
-        kw = {k: v for k, v in kw.items() if v is not None}
-        try:
-            chat_completion = self._client.chat.completions.create(**kw)
-            for chunk in chat_completion:
-                if message_content_only:
-                    content = chunk.choices[0].delta.content  # type: ignore[union-attr]    # noqa: E501
-                else:
-                    content = chunk
-                self.set_provider(chunk.model.split("@")[-1])  # type: ignore[union-attr]   # noqa: E501
-                if content is not None:
-                    yield content
-        except openai.APIStatusError as e:
-            raise status_error_map[e.status_code](e.message) from None
-
-    def _generate_non_stream(
-        self,
-        endpoint: str,
-        prompt: Prompt,
-        # platform arguments
-        use_custom_keys: bool = False,
-        tags: Optional[List[str]] = None,
-        # python client arguments
-        message_content_only: bool = True,
-        cache: bool = False,
-    ) -> str:
-        prompt_dict = prompt.model_dump()
-        if "extra_body" in prompt_dict:
-            extra_body = prompt_dict["extra_body"]
-            del prompt_dict["extra_body"]
-        else:
-            extra_body = {}
-        kw = dict(
-            model=endpoint,
-            **prompt_dict,
-            extra_body={  # platform arguments
-                "signature": "python",
-                "use_custom_keys": use_custom_keys,
-                "tags": tags,
-                # passthrough json arguments
-                **extra_body,
-            }
-        )
-        kw = {k: v for k, v in kw.items() if v is not None}
-        chat_completion = None
-        if cache:
-            chat_completion = _get_cache(kw)
-        if chat_completion is None:
-            try:
-                chat_completion = self._client.chat.completions.create(**kw)
-            except openai.APIStatusError as e:
-                raise status_error_map[e.status_code](e.message) from None
-            if cache:
-                _write_to_cache(kw, chat_completion)
-        if "router" not in endpoint:
-            self.set_provider(
-                chat_completion.model.split(  # type: ignore[union-attr]
-                    "@",
-                )[-1]
-            )
-        if message_content_only:
-            content = chat_completion.choices[0].message.content
-            if content:
-                return content.strip(" ")
-            return ""
-        return chat_completion
-
-    def _generate(  # noqa: WPS234, WPS211
-        self,
-        user_message: Optional[str] = None,
-        system_message: Optional[str] = None,
-        messages: Optional[Iterable[ChatCompletionMessageParam]] = None,
-        *,
-        frequency_penalty: Optional[float] = None,
-        logit_bias: Optional[Dict[str, int]] = None,
-        logprobs: Optional[bool] = None,
-        top_logprobs: Optional[int] = None,
-        max_tokens: Optional[int] = 1024,
-        n: Optional[int] = None,
-        presence_penalty: Optional[float] = None,
-        response_format: Optional[ResponseFormat] = None,
-        seed: Optional[int] = None,
-        stop: Union[Optional[str], List[str]] = None,
-        stream: Optional[bool] = False,
-        stream_options: Optional[ChatCompletionStreamOptionsParam] = None,
-        temperature: Optional[float] = 1.0,
-        top_p: Optional[float] = None,
-        tools: Optional[Iterable[ChatCompletionToolParam]] = None,
-        tool_choice: Optional[ChatCompletionToolChoiceOptionParam] = None,
-        parallel_tool_calls: Optional[bool] = None,
-        # platform arguments
-        use_custom_keys: bool = False,
-        tags: Optional[List[str]] = None,
-        # python client arguments
-        message_content_only: bool = True,
-        cache: bool = False,
-        # passthrough arguments
-        extra_headers: Optional[OpenAIHeaders] = None,
-        extra_query: Optional[OpenAIQuery] = None,
-        **kwargs,
-    ) -> Union[Generator[str, None, None], str]:  # noqa: DAR101, DAR201, DAR401
-        contents = []
-        if system_message:
-            contents.append({"role": "system", "content": system_message})
-        if user_message:
-            contents.append({"role": "user", "content": user_message})
-        elif messages:
-            contents.extend(messages)
-        else:
-            raise UnifyError("You must provider either the user_message or messages!")
-
-        if tools:
-            message_content_only = False
-
-        prompt = Prompt(
-            messages=contents,
-            frequency_penalty=frequency_penalty,
-            logit_bias=logit_bias,
-            logprobs=logprobs,
-            top_logprobs=top_logprobs,
-            max_tokens=max_tokens,
-            n=n,
-            presence_penalty=presence_penalty,
-            response_format=response_format,
-            seed=seed,
-            stop=stop,
-            temperature=temperature,
-            top_p=top_p,
-            tools=tools,
-            tool_choice=tool_choice,
-            parallel_tool_calls=parallel_tool_calls,
-            extra_headers=extra_headers,
-            extra_query=extra_query,
-            extra_body=kwargs
-        )
-        if stream:
-            return self._generate_stream(
-                self._endpoint,
-                prompt,
-                # stream
-                stream_options=stream_options,
-                # platform arguments
-                use_custom_keys=use_custom_keys,
-                tags=tags,
-                # python client arguments
-                message_content_only=message_content_only
-            )
-        return self._generate_non_stream(
-            self._endpoint,
-            prompt,
-            # platform arguments
-            use_custom_keys=use_custom_keys,
-            tags=tags,
-            # python client arguments
-            message_content_only=message_content_only,
-            cache=cache
-        )
-
-
-class AsyncUnify(Client):
-    """Class for interacting with the Unify chat completions endpoint in a synchronous
-    manner."""
-
-    def _get_client(self):
-        try:
-            return openai.AsyncOpenAI(
-                base_url=f"{BASE_URL}",
-                api_key=self._api_key,
-            )
-        except openai.APIStatusError as e:
-            raise UnifyError(f"Failed to initialize Unify client: {str(e)}")
-
-    async def _generate_stream(
-        self,
-        endpoint: str,
-        prompt: Prompt,
-        # stream
-        stream_options: Optional[ChatCompletionStreamOptionsParam] = None,
-        # platform arguments
-        use_custom_keys: bool = False,
-        tags: Optional[List[str]] = None,
-        # python client arguments
-        message_content_only: bool = True,
-    ) -> AsyncGenerator[str, None]:
-        prompt_dict = prompt.model_dump()
-        if "extra_body" in prompt_dict:
-            extra_body = prompt_dict["extra_body"]
-            del prompt_dict["extra_body"]
-        else:
-            extra_body = {}
-        kw = dict(
-            model=endpoint,
-            **prompt_dict,
-            stream=True,
-            stream_options=stream_options,
-            extra_body={  # platform arguments
-                "signature": "python",
-                "use_custom_keys": use_custom_keys,
-                "tags": tags,
-                # passthrough json arguments
-                **extra_body,
-            }
-        )
-        kw = {k: v for k, v in kw.items() if v is not None}
-        try:
-            async_stream = await self._client.chat.completions.create(**kw)
-            async for chunk in async_stream:  # type: ignore[union-attr]
-                self.set_provider(chunk.model.split("@")[-1])
-                if message_content_only:
-                    yield chunk.choices[0].delta.content or ""
-                yield chunk
-        except openai.APIStatusError as e:
-            raise status_error_map[e.status_code](e.message) from None
-
-    async def _generate_non_stream(
-        self,
-        endpoint: str,
-        prompt: Prompt,
-        # platform arguments
-        use_custom_keys: bool = False,
-        tags: Optional[List[str]] = None,
-        # python client arguments
-        message_content_only: bool = True,
-        cache: bool = False
-    ) -> str:
-        prompt_dict = prompt.model_dump()
-        if "extra_body" in prompt_dict:
-            extra_body = prompt_dict["extra_body"]
-            del prompt_dict["extra_body"]
-        else:
-            extra_body = {}
-        kw = dict(
-            model=endpoint,
-            **prompt_dict,
-            extra_body={  # platform arguments
-                "signature": "python",
-                "use_custom_keys": use_custom_keys,
-                "tags": tags,
-                # passthrough json arguments
-                **extra_body,
-            }
-        )
-        kw = {k: v for k, v in kw.items() if v is not None}
-        chat_completion = None
-        if cache:
-            chat_completion = _get_cache(kw)
-        if chat_completion is None:
-            try:
-                async_response = await self._client.chat.completions.create(**kw)
-            except openai.APIStatusError as e:
-                raise status_error_map[e.status_code](e.message) from None
-            if cache:
-                _write_to_cache(kw, chat_completion)
-        self.set_provider(async_response.model.split("@")[-1])  # type: ignore
-        if message_content_only:
-            content = async_response.choices[0].message.content
-            if content:
-                return content.strip(" ")
-            return ""
-        return async_response
-
-    async def _generate(  # noqa: WPS234, WPS211
-        self,
-        user_message: Optional[str] = None,
-        system_message: Optional[str] = None,
-        messages: Optional[Iterable[ChatCompletionMessageParam]] = None,
-        *,
-        frequency_penalty: Optional[float] = None,
-        logit_bias: Optional[Dict[str, int]] = None,
-        logprobs: Optional[bool] = None,
-        top_logprobs: Optional[int] = None,
-        max_tokens: Optional[int] = 1024,
-        n: Optional[int] = None,
-        presence_penalty: Optional[float] = None,
-        response_format: Optional[ResponseFormat] = None,
-        seed: Optional[int] = None,
-        stop: Union[Optional[str], List[str]] = None,
-        stream: Optional[bool] = False,
-        stream_options: Optional[ChatCompletionStreamOptionsParam] = None,
-        temperature: Optional[float] = 1.0,
-        top_p: Optional[float] = None,
-        tools: Optional[Iterable[ChatCompletionToolParam]] = None,
-        tool_choice: Optional[ChatCompletionToolChoiceOptionParam] = None,
-        parallel_tool_calls: Optional[bool] = None,
-        # platform arguments
-        use_custom_keys: bool = False,
-        tags: Optional[List[str]] = None,
-        # python client arguments
-        message_content_only: bool = True,
-        cache: bool = False,
-        # passthrough arguments
-        extra_headers: Optional[OpenAIHeaders] = None,
-        extra_query: Optional[OpenAIQuery] = None,
-        **kwargs,
-    ) -> Union[AsyncGenerator[str, None], str]:  # noqa: DAR101, DAR201, DAR401
-        contents = []
-        if system_message:
-            contents.append({"role": "system", "content": system_message})
-
-        if user_message:
-            contents.append({"role": "user", "content": user_message})
-        elif messages:
-            contents.extend(messages)
-        else:
-            raise UnifyError("You must provide either the user_message or messages!")
-        prompt = Prompt(
-            messages=contents,
-            frequency_penalty=frequency_penalty,
-            logit_bias=logit_bias,
-            logprobs=logprobs,
-            top_logprobs=top_logprobs,
-            max_tokens=max_tokens,
-            n=n,
-            presence_penalty=presence_penalty,
-            response_format=response_format,
-            seed=seed,
-            stop=stop,
-            temperature=temperature,
-            top_p=top_p,
-            tools=tools,
-            tool_choice=tool_choice,
-            parallel_tool_calls=parallel_tool_calls,
-            extra_headers=extra_headers,
-            extra_query=extra_query,
-            extra_body=kwargs
-        )
-        if stream:
-            return self._generate_stream(
-                self._endpoint,
-                **query.model_dump(),
-                # stream
-                stream_options=stream_options,
-                # platform arguments
-                use_custom_keys=use_custom_keys,
-                tags=tags,
-                # python client arguments
-                message_content_only=message_content_only
-            )
-        return await self._generate_non_stream(
-            self._endpoint,
-            **query.model_dump(),
-            # platform arguments
-            use_custom_keys=use_custom_keys,
-            tags=tags,
-            # python client arguments
-            message_content_only=message_content_only,
-            cache=cache
-        )

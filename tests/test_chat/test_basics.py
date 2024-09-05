@@ -7,7 +7,7 @@ from unify import AsyncUnify, Unify
 from unify.exceptions import AuthenticationError, UnifyError
 
 
-class TestUnifyBasics(unittest.TestCase):
+class TestChatBasics(unittest.TestCase):
     def setUp(self) -> None:
         self.valid_api_key = os.environ.get("UNIFY_KEY")
 

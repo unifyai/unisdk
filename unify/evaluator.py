@@ -1,14 +1,11 @@
 import abc
 from abc import abstractmethod
-from typing import List, Dict, Union, Optional
-from openai.types.chat.chat_completion import ChatCompletion
+from typing import Union
 
-import unify
 from unify.dataset import Dataset
 from unify.agent import Agent
 from unify.chat import Prompt
-from unify.chat.clients import Client, Unify
-from unify.utils.helpers import _validate_api_key
+from unify.chat.clients.uni_llm import UniLLMClient
 
 
 class Evaluator(abc.ABC):
@@ -16,7 +13,7 @@ class Evaluator(abc.ABC):
     @abstractmethod
     def evaluate(
             self,
-            agent: Union[str, Client, Agent],
+            agent: Union[str, UniLLMClient, Agent],
             dataset: Union[str, Dataset],
             default_prompt: Prompt = None,
     ):

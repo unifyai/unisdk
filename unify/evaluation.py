@@ -5,17 +5,17 @@ from typing import Union, Optional
 from openai.types.chat.chat_completion import ChatCompletion
 
 from unify.agent import Agent
-from unify.chat.clients import Client
 from unify.dataset import DatasetEntry, Dataset
 from unify.evaluator import Evaluator
 from .utils.helpers import _validate_api_key
+from unify.chat.clients.uni_llm import UniLLMClient
 
 
 class Evaluation:
 
     def __init__(
         self,
-        agent: Union[str, Client, Agent],
+        agent: Union[str, UniLLMClient, Agent],
         dataset: Union[str, Dataset],
         evaluator: Union[str, Evaluator],
         api_key: Optional[str] = None,
