@@ -1,3 +1,6 @@
+import requests
+
+
 class UnifyError(Exception):
     """Base class for all custom exceptions in the Unify application."""
 
@@ -46,7 +49,9 @@ status_error_map = {
 }
 
 
-def raise_exception(code: int, message: str):
-    if code not in status_error_map:
-        raise UnifyError(message)
-    raise status_error_map[code](message)
+def handle_request(response: requests.request):
+    if response.status_code == 200:
+        return
+    if response.status_code not in status_error_map:
+        raise UnifyError(response.text)
+    raise status_error_map[response.status_code](response.text)
