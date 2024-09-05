@@ -30,8 +30,12 @@ def list_providers(
     }
     url = f"{BASE_URL}/providers"
     if model:
-        return _res_to_list(requests.get(url, headers=headers, params={"model": model}))
-    return _res_to_list(requests.get(url, headers=headers))
+        kw = dict(headers=headers, params={"model": model})
+    else:
+        kw = dict(headers=headers)
+    response = requests.get(url, **kw)
+    response.raise_for_status()
+    return _res_to_list(response)
 
 
 def list_models(
@@ -58,10 +62,12 @@ def list_models(
     }
     url = f"{BASE_URL}/models"
     if provider:
-        return _res_to_list(
-            requests.get(url, headers=headers, params={"provider": provider})
-        )
-    return _res_to_list(requests.get(url, headers=headers))
+        kw = dict(headers=headers, params={"provider": provider})
+    else:
+        kw = dict(headers=headers)
+    response = requests.get(url, **kw)
+    response.raise_for_status()
+    return _res_to_list(response)
 
 
 def list_endpoints(
@@ -95,9 +101,12 @@ def list_endpoints(
     if model and provider:
         raise ValueError("Please specify either model OR provider, not both.")
     elif model:
+        kw = dict(headers=headers, params={"model": model})
         return _res_to_list(requests.get(url, headers=headers, params={"model": model}))
     elif provider:
-        return _res_to_list(
-            requests.get(url, headers=headers, params={"provider": provider})
-        )
-    return _res_to_list(requests.get(url, headers=headers))
+        kw = dict(headers=headers, params={"provider": provider})
+    else:
+        kw = dict(headers=headers)
+    response = requests.get(url, **kw)
+    response.raise_for_status()
+    return _res_to_list(response)

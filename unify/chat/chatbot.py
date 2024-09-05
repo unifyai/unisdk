@@ -2,7 +2,6 @@ import sys
 from typing import Dict, Generator, List, Optional
 
 from unify.chat.clients.uni_llm import Unify
-from unify.exceptions import UnifyError
 
 
 class ChatBot:  # noqa: WPS338

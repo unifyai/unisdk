@@ -56,7 +56,6 @@ def create_custom_endpoint(
 
     return response.json()
 
-
 def delete_custom_endpoint(name: str, api_key: Optional[str] = None) -> Dict[str, str]:
     """
     Delete a custom endpoint.
@@ -143,6 +142,6 @@ def list_custom_endpoints(api_key: Optional[str] = None) -> List[Dict[str, str]]
     url = f"{BASE_URL}/custom_endpoint/list"
 
     response = requests.get(url, headers=headers)
-    response.raise_for_status()  # Raises an exception for unsuccessful status codes
+    response.raise_for_status()
 
     return response.json()

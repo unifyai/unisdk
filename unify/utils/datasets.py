@@ -20,8 +20,7 @@ def _upload_dataset_from_str(
     response = requests.post(
         BASE_URL + "/dataset", headers=headers, data=data, files=files
     )
-    if response.status_code != 200:
-        raise ValueError(response.text)
+    response.raise_for_status()
     return json.loads(response.text)["info"]
 
 
@@ -95,8 +94,7 @@ def download_dataset(
     params = {"name": name}
     # Send GET request to the /dataset endpoint
     response = requests.get(BASE_URL + "/dataset", headers=headers, params=params)
-    if response.status_code != 200:
-        raise ValueError(response.text)
+    response.raise_for_status()
     if path:
         with open(path, "w+") as f:
             f.write("\n".join([json.dumps(d) for d in json.loads(response.text)]))
@@ -126,8 +124,7 @@ def delete_dataset(name: str, api_key: Optional[str] = None) -> str:
     params = {"name": name}
     # Send DELETE request to the /dataset endpoint
     response = requests.delete(BASE_URL + "/dataset", headers=headers, params=params)
-    if response.status_code != 200:
-        raise ValueError(response.text)
+    response.raise_for_status()
     return json.loads(response.text)["info"]
 
 
@@ -155,6 +152,5 @@ def list_datasets(api_key: Optional[str] = None) -> List[str]:
     }
     # Send GET request to the /dataset/list endpoint
     response = requests.get(BASE_URL + "/dataset/list", headers=headers)
-    if response.status_code != 200:
-        raise ValueError(response.text)
+    response.raise_for_status()
     return _res_to_list(response)

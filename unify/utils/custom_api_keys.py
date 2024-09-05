@@ -155,8 +155,6 @@ def list_custom_api_keys(api_key: Optional[str] = None) -> List[Dict[str, str]]:
     url = f"{BASE_URL}/custom_api_key/list"
 
     response = requests.get(url, headers=headers)
+    response.raise_for_status()
 
-    if response.status_code == 200:
-        return response.json()
-    else:
-        response.raise_for_status()
+    return response.json()

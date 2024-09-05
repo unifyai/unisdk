@@ -1,6 +1,5 @@
 import os
 import unittest
-from unify.exceptions import UnifyError
 from unify import MultiLLM, MultiLLMAsync
 
 

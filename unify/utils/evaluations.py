@@ -138,11 +138,9 @@ def get_evaluations(
         params["evaluator"] = evaluator
 
     response = requests.get(url, headers=headers, params=params)
+    response.raise_for_status()
 
-    if response.status_code == 200:
-        return response.json()
-    else:
-        response.raise_for_status()
+    return response.json()
 
 
 def delete_evaluations(

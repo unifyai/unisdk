@@ -70,11 +70,9 @@ def get_query_history(
 
     url = f"{BASE_URL}/queries"
     response = requests.get(url, headers=headers, params=params)
+    response.raise_for_status()
 
-    if response.status_code == 200:
-        return response.json()
-    else:
-        response.raise_for_status()
+    return response.json()
 
 
 def get_query_metrics(
@@ -122,6 +120,6 @@ def get_query_metrics(
     url = f"{BASE_URL}/metrics"
 
     response = requests.get(url, headers=headers, params=params)
-    response.raise_for_status()  # Raise an exception for HTTP errors
+    response.raise_for_status()
 
     return response.json()

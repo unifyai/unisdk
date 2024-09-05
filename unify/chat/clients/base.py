@@ -15,7 +15,6 @@ from typing import Mapping, Dict, List, Optional, Union, Iterable
 # local
 import unify
 from unify import BASE_URL
-from unify.exceptions import BadRequestError
 from unify.utils.helpers import _validate_api_key, _default
 
 
