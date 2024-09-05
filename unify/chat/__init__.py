@@ -5,13 +5,11 @@ from openai.types.chat import (
     ChatCompletionToolChoiceOptionParam,
     ChatCompletionMessageParam,
 )
-from openai._types import Headers as OpenAIHeaders,\
-    Query as OpenAIQuery,\
-    Body as OpenAIBody
+from openai._types import Headers, Query, Body
 from openai.types.chat.completion_create_params import ResponseFormat
 
 
-class Query(BaseModel):
+class Prompt(BaseModel):
     messages: Optional[List[ChatCompletionMessageParam]] = None
     frequency_penalty: Optional[float] = None
     logit_bias: Optional[Dict[str, int]] = None
@@ -28,7 +26,7 @@ class Query(BaseModel):
     tools: Optional[List[ChatCompletionToolParam]] = None
     tool_choice: Optional[ChatCompletionToolChoiceOptionParam] = None
     parallel_tool_calls: Optional[bool] = None
-    # extra_headers: Optional[OpenAIHeaders] = None  # ToDo: fix Omit error
+    # extra_headers: Optional[Headers] = None  # ToDo: fix Omit error
     extra_headers: Optional[Mapping[str, str]] = None
-    extra_query: Optional[OpenAIQuery] = None
-    extra_body: Optional[OpenAIBody] = None
+    extra_query: Optional[Query] = None
+    extra_body: Optional[Body] = None

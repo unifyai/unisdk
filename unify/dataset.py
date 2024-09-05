@@ -4,18 +4,18 @@ from pydantic import BaseModel, Extra
 from typing import List, Dict, Union, Optional
 
 import unify
-from unify.queries import Query
+from unify.chat import Prompt
 from .utils.helpers import _validate_api_key, _dict_aligns_with_pydantic
 
 
 class DatasetEntry(BaseModel, extra=Extra.allow):
-    query: Query
+    prompt: Prompt
 
 
 class Dataset:
     def __init__(
         self,
-        data: Union[str, List[Union[str, Dict, Query, DatasetEntry]]],
+        data: Union[str, List[Union[str, Dict, Prompt, DatasetEntry]]],
         *,
         name: str = None,
         auto_sync: Union[bool, str] = False,
@@ -55,14 +55,14 @@ class Dataset:
             assert len(data) != 0, "data cannot be an empty list"
         if isinstance(data[0], str):
             self._data =\
-                [DatasetEntry(query=Query(
-                    messages=[{"role": "user", "content": prompt}]
+                [DatasetEntry(prompt=Prompt(
+                    messages=[{"role": "user", "content": usr_msg}]
                 ))
-                    for prompt in data]
-        elif isinstance(data[0], Query):
-            self._data = [DatasetEntry(query=query) for query in data]
-        elif isinstance(data[0], dict) and _dict_aligns_with_pydantic(data[0], Query):
-            self._data = [DatasetEntry(query=Query(**dct)) for dct in data]
+                    for usr_msg in data]
+        elif isinstance(data[0], Prompt):
+            self._data = [DatasetEntry(prompt=prompt) for prompt in data]
+        elif isinstance(data[0], dict) and _dict_aligns_with_pydantic(data[0], Prompt):
+            self._data = [DatasetEntry(prompt=Prompt(**dct)) for dct in data]
         elif isinstance(data[0], DatasetEntry):
             self._data = data
         elif isinstance(data[0], dict) and \

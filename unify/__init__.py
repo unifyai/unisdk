@@ -31,10 +31,10 @@ from .utils.router_deployment import *
 from .utils.router_training import *
 from .utils.supported_endpoints import *
 
-from .queries import chat, clients, multi_llm
-from .queries.chat import *
-from .queries.clients import *
-from .queries.multi_llm import *
+from .chat import chatbot, clients, multi_llm
+from .chat.chatbot import *
+from .chat.clients import *
+from .chat.multi_llm import *
 
 from .agent import *
 from .dataset import *

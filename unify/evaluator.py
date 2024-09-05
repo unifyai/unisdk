@@ -6,8 +6,8 @@ from openai.types.chat.chat_completion import ChatCompletion
 import unify
 from unify.dataset import Dataset
 from unify.agent import Agent
-from unify.queries import Query
-from unify.queries.clients import Client, Unify
+from unify.chat import Prompt
+from unify.chat.clients import Client, Unify
 from unify.utils.helpers import _validate_api_key
 
 
@@ -18,7 +18,7 @@ class Evaluator(abc.ABC):
             self,
             agent: Union[str, Client, Agent],
             dataset: Union[str, Dataset],
-            default_query: Query = None,
+            default_query: Prompt = None,
     ):
         """
         Evaluate the agent on the given dataset, based on this evaluator.

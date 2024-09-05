@@ -1,3 +1,3 @@
-{"query": {"messages": [{"role": "user", "content": "This is the first prompt"}]}, "ref_answer": "First reference answer"}
-{"query": {"messages": [{"role": "user", "content": "This is the second prompt"}]}, "ref_answer": "Second reference answer"}
-{"query": {"messages": [{"role": "user", "content": "This is the third prompt"}]}, "ref_answer": "Third reference answer"}
+{"prompt": {"messages": [{"role": "user", "content": "This is the first prompt"}]}, "ref_answer": "First reference answer"}
+{"prompt": {"messages": [{"role": "user", "content": "This is the second prompt"}]}, "ref_answer": "Second reference answer"}
+{"prompt": {"messages": [{"role": "user", "content": "This is the third prompt"}]}, "ref_answer": "Third reference answer"}

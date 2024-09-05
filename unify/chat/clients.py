@@ -18,7 +18,7 @@ from typing import AsyncGenerator, Mapping, Dict, Generator, List, Optional, Uni
 # local
 import unify
 from unify import BASE_URL
-from unify.queries import Query
+from unify.chat import Prompt
 from unify._caching import _get_cache, _write_to_cache
 from unify.utils.helpers import _validate_api_key, _default
 from unify.exceptions import BadRequestError, UnifyError, status_error_map
@@ -994,8 +994,8 @@ class Client(ABC):
     @abstractmethod
     def _generate(
             self,
-            user_prompt: Optional[str] = None,
-            system_prompt: Optional[str] = None,
+            user_message: Optional[str] = None,
+            system_message: Optional[str] = None,
             messages: Optional[Iterable[ChatCompletionMessageParam]] = None,
             *,
             frequency_penalty: Optional[float] = None,
@@ -1045,7 +1045,7 @@ class Unify(Client):
     def _generate_stream(
         self,
         endpoint: str,
-        query: Query,
+        query: Prompt,
         # stream
         stream_options: Optional[ChatCompletionStreamOptionsParam] = None,
         # platform arguments
@@ -1090,7 +1090,7 @@ class Unify(Client):
     def _generate_non_stream(
         self,
         endpoint: str,
-        query: Query,
+        query: Prompt,
         # platform arguments
         use_custom_keys: bool = False,
         tags: Optional[List[str]] = None,
@@ -1141,8 +1141,8 @@ class Unify(Client):
 
     def _generate(  # noqa: WPS234, WPS211
         self,
-        user_prompt: Optional[str] = None,
-        system_prompt: Optional[str] = None,
+        user_message: Optional[str] = None,
+        system_message: Optional[str] = None,
         messages: Optional[Iterable[ChatCompletionMessageParam]] = None,
         *,
         frequency_penalty: Optional[float] = None,
@@ -1174,10 +1174,10 @@ class Unify(Client):
         **kwargs,
     ) -> Union[Generator[str, None, None], str]:  # noqa: DAR101, DAR201, DAR401
         contents = []
-        if system_prompt:
-            contents.append({"role": "system", "content": system_prompt})
-        if user_prompt:
-            contents.append({"role": "user", "content": user_prompt})
+        if system_message:
+            contents.append({"role": "system", "content": system_message})
+        if user_message:
+            contents.append({"role": "user", "content": user_message})
         elif messages:
             contents.extend(messages)
         else:
@@ -1186,7 +1186,7 @@ class Unify(Client):
         if tools:
             message_content_only = False
 
-        query = Query(
+        query = Prompt(
             messages=contents,
             frequency_penalty=frequency_penalty,
             logit_bias=logit_bias,
@@ -1247,7 +1247,7 @@ class AsyncUnify(Client):
     async def _generate_stream(
         self,
         endpoint: str,
-        query: Query,
+        query: Prompt,
         # stream
         stream_options: Optional[ChatCompletionStreamOptionsParam] = None,
         # platform arguments
@@ -1289,7 +1289,7 @@ class AsyncUnify(Client):
     async def _generate_non_stream(
         self,
         endpoint: str,
-        query: Query,
+        query: Prompt,
         # platform arguments
         use_custom_keys: bool = False,
         tags: Optional[List[str]] = None,
@@ -1335,8 +1335,8 @@ class AsyncUnify(Client):
 
     async def _generate(  # noqa: WPS234, WPS211
         self,
-        user_prompt: Optional[str] = None,
-        system_prompt: Optional[str] = None,
+        user_message: Optional[str] = None,
+        system_message: Optional[str] = None,
         messages: Optional[Iterable[ChatCompletionMessageParam]] = None,
         *,
         frequency_penalty: Optional[float] = None,
@@ -1368,16 +1368,16 @@ class AsyncUnify(Client):
         **kwargs,
     ) -> Union[AsyncGenerator[str, None], str]:  # noqa: DAR101, DAR201, DAR401
         contents = []
-        if system_prompt:
-            contents.append({"role": "system", "content": system_prompt})
+        if system_message:
+            contents.append({"role": "system", "content": system_message})
 
-        if user_prompt:
-            contents.append({"role": "user", "content": user_prompt})
+        if user_message:
+            contents.append({"role": "user", "content": user_message})
         elif messages:
             contents.extend(messages)
         else:
             raise UnifyError("You must provide either the user_prompt or messages!")
-        query = Query(
+        query = Prompt(
             messages=contents,
             frequency_penalty=frequency_penalty,
             logit_bias=logit_bias,
