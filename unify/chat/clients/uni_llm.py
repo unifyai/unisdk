@@ -222,7 +222,7 @@ class UniLLMClient(Client, abc.ABC):
             **kwargs
         )
         if endpoint and (model or provider):
-            raise UnifyError(
+            raise Exception(
                 "if the model or provider are passed, then the endpoint must not be"
                 "passed."
             )
@@ -282,7 +282,7 @@ class UniLLMClient(Client, abc.ABC):
         """
         valid_endpoints = unify.list_endpoints(api_key=self._api_key)
         if value not in valid_endpoints:
-            raise UnifyError(
+            raise Exception(
                 "The specified endpoint {} is not one of the endpoints supported by "
                 "Unify: {}".format(value, valid_endpoints)
             )
@@ -299,13 +299,13 @@ class UniLLMClient(Client, abc.ABC):
         valid_models = unify.list_models(self._provider, api_key=self._api_key)
         if value not in valid_models:
             if self._provider:
-                raise UnifyError(
+                raise Exception(
                     "Current provider {} does not support the specified model {},"
                     "please select one of: {}".format(
                         self._provider, value, valid_models
                     )
                 )
-            raise UnifyError(
+            raise Exception(
                 "The specified model {} is not one of the models supported by Unify: {}".format(
                     value, valid_models
                 )
@@ -324,13 +324,13 @@ class UniLLMClient(Client, abc.ABC):
         valid_providers = unify.list_providers(self._model, api_key=self._api_key)
         if value not in valid_providers:
             if self._model:
-                raise UnifyError(
+                raise Exception(
                     "Current model {} does not support the specified provider {},"
                     "please select one of: {}".format(
                         self._model, value, valid_providers
                     )
                 )
-            raise UnifyError(
+            raise Exception(
                 "The specified provider {} is not one of the providers supported by "
                 "Unify: {}".format(value, valid_providers)
             )
@@ -357,7 +357,7 @@ class Unify(UniLLMClient):
                 api_key=self._api_key,
             )
         except openai.OpenAIError as e:
-            raise UnifyError(f"Failed to initialize Unify client: {str(e)}")
+            raise Exception(f"Failed to initialize Unify client: {str(e)}")
 
     def _generate_stream(
         self,
@@ -402,7 +402,7 @@ class Unify(UniLLMClient):
                 if content is not None:
                     yield content
         except openai.APIStatusError as e:
-            raise status_error_map[e.status_code](e.message) from None
+            raise Exception(e.message)
 
     def _generate_non_stream(
         self,
@@ -440,7 +440,7 @@ class Unify(UniLLMClient):
             try:
                 chat_completion = self._client.chat.completions.create(**kw)
             except openai.APIStatusError as e:
-                raise status_error_map[e.status_code](e.message) from None
+                raise Exception(e.message)
             if cache:
                 _write_to_cache(kw, chat_completion)
         if "router" not in endpoint:
@@ -498,7 +498,7 @@ class Unify(UniLLMClient):
         elif messages:
             contents.extend(messages)
         else:
-            raise UnifyError("You must provider either the user_message or messages!")
+            raise Exception("You must provider either the user_message or messages!")
 
         if tools:
             message_content_only = False
@@ -559,7 +559,7 @@ class AsyncUnify(UniLLMClient):
                 api_key=self._api_key,
             )
         except openai.APIStatusError as e:
-            raise UnifyError(f"Failed to initialize Unify client: {str(e)}")
+            raise Exception(f"Failed to initialize Unify client: {str(e)}")
 
     async def _generate_stream(
         self,
@@ -601,7 +601,7 @@ class AsyncUnify(UniLLMClient):
                     yield chunk.choices[0].delta.content or ""
                 yield chunk
         except openai.APIStatusError as e:
-            raise status_error_map[e.status_code](e.message) from None
+            raise Exception(e.message)
 
     async def _generate_non_stream(
         self,
@@ -639,7 +639,7 @@ class AsyncUnify(UniLLMClient):
             try:
                 async_response = await self._client.chat.completions.create(**kw)
             except openai.APIStatusError as e:
-                raise status_error_map[e.status_code](e.message) from None
+                raise Exception(e.message)
             if cache:
                 _write_to_cache(kw, chat_completion)
         self.set_provider(async_response.model.split("@")[-1])  # type: ignore
@@ -693,7 +693,7 @@ class AsyncUnify(UniLLMClient):
         elif messages:
             contents.extend(messages)
         else:
-            raise UnifyError("You must provide either the user_message or messages!")
+            raise Exception("You must provide either the user_message or messages!")
         prompt = Prompt(
             messages=contents,
             frequency_penalty=frequency_penalty,

@@ -14,7 +14,7 @@ class TestChatBasics(unittest.TestCase):
     # ------#
 
     def test_invalid_api_key_raises_authentication_error(self) -> None:
-        with self.assertRaises(AuthenticationError):
+        with self.assertRaises(Exception):
             client = Unify(
                 api_key="invalid_api_key",
                 endpoint="llama-3-8b-chat@together-ai",
@@ -27,7 +27,7 @@ class TestChatBasics(unittest.TestCase):
             Unify(endpoint="llama-3-8b-chat@together-ai")
 
     def test_incorrect_model_name_raises_internal_server_error(self) -> None:
-        with self.assertRaises(UnifyError):
+        with self.assertRaises(Exception):
             Unify(api_key=self.valid_api_key, model="wong-model-name")
 
     def test_generate_returns_string_when_stream_false(self) -> None:
@@ -50,7 +50,7 @@ class TestAsyncUnifyBasics(unittest.IsolatedAsyncioTestCase):
         self.valid_api_key = os.environ.get("UNIFY_KEY")
 
     async def test_invalid_api_key_raises_authentication_error(self) -> None:
-        with self.assertRaises(AuthenticationError):
+        with self.assertRaises(Exception):
             async_unify = AsyncUnify(
                 api_key="invalid_api_key",
                 endpoint="llama-3-8b-chat@together-ai",
@@ -64,7 +64,7 @@ class TestAsyncUnifyBasics(unittest.IsolatedAsyncioTestCase):
             await async_unify.generate(user_message="hello")
 
     async def test_incorrect_model_name_raises_internal_server_error(self) -> None:
-        with self.assertRaises(UnifyError):
+        with self.assertRaises(Exception):
             AsyncUnify(api_key=self.valid_api_key, model="wong-model-name")
 
     async def test_generate_returns_string_when_stream_false(self) -> None:
