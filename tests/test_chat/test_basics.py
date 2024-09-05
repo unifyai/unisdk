@@ -46,7 +46,7 @@ class TestChatBasics(unittest.TestCase):
 
     def test_default_prompt_handled_correctly(self) -> None:
         client = Unify(
-            api_key=self.valid_api_key, endpoint="llama-3-8b-chat@together-ai", n=2,
+            api_key=self.valid_api_key, endpoint="gpt-4o@openai", n=2,
             message_content_only=False,
         )
         result = client.generate(user_message="hello")
