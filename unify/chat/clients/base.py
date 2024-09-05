@@ -748,7 +748,7 @@ class Client(ABC):
         logit_bias: Optional[Dict[str, int]] = None,
         logprobs: Optional[bool] = None,
         top_logprobs: Optional[int] = None,
-        max_tokens: Optional[int] = 1024,
+        max_tokens: Optional[int] = None,
         n: Optional[int] = None,
         presence_penalty: Optional[float] = None,
         response_format: Optional[ResponseFormat] = None,
@@ -756,17 +756,17 @@ class Client(ABC):
         stop: Union[Optional[str], List[str]] = None,
         stream: Optional[bool] = False,
         stream_options: Optional[ChatCompletionStreamOptionsParam] = None,
-        temperature: Optional[float] = 1.0,
+        temperature: Optional[float] = None,
         top_p: Optional[float] = None,
         tools: Optional[Iterable[ChatCompletionToolParam]] = None,
         tool_choice: Optional[ChatCompletionToolChoiceOptionParam] = None,
         parallel_tool_calls: Optional[bool] = None,
         # platform arguments
-        use_custom_keys: bool = False,
+        use_custom_keys: Optional[bool] = None,
         tags: Optional[List[str]] = None,
         # python client arguments
-        message_content_only: bool = True,
-        cache: bool = False,
+        message_content_only: Optional[bool] = None,
+        cache: Optional[bool] = None,
         # passthrough arguments
         extra_headers: Optional[Headers] = None,
         extra_query: Optional[Query] = None,
@@ -805,8 +805,8 @@ class Client(ABC):
 
             max_tokens: The maximum number of tokens that can be generated in the chat
             completion. The total length of input tokens and generated tokens is limited
-            by the model's context length. Defaults to the provider's default max_tokens
-            when the value is None.
+            by the model's context length. Defaults value is 1024. Uses the provider's
+            default max_tokens when None is explicitly passed.
 
             n: How many chat completion choices to generate for each input message. Note
             that you will be charged based on the number of generated tokens across all
@@ -841,7 +841,8 @@ class Client(ABC):
             Higher values like 0.8 will make the output more random,
             while lower values like 0.2 will make it more focused and deterministic.
             It is generally recommended to alter this or top_p, but not both.
-            Defaults to the provider's default max_tokens when the value is None.
+            Default value is 1.0. Defaults to the provider's default temperature when
+            None is explicitly passed.
 
             top_p: An alternative to sampling with temperature, called nucleus sampling,
             where the model considers the results of the tokens with top_p probability
@@ -867,7 +868,7 @@ class Client(ABC):
             use.
 
             use_custom_keys:  Whether to use custom API keys or our unified API keys
-            with the backend provider.
+            with the backend provider. Defaults to False.
 
             tags: Arbitrary number of tags to classify this API query as needed. Helpful
             for generally grouping queries across tasks and users, for logging purposes.
@@ -881,7 +882,7 @@ class Client(ABC):
             any future calls with identical arguments will read from the cache instead
             of running the LLM query. This can help to save costs and also debug
             multi-step LLM applications, while keeping early steps fixed.
-            This argument only has any effect when stream=False.
+            This argument only has any effect when stream=False. Defaults to False.
 
             extra_headers: Additional "passthrough" headers for the request which are
             provider-specific, and are not part of the OpenAI standard. They are handled
@@ -910,27 +911,28 @@ class Client(ABC):
             logit_bias=_default(logit_bias, self._logit_bias),
             logprobs=_default(logprobs, self._logprobs),
             top_logprobs=_default(top_logprobs, self._top_logprobs),
-            max_tokens=_default(max_tokens, self._max_tokens),
+            max_tokens=_default(_default(max_tokens, self._max_tokens), 1024),
             n=_default(n, self._n),
             presence_penalty=_default(presence_penalty, self._presence_penalty),
             response_format=_default(response_format, self._response_format),
             seed=_default(seed, self._seed),
             stop=_default(stop, self._stop),
-            stream=_default(stream, self._stream),
+            stream=_default(_default(stream, self._stream), False),
             stream_options=_default(stream_options, self._stream_options),
-            temperature=_default(temperature, self._temperature),
+            temperature=_default(_default(temperature, self._temperature), 1.0),
             top_p=_default(top_p, self._top_p),
             tools=_default(tools, self._tools),
             tool_choice=_default(tool_choice, self._tool_choice),
             parallel_tool_calls=_default(parallel_tool_calls,
                                          self._parallel_tool_calls),
             # platform arguments
-            use_custom_keys=_default(use_custom_keys, self._use_custom_keys),
+            use_custom_keys=_default(
+                _default(use_custom_keys, self._use_custom_keys), False),
             tags=_default(tags, self._tags),
             # python client arguments
-            message_content_only=_default(message_content_only,
-                                          self._message_content_only),
-            cache=_default(cache, self._cache),
+            message_content_only=_default(_default(message_content_only,
+                                          self._message_content_only), True),
+            cache=_default(_default(cache, self._cache), False),
             # passthrough arguments
             extra_headers=_default(extra_headers, self._extra_headers),
             extra_query=_default(extra_query, self._extra_query),
