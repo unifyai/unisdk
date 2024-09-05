@@ -718,7 +718,7 @@ class AsyncUnify(UniLLMClient):
         if stream:
             return self._generate_stream(
                 self._endpoint,
-                **prompt.model_dump(),
+                prompt,
                 # stream
                 stream_options=stream_options,
                 # platform arguments
@@ -729,7 +729,7 @@ class AsyncUnify(UniLLMClient):
             )
         return await self._generate_non_stream(
             self._endpoint,
-            **prompt.model_dump(),
+            prompt,
             # platform arguments
             use_custom_keys=use_custom_keys,
             tags=tags,
