@@ -44,6 +44,14 @@ class TestChatBasics(unittest.TestCase):
         result = client.generate(user_message="hello", stream=True)
         self.assertIsInstance(result, GeneratorType)
 
+    def test_default_prompt_handled_correctly(self) -> None:
+        client = Unify(
+            api_key=self.valid_api_key, endpoint="llama-3-8b-chat@together-ai", n=2,
+            message_content_only=False,
+        )
+        result = client.generate(user_message="hello")
+        self.assertEqual(len(result.choices), 2)
+
 
 class TestAsyncUnifyBasics(unittest.IsolatedAsyncioTestCase):
     def setUp(self) -> None:
