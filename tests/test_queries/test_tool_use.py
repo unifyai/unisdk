@@ -52,7 +52,7 @@ class TestUnifyToolUse(unittest.TestCase):
 
         client = Unify(api_key=self.valid_api_key, endpoint="gpt-4o@openai")
         result = client.generate(
-            user_prompt=(
+            user_message=(
                 "What is the weather going to be like in Glasgow, Scotland over "
                 "the next 5 days?"
             ),
@@ -111,7 +111,7 @@ class TestUnifyToolUse(unittest.TestCase):
 
         client = Unify(api_key=self.valid_api_key, endpoint="claude-3-opus@anthropic")
         client.generate(
-            user_prompt=(
+            user_message=(
                 "What is the weather going to be like in Glasgow, Scotland"
                 "over the next 5 days?"
             ),

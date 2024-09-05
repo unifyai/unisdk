@@ -26,7 +26,7 @@ class Dataset:
 
         Args:
             data: The data for populating the dataset. This can either can a string
-            specifying an upstream dataset, a list of user prompts, a list of full
+            specifying an upstream dataset, a list of user messages, a list of full
             queries, or a list of dicts of queries alongside any extra fields.
 
             name: The name of the dataset.
@@ -51,7 +51,7 @@ class Dataset:
         else:
             assert isinstance(data, list),\
                 "data must either be a string representing the dataset name, " \
-                "or a list or prompts, queries or dicts"
+                "or a list of messages, prompts or dicts"
             assert len(data) != 0, "data cannot be an empty list"
         if isinstance(data[0], str):
             self._data =\

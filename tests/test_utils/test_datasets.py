@@ -18,33 +18,33 @@ class TestDatasets(unittest.TestCase):
         assert "TestUploadAndDelete" not in unify.list_datasets()
 
     def test_upload_and_delete_dataset_from_dict(self) -> None:
-        prompts = [
+        entries = [
             {
-                "query": {
+                "prompt": {
                     "messages":
                         [{
                             "role": "user",
-                            "content": "This is the first prompt"
+                            "content": "This is the first user message"
                         }]
                 },
                 "ref_answer": "First reference answer",
             },
             {
-                "query": {
+                "prompt": {
                     "messages":
                         [{
                             "role": "user",
-                            "content": "This is the second prompt"
+                            "content": "This is the second user message"
                         }]
                 },
                 "ref_answer": "Second reference answer",
             },
             {
-                "query": {
+                "prompt": {
                     "messages":
                         [{
                             "role": "user",
-                            "content": "This is the third prompt"
+                            "content": "This is the third user message"
                         }]
                 },
                 "ref_answer": "Third reference answer",
@@ -52,7 +52,7 @@ class TestDatasets(unittest.TestCase):
         ]
         if "TestFromDict" in unify.list_datasets():
             unify.delete_dataset("TestFromDict")
-        unify.upload_dataset_from_dictionary("TestFromDict", prompts)
+        unify.upload_dataset_from_dictionary("TestFromDict", entries)
         assert "TestFromDict" in unify.list_datasets()
         unify.delete_dataset("TestFromDict")
         assert "TestFromDict" not in unify.list_datasets()

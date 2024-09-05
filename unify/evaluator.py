@@ -18,7 +18,7 @@ class Evaluator(abc.ABC):
             self,
             agent: Union[str, Client, Agent],
             dataset: Union[str, Dataset],
-            default_query: Prompt = None,
+            default_prompt: Prompt = None,
     ):
         """
         Evaluate the agent on the given dataset, based on this evaluator.
@@ -30,10 +30,10 @@ class Evaluator(abc.ABC):
             dataset: Name of the uploaded dataset or handle to the local Dataset
             instance to evaluate
 
-            default_query: The default query for evaluation, which each unique query in
-            the dataset will inherit from, overwriting the extra fields. This query can
-            therefore include temperature, system prompt, tools etc. which are not
-            present in each query in the dataset.
+            default_prompt: The default prompt for evaluation, which each unique query in
+            the dataset will inherit from, overwriting the extra fields. This prompt can
+            therefore include temperature, system message, tools etc. which are not
+            present in each prompt in the dataset.
         """
         raise NotImplementedError
 
@@ -42,7 +42,7 @@ class Evaluator(abc.ABC):
 #
 #     def __init__(
 #             self,
-#             system_prompt: str = None,
+#             system_message: str = None,
 #             class_config: List[Dict[str, Union[float, str]]] = None,
 #             judge_models: Union[str, List[str]] = None,
 #             name: str = None,
@@ -55,7 +55,7 @@ class Evaluator(abc.ABC):
 #         Initialize an LLM as a judge (or jury) evaluator.
 #
 #         Args:
-#             system_prompt: An optional custom system prompt to provide specific
+#             system_message: An optional custom system message to provide specific
 #             instructions to the judge on how to score the answers.
 #
 #             class_config: If set, describes the list of classifications that the LLM
@@ -91,7 +91,7 @@ class Evaluator(abc.ABC):
 #             UnifyError: If the API key is missing.
 #         """
 #         self._name = name
-#         self._system_prompt = system_prompt
+#         self._system_message = system_message
 #         self._class_config = class_config
 #         self._judge_models = judge_models
 #         self._previous_version = previous_version
@@ -122,7 +122,7 @@ class Evaluator(abc.ABC):
 #         config = unify.utils.get_evaluator(name, api_key=api_key)
 #         return LLMJudge(
 #             name,
-#             config.system_prompt,
+#             config.system_message,
 #             config.class_config,
 #             config.judge_models,
 #             api_key=api_key
@@ -130,7 +130,7 @@ class Evaluator(abc.ABC):
 #
 #     def update(
 #             self,
-#             system_prompt: str = None,
+#             system_message: str = None,
 #             class_config: List[Dict[str, Union[float, str]]] = None,
 #             judge_models: Union[str, List[str]] = None,
 #     ):
@@ -138,7 +138,7 @@ class Evaluator(abc.ABC):
 #         Creates a new version of the evaluator and increments the version number, whilst
 #         maintaining a reference to the old evaluator.
 #
-#         system_prompt: An optional custom system prompt to provide specific
+#         system_message: An optional custom system message to provide specific
 #         instructions to the judge on how to score the answers.
 #
 #         class_config: If set, describes the list of classifications that the LLM
@@ -155,12 +155,12 @@ class Evaluator(abc.ABC):
 #         string containing a single model name or a list of model names. If
 #         unspecified then `claude-3.5-sonnet@aws-bedrock` is used.
 #         """
-#         sp_changed = system_prompt not in (None, self._system_prompt)
+#         sm_changed = system_message not in (None, self._system_message)
 #         cc_changed = class_config not in (None, self._class_config)
 #         jm_changed = judge_models not in (None, self._judge_models)
 #
-#         assert sp_changed or cc_changed or jm_changed,\
-#             "At least one of `system_prompt`, `class_config` or `judge_models` must " \
+#         assert sm_changed or cc_changed or jm_changed,\
+#             "At least one of `system_message`, `class_config` or `judge_models` must " \
 #             "be changed when calling `update`"
 #
 #         split_name = self._name.split("_")
@@ -172,7 +172,7 @@ class Evaluator(abc.ABC):
 #             new_name = self._name + "_v0"
 #         return LLMJudge(
 #             new_name,
-#             system_prompt,
+#             system_message,
 #             class_config,
 #             judge_models,
 #             self,
@@ -195,7 +195,7 @@ class Evaluator(abc.ABC):
 #                 raise Exception("Evaluator with name {} already exists upstream, and "
 #                                 "`overwrite` was not set to `True`.".format(self._name))
 #         unify.utils.create_evaluator(
-#             self._name, self._system_prompt, self._class_config,
+#             self._name, self._system_message, self._class_config,
 #             self._judge_models, False)
 #
 #     def upload_all_versions(self, overwrite=False):
@@ -223,10 +223,10 @@ class Evaluator(abc.ABC):
 #             self,
 #             dataset: Union[str, Dataset],
 #             agent: Union[str, Agent],
-#             default_query: ChatCompletion = None,
+#             default_prompt: Prompt = None,
 #     ):
 #         eval = unify.utils.trigger_evaluation(
-#             dataset, agent, default_query, self._api_key)
+#             dataset, agent, default_prompt, self._api_key)
 #         return Evaluation(eval, api_key=self._api_key)
 #
 #     def __repr__(self):

@@ -10,7 +10,7 @@ dir_path = os.path.dirname(os.path.realpath(__file__))
 
 class TestDatasets(unittest.TestCase):
 
-    def test_create_dataset_from_list_of_prompts(self) -> None:
+    def test_create_dataset_from_list_of_messages(self) -> None:
         dataset = unify.Dataset(["a", "b", "c"])
         self.assertIsInstance(dataset[0], DatasetEntry)
 
@@ -20,7 +20,7 @@ class TestDatasets(unittest.TestCase):
         ) for usr_msg in ["a", "b", "c"]])
         self.assertIsInstance(dataset[0], DatasetEntry)
 
-    def test_create_dataset_from_list_of_query_dicts(self) -> None:
+    def test_create_dataset_from_list_of_prompt_dicts(self) -> None:
         dataset = unify.Dataset([dict(
             messages=[{"role": "user", "content": usr_msg}]
         ) for usr_msg in ["a", "b", "c"]])

@@ -20,7 +20,7 @@ class TestUnifyBasics(unittest.TestCase):
                 api_key="invalid_api_key",
                 endpoint="llama-3-8b-chat@together-ai",
             )
-            client.generate(user_prompt="hello")
+            client.generate(user_message="hello")
 
     @patch("os.environ.get", return_value=None)
     def test_missing_api_key_raises_key_error(self, mock_get: MagicMock) -> None:
@@ -35,14 +35,14 @@ class TestUnifyBasics(unittest.TestCase):
         client = Unify(
             api_key=self.valid_api_key, endpoint="llama-3-8b-chat@together-ai"
         )
-        result = client.generate(user_prompt="hello", stream=False)
+        result = client.generate(user_message="hello", stream=False)
         self.assertIsInstance(result, str)
 
     def test_generate_returns_generator_when_stream_true(self) -> None:
         client = Unify(
             api_key=self.valid_api_key, endpoint="llama-3-8b-chat@together-ai"
         )
-        result = client.generate(user_prompt="hello", stream=True)
+        result = client.generate(user_message="hello", stream=True)
         self.assertIsInstance(result, GeneratorType)
 
 
@@ -56,13 +56,13 @@ class TestAsyncUnifyBasics(unittest.IsolatedAsyncioTestCase):
                 api_key="invalid_api_key",
                 endpoint="llama-3-8b-chat@together-ai",
             )
-            await async_unify.generate(user_prompt="hello")
+            await async_unify.generate(user_message="hello")
 
     @patch("os.environ.get", return_value=None)
     async def test_missing_api_key_raises_key_error(self, mock_get: MagicMock) -> None:
         with self.assertRaises(KeyError):
             async_unify = AsyncUnify()
-            await async_unify.generate(user_prompt="hello")
+            await async_unify.generate(user_message="hello")
 
     async def test_incorrect_model_name_raises_internal_server_error(self) -> None:
         with self.assertRaises(UnifyError):
@@ -73,7 +73,7 @@ class TestAsyncUnifyBasics(unittest.IsolatedAsyncioTestCase):
             api_key=self.valid_api_key,
             endpoint="llama-3-8b-chat@together-ai",
         )
-        result = await async_unify.generate(user_prompt="hello", stream=False)
+        result = await async_unify.generate(user_message="hello", stream=False)
         self.assertIsInstance(result, str)
 
     async def test_generate_returns_generator_when_stream_true(self) -> None:
@@ -81,7 +81,7 @@ class TestAsyncUnifyBasics(unittest.IsolatedAsyncioTestCase):
             api_key=self.valid_api_key,
             endpoint="llama-3-8b-chat@together-ai",
         )
-        result = await async_unify.generate(user_prompt="hello", stream=True)
+        result = await async_unify.generate(user_message="hello", stream=True)
         self.assertIsInstance(result, AsyncGeneratorType)
 
 

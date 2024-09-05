@@ -33,7 +33,7 @@ class Client(ABC):
         *,
         model: Optional[str] = None,
         provider: Optional[str] = None,
-        system_prompt: Optional[str] = None,
+        system_message: Optional[str] = None,
         messages: Optional[Iterable[ChatCompletionMessageParam]] = None,
         frequency_penalty: Optional[float] = None,
         logit_bias: Optional[Dict[str, int]] = None,
@@ -75,10 +75,10 @@ class Client(ABC):
 
             provider: Name of the provider. Should only be set if endpoint is not set.
 
-            system_prompt: An optional string containing the system prompt.
+            system_message: An optional string containing the system message.
 
             messages: A list of messages comprising the conversation so far.
-            If provided, user_prompt must be None.
+            If provided, user_message must be None.
 
             api_key: API key for accessing the Unify API.
             If None, it attempts to retrieve the API key from the environment variable
@@ -102,8 +102,8 @@ class Client(ABC):
         self._model = None
         if model:
             self.set_model(model)
-        self._system_prompt = None
-        self.set_system_prompt(system_prompt)
+        self._system_message = None
+        self.set_system_message(system_message)
         self._messages = None
         self.set_messages(messages)
         self._frequency_penalty = None
@@ -193,14 +193,14 @@ class Client(ABC):
         return self._provider
 
     @property
-    def system_prompt(self) -> Optional[str]:
+    def system_message(self) -> Optional[str]:
         """
-        Get the default system prompt, if set.
+        Get the default system message, if set.
 
         Returns:
-            The default system prompt.
+            The default system message.
         """
-        return self._system_prompt
+        return self._system_message
 
     @property
     def messages(self) -> Optional[Iterable[ChatCompletionMessageParam]]:
@@ -520,14 +520,14 @@ class Client(ABC):
         if self._model:
             self._endpoint = "@".join([self._model, value])
 
-    def set_system_prompt(self, value: str) -> None:
+    def set_system_message(self, value: str) -> None:
         """
-        Set the default system prompt.  # noqa: DAR101.
+        Set the default system message.  # noqa: DAR101.
 
         Args:
-            value: The default system prompt.
+            value: The default system message.
         """
-        self._system_prompt = value
+        self._system_message = value
 
     def set_messages(self, value: Iterable[ChatCompletionMessageParam]) -> None:
         """
@@ -759,8 +759,8 @@ class Client(ABC):
 
     def generate(
         self,
-        user_prompt: Optional[str] = None,
-        system_prompt: Optional[str] = None,
+        user_message: Optional[str] = None,
+        system_message: Optional[str] = None,
         messages: Optional[Iterable[ChatCompletionMessageParam]] = None,
         *,
         frequency_penalty: Optional[float] = None,
@@ -794,13 +794,13 @@ class Client(ABC):
         """Generate content using the Unify API.
 
         Args:
-            user_prompt: A string containing the user prompt.
+            user_message: A string containing the user message.
             If provided, messages must be None.
 
-            system_prompt: An optional string containing the system prompt.
+            system_message: An optional string containing the system message.
 
             messages: A list of messages comprising the conversation so far.
-            If provided, user_prompt must be None.
+            If provided, user_message must be None.
 
             frequency_penalty: Number between -2.0 and 2.0. Positive values penalize new
             tokens based on their existing frequency in the text so far, decreasing the
@@ -922,8 +922,8 @@ class Client(ABC):
             UnifyError: If an error occurs during content generation.
         """
         return self._generate(
-            user_prompt,
-            _default(system_prompt, self._system_prompt),
+            user_message,
+            _default(system_message, self._system_message),
             _default(messages, self._messages),
             frequency_penalty=_default(frequency_penalty, self._frequency_penalty),
             logit_bias=_default(logit_bias, self._logit_bias),
@@ -1045,7 +1045,7 @@ class Unify(Client):
     def _generate_stream(
         self,
         endpoint: str,
-        query: Prompt,
+        prompt: Prompt,
         # stream
         stream_options: Optional[ChatCompletionStreamOptionsParam] = None,
         # platform arguments
@@ -1054,15 +1054,15 @@ class Unify(Client):
         # python client arguments
         message_content_only: bool = True,
     ) -> Generator[str, None, None]:
-        query_dict = query.model_dump()
-        if "extra_body" in query_dict:
-            extra_body = query_dict["extra_body"]
-            del query_dict["extra_body"]
+        prompt_dict = prompt.model_dump()
+        if "extra_body" in prompt_dict:
+            extra_body = prompt_dict["extra_body"]
+            del prompt_dict["extra_body"]
         else:
             extra_body = {}
         kw = dict(
             model=endpoint,
-            **query_dict,
+            **prompt_dict,
             stream=True,
             stream_options=stream_options,
             extra_body={  # platform arguments
@@ -1090,7 +1090,7 @@ class Unify(Client):
     def _generate_non_stream(
         self,
         endpoint: str,
-        query: Prompt,
+        prompt: Prompt,
         # platform arguments
         use_custom_keys: bool = False,
         tags: Optional[List[str]] = None,
@@ -1098,15 +1098,15 @@ class Unify(Client):
         message_content_only: bool = True,
         cache: bool = False,
     ) -> str:
-        query_dict = query.model_dump()
-        if "extra_body" in query_dict:
-            extra_body = query_dict["extra_body"]
-            del query_dict["extra_body"]
+        prompt_dict = prompt.model_dump()
+        if "extra_body" in prompt_dict:
+            extra_body = prompt_dict["extra_body"]
+            del prompt_dict["extra_body"]
         else:
             extra_body = {}
         kw = dict(
             model=endpoint,
-            **query_dict,
+            **prompt_dict,
             extra_body={  # platform arguments
                 "signature": "python",
                 "use_custom_keys": use_custom_keys,
@@ -1181,12 +1181,12 @@ class Unify(Client):
         elif messages:
             contents.extend(messages)
         else:
-            raise UnifyError("You must provider either the user_prompt or messages!")
+            raise UnifyError("You must provider either the user_message or messages!")
 
         if tools:
             message_content_only = False
 
-        query = Prompt(
+        prompt = Prompt(
             messages=contents,
             frequency_penalty=frequency_penalty,
             logit_bias=logit_bias,
@@ -1210,7 +1210,7 @@ class Unify(Client):
         if stream:
             return self._generate_stream(
                 self._endpoint,
-                query,
+                prompt,
                 # stream
                 stream_options=stream_options,
                 # platform arguments
@@ -1221,7 +1221,7 @@ class Unify(Client):
             )
         return self._generate_non_stream(
             self._endpoint,
-            query,
+            prompt,
             # platform arguments
             use_custom_keys=use_custom_keys,
             tags=tags,
@@ -1247,7 +1247,7 @@ class AsyncUnify(Client):
     async def _generate_stream(
         self,
         endpoint: str,
-        query: Prompt,
+        prompt: Prompt,
         # stream
         stream_options: Optional[ChatCompletionStreamOptionsParam] = None,
         # platform arguments
@@ -1256,15 +1256,15 @@ class AsyncUnify(Client):
         # python client arguments
         message_content_only: bool = True,
     ) -> AsyncGenerator[str, None]:
-        query_dict = query.model_dump()
-        if "extra_body" in query_dict:
-            extra_body = query_dict["extra_body"]
-            del query_dict["extra_body"]
+        prompt_dict = prompt.model_dump()
+        if "extra_body" in prompt_dict:
+            extra_body = prompt_dict["extra_body"]
+            del prompt_dict["extra_body"]
         else:
             extra_body = {}
         kw = dict(
             model=endpoint,
-            **query_dict,
+            **prompt_dict,
             stream=True,
             stream_options=stream_options,
             extra_body={  # platform arguments
@@ -1289,7 +1289,7 @@ class AsyncUnify(Client):
     async def _generate_non_stream(
         self,
         endpoint: str,
-        query: Prompt,
+        prompt: Prompt,
         # platform arguments
         use_custom_keys: bool = False,
         tags: Optional[List[str]] = None,
@@ -1297,15 +1297,15 @@ class AsyncUnify(Client):
         message_content_only: bool = True,
         cache: bool = False
     ) -> str:
-        query_dict = query.model_dump()
-        if "extra_body" in query_dict:
-            extra_body = query_dict["extra_body"]
-            del query_dict["extra_body"]
+        prompt_dict = prompt.model_dump()
+        if "extra_body" in prompt_dict:
+            extra_body = prompt_dict["extra_body"]
+            del prompt_dict["extra_body"]
         else:
             extra_body = {}
         kw = dict(
             model=endpoint,
-            **query_dict,
+            **prompt_dict,
             extra_body={  # platform arguments
                 "signature": "python",
                 "use_custom_keys": use_custom_keys,
@@ -1376,8 +1376,8 @@ class AsyncUnify(Client):
         elif messages:
             contents.extend(messages)
         else:
-            raise UnifyError("You must provide either the user_prompt or messages!")
-        query = Prompt(
+            raise UnifyError("You must provide either the user_message or messages!")
+        prompt = Prompt(
             messages=contents,
             frequency_penalty=frequency_penalty,
             logit_bias=logit_bias,

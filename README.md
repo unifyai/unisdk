@@ -70,11 +70,11 @@ client.set_provider("deepinfra")
 
 ### Custom Prompting
 
-You can influence the model's persona using the `system_prompt` argument in the `.generate` function:
+You can influence the model's persona using the `system_message` argument in the `.generate` function:
 
 ```python
 response = client.generate(
-    user_prompt="Hello Llama! Who was Isaac Newton?",  system_prompt="You should always talk in rhymes"
+    user_message="Hello Llama! Who was Isaac Newton?",  system_message="You should always talk in rhymes"
 )
 ```
 

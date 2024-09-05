@@ -120,8 +120,8 @@ class MultiLLMClient(ABC):
     @abstractmethod
     def generate(  # noqa: WPS234, WPS211
         self,
-        user_prompt: Optional[str] = None,
-        system_prompt: Optional[str] = None,
+        user_message: Optional[str] = None,
+        system_message: Optional[str] = None,
         messages: Optional[Iterable[ChatCompletionMessageParam]] = None,
         *,
         frequency_penalty: Optional[float] = None,
@@ -152,13 +152,13 @@ class MultiLLMClient(ABC):
         """Generate content using the Unify API.
 
         Args:
-            user_prompt: A string containing the user prompt.
+            user_message: A string containing the user message.
             If provided, messages must be None.
 
-            system_prompt: An optional string containing the system prompt.
+            system_message: An optional string containing the system message.
 
             messages: A list of messages comprising the conversation so far. If
-            provided, user_prompt must be None.
+            provided, user_message must be None.
 
             frequency_penalty: Number between -2.0 and 2.0. Positive values penalize new
             tokens based on their existing frequency in the text so far, decreasing the
@@ -286,8 +286,8 @@ class MultiLLM(MultiLLMClient):
 
     def generate(  # noqa: WPS234, WPS211
         self,
-        user_prompt: Optional[str] = None,
-        system_prompt: Optional[str] = None,
+        user_message: Optional[str] = None,
+        system_message: Optional[str] = None,
         messages: Optional[Iterable[ChatCompletionMessageParam]] = None,
         *,
         frequency_penalty: Optional[float] = None,
@@ -316,8 +316,8 @@ class MultiLLM(MultiLLMClient):
         **kwargs,
     ) -> Dict[str, str]:
         kw = dict(
-            user_prompt=user_prompt,
-            system_prompt=system_prompt,
+            user_message=user_message,
+            system_message=system_message,
             messages=messages,
             max_tokens=max_tokens,
             stop=stop,
@@ -358,8 +358,8 @@ class MultiLLMAsync(MultiLLMClient):
 
     async def generate(  # noqa: WPS234, WPS211
         self,
-        user_prompt: Optional[str] = None,
-        system_prompt: Optional[str] = None,
+        user_message: Optional[str] = None,
+        system_message: Optional[str] = None,
         messages: Optional[Iterable[ChatCompletionMessageParam]] = None,
         *,
         frequency_penalty: Optional[float] = None,
@@ -388,8 +388,8 @@ class MultiLLMAsync(MultiLLMClient):
         **kwargs,
     ) -> Dict[str, str]:
         kw = dict(
-            user_prompt=user_prompt,
-            system_prompt=system_prompt,
+            user_message=user_message,
+            system_message=system_message,
             messages=messages,
             max_tokens=max_tokens,
             stop=stop,
