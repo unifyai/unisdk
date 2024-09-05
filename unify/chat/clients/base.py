@@ -961,7 +961,8 @@ class Client(ABC):
             response.raise_for_status()
             return response.json()["credits"]
         except requests.RequestException as e:
-            raise BadRequestError("There was an error with the request.") from e
+            raise requests.RequestException(
+                "There was an error with the request.") from e
         except (KeyError, ValueError) as e:
             raise ValueError("Error parsing JSON response.") from e
 

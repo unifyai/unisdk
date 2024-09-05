@@ -112,7 +112,7 @@ class MultiLLMClient(Client, abc.ABC):
                 endpoint for endpoint in endpoints if endpoint not in self._endpoints
             ]
         elif len(self._endpoints + endpoints) != len(set(self._endpoints + endpoints)):
-            raise UnifyError(
+            raise Exception(
                 "at least one of the provided endpoints to add {}"
                 "was already set present in the endpoints {}."
                 "Set ignore_duplicates to True to ignore errors like this".format(
@@ -135,7 +135,7 @@ class MultiLLMClient(Client, abc.ABC):
                 endpoint for endpoint in endpoints if endpoint in self._endpoints
             ]
         elif len(self._endpoints) != len(set(self._endpoints + endpoints)):
-            raise UnifyError(
+            raise Exception(
                 "at least one of the provided endpoints to remove {}"
                 "was not present in the current endpoints {}."
                 "Set ignore_missing to True to ignore errors like this".format(
@@ -167,7 +167,7 @@ class MultiLLMClient(Client, abc.ABC):
             response.raise_for_status()
             return response.json()["credits"]
         except requests.RequestException as e:
-            raise BadRequestError("There was an error with the request.") from e
+            raise Exception("There was an error with the request.") from e
         except (KeyError, ValueError) as e:
             raise ValueError("Error parsing JSON response.") from e
 

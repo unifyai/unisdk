@@ -29,7 +29,7 @@ class TestMultiLLM(unittest.TestCase):
         client.add_endpoints("claude-3.5-sonnet@anthropic")
         assert client.endpoints == endpoints
         assert tuple(client.clients.keys()) == endpoints
-        with self.assertRaises(UnifyError):
+        with self.assertRaises(Exception):
             client.add_endpoints("claude-3.5-sonnet@anthropic", ignore_duplicates=False)
 
     def test_remove_endpoints(self):
@@ -48,7 +48,7 @@ class TestMultiLLM(unittest.TestCase):
         client.remove_endpoints("claude-3.5-sonnet@anthropic")
         assert client.endpoints == endpoints
         assert tuple(client.clients.keys()) == endpoints
-        with self.assertRaises(UnifyError):
+        with self.assertRaises(Exception):
             client.remove_endpoints("claude-3.5-sonnet@anthropic", ignore_missing=False)
 
     def test_generate(self):

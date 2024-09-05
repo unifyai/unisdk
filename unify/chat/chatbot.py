@@ -62,7 +62,7 @@ class ChatBot:  # noqa: WPS338
         if isinstance(value, Unify):
             self._client = value
         else:
-            raise UnifyError("Invalid client!")
+            raise Exception("Invalid client!")
 
     @property
     def model(self) -> str:
