@@ -82,6 +82,37 @@ class TestMultiLLM(unittest.TestCase):
             self.assertEqual(endpoint, response_endpoint)
             self.assertEqual(len(response.choices), 2)
 
+    def test_multi_message_histories(self):
+        endpoints = (
+            "llama-3-8b-chat@together-ai",
+            "gpt-4o@openai"
+        )
+        messages = {
+            "llama-3-8b-chat@together-ai": [{
+                "role": "assistant",
+                "content": "Let's talk about cats"
+            }],
+            "gpt-4o@openai": [{
+                "role": "assistant",
+                "content": "Let's talk about dogs"
+            }]
+        }
+        animals = {
+            "llama-3-8b-chat@together-ai": "cat",
+            "gpt-4o@openai": "dog"
+        }
+        client = MultiLLM(api_key=self.valid_api_key, endpoints=endpoints,
+                          messages=messages)
+        responses = client.generate("What animal did you want to talk about?")
+        for endpoint, (response_endpoint, response) in zip(
+            endpoints,
+            responses.items(),
+        ):
+            self.assertEqual(endpoint, response_endpoint)
+            self.assertIsInstance(response, str)
+            self.assertGreater(len(response), 0)
+            self.assertIn(animals[endpoint], response.lower())
+
 
 class TestAsyncMultiLLM(unittest.IsolatedAsyncioTestCase):
     def setUp(self) -> None:
