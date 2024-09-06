@@ -1,5 +1,4 @@
 # global
-import abc
 import requests
 from openai._types import Headers, Query, Body
 from openai.types.chat import (
@@ -13,7 +12,6 @@ from abc import ABC, abstractmethod
 from typing import Mapping, Dict, List, Optional, Union, Iterable
 
 # local
-import unify
 from unify import BASE_URL
 from unify.utils.helpers import _validate_api_key, _default
 
@@ -25,7 +23,9 @@ class Client(ABC):
         self,
         *,
         system_message: Optional[str] = None,
-        messages: Optional[Iterable[ChatCompletionMessageParam]] = None,
+        messages: Optional[
+            Union[Iterable[ChatCompletionMessageParam],
+                  Dict[str, Iterable[ChatCompletionMessageParam]]]] = None,
         frequency_penalty: Optional[float] = None,
         logit_bias: Optional[Dict[str, int]] = None,
         logprobs: Optional[bool] = None,
@@ -58,10 +58,13 @@ class Client(ABC):
         """Initialize the base Unify client.
 
         Args:
-            system_message: An optional string containing the system message.
+            system_message: An optional string containing the system message. This
+            always appears at the beginning of the list of messages.
 
-            messages: A list of messages comprising the conversation so far.
-            If provided, user_message must be None.
+            messages: A list of messages comprising the conversation so far, or
+            optionally a dictionary of such messages, with clients as the keys in the
+            case of multi-llm clients. This will be appended to the system_message if it
+            is not None, and any user_message will be appended if it is not None.
 
             frequency_penalty: Number between -2.0 and 2.0. Positive values penalize new
             tokens based on their existing frequency in the text so far, decreasing the
@@ -249,7 +252,9 @@ class Client(ABC):
         return self._system_message
 
     @property
-    def messages(self) -> Optional[Iterable[ChatCompletionMessageParam]]:
+    def messages(self) -> Optional[
+            Union[Iterable[ChatCompletionMessageParam],
+                  Dict[str, Iterable[ChatCompletionMessageParam]]]]:
         """
         Get the default messages, if set.
 
@@ -510,7 +515,11 @@ class Client(ABC):
         """
         self._system_message = value
 
-    def set_messages(self, value: Iterable[ChatCompletionMessageParam]) -> None:
+    def set_messages(
+            self,
+            value: Union[Iterable[ChatCompletionMessageParam],
+                         Dict[str, Iterable[ChatCompletionMessageParam]]]
+    ) -> None:
         """
         Set the default messages.  # noqa: DAR101.
 
@@ -742,7 +751,9 @@ class Client(ABC):
         self,
         user_message: Optional[str] = None,
         system_message: Optional[str] = None,
-        messages: Optional[Iterable[ChatCompletionMessageParam]] = None,
+        messages: Optional[
+            Union[Iterable[ChatCompletionMessageParam],
+                  Dict[str, Iterable[ChatCompletionMessageParam]]]] = None,
         *,
         frequency_penalty: Optional[float] = None,
         logit_bias: Optional[Dict[str, int]] = None,
@@ -778,10 +789,13 @@ class Client(ABC):
             user_message: A string containing the user message.
             If provided, messages must be None.
 
-            system_message: An optional string containing the system message.
+            system_message: An optional string containing the system message. This
+            always appears at the beginning of the list of messages.
 
-            messages: A list of messages comprising the conversation so far.
-            If provided, user_message must be None.
+            messages: A list of messages comprising the conversation so far, or
+            optionally a dictionary of such messages, with clients as the keys in the
+            case of multi-llm clients. This will be appended to the system_message if it
+            is not None, and any user_message will be appended if it is not None.
 
             frequency_penalty: Number between -2.0 and 2.0. Positive values penalize new
             tokens based on their existing frequency in the text so far, decreasing the
@@ -976,7 +990,9 @@ class Client(ABC):
             self,
             user_message: Optional[str] = None,
             system_message: Optional[str] = None,
-            messages: Optional[Iterable[ChatCompletionMessageParam]] = None,
+            messages: Optional[
+                Union[Iterable[ChatCompletionMessageParam],
+                      Dict[str, Iterable[ChatCompletionMessageParam]]]] = None,
             *,
             frequency_penalty: Optional[float] = None,
             logit_bias: Optional[Dict[str, int]] = None,

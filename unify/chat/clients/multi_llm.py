@@ -24,7 +24,9 @@ class MultiLLMClient(Client, abc.ABC):
         endpoints: Optional[Iterable[str]] = None,
         *,
         system_message: Optional[str] = None,
-        messages: Optional[Iterable[ChatCompletionMessageParam]] = None,
+        messages: Optional[
+            Union[Iterable[ChatCompletionMessageParam],
+                  Dict[str, Iterable[ChatCompletionMessageParam]]]] = None,
         frequency_penalty: Optional[float] = None,
         logit_bias: Optional[Dict[str, int]] = None,
         logprobs: Optional[bool] = None,
@@ -187,7 +189,9 @@ class MultiLLM(MultiLLMClient):
         endpoints: Optional[Iterable[str]] = None,
         *,
         system_message: Optional[str] = None,
-        messages: Optional[Iterable[ChatCompletionMessageParam]] = None,
+        messages: Optional[
+            Union[Iterable[ChatCompletionMessageParam],
+                  Dict[str, Iterable[ChatCompletionMessageParam]]]] = None,
         frequency_penalty: Optional[float] = None,
         logit_bias: Optional[Dict[str, int]] = None,
         logprobs: Optional[bool] = None,
@@ -256,7 +260,9 @@ class MultiLLM(MultiLLMClient):
         self,
         user_message: Optional[str] = None,
         system_message: Optional[str] = None,
-        messages: Optional[Iterable[ChatCompletionMessageParam]] = None,
+        messages: Optional[
+            Union[Iterable[ChatCompletionMessageParam],
+                  Dict[str, Iterable[ChatCompletionMessageParam]]]] = None,
         *,
         frequency_penalty: Optional[float] = None,
         logit_bias: Optional[Dict[str, int]] = None,
@@ -309,10 +315,14 @@ class MultiLLM(MultiLLMClient):
             extra_query=extra_query,
             **kwargs,
         )
+        multi_message = isinstance(messages, dict)
         kw = {k: v for k, v in kw.items() if v is not None}
         responses = dict()
         for endpoint, client in self._clients.items():
-            responses[endpoint] = client.generate(**kw)
+            these_kw = kw.copy()
+            if multi_message:
+                these_kw["messages"] = these_kw["messages"][endpoint]
+            responses[endpoint] = client.generate(**these_kw)
         return responses
 
 
@@ -323,7 +333,9 @@ class MultiLLMAsync(MultiLLMClient):
         endpoints: Optional[Iterable[str]] = None,
         *,
         system_message: Optional[str] = None,
-        messages: Optional[Iterable[ChatCompletionMessageParam]] = None,
+        messages: Optional[
+            Union[Iterable[ChatCompletionMessageParam],
+                  Dict[str, Iterable[ChatCompletionMessageParam]]]] = None,
         frequency_penalty: Optional[float] = None,
         logit_bias: Optional[Dict[str, int]] = None,
         logprobs: Optional[bool] = None,
@@ -392,7 +404,9 @@ class MultiLLMAsync(MultiLLMClient):
         self,
         user_message: Optional[str] = None,
         system_message: Optional[str] = None,
-        messages: Optional[Iterable[ChatCompletionMessageParam]] = None,
+        messages: Optional[
+            Union[Iterable[ChatCompletionMessageParam],
+                  Dict[str, Iterable[ChatCompletionMessageParam]]]] = None,
         *,
         frequency_penalty: Optional[float] = None,
         logit_bias: Optional[Dict[str, int]] = None,
@@ -445,8 +459,12 @@ class MultiLLMAsync(MultiLLMClient):
             extra_query=extra_query,
             **kwargs,
         )
+        multi_message = isinstance(messages, dict)
         kw = {k: v for k, v in kw.items() if v is not None}
         responses = dict()
         for endpoint, client in self._clients.items():
-            responses[endpoint] = await client.generate(**kw)
+            these_kw = kw.copy()
+            if multi_message:
+                these_kw["messages"] = these_kw["messages"][endpoint]
+            responses[endpoint] = await client.generate(**these_kw)
         return responses

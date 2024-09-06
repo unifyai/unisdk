@@ -69,10 +69,12 @@ class UniLLMClient(Client, abc.ABC):
 
             provider: Name of the provider. Should only be set if endpoint is not set.
 
-            system_message: An optional string containing the system message.
+            system_message: An optional string containing the system message. This
+            always appears at the beginning of the list of messages.
 
-            messages: A list of messages comprising the conversation so far.
-            If provided, user_message must be None.
+            messages: A list of messages comprising the conversation so far. This will
+            be appended to the system_message if it is not None, and any user_message
+            will be appended if it is not None.
 
             frequency_penalty: Number between -2.0 and 2.0. Positive values penalize new
             tokens based on their existing frequency in the text so far, decreasing the
@@ -493,10 +495,10 @@ class Unify(UniLLMClient):
         contents = []
         if system_message:
             contents.append({"role": "system", "content": system_message})
+        if messages:
+            contents.extend(messages)
         if user_message:
             contents.append({"role": "user", "content": user_message})
-        elif messages:
-            contents.extend(messages)
         else:
             raise Exception("You must provider either the user_message or messages!")
 
@@ -687,11 +689,10 @@ class AsyncUnify(UniLLMClient):
         contents = []
         if system_message:
             contents.append({"role": "system", "content": system_message})
-
+        if messages:
+            contents.extend(messages)
         if user_message:
             contents.append({"role": "user", "content": user_message})
-        elif messages:
-            contents.extend(messages)
         else:
             raise Exception("You must provide either the user_message or messages!")
         prompt = Prompt(
