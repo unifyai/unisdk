@@ -24,8 +24,8 @@ class Client(ABC):
         *,
         system_message: Optional[str] = None,
         messages: Optional[
-            Union[Iterable[ChatCompletionMessageParam],
-                  Dict[str, Iterable[ChatCompletionMessageParam]]]] = None,
+            Union[List[ChatCompletionMessageParam],
+                  Dict[str, List[ChatCompletionMessageParam]]]] = None,
         frequency_penalty: Optional[float] = None,
         logit_bias: Optional[Dict[str, int]] = None,
         logprobs: Optional[bool] = None,
@@ -253,8 +253,8 @@ class Client(ABC):
 
     @property
     def messages(self) -> Optional[
-            Union[Iterable[ChatCompletionMessageParam],
-                  Dict[str, Iterable[ChatCompletionMessageParam]]]]:
+            Union[List[ChatCompletionMessageParam],
+                  Dict[str, List[ChatCompletionMessageParam]]]]:
         """
         Get the default messages, if set.
 
@@ -517,8 +517,8 @@ class Client(ABC):
 
     def set_messages(
             self,
-            value: Union[Iterable[ChatCompletionMessageParam],
-                         Dict[str, Iterable[ChatCompletionMessageParam]]]
+            value: Union[List[ChatCompletionMessageParam],
+                         Dict[str, List[ChatCompletionMessageParam]]]
     ) -> None:
         """
         Set the default messages.  # noqa: DAR101.
@@ -752,8 +752,8 @@ class Client(ABC):
         user_message: Optional[str] = None,
         system_message: Optional[str] = None,
         messages: Optional[
-            Union[Iterable[ChatCompletionMessageParam],
-                  Dict[str, Iterable[ChatCompletionMessageParam]]]] = None,
+            Union[List[ChatCompletionMessageParam],
+                  Dict[str, List[ChatCompletionMessageParam]]]] = None,
         *,
         frequency_penalty: Optional[float] = None,
         logit_bias: Optional[Dict[str, int]] = None,
@@ -991,8 +991,8 @@ class Client(ABC):
             user_message: Optional[str] = None,
             system_message: Optional[str] = None,
             messages: Optional[
-                Union[Iterable[ChatCompletionMessageParam],
-                      Dict[str, Iterable[ChatCompletionMessageParam]]]] = None,
+                Union[List[ChatCompletionMessageParam],
+                      Dict[str, List[ChatCompletionMessageParam]]]] = None,
             *,
             frequency_penalty: Optional[float] = None,
             logit_bias: Optional[Dict[str, int]] = None,
