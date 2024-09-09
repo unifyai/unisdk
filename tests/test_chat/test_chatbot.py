@@ -49,13 +49,22 @@ class TestChatbotUniLLM(unittest.TestCase):
         )
         ChatBot(client)
 
-    def test_simple_chat_n_quit(self):
+    def test_simple_non_stream_chat_n_quit(self):
         client = Unify(
             api_key=self.valid_api_key, endpoint="llama-3-8b-chat@together-ai"
         )
         chatbot = ChatBot(client)
         with SimulateInput():
             chatbot.run()
+
+    def test_simple_stream_chat_n_quit(self):
+        client = Unify(
+            api_key=self.valid_api_key, endpoint="llama-3-8b-chat@together-ai", stream=True,
+        )
+        chatbot = ChatBot(client)
+        with SimulateInput():
+            chatbot.run()
+
 
 
 if __name__ == "__main__":
