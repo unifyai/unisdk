@@ -1,6 +1,7 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="test all" type="tests" factoryName="Autodetect">
+  <configuration default="false" name="Python tests for all" type="tests" factoryName="Autodetect">
     <module name="unify" />
+    <option name="ENV_FILES" value="$PROJECT_DIR$/.env" />
     <option name="INTERPRETER_OPTIONS" value="" />
     <option name="PARENT_ENVS" value="true" />
     <option name="SDK_HOME" value="" />

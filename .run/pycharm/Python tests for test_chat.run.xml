@@ -1,6 +1,7 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Python tests for tests.test_chat" type="tests" factoryName="Autodetect" nameIsGenerated="true">
+  <configuration default="false" name="Python tests for test_chat" type="tests" factoryName="Autodetect">
     <module name="unify" />
+    <option name="ENV_FILES" value="$PROJECT_DIR$/.env" />
     <option name="INTERPRETER_OPTIONS" value="" />
     <option name="PARENT_ENVS" value="true" />
     <option name="SDK_HOME" value="" />
@@ -21,7 +22,7 @@
       </ENTRIES>
     </EXTENSION>
     <option name="_new_additionalArguments" value="&quot;&quot;" />
-    <option name="_new_target" value="&quot;tests.test_chat&quot;" />
+    <option name="_new_target" value="&quot;test_chat&quot;" />
     <option name="_new_targetType" value="&quot;PYTHON&quot;" />
     <method v="2" />
   </configuration>
