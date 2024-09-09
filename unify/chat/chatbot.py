@@ -1,5 +1,4 @@
 import sys
-from typing import Generator
 
 from unify.chat.clients import Client
 
@@ -18,6 +17,8 @@ class ChatBot:  # noqa: WPS338
             client: The Client instance to wrap the chatbot logic around.
         """
         self._paused = False
+        assert client.message_content_only, ("ChatBot currently only supports clients which only generate the message "
+                                             "content in the return")
         self._client = client
 
     @property
@@ -51,42 +52,6 @@ class ChatBot:  # noqa: WPS338
         """
         return self._client.get_credit_balance()
 
-    def _process_input(
-        self, inp: str, show_credits: bool, show_provider: bool
-    ) -> Generator[str, None, None]:
-        """
-        Processes the user input to generate AI response.
-
-        Args:
-            inp: User input message.
-            show_credits: Whether to show credit consumption.
-            show_provider: Whether to show provider used.
-
-        Yields:
-            Generated AI response chunks.
-        """
-        self._update_message_history(role="user", content=inp)
-        initial_credit_balance = self._get_credits()
-        stream = self._client.generate(stream=True)
-        words = ""
-        for chunk in stream:
-            words += chunk
-            yield chunk
-
-        self._update_message_history(
-            role="assistant",
-            content=words,
-        )
-        final_credit_balance = self._get_credits()
-        if show_credits:
-            sys.stdout.write(
-                "\n(spent {:.6f} credits)".format(
-                    initial_credit_balance - final_credit_balance,
-                ),
-            )
-        if show_provider:
-            sys.stdout.write("\n(provider: {})".format(self._client.provider))
-
     def _update_message_history(self, role: str, content: str) -> None:
         """
         Updates message history with user input.
@@ -103,6 +68,16 @@ class ChatBot:  # noqa: WPS338
     def clear_chat_history(self) -> None:
         """Clears the chat history."""
         self._client.set_messages([])
+
+    @staticmethod
+    def _stream_response(response) -> str:
+        words = ""
+        for chunk in response:
+            words += chunk
+            sys.stdout.write(chunk)
+            sys.stdout.flush()
+        sys.stdout.write("\n")
+        return words
 
     def run(self, show_credits: bool = False, show_provider: bool = False) -> None:
         """
@@ -131,7 +106,25 @@ class ChatBot:  # noqa: WPS338
             elif inp == "pause":
                 self._paused = True
                 break
-            for word in self._process_input(inp, show_credits, show_provider):
-                sys.stdout.write(word)
-                sys.stdout.flush()
-            sys.stdout.write("\n")
+            self._update_message_history(role="user", content=inp)
+            initial_credit_balance = self._get_credits()
+            response = self._client.generate()
+            if self._client.stream:
+                words = self._stream_response(response)
+            else:
+                words = response
+                sys.stdout.write(words)
+                sys.stdout.write("\n")
+            self._update_message_history(
+                role="assistant",
+                content=words,
+            )
+            final_credit_balance = self._get_credits()
+            if show_credits:
+                sys.stdout.write(
+                    "\n(spent {:.6f} credits)".format(
+                        initial_credit_balance - final_credit_balance,
+                    ),
+                )
+            if show_provider:
+                sys.stdout.write("\n(provider: {})".format(self._client.provider))
