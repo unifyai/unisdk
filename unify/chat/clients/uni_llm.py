@@ -499,8 +499,6 @@ class Unify(UniLLMClient):
             contents.extend(messages)
         if user_message:
             contents.append({"role": "user", "content": user_message})
-        else:
-            raise Exception("You must provider either the user_message or messages!")
 
         if tools:
             message_content_only = False
