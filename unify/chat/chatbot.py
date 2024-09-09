@@ -1,7 +1,7 @@
 import sys
-from typing import Dict, Generator, List, Optional
+from typing import Generator
 
-from unify.chat.clients.uni_llm import Unify
+from unify.chat.clients import Client
 
 
 class ChatBot:  # noqa: WPS338
@@ -9,41 +9,19 @@ class ChatBot:  # noqa: WPS338
 
     def __init__(
         self,
-        endpoint: Optional[str] = None,
-        model: Optional[str] = None,
-        provider: Optional[str] = None,
-        api_key: Optional[str] = None,
+        client: Client,
     ) -> None:
         """
-        Initializes the ChatBot object.
+        Initializes the ChatBot object, wrapped around a client.
 
         Args:
-            endpoint: Endpoint name in OpenAI API format:
-            <uploaded_by>/<model_name>@<provider_name>
-            Defaults to None.
-
-            model: Name of the model. If None, endpoint must be provided.
-
-            provider: Name of the provider. If None, endpoint must be provided.
-
-            api_key: API key for accessing the Unify API. If None, it attempts to
-            retrieve the API key from the environment variable UNIFY_KEY.
-            Defaults to None.
-
-        Raises:
-            UnifyError: If the API key is missing.
+            client: The Client instance to wrap the chatbot logic around.
         """
-        self._message_history: List[Dict[str, str]] = []
         self._paused = False
-        self._client = Unify(
-            api_key=api_key,
-            endpoint=endpoint,
-            model=model,
-            provider=provider,
-        )
+        self._client = client
 
     @property
-    def client(self) -> Unify:
+    def client(self) -> Client:
         """
         Get the client object.  # noqa: DAR201.
 
@@ -52,82 +30,17 @@ class ChatBot:  # noqa: WPS338
         """
         return self._client
 
-    def set_client(self, value: Unify) -> None:
+    def set_client(self, value: client) -> None:
         """
         Set the client.  # noqa: DAR101.
 
         Args:
             value: The unify client.
         """
-        if isinstance(value, Unify):
+        if isinstance(value, Client):
             self._client = value
         else:
             raise Exception("Invalid client!")
-
-    @property
-    def model(self) -> str:
-        """
-        Get the model name.  # noqa: DAR201.
-
-        Returns:
-            The model name.
-        """
-        return self._client.model
-
-    def set_model(self, value: str) -> None:
-        """
-        Set the model name.  # noqa: DAR101.
-
-        Args:
-            value: The model name.
-        """
-        self._client.set_model(value)
-        if self._client.provider:
-            self._client.set_endpoint("@".join([value, self._client.provider]))
-        else:
-            mode = self._client.endpoint.split("@")[1]
-            self._client.set_endpoint("@".join([value, mode]))
-
-    @property
-    def provider(self) -> Optional[str]:
-        """
-        Get the provider name.  # noqa: DAR201.
-
-        Returns:
-            The provider name.
-        """
-        return self._client.provider
-
-    def set_provider(self, value: str) -> None:
-        """
-        Set the provider name.  # noqa: DAR101.
-
-        Args:
-            value: The provider name.
-        """
-        self._client.set_provider(value)
-        self._client.set_endpoint("@".join([self._client._model, value]))
-
-    @property
-    def endpoint(self) -> str:
-        """
-        Get the endpoint name.  # noqa: DAR201.
-
-        Returns:
-            The endpoint name.
-        """
-        return self._client.endpoint
-
-    def set_endpoint(self, value: str) -> None:
-        """
-        Set the endpoint name.  # noqa: DAR101.
-
-        Args:
-            value: The endpoint name.
-        """
-        self._client.set_endpoint(value)
-        self._client.set_model(value.split("@")[0])
-        self._client.set_provider(value.split("@")[1])
 
     def _get_credits(self) -> float:
         """
@@ -154,10 +67,7 @@ class ChatBot:  # noqa: WPS338
         """
         self._update_message_history(role="user", content=inp)
         initial_credit_balance = self._get_credits()
-        stream = self._client.generate(
-            messages=self._message_history,
-            stream=True,
-        )
+        stream = self._client.generate(stream=True)
         words = ""
         for chunk in stream:
             words += chunk
@@ -185,16 +95,14 @@ class ChatBot:  # noqa: WPS338
             role: Either "assistant" or "user".
             content: User input message.
         """
-        self._message_history.append(
-            {
-                "role": role,
-                "content": content,
-            },
-        )
+        self._client.messages.append({
+            "role": role,
+            "content": content,
+        })
 
     def clear_chat_history(self) -> None:
         """Clears the chat history."""
-        self._message_history.clear()
+        self._client.set_messages([])
 
     def run(self, show_credits: bool = False, show_provider: bool = False) -> None:
         """
