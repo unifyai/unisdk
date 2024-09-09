@@ -99,7 +99,39 @@ class MultiLLMClient(Client, abc.ABC):
         self, endpoints: List[str]
     ) -> Dict[str, Union[Unify, AsyncUnify]]:
         return {
-            endpoint: self._client_class(endpoint, api_key=self._api_key)
+            endpoint: self._client_class(
+                endpoint,
+                system_message=self.system_message,
+                messages=self.messages,
+                frequency_penalty=self.frequency_penalty,
+                logit_bias=self.logit_bias,
+                logprobs=self.logprobs,
+                top_logprobs=self.top_logprobs,
+                max_tokens=self.max_tokens,
+                n=self.n,
+                presence_penalty=self.presence_penalty,
+                response_format=self.response_format,
+                seed=self.seed,
+                stop=self.stop,
+                stream=self.stream,
+                stream_options=self.stream_options,
+                temperature=self.temperature,
+                top_p=self.top_p,
+                tools=self.tools,
+                tool_choice=self.tool_choice,
+                parallel_tool_calls=self.parallel_tool_calls,
+                # platform arguments
+                use_custom_keys=self.use_custom_keys,
+                tags=self.tags,
+                api_key=self._api_key,
+                # python client arguments
+                message_content_only=self.message_content_only,
+                cache=self.cache,
+                # passthrough arguments
+                extra_headers=self.extra_headers,
+                extra_query=self.extra_query,
+                **self.extra_body
+            )
             for endpoint in endpoints
         }
 
