@@ -30,7 +30,7 @@ def get_query_tags(api_key: Optional[str] = None) -> List[str]:
         return []
 
 
-def get_query_history(
+def get_queries(
     tags: Optional[Union[str, List[str]]] = None,
     endpoints: Optional[Union[str, List[str]]] = None,
     start_time: Optional[str] = None,
