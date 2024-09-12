@@ -686,14 +686,14 @@ class AsyncUnify(UniLLMClient):
         **kwargs,
     ) -> Union[AsyncGenerator[str, None], str]:  # noqa: DAR101, DAR201, DAR401
         contents = []
+        assert messages or user_message, \
+            "You must provide either the user_message or messages!"
         if system_message:
             contents.append({"role": "system", "content": system_message})
         if messages:
             contents.extend(messages)
         if user_message:
             contents.append({"role": "user", "content": user_message})
-        else:
-            raise Exception("You must provide either the user_message or messages!")
         prompt = Prompt(
             messages=contents,
             frequency_penalty=frequency_penalty,
