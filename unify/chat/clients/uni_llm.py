@@ -223,21 +223,22 @@ class UniLLMClient(Client, abc.ABC):
             extra_query=extra_query,
             **kwargs
         )
-        if endpoint and (model or provider):
-            raise Exception(
-                "if the model or provider are passed, then the endpoint must not be"
-                "passed."
-            )
+    
         self._client = self._get_client()
+        
         self._endpoint = None
-        if endpoint:
-            self.set_endpoint(endpoint)
-        self._provider = None
-        if provider:
-            self.set_provider(provider)
         self._model = None
-        if model:
+        self._provider = None
+        
+        if endpoint:
+            if model or provider:
+                raise ValueError("Cannot specify both an endpoint and a model or provider.")
+            self.set_endpoint(endpoint)
+        elif model and provider:
             self.set_model(model)
+            self.set_provider(provider)
+        else:
+            raise ValueError("Must specify either an endpoint or both model and provider.")
 
     # Properties #
     # -----------#
