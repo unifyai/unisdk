@@ -1,6 +1,8 @@
 import sys
+import asyncio
 from typing import Union, Dict
 
+import unify
 from unify.chat.clients import Client, UniLLMClient, MultiLLMClient
 
 
@@ -155,7 +157,10 @@ class ChatBot:  # noqa: WPS338
                 break
             self._update_message_history(role="user", content=inp)
             initial_credit_balance = self._get_credits()
-            response = self._client.generate()
+            if isinstance(self._client, unify.AsyncUnify):
+                response = asyncio.run(self._client.generate())
+            else:
+                response = self._client.generate()
             self._handle_response(response, show_endpoint)
             final_credit_balance = self._get_credits()
             if show_credits:
