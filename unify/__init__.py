@@ -45,3 +45,4 @@ from .agent import *
 from .dataset import *
 from .evaluation import *
 from .evaluator import *
+from .logging import *
