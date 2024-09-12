@@ -1,5 +1,5 @@
 import datetime
-from typing import Optional, List
+from typing import Optional, List, Dict
 
 import unify
 from .utils.helpers import _validate_api_key
@@ -15,12 +15,31 @@ def with_logging(
         log_response_body: bool = True,
         api_key: Optional[str] = None,
 ):
+    """
+    Wrap a local model callable with logging of the queries.
+
+    Args:
+        model_fn: The model callable to wrap logging around.
+        endpoint: The endpoint name to give to this local callable.
+        tags: Tags for later filtering.
+        timestamp: A timestamp (if not set, will be the time of sending).
+        log_query_body: Whether or not to log the query body.
+        log_response_body: Whether or not to log the response body.
+        api_key: If specified, unify API key to be used. Defaults to the value in the `UNIFY_KEY` environment variable.
+
+    Returns:
+        A new callable, but with logging added every time the function is called.
+
+    Raises:
+        requests.HTTPError: If the API request fails.
+    """
     _tags = tags
     _timestamp = timestamp
     _log_query_body = log_query_body
     _log_response_body = log_response_body
     api_key = _validate_api_key(api_key)
 
+    # noinspection PyShadowingNames
     def model_fn_w_logging(
             *args,
             tags: Optional[List[str]] = None,
