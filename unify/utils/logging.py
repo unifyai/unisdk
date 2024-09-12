@@ -34,8 +34,8 @@ def get_query_tags(api_key: Optional[str] = None) -> List[str]:
 def get_queries(
     tags: Optional[Union[str, List[str]]] = None,
     endpoints: Optional[Union[str, List[str]]] = None,
-    start_time: Optional[str] = None,
-    end_time: Optional[str] = None,
+    start_time: Optional[datetime.datetime] = None,
+    end_time: Optional[datetime.datetime] = None,
     api_key: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
@@ -129,8 +129,8 @@ def log_query(
 
 
 def get_query_metrics(
-    start_time: Optional[str] = None,
-    end_time: Optional[str] = None,
+    start_time: Optional[datetime.datetime] = None,
+    end_time: Optional[datetime.datetime] = None,
     models: Optional[str] = None,
     providers: Optional[str] = None,
     interval: int = 300,
