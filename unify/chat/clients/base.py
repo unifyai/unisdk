@@ -765,7 +765,7 @@ class Client(ABC):
         response_format: Optional[ResponseFormat] = None,
         seed: Optional[int] = None,
         stop: Union[Optional[str], List[str]] = None,
-        stream: Optional[bool] = False,
+        stream: Optional[bool] = None,
         stream_options: Optional[ChatCompletionStreamOptionsParam] = None,
         temperature: Optional[float] = None,
         top_p: Optional[float] = None,
