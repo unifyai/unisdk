@@ -1,4 +1,5 @@
 import requests
+import datetime
 from typing import Optional, List, Any, Dict, Union
 
 from unify import BASE_URL
@@ -70,6 +71,58 @@ def get_queries(
 
     url = f"{BASE_URL}/queries"
     response = requests.get(url, headers=headers, params=params)
+    response.raise_for_status()
+
+    return response.json()
+
+
+def log_query(
+        endpoint: str,
+        query_body: Dict,
+        response_body: Optional[Dict] = None,
+        tags: Optional[List[str]] = None,
+        timestamp: Optional[datetime.datetime] = None,
+        api_key: Optional[str] = None,
+):
+    """
+    Log a query (and optionally response) for a locally deployed (non-Unify-registered)
+    model, with tagging (default None) and timestamp (default datetime.now() also
+    optionally writeable.
+
+    Args:
+        endpoint: Endpoint to log query for.
+        query_body: A dict containing the body of the request.
+        response_body: An optional dict containing the response to the request.
+        tags: Custom tags for later filtering.
+        timestamp: A timestamp (if not set, will be the time of sending).
+        api_key: If specified, unify API key to be used. Defaults to the value in the `UNIFY_KEY` environment variable.
+
+    Returns:
+        A dictionary containing the response message if successful.
+
+    Raises:
+        requests.HTTPError: If the API request fails.
+    """
+    api_key = _validate_api_key(api_key)
+    headers = {
+        "accept": "application/json",
+        "Authorization": f"Bearer {api_key}",
+    }
+
+    data = {
+        "endpoint": endpoint,
+        "query_body": query_body,
+        "response_body": response_body,
+        "tags": tags,
+        "timestamp": timestamp,
+    }
+
+    # Remove None values from params
+    data = {k: v for k, v in data.items() if v is not None}
+
+    url = f"{BASE_URL}/queries"
+
+    response = requests.post(url, headers=headers, json=data)
     response.raise_for_status()
 
     return response.json()
