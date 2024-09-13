@@ -613,7 +613,8 @@ class AsyncUnify(UniLLMClient):
                 self.set_provider(chunk.model.split("@")[-1])
                 if message_content_only:
                     yield chunk.choices[0].delta.content or ""
-                yield chunk
+                else:
+                    yield chunk
         except openai.APIStatusError as e:
             raise Exception(e.message)
 
