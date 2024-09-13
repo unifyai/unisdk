@@ -22,41 +22,41 @@ from unify._caching import _get_cache, _write_to_cache
 class UniLLMClient(Client, abc.ABC):
 
     def __init__(
-            self,
-            endpoint: Optional[str] = None,
-            *,
-            model: Optional[str] = None,
-            provider: Optional[str] = None,
-            system_message: Optional[str] = None,
-            messages: Optional[List[ChatCompletionMessageParam]] = None,
-            frequency_penalty: Optional[float] = None,
-            logit_bias: Optional[Dict[str, int]] = None,
-            logprobs: Optional[bool] = None,
-            top_logprobs: Optional[int] = None,
-            max_tokens: Optional[int] = 1024,
-            n: Optional[int] = None,
-            presence_penalty: Optional[float] = None,
-            response_format: Optional[ResponseFormat] = None,
-            seed: Optional[int] = None,
-            stop: Union[Optional[str], List[str]] = None,
-            stream: Optional[bool] = False,
-            stream_options: Optional[ChatCompletionStreamOptionsParam] = None,
-            temperature: Optional[float] = 1.0,
-            top_p: Optional[float] = None,
-            tools: Optional[Iterable[ChatCompletionToolParam]] = None,
-            tool_choice: Optional[ChatCompletionToolChoiceOptionParam] = None,
-            parallel_tool_calls: Optional[bool] = None,
-            # platform arguments
-            use_custom_keys: bool = False,
-            tags: Optional[List[str]] = None,
-            api_key: Optional[str] = None,
-            # python client arguments
-            message_content_only: bool = True,
-            cache: bool = False,
-            # passthrough arguments
-            extra_headers: Optional[Headers] = None,
-            extra_query: Optional[Query] = None,
-            **kwargs,
+        self,
+        endpoint: Optional[str] = None,
+        *,
+        model: Optional[str] = None,
+        provider: Optional[str] = None,
+        system_message: Optional[str] = None,
+        messages: Optional[List[ChatCompletionMessageParam]] = None,
+        frequency_penalty: Optional[float] = None,
+        logit_bias: Optional[Dict[str, int]] = None,
+        logprobs: Optional[bool] = None,
+        top_logprobs: Optional[int] = None,
+        max_tokens: Optional[int] = 1024,
+        n: Optional[int] = None,
+        presence_penalty: Optional[float] = None,
+        response_format: Optional[ResponseFormat] = None,
+        seed: Optional[int] = None,
+        stop: Union[Optional[str], List[str]] = None,
+        stream: Optional[bool] = False,
+        stream_options: Optional[ChatCompletionStreamOptionsParam] = None,
+        temperature: Optional[float] = 1.0,
+        top_p: Optional[float] = None,
+        tools: Optional[Iterable[ChatCompletionToolParam]] = None,
+        tool_choice: Optional[ChatCompletionToolChoiceOptionParam] = None,
+        parallel_tool_calls: Optional[bool] = None,
+        # platform arguments
+        use_custom_keys: bool = False,
+        tags: Optional[List[str]] = None,
+        api_key: Optional[str] = None,
+        # python client arguments
+        message_content_only: bool = True,
+        cache: bool = False,
+        # passthrough arguments
+        extra_headers: Optional[Headers] = None,
+        extra_query: Optional[Query] = None,
+        **kwargs,
     ):
         """Initialize the base Single LLM Unify client.
 
@@ -221,24 +221,28 @@ class UniLLMClient(Client, abc.ABC):
             # passthrough arguments
             extra_headers=extra_headers,
             extra_query=extra_query,
-            **kwargs
+            **kwargs,
         )
-    
+
         self._client = self._get_client()
-        
+
         self._endpoint = None
         self._model = None
         self._provider = None
-        
+
         if endpoint:
             if model or provider:
-                raise ValueError("Cannot specify both an endpoint and a model or provider.")
+                raise ValueError(
+                    "Cannot specify both an endpoint and a model or provider."
+                )
             self.set_endpoint(endpoint)
         elif model and provider:
             self.set_model(model)
             self.set_provider(provider)
         else:
-            raise ValueError("Must specify either an endpoint or both model and provider.")
+            raise ValueError(
+                "Must specify either an endpoint or both model and provider."
+            )
 
     # Properties #
     # -----------#
@@ -391,7 +395,7 @@ class Unify(UniLLMClient):
                 "tags": tags,
                 # passthrough json arguments
                 **extra_body,
-            }
+            },
         )
         kw = {k: v for k, v in kw.items() if v is not None}
         try:
@@ -442,7 +446,7 @@ class Unify(UniLLMClient):
                 "tags": tags,
                 # passthrough json arguments
                 **extra_body,
-            }
+            },
         )
         kw = {k: v for k, v in kw.items() if v is not None}
         chat_completion = None
@@ -532,7 +536,7 @@ class Unify(UniLLMClient):
             parallel_tool_calls=parallel_tool_calls,
             extra_headers=extra_headers,
             extra_query=extra_query,
-            extra_body=kwargs
+            extra_body=kwargs,
         )
         if stream:
             return self._generate_stream(
@@ -544,7 +548,7 @@ class Unify(UniLLMClient):
                 use_custom_keys=use_custom_keys,
                 tags=tags,
                 # python client arguments
-                message_content_only=message_content_only
+                message_content_only=message_content_only,
             )
         return self._generate_non_stream(
             self._endpoint,
@@ -554,7 +558,7 @@ class Unify(UniLLMClient):
             tags=tags,
             # python client arguments
             message_content_only=message_content_only,
-            cache=cache
+            cache=cache,
         )
 
 
@@ -600,7 +604,7 @@ class AsyncUnify(UniLLMClient):
                 "tags": tags,
                 # passthrough json arguments
                 **extra_body,
-            }
+            },
         )
         kw = {k: v for k, v in kw.items() if v is not None}
         try:
@@ -622,7 +626,7 @@ class AsyncUnify(UniLLMClient):
         tags: Optional[List[str]] = None,
         # python client arguments
         message_content_only: bool = True,
-        cache: bool = False
+        cache: bool = False,
     ) -> str:
         prompt_dict = prompt.model_dump()
         if "extra_body" in prompt_dict:
@@ -639,7 +643,7 @@ class AsyncUnify(UniLLMClient):
                 "tags": tags,
                 # passthrough json arguments
                 **extra_body,
-            }
+            },
         )
         kw = {k: v for k, v in kw.items() if v is not None}
         chat_completion = None
@@ -695,8 +699,9 @@ class AsyncUnify(UniLLMClient):
         **kwargs,
     ) -> Union[AsyncGenerator[str, None], str]:  # noqa: DAR101, DAR201, DAR401
         contents = []
-        assert messages or user_message, \
-            "You must provide either the user_message or messages!"
+        assert (
+            messages or user_message
+        ), "You must provide either the user_message or messages!"
         if system_message:
             contents.append({"role": "system", "content": system_message})
         if messages:
@@ -722,7 +727,7 @@ class AsyncUnify(UniLLMClient):
             parallel_tool_calls=parallel_tool_calls,
             extra_headers=extra_headers,
             extra_query=extra_query,
-            extra_body=kwargs
+            extra_body=kwargs,
         )
         if stream:
             return self._generate_stream(
@@ -734,7 +739,7 @@ class AsyncUnify(UniLLMClient):
                 use_custom_keys=use_custom_keys,
                 tags=tags,
                 # python client arguments
-                message_content_only=message_content_only
+                message_content_only=message_content_only,
             )
         return await self._generate_non_stream(
             self._endpoint,
@@ -744,5 +749,5 @@ class AsyncUnify(UniLLMClient):
             tags=tags,
             # python client arguments
             message_content_only=message_content_only,
-            cache=cache
+            cache=cache,
         )
