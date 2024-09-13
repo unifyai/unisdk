@@ -1,4 +1,7 @@
-import json
+import rich.repr
+import inspect
+from io import StringIO
+from rich.console import Console
 from pydantic import BaseModel, Extra
 from typing import Optional, Union, List, Dict, Mapping
 from openai.types.chat import (
@@ -6,10 +9,15 @@ from openai.types.chat import (
     ChatCompletionToolChoiceOptionParam,
     ChatCompletionMessageParam,
 )
+from pydantic import create_model
+from pydantic._internal._model_construction import ModelMetaclass
 from openai._types import Headers, Query, Body
 from openai.types.chat.completion_create_params import ResponseFormat
 
+RICH_CONSOLE = Console(file=StringIO())
 
+
+@rich.repr.auto
 class FormattedBaseModel(BaseModel):
 
     def _prune_dict(self, val):
@@ -17,14 +25,38 @@ class FormattedBaseModel(BaseModel):
             return val
         return {k: self._prune_dict(v) for k, v in val.items() if v is not None}
 
+    def _prune_pydantic(self, val, dct):
+        if not inspect.isclass(val) or not issubclass(val, BaseModel):
+            return val
+        config = {k: (self._prune_pydantic(val.model_fields[k].annotation, v),
+                      val.model_fields[k].default) for k, v in dct.items()}
+        if isinstance(val, ModelMetaclass):
+            name = val.__qualname__
+        else:
+            name = val.__class__.__name__
+        return create_model(name, **config)
+
+    def _repr(self):
+        dct = self._prune_dict(self.dict())
+        config = {k: (self._prune_pydantic(self.model_fields[k].annotation, v),
+                      self.model_fields[k].default) for k, v in dct.items()}
+        self_pruned = create_model(self.__class__.__name__, **config)(**dct)
+        global RICH_CONSOLE
+        RICH_CONSOLE.print(self_pruned)
+        ret = RICH_CONSOLE.file.getvalue()
+        RICH_CONSOLE.file.close()
+        RICH_CONSOLE = Console(file=StringIO())
+        # ToDO find more elegant way to flush this
+        return ret
+
     def __repr__(self) -> str:
-        return self.__class__.__name__ + \
-               "({})".format(json.dumps(self._prune_dict(self.dict()), indent=4)[1:-1])
+        return self._repr()
 
     def __str__(self) -> str:
-        return self.__repr__()
+        return self._repr()
 
 
+@rich.repr.auto
 class Prompt(FormattedBaseModel):
     messages: Optional[List[ChatCompletionMessageParam]] = None
     frequency_penalty: Optional[float] = None
@@ -48,5 +80,6 @@ class Prompt(FormattedBaseModel):
     extra_body: Optional[Body] = None
 
 
+@rich.repr.auto
 class DatasetEntry(FormattedBaseModel, extra=Extra.allow):
     prompt: Prompt
