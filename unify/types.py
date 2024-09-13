@@ -18,7 +18,7 @@ RICH_CONSOLE = Console(file=StringIO())
 
 
 @rich.repr.auto
-class FormattedBaseModel(BaseModel):
+class Formatted:
 
     def _prune_dict(self, val):
         if not isinstance(val, dict):
@@ -57,7 +57,7 @@ class FormattedBaseModel(BaseModel):
 
 
 @rich.repr.auto
-class Prompt(FormattedBaseModel):
+class Prompt(Formatted, BaseModel):
     messages: Optional[List[ChatCompletionMessageParam]] = None
     frequency_penalty: Optional[float] = None
     logit_bias: Optional[Dict[str, int]] = None
@@ -81,5 +81,5 @@ class Prompt(FormattedBaseModel):
 
 
 @rich.repr.auto
-class DatasetEntry(FormattedBaseModel, extra=Extra.allow):
+class DatasetEntry(Formatted, BaseModel, extra=Extra.allow):
     prompt: Prompt
