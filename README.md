@@ -128,15 +128,38 @@ client.generate("What a nice day.", temperature=1.0) # temperature of 1.0
 ```
 
 ## Asynchronous Usage
-For optimal performance in handling multiple user requests simultaneously, such as in a chatbot application, processing them asynchronously is recommended.
-To use the AsyncUnify client, simply import `AsyncUnify` instead
- of `Unify` and use `await` with the `.generate` function.
+For optimal performance in handling multiple user requests simultaneously,
+such as in a chatbot application, processing them asynchronously is recommended.
+To use the AsyncUnify client, simply import `AsyncUnify` instead, as follows:
 
  ```python
 import unify
 import asyncio
 async_client = unify.AsyncUnify("llama-3-8b-chat@fireworks-ai")
 asyncio.run(async_client.generate("Hello Llama! Who was Isaac Newton?"))
+```
+
+Processing multiple requests in parallel can then be done as follows:
+
+ ```python
+import unify
+import asyncio
+clients = dict()
+clients["gpt-4o@openai"] = unify.AsyncUnify("gpt-4o@openai")
+clients["claude-3-opus@anthropic"] = unify.AsyncUnify("claude-3-opus@anthropic")
+clients["llama-3-8b-chat@fireworks-ai"] = unify.AsyncUnify("llama-3-8b-chat@fireworks-ai")
+
+
+async def generate_responses(user_message: str):
+    responses_ = dict()
+    for endpoint_, client in clients.items():
+        responses_[endpoint_] = await client.generate(user_message)
+    return responses_
+
+responses = asyncio.run(generate_responses("Hello, how's it going?"))
+for endpoint, response in responses.items():
+    print("endpoint: {}".format(endpoint))
+    print("response: {}\n".format(response))
 ```
 
 Functionality wise, the Async and Sync clients are identical.
