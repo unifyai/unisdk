@@ -424,6 +424,15 @@ class Unify(UniLLMClient):
             del prompt_dict["extra_body"]
         else:
             extra_body = {}
+        # o1-preview and o1-mini don't work properly if we pass max_tokens
+        # this logic hasn't been added to the stream function because o1
+        # models don't work when streaming
+        if endpoint.startswith("o1"):
+            prompt_dict = {
+                key: prompt_dict[key]
+                for key in prompt_dict
+                if key not in ["max_tokens"]
+            }
         kw = dict(
             model=endpoint,
             **prompt_dict,
