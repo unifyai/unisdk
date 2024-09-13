@@ -1,5 +1,4 @@
 from __future__ import annotations
-import jsonlines
 from typing import List, Dict, Union, Optional
 
 import unify
@@ -92,32 +91,6 @@ class Dataset:
         data = unify.download_dataset(name, api_key=api_key)
         return Dataset(name, data=data, auto_sync=auto_sync, api_key=api_key)
 
-    @staticmethod
-    def from_file(
-        filepath: str,
-        name: str = None,
-        auto_sync: bool = False,
-        api_key: Optional[str] = None,
-    ):
-        """
-        Loads the dataset from a local .jsonl filepath.
-
-        Args:
-            filepath: Filepath (.jsonl) to load the dataset from.
-
-            name: The name of the dataset.
-
-            auto_sync: Whether to automatically keep this dataset fully synchronized
-            with the upstream variant at all times.
-
-            api_key: API key for accessing the Unify API. If None, it attempts to
-            retrieve the API key from the environment variable UNIFY_KEY. Defaults to
-            None.
-        """
-        with jsonlines.open(filepath, mode="r") as reader:
-            data = reader.read()
-        return Dataset(name, data=data, auto_sync=auto_sync, api_key=api_key)
-
     def _assert_name_exists(self):
         assert self._name is not None, (
             "Dataset name must be specified in order to upload, download, sync or "
@@ -196,17 +169,6 @@ class Dataset:
             "The following {} queries are stored upstream but not locally\n: "
             "{}".format(len(unique_local_data), unique_local_data)
         )
-        self.sync()
-
-    def save_to_file(self, filepath: str):
-        """
-        Saves to dataset to a local .jsonl filepath.
-
-        Args:
-            filepath: Filepath (.jsonl) to save the dataset to.
-        """
-        with jsonlines.open(filepath, mode="w") as writer:
-            writer.write_all(self._data)
         self.sync()
 
     def add(self, other: Dataset):
