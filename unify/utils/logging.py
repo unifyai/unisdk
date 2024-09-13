@@ -59,11 +59,9 @@ def get_queries(
 
     params = {}
     if tags:
-        params["tags"] = tags if isinstance(tags, str) else ",".join(tags)
+        params["tags"] = tags
     if endpoints:
-        params["endpoints"] = (
-            endpoints if isinstance(endpoints, str) else ",".join(endpoints)
-        )
+        params["endpoints"] = endpoints
     if start_time:
         params["start_time"] = start_time
     if end_time:
