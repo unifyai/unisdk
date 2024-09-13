@@ -102,13 +102,13 @@ class ChatBot:  # noqa: WPS338
     def _handle_uni_llm_response(self, response: str, endpoint: Union[bool, str]) -> str:
         if endpoint:
             endpoint = self._client.endpoint if endpoint is True else endpoint
-            sys.stdout.write(endpoint + ": ")
+            sys.stdout.write(endpoint + ":\n")
         if self._client.stream:
             words = self._stream_response(response)
         else:
             words = response
             sys.stdout.write(words)
-            sys.stdout.write("\n")
+            sys.stdout.write("\n\n")
         return words
 
     def _handle_multi_llm_response(self, response: Dict[str, str]) -> Dict[str, str]:
