@@ -130,7 +130,7 @@ client.generate("What a nice day.", temperature=1.0) # temperature of 1.0
 ## Asynchronous Usage
 For optimal performance in handling multiple user requests simultaneously,
 such as in a chatbot application, processing them asynchronously is recommended.
-To use the AsyncUnify client, simply import `AsyncUnify` instead, as follows:
+A minimal example using `AsyncUnify` is given below:
 
  ```python
 import unify
@@ -139,7 +139,8 @@ async_client = unify.AsyncUnify("llama-3-8b-chat@fireworks-ai")
 asyncio.run(async_client.generate("Hello Llama! Who was Isaac Newton?"))
 ```
 
-Processing multiple requests in parallel can then be done as follows:
+More a more applied example,
+processing multiple requests in parallel can then be done as follows:
 
  ```python
 import unify
@@ -162,7 +163,7 @@ for endpoint, response in responses.items():
     print("response: {}\n".format(response))
 ```
 
-Functionality wise, the Async and Sync clients are identical.
+Functionality wise, the asynchronous and synchronous clients are identical.
 
 ## Streaming Responses
 You can enable streaming responses by setting `stream=True` in the `.generate` function.
