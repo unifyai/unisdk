@@ -1,16 +1,10 @@
 from __future__ import annotations
 import jsonlines
-from pydantic import Extra
 from typing import List, Dict, Union, Optional
 
 import unify
-from unify.chat import Prompt
-from unify import FormattedBaseModel
+from unify.types import Prompt, DatasetEntry
 from .utils.helpers import _validate_api_key, _dict_aligns_with_pydantic
-
-
-class DatasetEntry(FormattedBaseModel, extra=Extra.allow):
-    prompt: Prompt
 
 
 class Dataset:

@@ -14,7 +14,7 @@ from typing import AsyncGenerator, Dict, Generator, List, Optional, Union, Itera
 # local
 import unify
 from unify import BASE_URL
-from unify.chat import Prompt
+from unify.types import Prompt
 from unify.chat.clients.base import Client
 from unify._caching import _get_cache, _write_to_cache
 

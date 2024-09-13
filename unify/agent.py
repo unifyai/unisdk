@@ -2,7 +2,7 @@ import abc
 from typing import Union
 
 import unify
-from unify.chat import Prompt
+from unify.types import Prompt
 
 
 class Agent(abc.ABC):

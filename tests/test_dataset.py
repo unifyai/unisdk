@@ -2,8 +2,7 @@ import os
 import unittest
 
 import unify
-from unify.chat import Prompt
-from unify.dataset import DatasetEntry
+from unify.types import Prompt, DatasetEntry
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 

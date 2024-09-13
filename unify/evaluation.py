@@ -5,7 +5,8 @@ from typing import Union, Optional
 from openai.types.chat.chat_completion import ChatCompletion
 
 from unify.agent import Agent
-from unify.dataset import DatasetEntry, Dataset
+from unify.types import DatasetEntry
+from unify.dataset import Dataset
 from unify.evaluator import Evaluator
 from .utils.helpers import _validate_api_key
 from unify.chat.clients.uni_llm import UniLLMClient

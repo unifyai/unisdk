@@ -4,7 +4,7 @@ from typing import Union
 
 from unify.dataset import Dataset
 from unify.agent import Agent
-from unify.chat import Prompt
+from unify.types import Prompt
 from unify.chat.clients.uni_llm import UniLLMClient
 
 

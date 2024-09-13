@@ -1,17 +1,5 @@
 """Unify python module."""
 import os
-from pydantic import BaseModel
-
-
-class FormattedBaseModel(BaseModel):
-
-    def __repr__(self) -> str:
-        dct = {k: v for k, v in self.dict().items() if v is not None}
-        return self.__class__.__name__ + "({})".format(json.dumps(dct, indent=4)[1:-1])
-
-    def __str__(self) -> str:
-        return self.__repr__()
-
 
 if "UNIFY_BASE_URL" in os.environ.keys():
     BASE_URL = os.environ["UNIFY_BASE_URL"]
