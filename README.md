@@ -97,12 +97,8 @@ To use the AsyncUnify client, simply import `AsyncUnify` instead
  ```python
 import unify
 import asyncio
-async_client = unify.AsyncUnify("llama-3-8b-chat@anyscale")
-
-async def main():
-    responses = await async_client.generate("Hello Llama! Who was Isaac Newton?")
-
-asyncio.run(main())
+async_client = unify.AsyncUnify("llama-3-8b-chat@fireworks-ai")
+asyncio.run(async_client.generate("Hello Llama! Who was Isaac Newton?"))
 ```
 
 Functionality wise, the Async and Sync clients are identical.
@@ -112,7 +108,7 @@ You can enable streaming responses by setting `stream=True` in the `.generate` f
 
 ```python
 import unify
-client = unify.Unify("llama-3-8b-chat@anyscale")
+client = unify.Unify("llama-3-8b-chat@fireworks-ai")
 stream = client.generate("Hello Llama! Who was Isaac Newton?", stream=True)
 for chunk in stream:
     print(chunk, end="")
@@ -123,14 +119,14 @@ It works in exactly the same way with Async clients.
  ```python
 import unify
 import asyncio
-async_client = unify.AsyncUnify("llama-3-8b-chat@anyscale")
+async_client = unify.AsyncUnify("llama-3-8b-chat@fireworks-ai")
 
-async def main():
+async def stream():
     async_stream = await async_client.generate("Hello Llama! Who was Isaac Newton?", stream=True)
     async for chunk in async_stream:
         print(chunk, end="")
 
-asyncio.run(main())
+asyncio.run(stream())
 ```
 ## Dive Deeper
 
