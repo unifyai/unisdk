@@ -33,7 +33,7 @@ class UniLLMClient(Client, abc.ABC):
         logit_bias: Optional[Dict[str, int]] = None,
         logprobs: Optional[bool] = None,
         top_logprobs: Optional[int] = None,
-        max_tokens: Optional[int] = 1024,
+        max_completion_tokens: Optional[int] = 1024,
         n: Optional[int] = None,
         presence_penalty: Optional[float] = None,
         response_format: Optional[ResponseFormat] = None,
@@ -96,9 +96,9 @@ class UniLLMClient(Client, abc.ABC):
             likely tokens to return at each token position, each with an associated log
             probability. logprobs must be set to true if this parameter is used.
 
-            max_tokens: The maximum number of tokens that can be generated in the chat
+            max_completion_tokens: The maximum number of tokens that can be generated in the chat
             completion. The total length of input tokens and generated tokens is limited
-            by the model's context length. Defaults to the provider's default max_tokens
+            by the model's context length. Defaults to the provider's default max_completion_tokens
             when the value is None.
 
             n: How many chat completion choices to generate for each input message. Note
@@ -134,7 +134,7 @@ class UniLLMClient(Client, abc.ABC):
             Higher values like 0.8 will make the output more random,
             while lower values like 0.2 will make it more focused and deterministic.
             It is generally recommended to alter this or top_p, but not both.
-            Defaults to the provider's default max_tokens when the value is None.
+            Defaults to the provider's default max_completion_tokens when the value is None.
 
             top_p: An alternative to sampling with temperature, called nucleus sampling,
             where the model considers the results of the tokens with top_p probability
@@ -198,7 +198,7 @@ class UniLLMClient(Client, abc.ABC):
             logit_bias=logit_bias,
             logprobs=logprobs,
             top_logprobs=top_logprobs,
-            max_tokens=max_tokens,
+            max_completion_tokens=max_completion_tokens,
             n=n,
             presence_penalty=presence_penalty,
             response_format=response_format,
@@ -423,14 +423,14 @@ class Unify(UniLLMClient):
             del prompt_dict["extra_body"]
         else:
             extra_body = {}
-        # o1-preview and o1-mini don't work properly if we pass max_tokens
+        # o1-preview and o1-mini don't work properly if we pass max_completion_tokens
         # this logic hasn't been added to the stream function because o1
         # models don't work when streaming
         if endpoint.startswith("o1"):
             prompt_dict = {
                 key: prompt_dict[key]
                 for key in prompt_dict
-                if key not in ["max_tokens"]
+                if key not in ["max_completion_tokens"]
             }
         kw = dict(
             model=endpoint,
@@ -477,7 +477,7 @@ class Unify(UniLLMClient):
         logit_bias: Optional[Dict[str, int]] = None,
         logprobs: Optional[bool] = None,
         top_logprobs: Optional[int] = None,
-        max_tokens: Optional[int] = 1024,
+        max_completion_tokens: Optional[int] = 1024,
         n: Optional[int] = None,
         presence_penalty: Optional[float] = None,
         response_format: Optional[ResponseFormat] = None,
@@ -518,7 +518,7 @@ class Unify(UniLLMClient):
             logit_bias=logit_bias,
             logprobs=logprobs,
             top_logprobs=top_logprobs,
-            max_tokens=max_tokens,
+            max_completion_tokens=max_completion_tokens,
             n=n,
             presence_penalty=presence_penalty,
             response_format=response_format,
@@ -670,7 +670,7 @@ class AsyncUnify(UniLLMClient):
         logit_bias: Optional[Dict[str, int]] = None,
         logprobs: Optional[bool] = None,
         top_logprobs: Optional[int] = None,
-        max_tokens: Optional[int] = 1024,
+        max_completion_tokens: Optional[int] = 1024,
         n: Optional[int] = None,
         presence_penalty: Optional[float] = None,
         response_format: Optional[ResponseFormat] = None,
@@ -710,7 +710,7 @@ class AsyncUnify(UniLLMClient):
             logit_bias=logit_bias,
             logprobs=logprobs,
             top_logprobs=top_logprobs,
-            max_tokens=max_tokens,
+            max_completion_tokens=max_completion_tokens,
             n=n,
             presence_penalty=presence_penalty,
             response_format=response_format,
