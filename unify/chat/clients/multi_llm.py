@@ -1,5 +1,6 @@
 # global
 import abc
+import asyncio
 import requests
 from typing import Optional, Union, List, Tuple, Dict, Iterable
 from openai._types import Headers, Query, Body
@@ -46,7 +47,6 @@ class MultiLLMClient(Client, abc.ABC):
         tags: Optional[List[str]] = None,
         api_key: Optional[str] = None,
         # python client arguments
-        asynchronous: bool = False,
         message_content_only: bool = True,
         cache: bool = False,
         # passthrough arguments
@@ -87,12 +87,12 @@ class MultiLLMClient(Client, abc.ABC):
         endpoints = list(endpoints)
         self._api_key = _validate_api_key(api_key)
         self._endpoints = endpoints
-        self._client_class = AsyncUnify if asynchronous else Unify
+        self._client_class = AsyncUnify
         self._clients = self._create_clients(endpoints)
 
     def _create_clients(
         self, endpoints: List[str]
-    ) -> Dict[str, Union[Unify, AsyncUnify]]:
+    ) -> Dict[str, AsyncUnify]:
         return {
             endpoint: self._client_class(
                 endpoint,
@@ -268,7 +268,6 @@ class MultiLLM(MultiLLMClient):
             tags=tags,
             api_key=api_key,
             # python client arguments
-            asynchronous=False,
             message_content_only=message_content_only,
             cache=cache,
             # passthrough arguments
@@ -336,15 +335,19 @@ class MultiLLM(MultiLLMClient):
             extra_query=extra_query,
             **kwargs,
         )
-        multi_message = isinstance(messages, dict)
-        kw = {k: v for k, v in kw.items() if v is not None}
-        responses = dict()
-        for endpoint, client in self._clients.items():
-            these_kw = kw.copy()
-            if multi_message:
-                these_kw["messages"] = these_kw["messages"][endpoint]
-            responses[endpoint] = client.generate(**these_kw)
-        return responses
+
+        # noinspection DuplicatedCode
+        async def gen(kw_):
+            multi_message = isinstance(messages, dict)
+            kw_ = {k: v for k, v in kw_.items() if v is not None}
+            responses = dict()
+            for endpoint, client in self._clients.items():
+                these_kw = kw_.copy()
+                if multi_message:
+                    these_kw["messages"] = these_kw["messages"][endpoint]
+                responses[endpoint] = await client.generate(**these_kw)
+            return responses
+        return asyncio.run(gen(kw))
 
 
 class MultiLLMAsync(MultiLLMClient):
@@ -408,7 +411,6 @@ class MultiLLMAsync(MultiLLMClient):
             tags=tags,
             api_key=api_key,
             # python client arguments
-            asynchronous=True,
             message_content_only=message_content_only,
             cache=cache,
             # passthrough arguments
