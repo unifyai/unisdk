@@ -14,10 +14,10 @@ from openai.types.chat.completion_create_params import ResponseFormat
 # local
 from unify import BASE_URL
 from unify.utils.helpers import _validate_api_key
-from unify.chat.clients import Client, UniLLMClient, Unify, AsyncUnify
+from unify.chat.clients import _Client, _UniLLMClient, Unify, AsyncUnify
 
 
-class MultiLLMClient(Client, abc.ABC):
+class _MultiLLMClient(_Client, abc.ABC):
 
     def __init__(
         self,
@@ -203,11 +203,11 @@ class MultiLLMClient(Client, abc.ABC):
         return tuple(self._endpoints)
 
     @property
-    def clients(self) -> Dict[str, UniLLMClient]:
+    def clients(self) -> Dict[str, _UniLLMClient]:
         return self._clients
 
 
-class MultiLLM(MultiLLMClient):
+class MultiLLM(_MultiLLMClient):
 
     def __init__(
         self,
@@ -350,7 +350,7 @@ class MultiLLM(MultiLLMClient):
         return asyncio.run(gen(kw))
 
 
-class MultiLLMAsync(MultiLLMClient):
+class MultiLLMAsync(_MultiLLMClient):
 
     def __init__(
         self,

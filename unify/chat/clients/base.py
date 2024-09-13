@@ -16,7 +16,7 @@ from unify import BASE_URL
 from unify.utils.helpers import _validate_api_key, _default
 
 
-class Client(ABC):
+class _Client(ABC):
     """Base Abstract class for interacting with the Unify chat completions endpoint."""
 
     def __init__(

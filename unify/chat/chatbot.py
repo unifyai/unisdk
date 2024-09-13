@@ -3,7 +3,7 @@ import asyncio
 from typing import Union, Dict
 
 import unify
-from unify.chat.clients import Client, UniLLMClient, MultiLLMClient
+from unify.chat.clients import _Client, _UniLLMClient, _MultiLLMClient
 
 
 class ChatBot:  # noqa: WPS338
@@ -11,7 +11,7 @@ class ChatBot:  # noqa: WPS338
 
     def __init__(
         self,
-        client: Client,
+        client: _Client,
     ) -> None:
         """
         Initializes the ChatBot object, wrapped around a client.
@@ -26,7 +26,7 @@ class ChatBot:  # noqa: WPS338
         self.clear_chat_history()
 
     @property
-    def client(self) -> Client:
+    def client(self) -> _Client:
         """
         Get the client object.  # noqa: DAR201.
 
@@ -42,7 +42,7 @@ class ChatBot:  # noqa: WPS338
         Args:
             value: The unify client.
         """
-        if isinstance(value, Client):
+        if isinstance(value, _Client):
             self._client = value
         else:
             raise Exception("Invalid client!")
@@ -64,12 +64,12 @@ class ChatBot:  # noqa: WPS338
             role: Either "assistant" or "user".
             content: User input message.
         """
-        if isinstance(self._client, UniLLMClient):
+        if isinstance(self._client, _UniLLMClient):
             self._client.messages.append({
                 "role": role,
                 "content": content,
             })
-        elif isinstance(self._client, MultiLLMClient):
+        elif isinstance(self._client, _MultiLLMClient):
             if isinstance(content, str):
                 content = {endpoint: content for endpoint in self._client.endpoints}
             for endpoint, cont in content.items():
@@ -82,9 +82,9 @@ class ChatBot:  # noqa: WPS338
 
     def clear_chat_history(self) -> None:
         """Clears the chat history."""
-        if isinstance(self._client, UniLLMClient):
+        if isinstance(self._client, _UniLLMClient):
             self._client.set_messages([])
-        elif isinstance(self._client, MultiLLMClient):
+        elif isinstance(self._client, _MultiLLMClient):
             self._client.set_messages({endpoint: [] for endpoint in self._client.endpoints})
         else:
             raise Exception("client must either be a UniLLMClient or MultiLLMClient instance.")
@@ -117,9 +117,9 @@ class ChatBot:  # noqa: WPS338
         return response
 
     def _handle_response(self, response: Union[str, Dict[str, str]], show_endpoint: bool) -> None:
-        if isinstance(self._client, UniLLMClient):
+        if isinstance(self._client, _UniLLMClient):
             response = self._handle_uni_llm_response(response, show_endpoint)
-        elif isinstance(self._client, MultiLLMClient):
+        elif isinstance(self._client, _MultiLLMClient):
             response = self._handle_multi_llm_response(response)
         else:
             raise Exception("client must either be a UniLLMClient or MultiLLMClient instance.")

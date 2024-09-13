@@ -5,7 +5,7 @@ from typing import Union
 from unify.dataset import Dataset
 from unify.agent import Agent
 from unify.types import Prompt
-from unify.chat.clients.uni_llm import UniLLMClient
+from unify.chat.clients.uni_llm import _UniLLMClient
 
 
 class Evaluator(abc.ABC):
@@ -13,7 +13,7 @@ class Evaluator(abc.ABC):
     @abstractmethod
     def evaluate(
             self,
-            agent: Union[str, UniLLMClient, Agent],
+            agent: Union[str, _UniLLMClient, Agent],
             dataset: Union[str, Dataset],
             default_prompt: Prompt = None,
     ):

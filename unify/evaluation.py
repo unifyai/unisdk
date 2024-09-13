@@ -9,14 +9,14 @@ from unify.types import DatasetEntry
 from unify.dataset import Dataset
 from unify.evaluator import Evaluator
 from .utils.helpers import _validate_api_key
-from unify.chat.clients.uni_llm import UniLLMClient
+from unify.chat.clients.uni_llm import _UniLLMClient
 
 
 class Evaluation:
 
     def __init__(
         self,
-        agent: Union[str, UniLLMClient, Agent],
+        agent: Union[str, _UniLLMClient, Agent],
         dataset: Union[str, Dataset],
         evaluator: Union[str, Evaluator],
         api_key: Optional[str] = None,

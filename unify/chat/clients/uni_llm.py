@@ -15,11 +15,11 @@ from typing import AsyncGenerator, Dict, Generator, List, Optional, Union, Itera
 import unify
 from unify import BASE_URL
 from unify.types import Prompt
-from unify.chat.clients.base import Client
+from unify.chat.clients.base import _Client
 from unify._caching import _get_cache, _write_to_cache
 
 
-class UniLLMClient(Client, abc.ABC):
+class _UniLLMClient(_Client, abc.ABC):
 
     def __init__(
         self,
@@ -348,7 +348,7 @@ class UniLLMClient(Client, abc.ABC):
         raise NotImplementedError
 
 
-class Unify(UniLLMClient):
+class Unify(_UniLLMClient):
     """Class for interacting with the Unify chat completions endpoint in a synchronous
     manner."""
 
@@ -557,7 +557,7 @@ class Unify(UniLLMClient):
         )
 
 
-class AsyncUnify(UniLLMClient):
+class AsyncUnify(_UniLLMClient):
     """Class for interacting with the Unify chat completions endpoint in a synchronous
     manner."""
 
