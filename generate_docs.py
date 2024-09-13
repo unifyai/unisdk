@@ -1,7 +1,8 @@
-import json
 import os
 import re
-
+import json
+import argparse
+import shutil
 
 replace = {
     "<uploaded_by>/<model_name>@<provider_name>": r"\<uploaded_by\>/\<model_name\>@\<provider_name\>",
@@ -118,4 +119,60 @@ def process_output():
 
 
 if __name__ == "__main__":
+
+    # parse args
+    parser = argparse.ArgumentParser(
+        prog="Orchestra Doc Builder",
+        description="Build the Orchestra REST API Documentation",
+    )
+    parser.add_argument("-w", "--write", action="store_true")
+    parser.add_argument("-dd", "--docs_dir", type=str, help="directory for docs")
+    args = parser.parse_args()
+
+    if args.write:
+
+        # docs directory
+        if args.docs_dir is not None:
+            docs_dir = args.docs_dir
+        else:
+            docs_dir = "../unify-docs"
+
+        # mint.json filepaths
+        docs_mint_filepath = os.path.join(docs_dir, "mint.json")
+        local_mint_filepath = "mint.json"
+
+        # copy mint.json
+        if os.path.exists(docs_mint_filepath):
+            shutil.copyfile(docs_mint_filepath, local_mint_filepath)
+        else:
+            raise Exception(
+                "No mint.json found locally,"
+                "and {} also does not exist for retrieval".format(docs_mint_filepath),
+            )
+
+        # create output directory
+        os.makedirs("output", exist_ok=True)
+
+        # copy markdown to unify folder
+        shutil.copyfile("pydoc-markdown.yml", "unify/pydoc-markdown.yml")
+
+        # trigger pydoc-markdown
+        os.chdir("unify")
+        os.system("pydoc-markdown | tee ../output/result.txt")
+        os.chdir("..")
+
+    # generate docs
     process_output()
+
+    if args.write:
+
+        # remove files + dirs
+        os.remove("output/result.txt")
+        os.remove("unify/pydoc-markdown.yml")
+        if os.path.exists("../unify-docs/python"):
+            shutil.rmtree("../unify-docs/python")
+
+        # move files + dirs
+        shutil.move("output", "python")
+        shutil.move("python", "../unify-docs/python")
+        shutil.move("mint.json", "../unify-docs/mint.json")
