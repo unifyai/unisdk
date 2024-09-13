@@ -15,13 +15,13 @@ class Prompt(FormattedBaseModel):
     logit_bias: Optional[Dict[str, int]] = None
     logprobs: Optional[bool] = None
     top_logprobs: Optional[int] = None
-    max_tokens: Optional[int] = 1024
+    max_tokens: Optional[int] = None
     n: Optional[int] = None
     presence_penalty: Optional[float] = None
     response_format: Optional[ResponseFormat] = None
     seed: Optional[int] = None
     stop: Union[Optional[str], List[str]] = None
-    temperature: Optional[float] = 1.0
+    temperature: Optional[float] = None
     top_p: Optional[float] = None
     tools: Optional[List[ChatCompletionToolParam]] = None
     tool_choice: Optional[ChatCompletionToolChoiceOptionParam] = None

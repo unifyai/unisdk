@@ -1,6 +1,5 @@
 """Unify python module."""
 import os
-import json
 from pydantic import BaseModel
 
 
@@ -8,10 +7,7 @@ class FormattedBaseModel(BaseModel):
 
     def __repr__(self) -> str:
         dct = {k: v for k, v in self.dict().items() if v is not None}
-        ret_str = self.__class__.__name__ + "("
-        ret_str += json.dumps(dct, indent=4)[1:-1]
-        ret_str += ")"
-        return ret_str
+        return self.__class__.__name__ + "({})".format(json.dumps(dct, indent=4)[1:-1])
 
     def __str__(self) -> str:
         return self.__repr__()
