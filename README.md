@@ -89,6 +89,44 @@ If you'd like to send multiple messages using the `.generate` function, you shou
 res = client.generate(messages=messages)
  ```
 
+### Default Arguments
+
+When querying LLMs, you often want to keep many aspects of your prompt fixed,
+and only change a small subset of the prompt on each subsequent call.
+
+For example, you might want to fix the temperate, the system prompt,
+and the tools available, whilst passing different user messages coming from a downstream
+application. All of the clients in unify make this very simple via default arguments,
+which can be specified in the constructor,
+and can also be set any time using setters methods.
+
+For example, the following code will pass `temperature=0.5` to all subsequent requests,
+without needing to be repeatedly passed into the `.generate()` method.
+
+```python
+client = unify.Unify("claude-3-haiku@anthropic", temperature=0.5)
+client.generate("Hello world!")
+client.generate("What a nice day.")
+```
+
+All parameters can also be retrieved by getters, and set via setters:
+
+```python
+client = unify.Unify("claude-3-haiku@anthropic", temperature=0.5)
+print(client.temperature)  # 0.5
+client.set_temperature(1.0)
+print(client.temperature)  # 1.0
+```
+
+Passing a value to the `.generate()` method will *overwrite* the default value specified
+for the client.
+
+```python
+client = unify.Unify("claude-3-haiku@anthropic", temperature=0.5)
+client.generate("Hello world!") # temperature of 0.5
+client.generate("What a nice day.", temperature=1.0) # temperature of 1.0
+```
+
 ## Asynchronous Usage
 For optimal performance in handling multiple user requests simultaneously, such as in a chatbot application, processing them asynchronously is recommended.
 To use the AsyncUnify client, simply import `AsyncUnify` instead
