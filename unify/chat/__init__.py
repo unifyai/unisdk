@@ -1,4 +1,3 @@
-from pydantic import BaseModel
 from typing import Optional, Union, List, Dict, Mapping
 from openai.types.chat import (
     ChatCompletionToolParam,
@@ -7,9 +6,10 @@ from openai.types.chat import (
 )
 from openai._types import Headers, Query, Body
 from openai.types.chat.completion_create_params import ResponseFormat
+from unify import FormattedBaseModel
 
 
-class Prompt(BaseModel):
+class Prompt(FormattedBaseModel):
     messages: Optional[List[ChatCompletionMessageParam]] = None
     frequency_penalty: Optional[float] = None
     logit_bias: Optional[Dict[str, int]] = None
