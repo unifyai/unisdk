@@ -19,7 +19,7 @@ RICH_CONSOLE = Console(file=StringIO())
 
 
 @rich.repr.auto
-class Formatted(abc.ABC):
+class _Formatted(abc.ABC):
 
     def _repr(self):
         to_print = self._prune()
@@ -42,7 +42,7 @@ class Formatted(abc.ABC):
         raise NotImplemented
 
 
-class FormattedBaseModel(Formatted, BaseModel):
+class _FormattedBaseModel(_Formatted, BaseModel):
 
     def _prune_dict(self, val):
         if not isinstance(val, dict):
@@ -67,7 +67,7 @@ class FormattedBaseModel(Formatted, BaseModel):
         return create_model(self.__class__.__name__, **config)(**dct)
 
 
-class Prompt(FormattedBaseModel):
+class Prompt(_FormattedBaseModel):
     messages: Optional[List[ChatCompletionMessageParam]] = None
     frequency_penalty: Optional[float] = None
     logit_bias: Optional[Dict[str, int]] = None
@@ -90,5 +90,5 @@ class Prompt(FormattedBaseModel):
     extra_body: Optional[Body] = None
 
 
-class DatasetEntry(FormattedBaseModel, extra=Extra.allow):
+class DatasetEntry(_FormattedBaseModel, extra=Extra.allow):
     prompt: Prompt
