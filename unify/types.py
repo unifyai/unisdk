@@ -56,7 +56,6 @@ class Formatted:
         return self._repr()
 
 
-@rich.repr.auto
 class Prompt(Formatted, BaseModel):
     messages: Optional[List[ChatCompletionMessageParam]] = None
     frequency_penalty: Optional[float] = None
@@ -80,6 +79,5 @@ class Prompt(Formatted, BaseModel):
     extra_body: Optional[Body] = None
 
 
-@rich.repr.auto
 class DatasetEntry(Formatted, BaseModel, extra=Extra.allow):
     prompt: Prompt
