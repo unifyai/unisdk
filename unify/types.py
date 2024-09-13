@@ -1,5 +1,6 @@
-import rich.repr
+import abc
 import inspect
+import rich.repr
 from io import StringIO
 from rich.console import Console
 from pydantic import BaseModel, Extra
@@ -18,7 +19,30 @@ RICH_CONSOLE = Console(file=StringIO())
 
 
 @rich.repr.auto
-class Formatted:
+class Formatted(abc.ABC):
+
+    def _repr(self):
+        to_print = self._prune()
+        global RICH_CONSOLE
+        RICH_CONSOLE.print(to_print)
+        ret = RICH_CONSOLE.file.getvalue()
+        RICH_CONSOLE.file.close()
+        RICH_CONSOLE = Console(file=StringIO())
+        # ToDO find more elegant way to flush this
+        return ret
+
+    def __repr__(self) -> str:
+        return self._repr()
+
+    def __str__(self) -> str:
+        return self._repr()
+
+    @abc.abstractmethod
+    def _prune(self):
+        raise NotImplemented
+
+
+class FormattedBaseModel(Formatted, BaseModel):
 
     def _prune_dict(self, val):
         if not isinstance(val, dict):
@@ -36,27 +60,14 @@ class Formatted:
             name = val.__class__.__name__
         return create_model(name, **config)
 
-    def _repr(self):
+    def _prune(self):
         dct = self._prune_dict(self.dict())
         config = {k: (self._prune_pydantic(self.model_fields[k].annotation, v),
                       self.model_fields[k].default) for k, v in dct.items()}
-        self_pruned = create_model(self.__class__.__name__, **config)(**dct)
-        global RICH_CONSOLE
-        RICH_CONSOLE.print(self_pruned)
-        ret = RICH_CONSOLE.file.getvalue()
-        RICH_CONSOLE.file.close()
-        RICH_CONSOLE = Console(file=StringIO())
-        # ToDO find more elegant way to flush this
-        return ret
-
-    def __repr__(self) -> str:
-        return self._repr()
-
-    def __str__(self) -> str:
-        return self._repr()
+        return create_model(self.__class__.__name__, **config)(**dct)
 
 
-class Prompt(Formatted, BaseModel):
+class Prompt(FormattedBaseModel):
     messages: Optional[List[ChatCompletionMessageParam]] = None
     frequency_penalty: Optional[float] = None
     logit_bias: Optional[Dict[str, int]] = None
@@ -79,5 +90,5 @@ class Prompt(Formatted, BaseModel):
     extra_body: Optional[Body] = None
 
 
-class DatasetEntry(Formatted, BaseModel, extra=Extra.allow):
+class DatasetEntry(FormattedBaseModel, extra=Extra.allow):
     prompt: Prompt
