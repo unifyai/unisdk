@@ -15,6 +15,8 @@ from pydantic._internal._model_construction import ModelMetaclass
 from openai._types import Headers, Query, Body
 from openai.types.chat.completion_create_params import ResponseFormat
 
+import unify
+
 RICH_CONSOLE = Console(file=StringIO())
 
 
@@ -116,6 +118,22 @@ class Prompt(_FormattedBaseModel):
             kwargs["messages"] = [{'content': args[0], 'role': 'user'}]
         super().__init__(**kwargs)
 
+    def __add__(self, other):
+        return unify.Dataset(self) +\
+               (other if isinstance(other, unify.Dataset) else unify.Dataset(other))
+
+    def __sub__(self, other):
+        return unify.Dataset(self) -\
+               (other if isinstance(other, unify.Dataset) else unify.Dataset(other))
+
+    def __radd__(self, other):
+        return (other if isinstance(other, unify.Dataset) else unify.Dataset(other)) +\
+               unify.Dataset(self)
+
+    def __rsub__(self, other):
+        return (other if isinstance(other, unify.Dataset) else unify.Dataset(other)) -\
+               unify.Dataset(self)
+
     def __hash__(self):
         return hash(str(self))
 
@@ -127,6 +145,22 @@ class Datum(_FormattedBaseModel, extra=Extra.allow):
         if args and isinstance(args[0], str):
             kwargs["prompt"] = Prompt(args[0])
         super().__init__(**kwargs)
+
+    def __add__(self, other):
+        return unify.Dataset(self) +\
+               (other if isinstance(other, unify.Dataset) else unify.Dataset(other))
+
+    def __sub__(self, other):
+        return unify.Dataset(self) -\
+               (other if isinstance(other, unify.Dataset) else unify.Dataset(other))
+
+    def __radd__(self, other):
+        return (other if isinstance(other, unify.Dataset) else unify.Dataset(other)) +\
+               unify.Dataset(self)
+
+    def __rsub__(self, other):
+        return (other if isinstance(other, unify.Dataset) else unify.Dataset(other)) -\
+               unify.Dataset(self)
 
     def __hash__(self):
         return hash(str(self))
