@@ -286,7 +286,12 @@ class Dataset(_Formatted):
 
     def __getitem__(self, item):
         self._auto_sync()
-        return self._data[item]
+        if isinstance(item, int):
+            return self._data[item]
+        elif isinstance(item, slice):
+            return Dataset(self._data[item.start:item.stop:item.step])
+        raise TypeError("expected item to be of type int or slice,"
+                        "but found {} of type {}".format(item, type(item)))
 
     def __rich_repr__(self):
         self._auto_sync()
