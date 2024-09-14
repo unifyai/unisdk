@@ -197,7 +197,7 @@ class Dataset(_Formatted):
             "cannot subtract dataset B from dataset A unless all queries of dataset "
             "B are also present in dataset A"
         )
-        data = list(self_set - other_set)
+        data = [item for item in self._data if item not in other]
         return Dataset(data=data, auto_sync=self._auto_sync, api_key=self._api_key)
 
     def __iadd__(self, other):
