@@ -70,8 +70,8 @@ class _FormattedBaseModel(_Formatted, BaseModel):
 
     def __rich_repr__(self):
         pruned = self._prune()
-        for k, v in pruned.dict().items():
-            yield k, v
+        for k in pruned.model_fields:
+            yield k, pruned.__dict__[k]
 
 
 class Prompt(_FormattedBaseModel):
