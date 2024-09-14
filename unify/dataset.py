@@ -197,7 +197,8 @@ class Dataset(_Formatted):
         )
         self._auto_sync()
 
-    def add(self, other: Dataset):
+    def add(self, other: Union[Dataset, str, Dict, Prompt, DatasetEntry,
+                               List[Union[str, Dict, Prompt, DatasetEntry]]]):
         """
         Adds another dataset to this one, return a new Dataset instance, with this
         new dataset receiving all unique queries from the other added dataset.
@@ -205,10 +206,12 @@ class Dataset(_Formatted):
         Args:
             other: The other dataset being added to this one.
         """
+        other = other if isinstance(other, Dataset) else Dataset(other)
         data = list(dict.fromkeys(self._data + other._data))
         return Dataset(data=data, auto_sync=self._auto_sync_flag, api_key=self._api_key)
 
-    def sub(self, other: Dataset):
+    def sub(self, other: Union[Dataset, str, Dict, Prompt, DatasetEntry,
+                               List[Union[str, Dict, Prompt, DatasetEntry]]]):
         """
         Subtracts another dataset from this one, return a new Dataset instance, with
         this new dataset losing all queries from the other subtracted dataset.
@@ -216,6 +219,7 @@ class Dataset(_Formatted):
         Args:
             other: The other dataset being added to this one.
         """
+        other = other if isinstance(other, Dataset) else Dataset(other)
         self_set = set(self._data)
         other_set = set(other)
         assert other_set <= self_set, (
@@ -225,7 +229,8 @@ class Dataset(_Formatted):
         data = [item for item in self._data if item not in other]
         return Dataset(data=data, auto_sync=self._auto_sync_flag, api_key=self._api_key)
 
-    def __iadd__(self, other):
+    def __iadd__(self, other: Union[Dataset, str, Dict, Prompt, DatasetEntry,
+                                    List[Union[str, Dict, Prompt, DatasetEntry]]]):
         """
         Adds another dataset to this one, with this dataset receiving all unique queries
         from the other added dataset.
@@ -233,11 +238,13 @@ class Dataset(_Formatted):
         Args:
             other: The other dataset being added to this one.
         """
+        other = other if isinstance(other, Dataset) else Dataset(other)
         self._data = list(dict.fromkeys(self._data + other._data))
         self._auto_sync()
         return self
 
-    def __isub__(self, other):
+    def __isub__(self, other: Union[Dataset, str, Dict, Prompt, DatasetEntry,
+                                    List[Union[str, Dict, Prompt, DatasetEntry]]]):
         """
         Subtracts another dataset from this one, with this dataset losing all queries
         from the other subtracted dataset.
@@ -245,6 +252,7 @@ class Dataset(_Formatted):
         Args:
             other: The other dataset being added to this one.
         """
+        other = other if isinstance(other, Dataset) else Dataset(other)
         self_set = set(self._data)
         other_set = set(other)
         assert other_set <= self_set, (
@@ -255,10 +263,12 @@ class Dataset(_Formatted):
         self._auto_sync()
         return self
 
-    def __add__(self, other):
+    def __add__(self, other: Union[Dataset, str, Dict, Prompt, DatasetEntry,
+                                   List[Union[str, Dict, Prompt, DatasetEntry]]]):
         return self.add(other)
 
-    def __sub__(self, other):
+    def __sub__(self, other: Union[Dataset, str, Dict, Prompt, DatasetEntry,
+                                   List[Union[str, Dict, Prompt, DatasetEntry]]]):
         return self.sub(other)
 
     def __iter__(self):
