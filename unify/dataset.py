@@ -208,8 +208,9 @@ class Dataset(_Formatted):
         Args:
             other: The other dataset being added to this one.
         """
-        self._data = list(set(self._data + other))
+        self._data = list(dict.fromkeys(self._data + other._data))
         self.sync()
+        return self
 
     def __isub__(self, other):
         """
@@ -225,8 +226,9 @@ class Dataset(_Formatted):
             "cannot subtract dataset B from dataset A unless all queries of dataset "
             "B are also present in dataset A"
         )
-        self._data = list(self_set - other_set)
+        self._data = [item for item in self._data if item not in other]
         self.sync()
+        return self
 
     def __add__(self, other):
         return self.add(other)
