@@ -56,10 +56,23 @@ class _FormattedBaseModel(_Formatted, BaseModel):
             name = val.__class__.__name__
         return create_model(name, **config)
 
+    @staticmethod
+    def _annotation(v):
+        if hasattr(v, "annotation"):
+            return v.annotation
+        return type(v)
+
+    @staticmethod
+    def _default(v):
+        if hasattr(v, "default"):
+            return v.default
+        return None
+
     def _prune(self):
         dct = self._prune_dict(self.dict())
-        config = {k: (self._prune_pydantic(self.model_fields[k].annotation, v),
-                      self.model_fields[k].default) for k, v in dct.items()}
+        fields = {**self.model_fields, **self.model_extra}
+        config = {k: (self._prune_pydantic(self._annotation(fields[k]), v),
+                      self._default(fields[k])) for k, v in dct.items()}
         return create_model(self.__class__.__name__, **config)(**dct)
 
     def __repr__(self) -> str:
