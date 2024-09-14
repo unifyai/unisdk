@@ -43,3 +43,35 @@ class TestPrompt(unittest.TestCase):
         )
         client = unify.Unify(**prompt.dict())
         self.assertEqual(client.temperature, 0.5)
+
+
+class TestDatum(unittest.TestCase):
+
+    def _assert_datum_msg(self, datum, user_msg):
+        self.assertIn("prompt", datum.__dict__)
+        self.assertIsInstance(datum.prompt, unify.Prompt)
+        self.assertIn("messages", datum.prompt.__dict__)
+        self.assertIsInstance(datum.prompt.messages, list)
+        self.assertGreater(len(datum.prompt.messages), 0)
+        self.assertIn("content", datum.prompt.messages[0])
+        self.assertEqual(datum.prompt.messages[0]["content"], user_msg)
+
+    def _assert_datum_param(self, datum, param_name, param_val):
+        fields = {**datum.model_fields, **datum.model_extra}
+        self.assertIn(param_name, fields)
+        self.assertEqual(fields[param_name], param_val)
+
+    def test_create_datum_from_user_message(self) -> None:
+        datum = unify.Datum("Hello")
+        self._assert_datum_msg(datum, "Hello")
+
+    def test_create_datum_from_prompt(self) -> None:
+        prompt = unify.Prompt("Hello")
+        datum = unify.Datum(prompt=prompt)
+        self._assert_datum_msg(datum, "Hello")
+
+    def test_create_datum_from_prompt_n_extra(self) -> None:
+        prompt = unify.Prompt("Hello")
+        datum = unify.Datum(prompt=prompt, ref_answer="Answer")
+        self._assert_datum_msg(datum, "Hello")
+        self._assert_datum_param(datum, "ref_answer", "Answer")
