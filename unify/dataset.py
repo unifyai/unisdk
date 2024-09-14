@@ -284,6 +284,9 @@ class Dataset(_Formatted):
         for x in self._data:
             yield x
 
+    def __len__(self):
+        return len(self._data)
+
     def __getitem__(self, item):
         self._auto_sync()
         if isinstance(item, int):
