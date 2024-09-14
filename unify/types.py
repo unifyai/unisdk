@@ -18,11 +18,10 @@ from openai.types.chat.completion_create_params import ResponseFormat
 RICH_CONSOLE = Console(file=StringIO())
 
 
-@rich.repr.auto
 class _Formatted(abc.ABC):
 
-    def _repr(self):
-        to_print = self._prune()
+    @staticmethod
+    def _repr(to_print):
         global RICH_CONSOLE
         RICH_CONSOLE.print(to_print)
         ret = RICH_CONSOLE.file.getvalue()
@@ -32,16 +31,13 @@ class _Formatted(abc.ABC):
         return ret
 
     def __repr__(self) -> str:
-        return self._repr()
+        return self._repr(self)
 
     def __str__(self) -> str:
-        return self._repr()
-
-    @abc.abstractmethod
-    def _prune(self):
-        raise NotImplemented
+        return self._repr(self)
 
 
+@rich.repr.auto
 class _FormattedBaseModel(_Formatted, BaseModel):
 
     def _prune_dict(self, val):
@@ -65,6 +61,12 @@ class _FormattedBaseModel(_Formatted, BaseModel):
         config = {k: (self._prune_pydantic(self.model_fields[k].annotation, v),
                       self.model_fields[k].default) for k, v in dct.items()}
         return create_model(self.__class__.__name__, **config)(**dct)
+
+    def __repr__(self) -> str:
+        return self._repr(self._prune())
+
+    def __str__(self) -> str:
+        return self._repr(self._prune())
 
 
 class Prompt(_FormattedBaseModel):
