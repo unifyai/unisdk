@@ -123,5 +123,10 @@ class Prompt(_FormattedBaseModel):
 class DatasetEntry(_FormattedBaseModel, extra=Extra.allow):
     prompt: Prompt
 
+    def __init__(self, *args, **kwargs):
+        if args and isinstance(args[0], str):
+            kwargs["prompt"] = Prompt(args[0])
+        super().__init__(**kwargs)
+
     def __hash__(self):
         return hash(str(self))
