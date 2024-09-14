@@ -80,3 +80,37 @@ class TestDatasetConstruction(unittest.TestCase):
         self.assertIsInstance(dataset[0], Datum)
         unify.delete_dataset("TestCreateDatasetFromStr")
         assert "TestCreateDatasetFromStr" not in unify.list_datasets()
+
+
+# noinspection PyStatementEffect
+class TestDatasetIndexing(unittest.TestCase):
+
+    def test_iterate_over_dataset(self) -> None:
+        msgs = ["a", "b", "c"]
+        dataset = unify.Dataset(msgs)
+        self.assertEqual(len(dataset), len(msgs))
+        for datum, msg in zip(dataset, msgs):
+            self.assertIsInstance(datum, Datum)
+            self.assertEqual(datum.prompt.messages[0]["content"], msg)
+
+    def test_index_dataset(self) -> None:
+        dataset = unify.Dataset(["a", "b", "c"])
+        self.assertIsInstance(dataset[0], Datum)
+        self.assertEqual(dataset[0].prompt.messages[0]["content"], "a")
+        self.assertIsInstance(dataset[1], Datum)
+        self.assertEqual(dataset[1].prompt.messages[0]["content"], "b")
+        self.assertIsInstance(dataset[2], Datum)
+        self.assertEqual(dataset[2].prompt.messages[0]["content"], "c")
+        self.assertIsInstance(dataset[-1], Datum)
+        self.assertEqual(dataset[-1].prompt.messages[0]["content"], "c")
+        with self.assertRaises(IndexError):
+            dataset[3]
+
+    def test_slice_dataset(self) -> None:
+        msgs = ["a", "b", "c", "d"]
+        dataset = unify.Dataset(["a", "b", "c", "d"])
+        msgs = msgs[1:-1]
+        dataset = dataset[1:-1]
+        for datum, msg in zip(dataset, msgs):
+            self.assertIsInstance(datum, Datum)
+            self.assertEqual(datum.prompt.messages[0]["content"], msg)
