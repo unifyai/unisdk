@@ -2,11 +2,12 @@ from __future__ import annotations
 from typing import List, Dict, Union, Optional
 
 import unify
+from unify.types import _Formatted
 from unify.types import Prompt, DatasetEntry
 from .utils.helpers import _validate_api_key, _dict_aligns_with_pydantic
 
 
-class Dataset:
+class Dataset(_Formatted):
     def __init__(
         self,
         data: Union[str, List[Union[str, Dict, Prompt, DatasetEntry]]],
@@ -240,5 +241,5 @@ class Dataset:
     def __getitem__(self, item):
         return self._data[item]
 
-    def __repr__(self):
-        return str(self._data)
+    def __rich_repr__(self):
+        yield self._data
