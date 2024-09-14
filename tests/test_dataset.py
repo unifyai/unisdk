@@ -115,6 +115,17 @@ class TestDatasetIndexing(unittest.TestCase):
             self.assertIsInstance(datum, Datum)
             self.assertEqual(datum.prompt.messages[0]["content"], msg)
 
+    def test_dataset_contains(self) -> None:
+        dataset1 = unify.Dataset(["a", "b", "c"])
+        dataset2 = unify.Dataset(["a", "b"])
+        self.assertIn(dataset2, dataset1)
+        self.assertIn("a", dataset1)
+        self.assertIn(unify.Prompt("b"), dataset1)
+        self.assertIn(["b", "c"], dataset1)
+        self.assertNotIn("d", dataset1)
+        dataset3 = unify.Dataset(["c", "d"])
+        self.assertNotIn(dataset3, dataset1)
+
 
 class TestDatasetCombining(unittest.TestCase):
 
