@@ -118,14 +118,19 @@ class Dataset(_Formatted):
             overwrite: Whether to overwrite the upstream dataset if it already exists
         """
         self._assert_name_exists()
+        dataset_exists_upstream = self._name in unify.list_datasets(self._api_key)
         if overwrite:
-            if self._name in unify.list_datasets(self._api_key):
+            if dataset_exists_upstream:
                 unify.delete_dataset(self._name, self._api_key)
             unify.upload_dataset_from_dictionary(self._name, self._data)
             return
-        upstream_dataset = unify.download_dataset(self._name, api_key=self._api_key)
-        unique_local_data = list(set(self._data) - set(upstream_dataset))
-        unify.append_to_dataset_from_dictionary(self._name, unique_local_data)
+        if dataset_exists_upstream:
+            upstream_dataset = unify.download_dataset(self._name, api_key=self._api_key)
+            unique_local_data = list(set(self._data) - set(upstream_dataset))
+            unify.add_prompt(self._name, unique_local_data)
+        else:
+            unique_local_data = [entry.dict() for entry in self._data]
+            unify.upload_dataset_from_dictionary(self._name, unique_local_data)
         if self._auto_sync in (True, "both", "download_only"):
             self.download()
 
