@@ -68,6 +68,11 @@ class _FormattedBaseModel(_Formatted, BaseModel):
     def __str__(self) -> str:
         return self._repr(self._prune())
 
+    def __rich_repr__(self):
+        pruned = self._prune()
+        for k, v in pruned.dict().items():
+            yield k, v
+
 
 class Prompt(_FormattedBaseModel):
     messages: Optional[List[ChatCompletionMessageParam]] = None
