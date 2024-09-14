@@ -10,7 +10,8 @@ from .utils.helpers import _validate_api_key, _dict_aligns_with_pydantic
 class Dataset(_Formatted):
     def __init__(
         self,
-        data: Union[str, List[Union[str, Dict, Prompt, DatasetEntry]]],
+        data: Union[str, Dict, Prompt, DatasetEntry,
+                    List[Union[str, Dict, Prompt, DatasetEntry]]],
         *,
         name: str = None,
         auto_sync: Union[bool, str] = False,
@@ -20,9 +21,10 @@ class Dataset(_Formatted):
         Initialize a local dataset of LLM queries.
 
         Args:
-            data: The data for populating the dataset. This can either can a string
-            specifying an upstream dataset, a list of user messages, a list of full
-            queries, or a list of dicts of queries alongside any extra fields.
+            data: The data for populating the dataset. This can either can a list of
+            user messages, a list of full queries, or a list of dicts of queries
+            alongside any extra fields. Individual items in any of the formats listed
+            above will also be converted to lists and processed automatically.
 
             name: The name of the dataset.
 
@@ -41,13 +43,10 @@ class Dataset(_Formatted):
             UnifyError: If the API key is missing.
         """
         self._name = name
-        if isinstance(data, str):
-            self._data = unify.download_dataset(name, api_key=api_key)
-        else:
-            assert isinstance(data, list),\
-                "data must either be a string representing the dataset name, " \
-                "or a list of messages, prompts or dicts"
-            assert len(data) != 0, "data cannot be an empty list"
+        if isinstance(data, tuple):
+            data = list(data)
+        elif not isinstance(data, list):
+            data = [data]
         if isinstance(data[0], str):
             self._data =\
                 [DatasetEntry(prompt=Prompt(
@@ -63,6 +62,9 @@ class Dataset(_Formatted):
         elif isinstance(data[0], dict) and \
                 _dict_aligns_with_pydantic(data[0], DatasetEntry):
             self._data = self._data = [DatasetEntry(**dct) for dct in data]
+        else:
+            raise Exception("input {} with entries of type {} does not align with "
+                            "expected input types.".format(data, type(data[0])))
         self._api_key = _validate_api_key(api_key)
         self._auto_sync_flag = auto_sync
         self._auto_sync()
