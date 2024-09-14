@@ -64,8 +64,8 @@ class Dataset(_Formatted):
                 _dict_aligns_with_pydantic(data[0], DatasetEntry):
             self._data = self._data = [DatasetEntry(**dct) for dct in data]
         self._api_key = _validate_api_key(api_key)
-        self._auto_sync = auto_sync
-        self.sync()
+        self._auto_sync_flag = auto_sync
+        self._auto_sync()
 
     @property
     def name(self) -> str:
@@ -131,7 +131,7 @@ class Dataset(_Formatted):
         else:
             unique_local_data = [entry.dict() for entry in self._data]
             unify.upload_dataset_from_dictionary(self._name, unique_local_data)
-        if self._auto_sync in (True, "both", "download_only"):
+        if self._auto_sync_flag in (True, "both", "download_only"):
             self.download()
 
     def download(self, overwrite=False):
@@ -151,7 +151,13 @@ class Dataset(_Formatted):
         upstream_dataset = unify.download_dataset(self._name, api_key=self._api_key)
         unique_upstream_data = list(set(upstream_dataset) - set(self._data))
         self._data += unique_upstream_data
-        if self._auto_sync in (True, "both", "upload_only"):
+        if self._auto_sync_flag in (True, "both", "upload_only"):
+            self.upload()
+
+    def _auto_sync(self):
+        if self._auto_sync_flag in (True, "both", "download_only"):
+            self.download()
+        if self._auto_sync_flag in (True, "both", "upload_only"):
             self.upload()
 
     def sync(self):
@@ -159,10 +165,8 @@ class Dataset(_Formatted):
         Synchronize the dataset in both directions, downloading any values missing
         locally, and uploading any values missing from upstream in the account.
         """
-        if self._auto_sync in [True, "both", "download_only"]:
-            self.download()
-        if self._auto_sync in [True, "both", "upload_only"]:
-            self.upload()
+        self.download()
+        self.upload()
 
     def upstream_diff(self):
         """
@@ -182,7 +186,7 @@ class Dataset(_Formatted):
             "The following {} queries are stored upstream but not locally\n: "
             "{}".format(len(unique_local_data), unique_local_data)
         )
-        self.sync()
+        self._auto_sync()
 
     def add(self, other: Dataset):
         """
@@ -193,7 +197,7 @@ class Dataset(_Formatted):
             other: The other dataset being added to this one.
         """
         data = list(dict.fromkeys(self._data + other._data))
-        return Dataset(data=data, auto_sync=self._auto_sync, api_key=self._api_key)
+        return Dataset(data=data, auto_sync=self._auto_sync_flag, api_key=self._api_key)
 
     def sub(self, other: Dataset):
         """
@@ -210,7 +214,7 @@ class Dataset(_Formatted):
             "B are also present in dataset A"
         )
         data = [item for item in self._data if item not in other]
-        return Dataset(data=data, auto_sync=self._auto_sync, api_key=self._api_key)
+        return Dataset(data=data, auto_sync=self._auto_sync_flag, api_key=self._api_key)
 
     def __iadd__(self, other):
         """
@@ -221,7 +225,7 @@ class Dataset(_Formatted):
             other: The other dataset being added to this one.
         """
         self._data = list(dict.fromkeys(self._data + other._data))
-        self.sync()
+        self._auto_sync()
         return self
 
     def __isub__(self, other):
@@ -239,7 +243,7 @@ class Dataset(_Formatted):
             "B are also present in dataset A"
         )
         self._data = [item for item in self._data if item not in other]
-        self.sync()
+        self._auto_sync()
         return self
 
     def __add__(self, other):
@@ -249,11 +253,14 @@ class Dataset(_Formatted):
         return self.sub(other)
 
     def __iter__(self):
+        self._auto_sync()
         for x in self._data:
             yield x
 
     def __getitem__(self, item):
+        self._auto_sync()
         return self._data[item]
 
     def __rich_repr__(self):
+        self._auto_sync()
         yield self._data
