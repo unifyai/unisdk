@@ -97,7 +97,6 @@ class Dataset(_Formatted):
             UnifyError: If the API key is missing.
         """
         data = unify.download_dataset(name, api_key=api_key)
-        data = [unify.DatasetEntry(**item) for item in data]
         return Dataset(data, name=name, auto_sync=auto_sync, api_key=api_key)
 
     def _assert_name_exists(self):
