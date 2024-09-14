@@ -267,9 +267,17 @@ class Dataset(_Formatted):
                                    List[Union[str, Dict, Prompt, DatasetEntry]]]):
         return self.add(other)
 
+    def __radd__(self, other: Union[Dataset, str, Dict, Prompt, DatasetEntry,
+                                    List[Union[str, Dict, Prompt, DatasetEntry]]]):
+        return Dataset(other).add(self)
+
     def __sub__(self, other: Union[Dataset, str, Dict, Prompt, DatasetEntry,
                                    List[Union[str, Dict, Prompt, DatasetEntry]]]):
         return self.sub(other)
+
+    def __rsub__(self, other: Union[Dataset, str, Dict, Prompt, DatasetEntry,
+                                    List[Union[str, Dict, Prompt, DatasetEntry]]]):
+        return Dataset(other).sub(self)
 
     def __iter__(self):
         self._auto_sync()
