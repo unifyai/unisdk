@@ -70,7 +70,9 @@ class _FormattedBaseModel(_Formatted, BaseModel):
 
     def _prune(self):
         dct = self._prune_dict(self.dict())
-        fields = {**self.model_fields, **self.model_extra}
+        fields = self.model_fields
+        if self.model_extra is not None:
+            fields = {**fields, **self.model_extra}
         config = {k: (self._prune_pydantic(self._annotation(fields[k]), v),
                       self._default(fields[k])) for k, v in dct.items()}
         return create_model(self.__class__.__name__, **config)(**dct)
