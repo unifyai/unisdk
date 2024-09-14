@@ -112,3 +112,6 @@ class Prompt(_FormattedBaseModel):
 
 class DatasetEntry(_FormattedBaseModel, extra=Extra.allow):
     prompt: Prompt
+
+    def __hash__(self):
+        return hash(str(self))

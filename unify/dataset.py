@@ -180,7 +180,7 @@ class Dataset(_Formatted):
         Args:
             other: The other dataset being added to this one.
         """
-        data = list(set(self._data + other))
+        data = list(dict.fromkeys(self._data + other._data))
         return Dataset(data=data, auto_sync=self._auto_sync, api_key=self._api_key)
 
     def sub(self, other: Dataset):
