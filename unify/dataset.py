@@ -67,6 +67,13 @@ class Dataset(_Formatted):
         self._auto_sync = auto_sync
         self.sync()
 
+    @property
+    def name(self) -> str:
+        return self._name
+
+    def set_name(self, name) -> None:
+        self._name = name
+
     @staticmethod
     def from_upstream(
         name: str,
