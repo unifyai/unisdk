@@ -178,3 +178,54 @@ class TestDatasetCombining(unittest.TestCase):
         self.assertEqual(dataset[0].prompt.messages[0]["content"], "a")
         self.assertEqual(dataset[1].prompt.messages[0]["content"], "b")
         self.assertEqual(dataset[2].prompt.messages[0]["content"], "c")
+
+
+class TestDatasetTrimming(unittest.TestCase):
+
+    def test_sub_datasets(self) -> None:
+        msgs = ["a", "b", "c", "d"]
+        dataset1 = unify.Dataset(msgs)
+        dataset2 = unify.Dataset(msgs[2:])
+        dataset = dataset1 - dataset2
+        self.assertEqual(len(dataset), 2)
+        for datum, msg in zip(dataset, msgs[0:2]):
+            self.assertEqual(datum.prompt.messages[0]["content"], msg)
+
+    def test_sub_datasets_w_non_overlap(self) -> None:
+        msgs1 = ["a", "b"]
+        msgs2 = ["b", "c"]
+        dataset1 = unify.Dataset(msgs1)
+        dataset2 = unify.Dataset(msgs2)
+        with self.assertRaises(AssertionError):
+            dataset1 - dataset2
+
+    def test_dataset_inplace_subtraction(self) -> None:
+        msgs = ["a", "b", "c", "d"]
+        dataset = unify.Dataset(msgs)
+        did = id(dataset)
+        dataset2 = unify.Dataset(msgs[2:])
+        dataset -= dataset2
+        self.assertEqual(did, id(dataset))
+        self.assertEqual(len(dataset), 2)
+        for datum, msg in zip(dataset, msgs[0:2]):
+            self.assertEqual(datum.prompt.messages[0]["content"], msg)
+
+    def test_dataset_single_item_subtraction(self) -> None:
+        dataset = unify.Dataset(["a", "b"]) - "b"
+        self.assertEqual(len(dataset), 1)
+        self.assertEqual(dataset[0].prompt.messages[0]["content"], "a")
+
+    def test_dataset_reverse_subtraction(self) -> None:
+        dataset = ["a", "b"] - unify.Dataset("b")
+        self.assertEqual(len(dataset), 1)
+        self.assertEqual(dataset[0].prompt.messages[0]["content"], "a")
+
+    def test_dataset_from_prompt_subtraction(self) -> None:
+        dataset = unify.Prompt("b") + unify.Prompt("a") - unify.Prompt("b")
+        self.assertEqual(len(dataset), 1)
+        self.assertEqual(dataset[0].prompt.messages[0]["content"], "a")
+
+    def test_dataset_from_datum_subtraction(self) -> None:
+        dataset = unify.Datum("b") + unify.Datum("a") - unify.Datum("b")
+        self.assertEqual(len(dataset), 1)
+        self.assertEqual(dataset[0].prompt.messages[0]["content"], "a")
