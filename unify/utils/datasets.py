@@ -3,7 +3,7 @@ import requests
 from typing import List, Dict, Optional, Union
 
 from unify import BASE_URL
-from unify.types import DatasetEntry
+from unify.types import Datum
 from .helpers import _validate_api_key, _res_to_list
 
 
@@ -71,7 +71,7 @@ def upload_dataset_from_dictionary(
 
 def download_dataset(
     name: str, path: Optional[str] = None, api_key: Optional[str] = None
-) -> Union[List[DatasetEntry], None]:
+) -> Union[List[Datum], None]:
     """
     Downloads a dataset from the platform.
 
@@ -101,7 +101,7 @@ def download_dataset(
             f.write("\n".join([json.dumps(d) for d in json.loads(response.text)]))
             return None
     ret = json.loads(response.text)
-    return [DatasetEntry(
+    return [Datum(
         **{k: v for k, v in item.items() if k not in ("id", "num_tokens", "timestamp")}
     ) for item in ret]
 

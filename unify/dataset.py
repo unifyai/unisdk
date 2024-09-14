@@ -3,15 +3,15 @@ from typing import List, Dict, Union, Optional
 
 import unify
 from unify.types import _Formatted
-from unify.types import Prompt, DatasetEntry
+from unify.types import Prompt, Datum
 from .utils.helpers import _validate_api_key, _dict_aligns_with_pydantic
 
 
 class Dataset(_Formatted):
     def __init__(
         self,
-        data: Union[str, Dict, Prompt, DatasetEntry,
-                    List[Union[str, Dict, Prompt, DatasetEntry]]],
+        data: Union[str, Dict, Prompt, Datum,
+                    List[Union[str, Dict, Prompt, Datum]]],
         *,
         name: str = None,
         auto_sync: Union[bool, str] = False,
@@ -49,19 +49,19 @@ class Dataset(_Formatted):
             data = [data]
         if isinstance(data[0], str):
             self._data =\
-                [DatasetEntry(prompt=Prompt(
+                [Datum(prompt=Prompt(
                     messages=[{"role": "user", "content": usr_msg}]
                 ))
                     for usr_msg in data]
         elif isinstance(data[0], Prompt):
-            self._data = [DatasetEntry(prompt=prompt) for prompt in data]
+            self._data = [Datum(prompt=prompt) for prompt in data]
         elif isinstance(data[0], dict) and _dict_aligns_with_pydantic(data[0], Prompt):
-            self._data = [DatasetEntry(prompt=Prompt(**dct)) for dct in data]
-        elif isinstance(data[0], DatasetEntry):
+            self._data = [Datum(prompt=Prompt(**dct)) for dct in data]
+        elif isinstance(data[0], Datum):
             self._data = data
         elif isinstance(data[0], dict) and \
-                _dict_aligns_with_pydantic(data[0], DatasetEntry):
-            self._data = self._data = [DatasetEntry(**dct) for dct in data]
+                _dict_aligns_with_pydantic(data[0], Datum):
+            self._data = self._data = [Datum(**dct) for dct in data]
         else:
             raise Exception("input {} with entries of type {} does not align with "
                             "expected input types.".format(data, type(data[0])))
@@ -197,8 +197,8 @@ class Dataset(_Formatted):
         )
         self._auto_sync()
 
-    def add(self, other: Union[Dataset, str, Dict, Prompt, DatasetEntry,
-                               List[Union[str, Dict, Prompt, DatasetEntry]]]):
+    def add(self, other: Union[Dataset, str, Dict, Prompt, Datum,
+                               List[Union[str, Dict, Prompt, Datum]]]):
         """
         Adds another dataset to this one, return a new Dataset instance, with this
         new dataset receiving all unique queries from the other added dataset.
@@ -210,8 +210,8 @@ class Dataset(_Formatted):
         data = list(dict.fromkeys(self._data + other._data))
         return Dataset(data=data, auto_sync=self._auto_sync_flag, api_key=self._api_key)
 
-    def sub(self, other: Union[Dataset, str, Dict, Prompt, DatasetEntry,
-                               List[Union[str, Dict, Prompt, DatasetEntry]]]):
+    def sub(self, other: Union[Dataset, str, Dict, Prompt, Datum,
+                               List[Union[str, Dict, Prompt, Datum]]]):
         """
         Subtracts another dataset from this one, return a new Dataset instance, with
         this new dataset losing all queries from the other subtracted dataset.
@@ -229,8 +229,8 @@ class Dataset(_Formatted):
         data = [item for item in self._data if item not in other]
         return Dataset(data=data, auto_sync=self._auto_sync_flag, api_key=self._api_key)
 
-    def __iadd__(self, other: Union[Dataset, str, Dict, Prompt, DatasetEntry,
-                                    List[Union[str, Dict, Prompt, DatasetEntry]]]):
+    def __iadd__(self, other: Union[Dataset, str, Dict, Prompt, Datum,
+                                    List[Union[str, Dict, Prompt, Datum]]]):
         """
         Adds another dataset to this one, with this dataset receiving all unique queries
         from the other added dataset.
@@ -243,8 +243,8 @@ class Dataset(_Formatted):
         self._auto_sync()
         return self
 
-    def __isub__(self, other: Union[Dataset, str, Dict, Prompt, DatasetEntry,
-                                    List[Union[str, Dict, Prompt, DatasetEntry]]]):
+    def __isub__(self, other: Union[Dataset, str, Dict, Prompt, Datum,
+                                    List[Union[str, Dict, Prompt, Datum]]]):
         """
         Subtracts another dataset from this one, with this dataset losing all queries
         from the other subtracted dataset.
@@ -263,20 +263,20 @@ class Dataset(_Formatted):
         self._auto_sync()
         return self
 
-    def __add__(self, other: Union[Dataset, str, Dict, Prompt, DatasetEntry,
-                                   List[Union[str, Dict, Prompt, DatasetEntry]]]):
+    def __add__(self, other: Union[Dataset, str, Dict, Prompt, Datum,
+                                   List[Union[str, Dict, Prompt, Datum]]]):
         return self.add(other)
 
-    def __radd__(self, other: Union[Dataset, str, Dict, Prompt, DatasetEntry,
-                                    List[Union[str, Dict, Prompt, DatasetEntry]]]):
+    def __radd__(self, other: Union[Dataset, str, Dict, Prompt, Datum,
+                                    List[Union[str, Dict, Prompt, Datum]]]):
         return Dataset(other).add(self)
 
-    def __sub__(self, other: Union[Dataset, str, Dict, Prompt, DatasetEntry,
-                                   List[Union[str, Dict, Prompt, DatasetEntry]]]):
+    def __sub__(self, other: Union[Dataset, str, Dict, Prompt, Datum,
+                                   List[Union[str, Dict, Prompt, Datum]]]):
         return self.sub(other)
 
-    def __rsub__(self, other: Union[Dataset, str, Dict, Prompt, DatasetEntry,
-                                    List[Union[str, Dict, Prompt, DatasetEntry]]]):
+    def __rsub__(self, other: Union[Dataset, str, Dict, Prompt, Datum,
+                                    List[Union[str, Dict, Prompt, Datum]]]):
         return Dataset(other).sub(self)
 
     def __iter__(self):

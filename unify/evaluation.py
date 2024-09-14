@@ -5,7 +5,7 @@ from typing import Union, Optional
 from openai.types.chat.chat_completion import ChatCompletion
 
 from unify.agent import Agent
-from unify.types import DatasetEntry
+from unify.types import Datum
 from unify.dataset import Dataset
 from unify.evaluator import Evaluator
 from .utils.helpers import _validate_api_key
@@ -48,7 +48,7 @@ class Evaluation:
 
     def add_result(
             self,
-            dataset_entry: DatasetEntry,
+            dataset_entry: Datum,
             score: Enum,
             response: Optional[ChatCompletion] = None
     ):

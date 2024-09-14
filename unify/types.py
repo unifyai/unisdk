@@ -120,7 +120,7 @@ class Prompt(_FormattedBaseModel):
         return hash(str(self))
 
 
-class DatasetEntry(_FormattedBaseModel, extra=Extra.allow):
+class Datum(_FormattedBaseModel, extra=Extra.allow):
     prompt: Prompt
 
     def __init__(self, *args, **kwargs):
