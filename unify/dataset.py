@@ -284,6 +284,12 @@ class Dataset(_Formatted):
         for x in self._data:
             yield x
 
+    def __contains__(self, item):
+        item = item if isinstance(item, Dataset) else Dataset(item)
+        this_set = set(self._data)
+        combined_set = set(self._data + item._data)
+        return len(this_set) == len(combined_set)
+
     def __len__(self):
         return len(self._data)
 
