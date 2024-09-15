@@ -334,9 +334,10 @@ class TestDatasetDownloading(unittest.TestCase):
             unify.delete_dataset("test_dataset")
         msgs = ("a", "b", "c")
         answers = ("A", "B", "C")
-        data = [unify.Datum(msg, ref_answers=ans) for msg, ans in zip(msgs, answers)]
+        data = [unify.Datum(msg, ref_answer=ans) for msg, ans in zip(msgs, answers)]
         dataset = unify.Dataset(data, name="test_dataset")
         dataset.upload()
+        dataset = unify.Dataset.from_upstream("test_dataset")
         for i, (msg, ans) in enumerate(zip(msgs, answers)):
             self.assertEqual(dataset[i].prompt.messages[0]["content"], msg)
             self.assertEqual(dataset[i].ref_answer, ans)
