@@ -189,6 +189,8 @@ class Dataset(_Formatted):
         Returns:
             This dataset, useful for chaining methods.
         """
+        if self._auto_sync_flag == "local_mirrors_upstream":
+            raise Exception("upload not permitted when local mirrors upstream")
         self._assert_name_exists()
         dataset_exists_upstream = self._name in unify.list_datasets(self._api_key)
         if overwrite:
@@ -237,6 +239,8 @@ class Dataset(_Formatted):
         Returns:
             This dataset after the in-place download, useful for chaining methods.
         """
+        if self._auto_sync_flag == "upstream_mirrors_local":
+            raise Exception("download not permitted when upstream mirrors local")
         self._assert_name_exists()
         if overwrite:
             self._data = unify.download_dataset(self._name, api_key=self._api_key)
@@ -353,6 +357,8 @@ class Dataset(_Formatted):
         Returns:
             This dataset following the in-place addition.
         """
+        if self._auto_sync_flag == "local_mirrors_upstream":
+            raise Exception("Adding entries not permitted when local mirrors upstream")
         other = other if isinstance(other, Dataset) else Dataset(other)
         self._data = list(dict.fromkeys(self._data + other._data))
         self._auto_sync()
@@ -370,6 +376,8 @@ class Dataset(_Formatted):
         Returns:
             This dataset following the in-place subtraction.
         """
+        if self._auto_sync_flag == "local_mirrors_upstream":
+            raise Exception("Adding entries not permitted when local mirrors upstream")
         other = other if isinstance(other, Dataset) else Dataset(other)
         assert other in self, (
             "cannot subtract dataset B from dataset A unless all queries of dataset "
