@@ -758,6 +758,17 @@ class _Client(ABC):
         """
         self._extra_body = value
 
+    def set_default_prompt(self, value: Prompt) -> None:
+        """
+        Set the default prompt.  # noqa: DAR101.
+
+        Args:
+              The default prompt.
+        """
+        for f in value.model_fields:
+            if hasattr(self, f):
+                getattr(self, "set_" + f)(getattr(value, f))
+
     # Generate #
     # ---------#
 
