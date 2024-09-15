@@ -136,11 +136,11 @@ class Dataset(_Formatted):
             return
         if dataset_exists_upstream:
             upstream_dataset = unify.download_dataset(self._name, api_key=self._api_key)
-            unique_local_data = list(set(self._data) - set(upstream_dataset))
-            unify.add_prompt(self._name, unique_local_data)
+            unique_local = [item for item in self._data if item not in upstream_dataset]
+            unify.add_prompt(self._name, unique_local)
         else:
-            unique_local_data = [entry.dict() for entry in self._data]
-            unify.upload_dataset_from_dictionary(self._name, unique_local_data)
+            unique_local = [entry.dict() for entry in self._data]
+            unify.upload_dataset_from_dictionary(self._name, unique_local)
         if self._auto_sync_flag in (True, "both", "download_only"):
             self.download()
 
@@ -159,8 +159,8 @@ class Dataset(_Formatted):
             self._data = unify.download_dataset(self._name, api_key=self._api_key)
             return
         upstream_dataset = unify.download_dataset(self._name, api_key=self._api_key)
-        unique_upstream_data = list(set(upstream_dataset) - set(self._data))
-        self._data += unique_upstream_data
+        unique_upstream = [item for item in upstream_dataset if item not in self._data]
+        self._data += unique_upstream
         if self._auto_sync_flag in (True, "both", "upload_only"):
             self.upload()
 
@@ -184,17 +184,15 @@ class Dataset(_Formatted):
         """
         self._assert_name_exists()
         upstream_dataset = unify.download_dataset(self._name, api_key=self._api_key)
-        upstream_set = set(upstream_dataset)
-        local_set = set(self._data)
-        unique_upstream_data = upstream_set - local_set
+        unique_upstream = [item for item in upstream_dataset if item not in self._data]
         print(
             "The following {} queries are stored upstream but not locally\n: "
-            "{}".format(len(unique_upstream_data), unique_upstream_data)
+            "{}".format(len(unique_upstream), unique_upstream)
         )
-        unique_local_data = local_set - upstream_set
+        unique_local = [item for item in self._data if item not in upstream_dataset]
         print(
             "The following {} queries are stored upstream but not locally\n: "
-            "{}".format(len(unique_local_data), unique_local_data)
+            "{}".format(len(unique_local), unique_local)
         )
         self._auto_sync()
 
@@ -221,9 +219,7 @@ class Dataset(_Formatted):
             other: The other dataset being added to this one.
         """
         other = other if isinstance(other, Dataset) else Dataset(other)
-        self_set = set(self._data)
-        other_set = set(other)
-        assert other_set <= self_set, (
+        assert other in self, (
             "cannot subtract dataset B from dataset A unless all queries of dataset "
             "B are also present in dataset A"
         )
@@ -254,9 +250,7 @@ class Dataset(_Formatted):
             other: The other dataset being added to this one.
         """
         other = other if isinstance(other, Dataset) else Dataset(other)
-        self_set = set(self._data)
-        other_set = set(other)
-        assert other_set <= self_set, (
+        assert other in self, (
             "cannot subtract dataset B from dataset A unless all queries of dataset "
             "B are also present in dataset A"
         )
