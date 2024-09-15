@@ -361,7 +361,7 @@ class Dataset(_Formatted):
             This dataset following the in-place addition.
         """
         if self._auto_sync_flag == "local_mirrors_upstream":
-            raise Exception("Adding entries not permitted when local mirrors upstream")
+            raise TypeError("Adding entries not permitted when local mirrors upstream")
         other = other if isinstance(other, Dataset) else Dataset(other)
         self._data = list(dict.fromkeys(self._data + other._data))
         self._auto_sync()
@@ -383,7 +383,7 @@ class Dataset(_Formatted):
             This dataset following the in-place subtraction.
         """
         if self._auto_sync_flag == "local_mirrors_upstream":
-            raise Exception("Adding entries not permitted when local mirrors upstream")
+            raise TypeError("Adding entries not permitted when local mirrors upstream")
         other = other if isinstance(other, Dataset) else Dataset(other)
         assert other in self, (
             "cannot subtract dataset B from dataset A unless all queries of dataset "
