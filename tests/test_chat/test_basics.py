@@ -3,6 +3,7 @@ import unittest
 from types import AsyncGeneratorType, GeneratorType
 from unittest.mock import MagicMock, patch
 
+from unify.types import Prompt
 from unify import AsyncUnify, Unify
 
 
@@ -44,13 +45,25 @@ class TestChatBasics(unittest.TestCase):
         result = client.generate(user_message="hello", stream=True)
         self.assertIsInstance(result, GeneratorType)
 
-    def test_default_prompt_handled_correctly(self) -> None:
+    def test_default_params_handled_correctly(self) -> None:
         client = Unify(
             api_key=self.valid_api_key, endpoint="gpt-4o@openai", n=2,
             message_content_only=False,
         )
         result = client.generate(user_message="hello")
         self.assertEqual(len(result.choices), 2)
+
+    def test_default_prompt_handled_correctly(self) -> None:
+        client = Unify(
+            api_key=self.valid_api_key, endpoint="gpt-4o@openai", n=2,
+            temperature=0.5
+        )
+        self.assertEqual(client.default_prompt.temperature, 0.5)
+        self.assertEqual(client.default_prompt.n, 2)
+        prompt = Prompt(temperature=0.4)
+        client.set_default_prompt(prompt)
+        self.assertEqual(client.temperature, 0.4)
+        self.assertIs(client.n, None)
 
 
 class TestAsyncUnifyBasics(unittest.IsolatedAsyncioTestCase):
@@ -91,13 +104,25 @@ class TestAsyncUnifyBasics(unittest.IsolatedAsyncioTestCase):
         result = await async_client.generate(user_message="hello", stream=True)
         self.assertIsInstance(result, AsyncGeneratorType)
 
-    async def test_default_prompt_handled_correctly(self) -> None:
+    async def test_default_params_handled_correctly(self) -> None:
         async_client = AsyncUnify(
             api_key=self.valid_api_key, endpoint="gpt-4o@openai", n=2,
             message_content_only=False,
         )
         result = await async_client.generate(user_message="hello")
         self.assertEqual(len(result.choices), 2)
+
+    async def test_default_prompt_handled_correctly(self) -> None:
+        client = AsyncUnify(
+            api_key=self.valid_api_key, endpoint="gpt-4o@openai", n=2,
+            temperature=0.5
+        )
+        self.assertEqual(client.default_prompt.temperature, 0.5)
+        self.assertEqual(client.default_prompt.n, 2)
+        prompt = Prompt(temperature=0.4)
+        client.set_default_prompt(prompt)
+        self.assertEqual(client.temperature, 0.4)
+        self.assertIs(client.n, None)
 
 
 if __name__ == "__main__":
