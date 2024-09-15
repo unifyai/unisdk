@@ -4,7 +4,7 @@ import rich.repr
 from io import StringIO
 from rich.console import Console
 from pydantic import BaseModel, Extra
-from typing import Optional, Union, List, Dict, Mapping
+from typing import Optional, Union, Tuple, List, Dict, Mapping
 from openai.types.chat import (
     ChatCompletionToolParam,
     ChatCompletionToolChoiceOptionParam,
@@ -114,8 +114,19 @@ class Prompt(_FormattedBaseModel):
     extra_body: Optional[Body] = None
 
     def __init__(self, *args, **kwargs):
-        if args and isinstance(args[0], str):
-            kwargs["messages"] = [{'content': args[0], 'role': 'user'}]
+        if "messages" not in kwargs:
+            kwargs["messages"] = list()
+        if "system_message" in kwargs:
+            kwargs["messages"] = \
+                [{"content": kwargs["system_message"], "role": "system"}] + \
+                kwargs["messages"]
+            del kwargs["system_message"]
+        if "user_message" in kwargs:
+            assert not args, "If user_message is passed, positional args must be empty."
+            kwargs["messages"] += [{"content": kwargs["user_message"], "role": "user"}]
+            del kwargs["user_message"]
+        elif args and isinstance(args[0], str):
+            kwargs["messages"] += [{"content": args[0], "role": "user"}]
         super().__init__(**kwargs)
 
     def __add__(self, other):
@@ -164,3 +175,15 @@ class Datum(_FormattedBaseModel, extra=Extra.allow):
 
     def __hash__(self):
         return hash(str(self))
+
+
+class Score(_FormattedBaseModel, abc.ABC):
+    score: Tuple[float, str]
+
+    def __init__(self, value: float):
+        super().__init__(score=(value, self.config[value]))
+
+    @property
+    @abc.abstractmethod
+    def config(self) -> Dict[float, str]:
+        raise NotImplementedError
