@@ -213,8 +213,9 @@ def delete_data(
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    if isinstance(data, dict) or \
-            (isinstance(data, list) and data and isinstance(data[0], dict)):
+    if isinstance(data, list) and not data:
+        return {"info": "data argument was empty. Nothing to delete."}
+    if isinstance(data, dict) or (isinstance(data, list) and isinstance(data[0], dict)):
         # ToDo: remove this logic once delete-by-value is implemented in the REST API
         upstream_data = download_dataset(name, raw_return=True, api_key=api_key)
         upstream_data_pruned = [
