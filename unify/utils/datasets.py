@@ -202,18 +202,33 @@ def add_data(
 
 def delete_data(
         name: str,
-        data_ids: Union[int, List[int]],
+        data: Union[int, List[int], Dict, List[Dict]],
         api_key: Optional[str] = None
 ):
     """
-    Delete data from a dataset
+    Delete data from a dataset, either by id or by value
     """
     api_key = _validate_api_key(api_key)
     headers = {
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    params = {"name": name, "prompt_id": data_ids}
+    if isinstance(data, dict) or \
+            (isinstance(data, list) and data and isinstance(data[0], dict)):
+        # ToDo: remove this logic once delete-by-value is implemented in the REST API
+        upstream_data = download_dataset(name, raw_return=True, api_key=api_key)
+        upstream_data_pruned = [
+            {k: v for k, v in item.items()
+             if k not in ("id", "num_tokens", "timestamp")}
+            for item in upstream_data
+        ]
+        data_ids = [
+            d["id"] for d, dp in zip(upstream_data, upstream_data_pruned) if dp in data
+        ]
+        # ToDo end
+    else:
+        data_ids = data
+    params = {"name": name, "data_ids": data_ids}
     response = requests.delete(
         BASE_URL + "/dataset/data", headers=headers, params=params
     )
