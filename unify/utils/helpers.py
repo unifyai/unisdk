@@ -23,7 +23,7 @@ def _default(value: Any, default_value: Any) -> Any:
     return value if value is not None else default_value
 
 
-def _dict_aligns_with_pydantic(dict_in: Dict, pydantic_cls: BaseModel) -> bool:
+def _dict_aligns_with_pydantic(dict_in: Dict, pydantic_cls: type(BaseModel)) -> bool:
     try:
         pydantic_cls.model_validate(dict_in)
         return True
