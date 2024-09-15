@@ -34,9 +34,9 @@ class Dataset(_Formatted):
             will be bi-directional, if "upload" then all local changes will be
             uploaded to the upstream account without any downloads, if "download"
             then all upstream changes will be downloaded locally without any uploads.
-            If "upload_overwrite" then the upstream dataset will be anchored to the
+            If "upstream_mirrors_local" then the upstream dataset will be anchored to the
             local version at all times, and any other uploads outside the local dataset
-            will be overwritten. If "download_overwrite" then the local version will be
+            will be overwritten. If "local_mirrors_upstream" then the local version will be
             anchored to the upstream version at all times, and any local changes will be
             overwritten. If `False` or "neither" then no synchronization will be done
             automatically.
@@ -92,9 +92,9 @@ class Dataset(_Formatted):
         will be bi-directional, if "upload" then all local changes will be
         uploaded to the upstream account without any downloads, if "download"
         then all upstream changes will be downloaded locally without any uploads.
-        If "upload_overwrite" then the upstream dataset will be anchored to the
+        If "upstream_mirrors_local" then the upstream dataset will be anchored to the
         local version at all times, and any other uploads outside the local dataset
-        will be overwritten. If "download_overwrite" then the local version will be
+        will be overwritten. If "local_mirrors_upstream" then the local version will be
         anchored to the upstream version at all times, and any local changes will be
         overwritten. If `False` or "neither" then no synchronization will be done
         automatically.
@@ -126,9 +126,9 @@ class Dataset(_Formatted):
             will be bi-directional, if "upload" then all local changes will be
             uploaded to the upstream account without any downloads, if "download"
             then all upstream changes will be downloaded locally without any uploads.
-            If "upload_overwrite" then the upstream dataset will be anchored to the
+            If "upstream_mirrors_local" then the upstream dataset will be anchored to the
             local version at all times, and any other uploads outside the local dataset
-            will be overwritten. If "download_overwrite" then the local version will be
+            will be overwritten. If "local_mirrors_upstream" then the local version will be
             anchored to the upstream version at all times, and any local changes will be
             overwritten. If `False` or "neither" then no synchronization will be done
             automatically.
@@ -216,10 +216,10 @@ class Dataset(_Formatted):
             else:
                 unique_local = [entry.dict() for entry in self._data]
                 unify.upload_dataset_from_dictionary(self._name, unique_local)
-        if self._auto_sync_flag in (True, "both", "download", "download_overwrite"):
+        if self._auto_sync_flag in (True, "both", "download", "local_mirrors_upstream"):
             auto_sync_flag = self._auto_sync_flag
             self._auto_sync_flag = False
-            overwrite = True if auto_sync_flag == "download_overwrite" else False
+            overwrite = True if auto_sync_flag == "local_mirrors_upstream" else False
             self.download(overwrite=overwrite)
             self._auto_sync_flag = auto_sync_flag
         return self
@@ -246,25 +246,25 @@ class Dataset(_Formatted):
             )
             unique_local = [item for item in self._data if item not in upstream_dataset]
             self._data = upstream_dataset + unique_local
-        if self._auto_sync_flag in (True, "both", "upload", "upload_overwrite"):
+        if self._auto_sync_flag in (True, "both", "upload", "upstream_mirrors_local"):
             auto_sync_flag = self._auto_sync_flag
             self._auto_sync_flag = False
-            overwrite = True if auto_sync_flag == "upload_overwrite" else False
+            overwrite = True if auto_sync_flag == "upstream_mirrors_local" else False
             self.upload(overwrite=overwrite)
             self._auto_sync_flag = auto_sync_flag
         return self
 
     def _auto_sync(self) -> None:
-        if self._auto_sync_flag in (True, "both", "download", "download_overwrite"):
+        if self._auto_sync_flag in (True, "both", "download", "local_mirrors_upstream"):
             auto_sync_flag = self._auto_sync_flag
             self._auto_sync_flag = False
-            overwrite = True if auto_sync_flag == "download_overwrite" else False
+            overwrite = True if auto_sync_flag == "local_mirrors_upstream" else False
             self.download(overwrite=overwrite)
             self._auto_sync_flag = auto_sync_flag
-        if self._auto_sync_flag in (True, "both", "upload", "upload_overwrite"):
+        if self._auto_sync_flag in (True, "both", "upload", "upstream_mirrors_local"):
             auto_sync_flag = self._auto_sync_flag
             self._auto_sync_flag = False
-            overwrite = True if auto_sync_flag == "upload_overwrite" else False
+            overwrite = True if auto_sync_flag == "upstream_mirrors_local" else False
             self.upload(overwrite=overwrite)
             self._auto_sync_flag = auto_sync_flag
 
