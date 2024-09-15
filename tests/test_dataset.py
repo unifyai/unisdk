@@ -255,7 +255,7 @@ class UploadTesting:
 
 class TestDatasetUploading(unittest.TestCase):
 
-    def test_dataset_upload(self) -> None:
+    def test_dataset_first_upload(self) -> None:
         with UploadTesting():
             dataset = unify.Dataset(["a", "b", "c"], name="test_dataset")
             self.assertNotIn(dataset.name, unify.list_datasets())
@@ -272,6 +272,17 @@ class TestDatasetUploading(unittest.TestCase):
             dataset -= "c"
             dataset.upload(overwrite=True)
             self.assertEqual(len(unify.Dataset.from_upstream("test_dataset")), 2)
+
+    def test_dataset_upload_wo_overwrite(self):
+        with UploadTesting():
+            dataset = unify.Dataset(["a", "b", "c"], name="test_dataset")
+            self.assertNotIn(dataset.name, unify.list_datasets())
+            dataset.upload()
+            self.assertIn(dataset.name, unify.list_datasets())
+            self.assertEqual(len(unify.Dataset.from_upstream("test_dataset")), 3)
+            dataset += "d"
+            dataset.upload()
+            self.assertEqual(len(unify.Dataset.from_upstream("test_dataset")), 4)
 
 
 class DownloadTesting:
