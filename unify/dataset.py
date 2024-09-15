@@ -4,6 +4,7 @@ from typing import List, Dict, Union, Optional
 import unify
 from unify.types import _Formatted
 from unify.types import Prompt, Datum
+# noinspection PyProtectedMember
 from .utils.helpers import _validate_api_key, _dict_aligns_with_pydantic
 
 
@@ -160,8 +161,8 @@ class Dataset(_Formatted):
             self._data = unify.download_dataset(self._name, api_key=self._api_key)
             return
         upstream_dataset = unify.download_dataset(self._name, api_key=self._api_key)
-        unique_upstream = [item for item in upstream_dataset if item not in self._data]
-        self._data += unique_upstream
+        unique_local = [item for item in self._data if item not in upstream_dataset]
+        self._data = upstream_dataset + unique_local
         if self._auto_sync_flag in (True, "both", "upload_only"):
             self.upload()
 
