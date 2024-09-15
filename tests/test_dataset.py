@@ -416,3 +416,37 @@ class TestDatasetSync(unittest.TestCase):
             self.assertEqual(dataset[1].prompt.messages[0]["content"], "b")
             self.assertEqual(dataset[2].prompt.messages[0]["content"], "c")
             self.assertEqual(dataset[3].prompt.messages[0]["content"], "d")
+
+    def test_upstream_mirrors_local(self) -> None:
+        with DownloadTesting():
+            dataset = unify.Dataset.from_upstream(
+                "test_dataset", auto_sync="upstream_mirrors_local"
+            )
+            # data added upstream outside of the mirrored class
+            unify.add_data(
+                "test_dataset",
+                [unify.Datum("d").dict(), unify.Datum("e").dict()]
+            )
+            # these additions have been registered upstream
+            upstream_dataset = unify.Dataset.from_upstream("test_dataset")
+            self.assertEqual(len(upstream_dataset), 5)
+            self.assertEqual(upstream_dataset[0].prompt.messages[0]["content"], "a")
+            self.assertEqual(upstream_dataset[1].prompt.messages[0]["content"], "b")
+            self.assertEqual(upstream_dataset[2].prompt.messages[0]["content"], "c")
+            self.assertEqual(upstream_dataset[3].prompt.messages[0]["content"], "d")
+            self.assertEqual(upstream_dataset[4].prompt.messages[0]["content"], "e")
+            # engagement with the local dataset deletes these external upstream changes
+            dataset += "f"
+            # local dataset is a, b, c, f
+            self.assertEqual(len(dataset), 4)
+            self.assertEqual(dataset[0].prompt.messages[0]["content"], "a")
+            self.assertEqual(dataset[1].prompt.messages[0]["content"], "b")
+            self.assertEqual(dataset[2].prompt.messages[0]["content"], "c")
+            self.assertEqual(dataset[3].prompt.messages[0]["content"], "f")
+            # so is upstream
+            dataset = unify.Dataset.from_upstream("test_dataset")
+            self.assertEqual(len(dataset), 4)
+            self.assertEqual(dataset[0].prompt.messages[0]["content"], "a")
+            self.assertEqual(dataset[1].prompt.messages[0]["content"], "b")
+            self.assertEqual(dataset[2].prompt.messages[0]["content"], "c")
+            self.assertEqual(dataset[3].prompt.messages[0]["content"], "f")
