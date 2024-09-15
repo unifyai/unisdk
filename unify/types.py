@@ -181,6 +181,9 @@ class Score(_FormattedBaseModel, abc.ABC):
     score: Tuple[float, str]
 
     def __init__(self, value: float):
+        assert value in self.config,\
+            "value {} passed is not a valid value, " \
+            "based on the config for this Score class {}".format(value, self.config)
         super().__init__(score=(value, self.config[value]))
 
     @property
