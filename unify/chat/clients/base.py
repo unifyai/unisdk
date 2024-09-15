@@ -13,6 +13,7 @@ from typing import Mapping, Dict, List, Optional, Union, Iterable
 
 # local
 from unify import BASE_URL
+from unify.types import Prompt
 from unify.utils.helpers import _validate_api_key, _default
 
 
@@ -502,6 +503,19 @@ class _Client(ABC):
              The default extra body.
          """
         return self._extra_body
+
+    @property
+    def default_prompt(self) -> Prompt:
+        """
+        Get the default prompt, if set.
+
+        Returns:
+              The default prompt.
+        """
+        return Prompt(
+            **{f: getattr(self, f) for f in Prompt.model_fields if
+               hasattr(self, f) and getattr(self, f)}
+        )
 
     # Setters #
     # --------#
