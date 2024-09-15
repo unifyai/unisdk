@@ -31,10 +31,15 @@ class Dataset(_Formatted):
 
             auto_sync: Whether to automatically keep this dataset fully synchronized
             with the upstream variant at all times. If `True` or "both" then the sync
-            will be bi-directional, if "upload_only" then all local changes will be
-            uploaded to the upstream account without any downloads, if "download_only"
+            will be bi-directional, if "upload" then all local changes will be
+            uploaded to the upstream account without any downloads, if "download"
             then all upstream changes will be downloaded locally without any uploads.
-            If `False` or "neither" then no synchronization will be done automatically.
+            If "upload_overwrite" then the upstream dataset will be anchored to the
+            local version at all times, and any other uploads outside the local dataset
+            will be overwritten. If "download_overwrite" then the local version will be
+            anchored to the upstream version at all times, and any local changes will be
+            overwritten. If `False` or "neither" then no synchronization will be done
+            automatically.
 
             api_key: API key for accessing the Unify API. If None, it attempts to
             retrieve the API key from the environment variable UNIFY_KEY. Defaults to
@@ -81,7 +86,18 @@ class Dataset(_Formatted):
     @property
     def auto_sync(self) -> Union[bool, str]:
         """
-        Whether or not auto-sync is turned on
+        The auto-sync mode currently selected.
+        This dictates whether to automatically keep this dataset fully synchronized
+        with the upstream variant at all times. If `True` or "both" then the sync
+        will be bi-directional, if "upload" then all local changes will be
+        uploaded to the upstream account without any downloads, if "download"
+        then all upstream changes will be downloaded locally without any uploads.
+        If "upload_overwrite" then the upstream dataset will be anchored to the
+        local version at all times, and any other uploads outside the local dataset
+        will be overwritten. If "download_overwrite" then the local version will be
+        anchored to the upstream version at all times, and any local changes will be
+        overwritten. If `False` or "neither" then no synchronization will be done
+        automatically.
         """
         self._auto_sync()
         return self._auto_sync_flag
@@ -105,7 +121,17 @@ class Dataset(_Formatted):
         Set the value of the auto-sync flag.
 
         Args:
-            auto_sync: The value to set the auto-sync flag to.
+            auto_sync: Whether to automatically keep this dataset fully synchronized
+            with the upstream variant at all times. If `True` or "both" then the sync
+            will be bi-directional, if "upload" then all local changes will be
+            uploaded to the upstream account without any downloads, if "download"
+            then all upstream changes will be downloaded locally without any uploads.
+            If "upload_overwrite" then the upstream dataset will be anchored to the
+            local version at all times, and any other uploads outside the local dataset
+            will be overwritten. If "download_overwrite" then the local version will be
+            anchored to the upstream version at all times, and any local changes will be
+            overwritten. If `False` or "neither" then no synchronization will be done
+            automatically.
 
         Returns:
             This dataset, useful for chaining methods.
@@ -190,10 +216,11 @@ class Dataset(_Formatted):
             else:
                 unique_local = [entry.dict() for entry in self._data]
                 unify.upload_dataset_from_dictionary(self._name, unique_local)
-        if self._auto_sync_flag in (True, "both", "download_only"):
+        if self._auto_sync_flag in (True, "both", "download", "download_overwrite"):
             auto_sync_flag = self._auto_sync_flag
             self._auto_sync_flag = False
-            self.download()
+            overwrite = True if auto_sync_flag == "download_overwrite" else False
+            self.download(overwrite=overwrite)
             self._auto_sync_flag = auto_sync_flag
         return self
 
@@ -219,23 +246,26 @@ class Dataset(_Formatted):
             )
             unique_local = [item for item in self._data if item not in upstream_dataset]
             self._data = upstream_dataset + unique_local
-        if self._auto_sync_flag in (True, "both", "upload_only"):
+        if self._auto_sync_flag in (True, "both", "upload", "upload_overwrite"):
             auto_sync_flag = self._auto_sync_flag
             self._auto_sync_flag = False
-            self.upload()
+            overwrite = True if auto_sync_flag == "upload_overwrite" else False
+            self.upload(overwrite=overwrite)
             self._auto_sync_flag = auto_sync_flag
         return self
 
     def _auto_sync(self) -> None:
-        if self._auto_sync_flag in (True, "both", "download_only"):
+        if self._auto_sync_flag in (True, "both", "download", "download_overwrite"):
             auto_sync_flag = self._auto_sync_flag
             self._auto_sync_flag = False
-            self.download()
+            overwrite = True if auto_sync_flag == "download_overwrite" else False
+            self.download(overwrite=overwrite)
             self._auto_sync_flag = auto_sync_flag
-        if self._auto_sync_flag in (True, "both", "upload_only"):
+        if self._auto_sync_flag in (True, "both", "upload", "upload_overwrite"):
             auto_sync_flag = self._auto_sync_flag
             self._auto_sync_flag = False
-            self.upload()
+            overwrite = True if auto_sync_flag == "upload_overwrite" else False
+            self.upload(overwrite=overwrite)
             self._auto_sync_flag = auto_sync_flag
 
     def sync(self) -> Dataset:
