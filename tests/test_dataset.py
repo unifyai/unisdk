@@ -287,13 +287,26 @@ class DownloadTesting:
             unify.delete_dataset("test_dataset")
 
 
+# noinspection PyStatementEffect
 class TestDatasetDownloading(unittest.TestCase):
 
     def test_dataset_download(self) -> None:
         with DownloadTesting():
             self.assertIn("test_dataset", unify.list_datasets())
             dataset = unify.Dataset.from_upstream("test_dataset")
+            # noinspection DuplicatedCode
             self.assertEqual(len(dataset), 3)
             self.assertEqual(dataset[0].prompt.messages[0]["content"], "a")
             self.assertEqual(dataset[1].prompt.messages[0]["content"], "b")
             self.assertEqual(dataset[2].prompt.messages[0]["content"], "c")
+
+    def test_dataset_download_w_overwrite(self) -> None:
+        with DownloadTesting():
+            self.assertIn("test_dataset", unify.list_datasets())
+            dataset = unify.Dataset(["a", "b", "c", "d"], name="test_dataset")
+            self.assertEqual(len(dataset), 4)
+            self.assertEqual(dataset[3].prompt.messages[0]["content"], "d")
+            dataset.download(overwrite=True)
+            self.assertEqual(len(dataset), 3)
+            with self.assertRaises(IndexError):
+                dataset[3]
