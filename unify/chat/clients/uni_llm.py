@@ -340,6 +340,15 @@ class _UniLLMClient(_Client, abc.ABC):
         if self._model:
             self._endpoint = "@".join([self._model, value])
 
+    # Representation #
+    # ---------------#
+
+    def __repr__(self):
+        return "{}(endpoint={})".format(self.__class__.__name__, self._endpoint)
+
+    def __str__(self):
+        return "{}(endpoint={})".format(self.__class__.__name__, self._endpoint)
+
     # Abstract #
     # ---------#
 

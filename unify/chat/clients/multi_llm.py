@@ -206,6 +206,15 @@ class _MultiLLMClient(_Client, abc.ABC):
     def clients(self) -> Dict[str, _UniLLMClient]:
         return self._clients
 
+    # Representation #
+    # ---------------#
+
+    def __repr__(self):
+        return "{}(endpoints={})".format(self.__class__.__name__, self._endpoints)
+
+    def __str__(self):
+        return "{}(endpoints={})".format(self.__class__.__name__, self._endpoints)
+
 
 class MultiLLM(_MultiLLMClient):
 
