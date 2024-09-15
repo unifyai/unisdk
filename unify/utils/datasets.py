@@ -145,6 +145,7 @@ def rename_dataset(name: str, new_name: str, api_key: Optional[str] = None):
     response = requests.post(
         BASE_URL + "/dataset/rename", headers=headers, params=params
     )
+    response.raise_for_status()
     return response.json()
 
 
@@ -189,6 +190,7 @@ def add_data(
     response = requests.post(
         BASE_URL + "/dataset/add_data", headers=headers, json=body
     )
+    response.raise_for_status()
     return response.json()
 
 
@@ -209,4 +211,5 @@ def delete_data(
     response = requests.delete(
         BASE_URL + "/dataset/delete_data", headers=headers, params=params
     )
+    response.raise_for_status()
     return response.json()

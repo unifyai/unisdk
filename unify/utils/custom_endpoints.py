@@ -56,6 +56,7 @@ def create_custom_endpoint(
 
     return response.json()
 
+
 def delete_custom_endpoint(name: str, api_key: Optional[str] = None) -> Dict[str, str]:
     """
     Delete a custom endpoint.

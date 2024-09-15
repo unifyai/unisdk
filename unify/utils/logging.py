@@ -24,11 +24,9 @@ def get_query_tags(api_key: Optional[str] = None) -> List[str]:
     }
     url = f"{BASE_URL}/tags"
     response = requests.get(url, headers=headers)
+    response.raise_for_status()
 
-    if response.status_code == 200:
-        return response.json()
-    else:
-        return []
+    return response.json()
 
 
 def get_queries(
