@@ -83,7 +83,7 @@ class TestDatasetConstruction(unittest.TestCase):
 
 
 # noinspection PyStatementEffect
-class TestDatasetIndexing(unittest.TestCase):
+class TestDatasetManipulation(unittest.TestCase):
 
     def test_iterate_over_dataset(self) -> None:
         msgs = ["a", "b", "c"]
@@ -125,6 +125,13 @@ class TestDatasetIndexing(unittest.TestCase):
         self.assertNotIn("d", dataset1)
         dataset3 = unify.Dataset(["c", "d"])
         self.assertNotIn(dataset3, dataset1)
+
+    def test_dataset_one_liners(self) -> None:
+        dataset = ("a" + unify.Prompt("b")).add("c").set_name("my_dataset")
+        self.assertEqual(dataset.name, "my_dataset")
+        self.assertIn("a", dataset)
+        self.assertIn("b", dataset)
+        self.assertIn("c", dataset)
 
 
 class TestDatasetCombining(unittest.TestCase):
