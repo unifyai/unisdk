@@ -336,3 +336,14 @@ class TestDatasetSync(unittest.TestCase):
             self.assertEqual(dataset[0].prompt.messages[0]["content"], "a")
             self.assertEqual(dataset[1].prompt.messages[0]["content"], "b")
             self.assertEqual(dataset[2].prompt.messages[0]["content"], "c")
+
+    def test_sync_achieves_superset(self) -> None:
+        with DownloadTesting():
+            self.assertIn("test_dataset", unify.list_datasets())
+            dataset = unify.Dataset(["a", "b", "d"], name="test_dataset")
+            dataset.sync()
+            self.assertEqual(len(dataset), 4)
+            self.assertEqual(dataset[0].prompt.messages[0]["content"], "a")
+            self.assertEqual(dataset[1].prompt.messages[0]["content"], "b")
+            self.assertEqual(dataset[2].prompt.messages[0]["content"], "c")
+            self.assertEqual(dataset[3].prompt.messages[0]["content"], "d")
