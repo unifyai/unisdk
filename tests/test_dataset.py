@@ -329,6 +329,19 @@ class TestDatasetDownloading(unittest.TestCase):
             with self.assertRaises(IndexError):
                 dataset[3]
 
+    def test_dataset_download_w_extra_fields(self) -> None:
+        if "test_dataset" in unify.list_datasets():
+            unify.delete_dataset("test_dataset")
+        msgs = ("a", "b", "c")
+        answers = ("A", "B", "C")
+        data = [unify.Datum(msg, ref_answers=ans) for msg, ans in zip(msgs, answers)]
+        dataset = unify.Dataset(data, name="test_dataset")
+        dataset.upload()
+        for i, (msg, ans) in enumerate(zip(msgs, answers)):
+            self.assertEqual(dataset[i].prompt.messages[0]["content"], msg)
+            self.assertEqual(dataset[i].ref_answer, ans)
+        unify.delete_dataset("test_dataset")
+
 
 class TestDatasetSync(unittest.TestCase):
 
