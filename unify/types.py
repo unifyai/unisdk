@@ -9,6 +9,7 @@ from openai.types.chat import (
     ChatCompletionToolParam,
     ChatCompletionToolChoiceOptionParam,
     ChatCompletionMessageParam,
+    ChatCompletion as _ChatCompletion
 )
 from pydantic import create_model
 from pydantic._internal._model_construction import ModelMetaclass
@@ -151,6 +152,10 @@ class Prompt(_FormattedBaseModel):
 
     def __hash__(self):
         return hash(str(self))
+
+
+class ChatCompletion(_FormattedBaseModel, _ChatCompletion):
+    pass
 
 
 class Datum(_FormattedBaseModel, extra=Extra.allow):
