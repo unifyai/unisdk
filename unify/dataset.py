@@ -144,7 +144,10 @@ class Dataset(_Formatted):
             unique_local = [entry.dict() for entry in self._data]
             unify.upload_dataset_from_dictionary(self._name, unique_local)
         if self._auto_sync_flag in (True, "both", "download_only"):
+            auto_sync_flag = self._auto_sync_flag
+            self._auto_sync_flag = False
             self.download()
+            self._auto_sync_flag = auto_sync_flag
 
     def download(self, overwrite=False):
         """
@@ -164,21 +167,33 @@ class Dataset(_Formatted):
         unique_local = [item for item in self._data if item not in upstream_dataset]
         self._data = upstream_dataset + unique_local
         if self._auto_sync_flag in (True, "both", "upload_only"):
+            auto_sync_flag = self._auto_sync_flag
+            self._auto_sync_flag = False
             self.upload()
+            self._auto_sync_flag = auto_sync_flag
 
     def _auto_sync(self):
         if self._auto_sync_flag in (True, "both", "download_only"):
+            auto_sync_flag = self._auto_sync_flag
+            self._auto_sync_flag = False
             self.download()
+            self._auto_sync_flag = auto_sync_flag
         if self._auto_sync_flag in (True, "both", "upload_only"):
+            auto_sync_flag = self._auto_sync_flag
+            self._auto_sync_flag = False
             self.upload()
+            self._auto_sync_flag = auto_sync_flag
 
     def sync(self):
         """
         Synchronize the dataset in both directions, downloading any values missing
         locally, and uploading any values missing from upstream in the account.
         """
+        auto_sync_flag = self._auto_sync_flag
+        self._auto_sync_flag = False
         self.download()
         self.upload()
+        self._auto_sync_flag = auto_sync_flag
 
     def upstream_diff(self):
         """
