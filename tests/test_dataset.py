@@ -401,3 +401,18 @@ class TestDatasetSync(unittest.TestCase):
             print(dataset.name)
             self.assertEqual(len(dataset), 5)
             self.assertEqual(dataset[4].prompt.messages[0]["content"], "e")
+
+    def test_local_mirrors_upstream(self) -> None:
+        with DownloadTesting():
+            dataset = unify.Dataset.from_upstream(
+                "test_dataset", auto_sync="local_mirrors_upstream"
+            )
+            with self.assertRaises(TypeError):
+                dataset += "a"
+            unify.add_data("test_dataset", unify.Datum("d").dict())
+            print(dataset.name)  # random interaction, which triggers the sync
+            self.assertEqual(len(dataset), 4)
+            self.assertEqual(dataset[0].prompt.messages[0]["content"], "a")
+            self.assertEqual(dataset[1].prompt.messages[0]["content"], "b")
+            self.assertEqual(dataset[2].prompt.messages[0]["content"], "c")
+            self.assertEqual(dataset[3].prompt.messages[0]["content"], "d")
