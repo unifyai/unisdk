@@ -369,3 +369,12 @@ class TestDatasetSync(unittest.TestCase):
             self.assertEqual(len(dataset), 4)
             for i, char in enumerate(("a", "b", "c", "d")):
                 self.assertEqual(dataset[i].prompt.messages[0]["content"], char)
+            # add data to upstream dataset
+            unify.add_data("test_dataset", [unify.Datum("e").dict()])
+            # not synced if local Dataset not interacted with
+            self.assertEqual(len(dataset), 4)
+            # synced after irrelevant interaction
+            print(dataset.name)
+            # dataset.download()
+            self.assertEqual(len(dataset), 5)
+            self.assertEqual(dataset[4].prompt.messages[0]["content"], "e")
