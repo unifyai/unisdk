@@ -70,7 +70,10 @@ def upload_dataset_from_dictionary(
 
 
 def download_dataset(
-    name: str, path: Optional[str] = None, api_key: Optional[str] = None
+    name: str,
+    path: Optional[str] = None,
+    raw_return: bool = False,
+    api_key: Optional[str] = None,
 ) -> Union[List[Datum], None]:
     """
     Downloads a dataset from the platform.
@@ -78,6 +81,7 @@ def download_dataset(
     Args:
         name: Name of the dataset to download.
         path: If specified, path to save the dataset.
+        raw_return: Whether to provide the raw return, with extra meta-data.
         api_key: If specified, unify API key to be used. Defaults to the value in the
         `UNIFY_KEY` environment variable.
 
@@ -101,6 +105,8 @@ def download_dataset(
             f.write("\n".join([json.dumps(d) for d in json.loads(response.text)]))
             return None
     ret = json.loads(response.text)
+    if raw_return:
+        return ret
     return [Datum(
         **{k: v for k, v in item.items() if k not in ("id", "num_tokens", "timestamp")}
     ) for item in ret]
