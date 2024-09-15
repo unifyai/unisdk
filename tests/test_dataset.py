@@ -399,6 +399,5 @@ class TestDatasetSync(unittest.TestCase):
             self.assertEqual(len(dataset), 4)
             # synced after irrelevant interaction
             print(dataset.name)
-            # dataset.download()
             self.assertEqual(len(dataset), 5)
             self.assertEqual(dataset[4].prompt.messages[0]["content"], "e")
