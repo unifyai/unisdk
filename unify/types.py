@@ -11,6 +11,7 @@ from openai.types.chat import (
     ChatCompletionMessageParam,
     ChatCompletion as _ChatCompletion
 )
+from openai.types.chat.chat_completion import Choice
 from pydantic import create_model
 from pydantic._internal._model_construction import ModelMetaclass
 from openai._types import Headers, Query, Body
@@ -155,7 +156,20 @@ class Prompt(_FormattedBaseModel):
 
 
 class ChatCompletion(_FormattedBaseModel, _ChatCompletion):
-    pass
+
+    def _chat_completion_pruned(self):
+        return create_model(
+            self.__class__.__name__,
+            choices=(self.model_fields["choices"].annotation,
+                     self.model_fields["choices"].default),
+            __cls_kwargs__={"arbitrary_types_allowed": True}
+        )(choices=self.dict()["choices"])
+
+    def __repr__(self) -> str:
+        return self._repr(self._chat_completion_pruned())
+
+    def __str__(self) -> str:
+        return self._repr(self._chat_completion_pruned())
 
 
 class Datum(_FormattedBaseModel, extra=Extra.allow):
