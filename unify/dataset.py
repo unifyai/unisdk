@@ -72,16 +72,20 @@ class Dataset(_Formatted):
 
     @property
     def name(self) -> str:
+        self._auto_sync()
         return self._name
 
     @property
     def auto_sync(self) -> Union[bool, str]:
+        self._auto_sync()
         return self._auto_sync_flag
 
     def set_name(self, name: str) -> None:
+        self._auto_sync()
         self._name = name
 
     def set_auto_sync(self, auto_sync: Union[bool, str]) -> None:
+        self._auto_sync()
         self._auto_sync_flag = auto_sync
 
     @staticmethod
