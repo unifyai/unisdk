@@ -242,7 +242,7 @@ class TestDatasetTrimming(unittest.TestCase):
         self.assertEqual(dataset[0].prompt.messages[0]["content"], "a")
 
 
-class HandleUpstream:
+class UploadTesting:
 
     def __enter__(self):
         if "test_dataset" in unify.list_datasets():
@@ -256,14 +256,14 @@ class HandleUpstream:
 class TestDatasetUploading(unittest.TestCase):
 
     def test_dataset_upload(self) -> None:
-        with HandleUpstream():
+        with UploadTesting():
             dataset = unify.Dataset(["a", "b", "c"], name="test_dataset")
             self.assertNotIn(dataset.name, unify.list_datasets())
             dataset.upload()
             self.assertIn(dataset.name, unify.list_datasets())
 
     def test_dataset_upload_w_overwrite(self) -> None:
-        with HandleUpstream():
+        with UploadTesting():
             dataset = unify.Dataset(["a", "b", "c"], name="test_dataset")
             self.assertNotIn(dataset.name, unify.list_datasets())
             dataset.upload()
@@ -272,3 +272,28 @@ class TestDatasetUploading(unittest.TestCase):
             dataset -= "c"
             dataset.upload(overwrite=True)
             self.assertEqual(len(unify.Dataset.from_upstream("test_dataset")), 2)
+
+
+class DownloadTesting:
+
+    def __enter__(self):
+        if "test_dataset" in unify.list_datasets():
+            unify.delete_dataset("test_dataset")
+        dataset = unify.Dataset(["a", "b", "c"], name="test_dataset")
+        dataset.upload()
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if "test_dataset" in unify.list_datasets():
+            unify.delete_dataset("test_dataset")
+
+
+class TestDatasetDownloading(unittest.TestCase):
+
+    def test_dataset_download(self) -> None:
+        with DownloadTesting():
+            self.assertIn("test_dataset", unify.list_datasets())
+            dataset = unify.Dataset.from_upstream("test_dataset")
+            self.assertEqual(len(dataset), 3)
+            self.assertEqual(dataset[0].prompt.messages[0]["content"], "a")
+            self.assertEqual(dataset[1].prompt.messages[0]["content"], "b")
+            self.assertEqual(dataset[2].prompt.messages[0]["content"], "c")
