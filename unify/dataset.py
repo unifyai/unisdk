@@ -143,7 +143,7 @@ class Dataset(_Formatted):
     @staticmethod
     def from_upstream(
         name: str,
-        auto_sync: bool = False,
+        auto_sync: Union[bool, str] = False,
         api_key: Optional[str] = None,
     ) -> Dataset:
         """
