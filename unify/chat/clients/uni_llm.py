@@ -394,14 +394,12 @@ class Unify(_UniLLMClient):
         )
         kw = {k: v for k, v in kw.items() if v is not None}
         try:
-            chat_completion = ChatCompletion(
-                **self._client.chat.completions.create(**kw).dict()
-            )
+            chat_completion = self._client.chat.completions.create(**kw)
             for chunk in chat_completion:
                 if message_content_only:
                     content = chunk.choices[0].delta.content  # type: ignore[union-attr]    # noqa: E501
                 else:
-                    content = chunk
+                    content = ChatCompletion(**chunk.dict())
                 self.set_provider(chunk.model.split("@")[-1])  # type: ignore[union-attr]   # noqa: E501
                 if content is not None:
                     yield content
@@ -608,13 +606,12 @@ class AsyncUnify(_UniLLMClient):
         kw = {k: v for k, v in kw.items() if v is not None}
         try:
             async_stream = await self._client.chat.completions.create(**kw)
-            async_stream = ChatCompletion(**async_stream.dict())
             async for chunk in async_stream:  # type: ignore[union-attr]
                 self.set_provider(chunk.model.split("@")[-1])
                 if message_content_only:
                     yield chunk.choices[0].delta.content or ""
                 else:
-                    yield chunk
+                    yield ChatCompletion(**chunk.dict())
         except openai.APIStatusError as e:
             raise Exception(e.message)
 
