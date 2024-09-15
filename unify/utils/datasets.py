@@ -188,7 +188,7 @@ def add_data(
     }
     body = {"name": name, "data": data}
     response = requests.post(
-        BASE_URL + "/dataset/add_data", headers=headers, json=body
+        BASE_URL + "/dataset/data", headers=headers, json=body
     )
     response.raise_for_status()
     return response.json()
@@ -209,7 +209,7 @@ def delete_data(
     }
     params = {"name": name, "prompt_id": data_ids}
     response = requests.delete(
-        BASE_URL + "/dataset/delete_data", headers=headers, params=params
+        BASE_URL + "/dataset/data", headers=headers, params=params
     )
     response.raise_for_status()
     return response.json()
