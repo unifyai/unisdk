@@ -1,13 +1,12 @@
 import abc
-import openai
 from abc import abstractmethod
 from typing import Type, Union
 
 import unify.chat.clients
 
 from unify.chat.clients import _Client
-from unify.types import Score, Datum
 from unify.evaluation import Evaluation
+from unify.types import Score, Datum, ChatCompletion
 
 
 class Evaluator(abc.ABC):
@@ -21,7 +20,7 @@ class Evaluator(abc.ABC):
     def _evaluate(
             self,
             datum: Datum,
-            response: openai.ChatCompletion,
+            response: ChatCompletion,
     ) -> Union[bool, float, Score]:
         """
         Evaluate the given response for this datum.
@@ -37,7 +36,7 @@ class Evaluator(abc.ABC):
     def evaluate(
             self,
             datum: Datum,
-            response: openai.ChatCompletion,
+            response: ChatCompletion,
             agent: Union[str, _Client, unify.Agent]
     ):
         """

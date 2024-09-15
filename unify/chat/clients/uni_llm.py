@@ -14,8 +14,8 @@ from typing import AsyncGenerator, Dict, Generator, List, Optional, Union, Itera
 # local
 import unify
 from unify import BASE_URL
-from unify.types import Prompt
 from unify.chat.clients.base import _Client
+from unify.types import Prompt, ChatCompletion
 from unify._caching import _get_cache, _write_to_cache
 
 
@@ -394,7 +394,9 @@ class Unify(_UniLLMClient):
         )
         kw = {k: v for k, v in kw.items() if v is not None}
         try:
-            chat_completion = self._client.chat.completions.create(**kw)
+            chat_completion = ChatCompletion(
+                **self._client.chat.completions.create(**kw).dict()
+            )
             for chunk in chat_completion:
                 if message_content_only:
                     content = chunk.choices[0].delta.content  # type: ignore[union-attr]    # noqa: E501
@@ -449,7 +451,9 @@ class Unify(_UniLLMClient):
             chat_completion = _get_cache(kw)
         if chat_completion is None:
             try:
-                chat_completion = self._client.chat.completions.create(**kw)
+                chat_completion = ChatCompletion(
+                    **self._client.chat.completions.create(**kw).dict()
+                )
             except openai.APIStatusError as e:
                 raise Exception(e.message)
             if cache:
@@ -604,6 +608,7 @@ class AsyncUnify(_UniLLMClient):
         kw = {k: v for k, v in kw.items() if v is not None}
         try:
             async_stream = await self._client.chat.completions.create(**kw)
+            async_stream = ChatCompletion(**async_stream.dict())
             async for chunk in async_stream:  # type: ignore[union-attr]
                 self.set_provider(chunk.model.split("@")[-1])
                 if message_content_only:
@@ -648,6 +653,7 @@ class AsyncUnify(_UniLLMClient):
         if chat_completion is None:
             try:
                 async_response = await self._client.chat.completions.create(**kw)
+                async_response = ChatCompletion(**async_response.dict())
             except openai.APIStatusError as e:
                 raise Exception(e.message)
             if cache:
