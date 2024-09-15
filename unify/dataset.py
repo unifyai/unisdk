@@ -131,7 +131,8 @@ class Dataset(_Formatted):
         if overwrite:
             if dataset_exists_upstream:
                 unify.delete_dataset(self._name, self._api_key)
-            unify.upload_dataset_from_dictionary(self._name, self._data)
+            data = [datum.dict() for datum in self._data]
+            unify.upload_dataset_from_dictionary(self._name, data)
             return
         if dataset_exists_upstream:
             upstream_dataset = unify.download_dataset(self._name, api_key=self._api_key)
