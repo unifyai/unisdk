@@ -347,3 +347,14 @@ class TestDatasetSync(unittest.TestCase):
             self.assertEqual(dataset[1].prompt.messages[0]["content"], "b")
             self.assertEqual(dataset[2].prompt.messages[0]["content"], "c")
             self.assertEqual(dataset[3].prompt.messages[0]["content"], "d")
+
+    def test_auto_sync(self) -> None:
+        with DownloadTesting():
+            dataset = unify.Dataset(
+                ["a", "b", "d"],
+                name="test_dataset",
+                auto_sync=True
+            )
+            self.assertEqual(len(dataset), 4)
+            for i, char in enumerate(("a", "b", "c", "d")):
+                self.assertEqual(dataset[i].prompt.messages[0]["content"], char)
