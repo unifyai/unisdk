@@ -240,3 +240,35 @@ class TestDatasetTrimming(unittest.TestCase):
         dataset = unify.Datum("b") + unify.Datum("a") - unify.Datum("b")
         self.assertEqual(len(dataset), 1)
         self.assertEqual(dataset[0].prompt.messages[0]["content"], "a")
+
+
+class HandleUpstream:
+
+    def __enter__(self):
+        if "test_dataset" in unify.list_datasets():
+            unify.delete_dataset("test_dataset")
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if "test_dataset" in unify.list_datasets():
+            unify.delete_dataset("test_dataset")
+
+
+class TestDatasetUploading(unittest.TestCase):
+
+    def test_dataset_upload(self) -> None:
+        with HandleUpstream():
+            dataset = unify.Dataset(["a", "b", "c"], name="test_dataset")
+            self.assertNotIn(dataset.name, unify.list_datasets())
+            dataset.upload()
+            self.assertIn(dataset.name, unify.list_datasets())
+
+    def test_dataset_upload_w_overwrite(self) -> None:
+        with HandleUpstream():
+            dataset = unify.Dataset(["a", "b", "c"], name="test_dataset")
+            self.assertNotIn(dataset.name, unify.list_datasets())
+            dataset.upload()
+            self.assertIn(dataset.name, unify.list_datasets())
+            self.assertEqual(len(unify.Dataset.from_upstream("test_dataset")), 3)
+            dataset -= "c"
+            dataset.upload(overwrite=True)
+            self.assertEqual(len(unify.Dataset.from_upstream("test_dataset")), 2)
