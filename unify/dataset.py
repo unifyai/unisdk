@@ -170,15 +170,17 @@ class Dataset(_Formatted):
                 unify.delete_dataset(self._name, self._api_key)
             data = [datum.dict() for datum in self._data]
             unify.upload_dataset_from_dictionary(self._name, data)
-            return self
-        if dataset_exists_upstream:
-            upstream_dataset = unify.download_dataset(self._name, api_key=self._api_key)
-            unique_local = [item.dict() for item in self._data
-                            if item not in upstream_dataset]
-            unify.add_data(self._name, unique_local)
         else:
-            unique_local = [entry.dict() for entry in self._data]
-            unify.upload_dataset_from_dictionary(self._name, unique_local)
+            if dataset_exists_upstream:
+                upstream_dataset = unify.download_dataset(
+                    self._name, api_key=self._api_key
+                )
+                unique_local = [item.dict() for item in self._data
+                                if item not in upstream_dataset]
+                unify.add_data(self._name, unique_local)
+            else:
+                unique_local = [entry.dict() for entry in self._data]
+                unify.upload_dataset_from_dictionary(self._name, unique_local)
         if self._auto_sync_flag in (True, "both", "download_only"):
             auto_sync_flag = self._auto_sync_flag
             self._auto_sync_flag = False
@@ -202,10 +204,12 @@ class Dataset(_Formatted):
         self._assert_name_exists()
         if overwrite:
             self._data = unify.download_dataset(self._name, api_key=self._api_key)
-            return self
-        upstream_dataset = unify.download_dataset(self._name, api_key=self._api_key)
-        unique_local = [item for item in self._data if item not in upstream_dataset]
-        self._data = upstream_dataset + unique_local
+        else:
+            upstream_dataset = unify.download_dataset(
+                self._name, api_key=self._api_key
+            )
+            unique_local = [item for item in self._data if item not in upstream_dataset]
+            self._data = upstream_dataset + unique_local
         if self._auto_sync_flag in (True, "both", "upload_only"):
             auto_sync_flag = self._auto_sync_flag
             self._auto_sync_flag = False
