@@ -80,13 +80,15 @@ class Dataset(_Formatted):
         self._auto_sync()
         return self._auto_sync_flag
 
-    def set_name(self, name: str) -> None:
+    def set_name(self, name: str) -> Dataset:
         self._auto_sync()
         self._name = name
+        return self
 
-    def set_auto_sync(self, auto_sync: Union[bool, str]) -> None:
+    def set_auto_sync(self, auto_sync: Union[bool, str]) -> Dataset:
         self._auto_sync()
         self._auto_sync_flag = auto_sync
+        return self
 
     @staticmethod
     def from_upstream(
@@ -121,7 +123,7 @@ class Dataset(_Formatted):
             "upstream dataset, or create a new name if it doesn't yet exist upstream."
         )
 
-    def upload(self, overwrite=False):
+    def upload(self, overwrite=False) -> Dataset:
         """
         Uploads all unique local data in the dataset to the user account upstream.
         This function will not download any uniques from upstream.
@@ -138,7 +140,7 @@ class Dataset(_Formatted):
                 unify.delete_dataset(self._name, self._api_key)
             data = [datum.dict() for datum in self._data]
             unify.upload_dataset_from_dictionary(self._name, data)
-            return
+            return self
         if dataset_exists_upstream:
             upstream_dataset = unify.download_dataset(self._name, api_key=self._api_key)
             unique_local = [item.dict() for item in self._data
@@ -152,8 +154,9 @@ class Dataset(_Formatted):
             self._auto_sync_flag = False
             self.download()
             self._auto_sync_flag = auto_sync_flag
+        return self
 
-    def download(self, overwrite=False):
+    def download(self, overwrite=False) -> Dataset:
         """
         Downloads all unique upstream data from the user account to the local dataset.
         This function will not upload any unique values stored locally.
@@ -166,7 +169,7 @@ class Dataset(_Formatted):
         self._assert_name_exists()
         if overwrite:
             self._data = unify.download_dataset(self._name, api_key=self._api_key)
-            return
+            return self
         upstream_dataset = unify.download_dataset(self._name, api_key=self._api_key)
         unique_local = [item for item in self._data if item not in upstream_dataset]
         self._data = upstream_dataset + unique_local
@@ -175,6 +178,7 @@ class Dataset(_Formatted):
             self._auto_sync_flag = False
             self.upload()
             self._auto_sync_flag = auto_sync_flag
+        return self
 
     def _auto_sync(self):
         if self._auto_sync_flag in (True, "both", "download_only"):
@@ -188,7 +192,7 @@ class Dataset(_Formatted):
             self.upload()
             self._auto_sync_flag = auto_sync_flag
 
-    def sync(self):
+    def sync(self) -> Dataset:
         """
         Synchronize the dataset in both directions, downloading any values missing
         locally, and uploading any values missing from upstream in the account.
@@ -198,8 +202,9 @@ class Dataset(_Formatted):
         self.download()
         self.upload()
         self._auto_sync_flag = auto_sync_flag
+        return self
 
-    def upstream_diff(self):
+    def upstream_diff(self) -> Dataset:
         """
         Prints the difference between the local dataset and the upstream dataset.
         """
@@ -216,6 +221,7 @@ class Dataset(_Formatted):
             "{}".format(len(unique_local), unique_local)
         )
         self._auto_sync()
+        return self
 
     def add(self, other: Union[Dataset, str, Dict, Prompt, Datum,
                                List[Union[str, Dict, Prompt, Datum]]]):
