@@ -4,7 +4,7 @@ import rich.repr
 from io import StringIO
 from rich.console import Console
 from pydantic import BaseModel, Extra
-from typing import Optional, Union, Tuple, List, Dict, Mapping
+from typing import Optional, Union, Tuple, List, Dict, Mapping, Any
 from openai.types.chat import (
     ChatCompletionToolParam,
     ChatCompletionToolChoiceOptionParam,
@@ -77,7 +77,11 @@ class _FormattedBaseModel(_Formatted, BaseModel):
             fields = {**fields, **self.model_extra}
         config = {k: (self._prune_pydantic(self._annotation(fields[k]), v),
                       self._default(fields[k])) for k, v in dct.items()}
-        return create_model(self.__class__.__name__, **config)(**dct)
+        return create_model(
+            self.__class__.__name__,
+            **config,
+            __cls_kwargs__={"arbitrary_types_allowed": True}
+        )(**dct)
 
     def __repr__(self) -> str:
         return self._repr(self._prune())
