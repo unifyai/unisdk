@@ -91,12 +91,12 @@ class TestDatasets(unittest.TestCase):
                 ]
             }
         }
-        unify.datasets.add_prompt(dataset_name, new_prompt_data)
+        unify.datasets.add_data(dataset_name, new_prompt_data)
         data = unify.datasets.download_dataset(dataset_name)
         self.assertTrue(len(data)==4)
 
         _id = data[0]["id"]
-        unify.datasets.delete_prompt(dataset_name, _id,)
+        unify.datasets.delete_data(dataset_name, _id, )
         data = unify.datasets.download_dataset(dataset_name)
         self.assertTrue(len(data)==3)
 

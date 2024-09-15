@@ -136,8 +136,9 @@ class Dataset(_Formatted):
             return
         if dataset_exists_upstream:
             upstream_dataset = unify.download_dataset(self._name, api_key=self._api_key)
-            unique_local = [item for item in self._data if item not in upstream_dataset]
-            unify.add_prompt(self._name, unique_local)
+            unique_local = [item.dict() for item in self._data
+                            if item not in upstream_dataset]
+            unify.add_data(self._name, unique_local)
         else:
             unique_local = [entry.dict() for entry in self._data]
             unify.upload_dataset_from_dictionary(self._name, unique_local)
