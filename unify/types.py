@@ -133,6 +133,8 @@ class Prompt(_FormattedBaseModel):
             del kwargs["user_message"]
         elif args and isinstance(args[0], str):
             kwargs["messages"] += [{"content": args[0], "role": "user"}]
+        if not kwargs["messages"]:
+            kwargs["messages"] = None
         super().__init__(**kwargs)
 
     def __add__(self, other):
