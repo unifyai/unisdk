@@ -4,7 +4,9 @@ from typing import Dict, Union
 from openai.types.chat.chat_completion import ChatCompletion
 
 _cache = None
-_cache_fpath: str = os.path.join(os.getcwd(), ".cache.json")
+_cache_dir = os.environ["UNIFY_CACHE_DIR"] if "UNIFY_CACHE_DIR" in os.environ \
+    else os.getcwd()
+_cache_fpath: str = os.path.join(_cache_dir, ".cache.json")
 
 
 def _create_cache_if_none():
