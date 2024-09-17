@@ -19,48 +19,54 @@ class Evaluator(abc.ABC):
     @abstractmethod
     def _evaluate(
             self,
-            datum: Union[Prompt, Datum],
-            response: Union[ChatCompletion, str],
+            prompt: Union[str, Prompt],
+            response: Union[str, ChatCompletion],
+            **kwargs
     ) -> Union[bool, float, Score]:
         """
-        Evaluate the given response for this datum.
+        Evaluate the given response for this input prompt, with optional extra data.
 
         Args:
-            datum: The input prompt in isolation, or the datum (dataset entry),
-            containing the input prompt and optionally other extra data, such as a
-            reference answer.
+            prompt: The user message or the full input prompt being responded to.
 
-            response: The chat completion response which is being evaluated, either as
-            the full chat completion or just the most recent assistant message.
+            response: The response which is being evaluated, either as just the most
+            recent assistant message, or the full chat completion.
+
+            kwargs: Extra information relevant to the prompt, as is stored in the Datum.
+
+        Returns:
+            The score, either as a boolean, a float, or the full Score instance.
         """
         raise NotImplemented
 
     def evaluate(
             self,
-            datum: Union[Prompt, Datum],
+            prompt: Union[str, Prompt],
             response: Union[ChatCompletion, str],
-            agent: Union[str, _Client, Agent]
+            agent: Union[str, _Client, Agent],
+            **kwargs
     ):
         """
-        Evaluate the given response for this datum.
+        Evaluate the given response for this input prompt, with optional extra data.
 
         Args:
-            datum: The input prompt in isolation, or the datum (dataset entry),
-            containing the input prompt and optionally other extra data, such as a
-            reference answer.
+            prompt: The user message or the full input prompt being responded to.
 
-            response: The chat completion response which is being evaluated, either as
-            the full chat completion or just the most recent assistant message.
+            response: The response which is being evaluated, either as just the most
+            recent assistant message, or the full chat completion.
 
-            agent: The agent for whom the evaluation is for.
+            agent: The agent that made the response, which is being evaluated.
+
+            kwargs: Extra information relevant to the prompt, as is stored in the Datum.
 
         Returns:
-            An Evaluation instance, containing the datum, response, agent and score.
+            An Evaluation instance, containing the prompt, response, agent, score and
+            optional extra data used during the evaluation.
         """
-        score = self._evaluate(datum, response)
+        score = self._evaluate(prompt, response, **kwargs)
         # handle datum
-        if isinstance(datum, Prompt):
-            datum = Datum(prompt=datum)
+        if isinstance(prompt, str):
+            prompt = Prompt(prompt)
         # handle response
         if isinstance(response, str):
             response = ChatCompletion(
@@ -85,8 +91,9 @@ class Evaluator(abc.ABC):
         if isinstance(score, float):
             score = self.class_config(score)
         return Evaluation(
-            datum=datum,
+            prompt=prompt,
             response=response,
             agent=agent,
-            score=score
+            score=score,
+            **kwargs
         )
