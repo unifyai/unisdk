@@ -1,12 +1,13 @@
 import abc
 from abc import abstractmethod
 from typing import Type, Union
+from openai.types.chat.chat_completion import ChatCompletionMessage, Choice
 
 import unify.chat.clients
 
 from unify.chat.clients import _Client
 from unify.evaluation import Evaluation
-from unify.types import Score, Datum, ChatCompletion
+from unify.types import Score, Prompt, Datum, ChatCompletion
 
 
 class Evaluator(abc.ABC):
@@ -19,34 +20,38 @@ class Evaluator(abc.ABC):
     @abstractmethod
     def _evaluate(
             self,
-            datum: Datum,
-            response: ChatCompletion,
+            datum: Union[Prompt, Datum],
+            response: Union[ChatCompletion, str],
     ) -> Union[bool, float, Score]:
         """
         Evaluate the given response for this datum.
 
         Args:
-            datum: The datum (dataset entry) used for evaluation, containing an input
-            prompt and optionally other extra data, such as a reference answer.
+            datum: The input prompt in isolation, or the datum (dataset entry),
+            containing the input prompt and optionally other extra data, such as a
+            reference answer.
 
-            response: The chat completion response which is being evaluated.
+            response: The chat completion response which is being evaluated, either as
+            the full chat completion or just the most recent assistant message.
         """
         raise NotImplemented
 
     def evaluate(
             self,
-            datum: Datum,
-            response: ChatCompletion,
+            datum: Union[Prompt, Datum],
+            response: Union[ChatCompletion, str],
             agent: Union[str, _Client, unify.Agent]
     ):
         """
         Evaluate the given response for this datum.
 
         Args:
-            datum: The datum (dataset entry) used for evaluation, containing an input
-            prompt and optionally other extra data, such as a reference answer.
+            datum: The input prompt in isolation, or the datum (dataset entry),
+            containing the input prompt and optionally other extra data, such as a
+            reference answer.
 
-            response: The chat completion response which is being evaluated.
+            response: The chat completion response which is being evaluated, either as
+            the full chat completion or just the most recent assistant message.
 
             agent: The agent for whom the evaluation is for.
 
@@ -54,6 +59,28 @@ class Evaluator(abc.ABC):
             An Evaluation instance, containing the datum, response, agent and score.
         """
         score = self._evaluate(datum, response)
+        # handle datum
+        if isinstance(datum, Prompt):
+            datum = Datum(prompt=datum)
+        # handle response
+        if isinstance(response, str):
+            response = unify.ChatCompletion(
+                id="",
+                choices=[
+                    Choice(
+                        finish_reason="stop",
+                        index=0,
+                        message=ChatCompletionMessage(
+                            role="assistant",
+                            content=response
+                        )
+                    )
+                ],
+                created=0,
+                model="",
+                object="chat.completion"
+            )
+        # handle score
         if isinstance(score, bool):
             score = float(score)
         if isinstance(score, float):
