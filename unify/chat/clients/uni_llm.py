@@ -51,7 +51,7 @@ class _UniLLMClient(_Client, abc.ABC):
         tags: Optional[List[str]] = None,
         api_key: Optional[str] = None,
         # python client arguments
-        message_content_only: bool = True,
+        return_full_completion: bool = False,
         cache: bool = False,
         # passthrough arguments
         extra_headers: Optional[Headers] = None,
@@ -165,10 +165,10 @@ class _UniLLMClient(_Client, abc.ABC):
             tags: Arbitrary number of tags to classify this API query as needed. Helpful
             for generally grouping queries across tasks and users, for logging purposes.
 
-            message_content_only: If True, only return the message content
+            return_full_completion: If False, only return the message content
             chat_completion.choices[0].message.content.strip(" ") from the OpenAI
             return. Otherwise, the full response chat_completion is returned.
-            Defaults to True.
+            Defaults to False.
 
             cache: If True, then the arguments will be stored in a local cache file, and
             any future calls with identical arguments will read from the cache instead
@@ -216,7 +216,7 @@ class _UniLLMClient(_Client, abc.ABC):
             tags=tags,
             api_key=api_key,
             # python client arguments
-            message_content_only=message_content_only,
+            return_full_completion=return_full_completion,
             cache=cache,
             # passthrough arguments
             extra_headers=extra_headers,
@@ -380,7 +380,7 @@ class Unify(_UniLLMClient):
         use_custom_keys: bool = False,
         tags: Optional[List[str]] = None,
         # python client arguments
-        message_content_only: bool = True,
+        return_full_completion: bool = False,
     ) -> Generator[str, None, None]:
         prompt_dict = prompt.model_dump()
         if "extra_body" in prompt_dict:
@@ -405,10 +405,10 @@ class Unify(_UniLLMClient):
         try:
             chat_completion = self._client.chat.completions.create(**kw)
             for chunk in chat_completion:
-                if message_content_only:
-                    content = chunk.choices[0].delta.content  # type: ignore[union-attr]    # noqa: E501
-                else:
+                if return_full_completion:
                     content = ChatCompletion(**chunk.dict())
+                else:
+                    content = chunk.choices[0].delta.content  # type: ignore[union-attr]    # noqa: E501
                 self.set_provider(chunk.model.split("@")[-1])  # type: ignore[union-attr]   # noqa: E501
                 if content is not None:
                     yield content
@@ -423,7 +423,7 @@ class Unify(_UniLLMClient):
         use_custom_keys: bool = False,
         tags: Optional[List[str]] = None,
         # python client arguments
-        message_content_only: bool = True,
+        return_full_completion: bool = False,
         cache: bool = False,
     ) -> str:
         prompt_dict = prompt.model_dump()
@@ -471,12 +471,12 @@ class Unify(_UniLLMClient):
                     "@",
                 )[-1]
             )
-        if message_content_only:
-            content = chat_completion.choices[0].message.content
-            if content:
-                return content.strip(" ")
-            return ""
-        return chat_completion
+        if return_full_completion:
+            return chat_completion
+        content = chat_completion.choices[0].message.content
+        if content:
+            return content.strip(" ")
+        return ""
 
     def _generate(  # noqa: WPS234, WPS211
         self,
@@ -505,7 +505,7 @@ class Unify(_UniLLMClient):
         use_custom_keys: bool = False,
         tags: Optional[List[str]] = None,
         # python client arguments
-        message_content_only: bool = True,
+        return_full_completion: bool = False,
         cache: bool = False,
         # passthrough arguments
         extra_headers: Optional[Headers] = None,
@@ -521,7 +521,7 @@ class Unify(_UniLLMClient):
             contents.append({"role": "user", "content": user_message})
 
         if tools:
-            message_content_only = False
+            return_full_completion = True
 
         prompt = Prompt(
             messages=contents,
@@ -554,7 +554,7 @@ class Unify(_UniLLMClient):
                 use_custom_keys=use_custom_keys,
                 tags=tags,
                 # python client arguments
-                message_content_only=message_content_only,
+                return_full_completion=return_full_completion,
             )
         return self._generate_non_stream(
             self._endpoint,
@@ -563,7 +563,7 @@ class Unify(_UniLLMClient):
             use_custom_keys=use_custom_keys,
             tags=tags,
             # python client arguments
-            message_content_only=message_content_only,
+            return_full_completion=return_full_completion,
             cache=cache,
         )
 
@@ -591,7 +591,7 @@ class AsyncUnify(_UniLLMClient):
         use_custom_keys: bool = False,
         tags: Optional[List[str]] = None,
         # python client arguments
-        message_content_only: bool = True,
+        return_full_completion: bool = False,
     ) -> AsyncGenerator[str, None]:
         prompt_dict = prompt.model_dump()
         if "extra_body" in prompt_dict:
@@ -617,10 +617,10 @@ class AsyncUnify(_UniLLMClient):
             async_stream = await self._client.chat.completions.create(**kw)
             async for chunk in async_stream:  # type: ignore[union-attr]
                 self.set_provider(chunk.model.split("@")[-1])
-                if message_content_only:
-                    yield chunk.choices[0].delta.content or ""
-                else:
+                if return_full_completion:
                     yield ChatCompletion(**chunk.dict())
+                else:
+                    yield chunk.choices[0].delta.content or ""
         except openai.APIStatusError as e:
             raise Exception(e.message)
 
@@ -632,7 +632,7 @@ class AsyncUnify(_UniLLMClient):
         use_custom_keys: bool = False,
         tags: Optional[List[str]] = None,
         # python client arguments
-        message_content_only: bool = True,
+        return_full_completion: bool = False,
         cache: bool = False,
     ) -> str:
         prompt_dict = prompt.model_dump()
@@ -665,12 +665,12 @@ class AsyncUnify(_UniLLMClient):
             if cache:
                 _write_to_cache(kw, chat_completion)
         self.set_provider(async_response.model.split("@")[-1])  # type: ignore
-        if message_content_only:
-            content = async_response.choices[0].message.content
-            if content:
-                return content.strip(" ")
-            return ""
-        return async_response
+        if return_full_completion:
+            return async_response
+        content = async_response.choices[0].message.content
+        if content:
+            return content.strip(" ")
+        return ""
 
     async def _generate(  # noqa: WPS234, WPS211
         self,
@@ -699,7 +699,7 @@ class AsyncUnify(_UniLLMClient):
         use_custom_keys: bool = False,
         tags: Optional[List[str]] = None,
         # python client arguments
-        message_content_only: bool = True,
+        return_full_completion: bool = False,
         cache: bool = False,
         # passthrough arguments
         extra_headers: Optional[Headers] = None,
@@ -747,7 +747,7 @@ class AsyncUnify(_UniLLMClient):
                 use_custom_keys=use_custom_keys,
                 tags=tags,
                 # python client arguments
-                message_content_only=message_content_only,
+                return_full_completion=return_full_completion,
             )
         return await self._generate_non_stream(
             self._endpoint,
@@ -756,6 +756,6 @@ class AsyncUnify(_UniLLMClient):
             use_custom_keys=use_custom_keys,
             tags=tags,
             # python client arguments
-            message_content_only=message_content_only,
+            return_full_completion=return_full_completion,
             cache=cache,
         )

@@ -73,7 +73,7 @@ class TestMultiLLM(unittest.TestCase):
             "gpt-4@openai"
         )
         client = MultiLLM(api_key=self.valid_api_key, endpoints=endpoints, n=2,
-                          message_content_only=False)
+                          return_full_completion=True)
         responses = client.generate("Hello, how it is going?")
         for endpoint, (response_endpoint, response) in zip(
             endpoints,
@@ -140,7 +140,7 @@ class TestAsyncMultiLLM(unittest.IsolatedAsyncioTestCase):
             "gpt-4@openai"
         )
         client = MultiLLMAsync(api_key=self.valid_api_key, endpoints=endpoints, n=2,
-                               message_content_only=False)
+                               return_full_completion=True)
         responses = await client.generate("Hello, how it is going?")
         for endpoint, (response_endpoint, response) in zip(
             endpoints,

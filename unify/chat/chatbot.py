@@ -20,8 +20,9 @@ class ChatBot:  # noqa: WPS338
             client: The Client instance to wrap the chatbot logic around.
         """
         self._paused = False
-        assert client.message_content_only, ("ChatBot currently only supports clients which only generate the message "
-                                             "content in the return")
+        assert not client.return_full_completion,\
+            "ChatBot currently only supports clients which only generate the message " \
+            "content in the return"
         self._client = client
         self.clear_chat_history()
 

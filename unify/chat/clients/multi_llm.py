@@ -47,7 +47,7 @@ class _MultiLLMClient(_Client, abc.ABC):
         tags: Optional[List[str]] = None,
         api_key: Optional[str] = None,
         # python client arguments
-        message_content_only: bool = True,
+        return_full_completion: bool = False,
         cache: bool = False,
         # passthrough arguments
         extra_headers: Optional[Headers] = None,
@@ -77,7 +77,7 @@ class _MultiLLMClient(_Client, abc.ABC):
             tags=tags,
             api_key=api_key,
             # python client arguments
-            message_content_only=message_content_only,
+            return_full_completion=return_full_completion,
             cache=cache,
             # passthrough arguments
             extra_headers=extra_headers,
@@ -118,7 +118,7 @@ class _MultiLLMClient(_Client, abc.ABC):
                 tags=self.tags,
                 api_key=self._api_key,
                 # python client arguments
-                message_content_only=self.message_content_only,
+                return_full_completion=self.return_full_completion,
                 cache=self.cache,
                 # passthrough arguments
                 extra_headers=self.extra_headers,
@@ -246,7 +246,7 @@ class MultiLLM(_MultiLLMClient):
         tags: Optional[List[str]] = None,
         api_key: Optional[str] = None,
         # python client arguments
-        message_content_only: bool = True,
+        return_full_completion: bool = False,
         cache: bool = False,
         # passthrough arguments
         extra_headers: Optional[Headers] = None,
@@ -277,7 +277,7 @@ class MultiLLM(_MultiLLMClient):
             tags=tags,
             api_key=api_key,
             # python client arguments
-            message_content_only=message_content_only,
+            return_full_completion=return_full_completion,
             cache=cache,
             # passthrough arguments
             extra_headers=extra_headers,
@@ -312,7 +312,7 @@ class MultiLLM(_MultiLLMClient):
         use_custom_keys: bool = False,
         tags: Optional[List[str]] = None,
         # python client arguments
-        message_content_only: bool = True,
+        return_full_completion: bool = False,
         # passthrough arguments
         extra_headers: Optional[Headers] = None,
         extra_query: Optional[Query] = None,
@@ -339,7 +339,7 @@ class MultiLLM(_MultiLLMClient):
             parallel_tool_calls=parallel_tool_calls,
             use_custom_keys=use_custom_keys,
             tags=tags,
-            message_content_only=message_content_only,
+            return_full_completion=return_full_completion,
             extra_headers=extra_headers,
             extra_query=extra_query,
             **kwargs,
@@ -389,7 +389,7 @@ class MultiLLMAsync(_MultiLLMClient):
         tags: Optional[List[str]] = None,
         api_key: Optional[str] = None,
         # python client arguments
-        message_content_only: bool = True,
+        return_full_completion: bool = False,
         cache: bool = False,
         # passthrough arguments
         extra_headers: Optional[Headers] = None,
@@ -420,7 +420,7 @@ class MultiLLMAsync(_MultiLLMClient):
             tags=tags,
             api_key=api_key,
             # python client arguments
-            message_content_only=message_content_only,
+            return_full_completion=return_full_completion,
             cache=cache,
             # passthrough arguments
             extra_headers=extra_headers,
@@ -455,7 +455,7 @@ class MultiLLMAsync(_MultiLLMClient):
         use_custom_keys: bool = False,
         tags: Optional[List[str]] = None,
         # python client arguments
-        message_content_only: bool = True,
+        return_full_completion: bool = False,
         # passthrough arguments
         extra_headers: Optional[Headers] = None,
         extra_query: Optional[Query] = None,
@@ -482,7 +482,7 @@ class MultiLLMAsync(_MultiLLMClient):
             parallel_tool_calls=parallel_tool_calls,
             use_custom_keys=use_custom_keys,
             tags=tags,
-            message_content_only=message_content_only,
+            return_full_completion=return_full_completion,
             extra_headers=extra_headers,
             extra_query=extra_query,
             **kwargs,

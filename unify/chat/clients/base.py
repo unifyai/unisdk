@@ -49,7 +49,7 @@ class _Client(ABC):
         tags: Optional[List[str]] = None,
         api_key: Optional[str] = None,
         # python client arguments
-        message_content_only: bool = True,
+        return_full_completion: bool = False,
         cache: bool = False,
         # passthrough arguments
         extra_headers: Optional[Headers] = None,
@@ -156,10 +156,10 @@ class _Client(ABC):
             tags: Arbitrary number of tags to classify this API query as needed. Helpful
             for generally grouping queries across tasks and users, for logging purposes.
 
-            message_content_only: If True, only return the message content
+            return_full_completion: If False, only return the message content
             chat_completion.choices[0].message.content.strip(" ") from the OpenAI
             return. Otherwise, the full response chat_completion is returned.
-            Defaults to True.
+            Defaults to False.
 
             cache: If True, then the arguments will be stored in a local cache file, and
             any future calls with identical arguments will read from the cache instead
@@ -227,8 +227,8 @@ class _Client(ABC):
         self._tags = None
         self.set_tags(tags)
         # python client arguments
-        self._message_content_only = None
-        self.set_message_content_only(message_content_only)
+        self._return_full_completion = None
+        self.set_return_full_completion(return_full_completion)
         self._cache = None
         self.set_cache(cache)
         # passthrough arguments
@@ -455,14 +455,14 @@ class _Client(ABC):
         return self._tags
 
     @property
-    def message_content_only(self) -> bool:
+    def return_full_completion(self) -> bool:
         """
-          Get the default message content only bool.
+          Get the default return full completion bool.
 
           Returns:
-              The default message content only bool.
+              The default return full completion bool.
           """
-        return self._message_content_only
+        return self._return_full_completion
 
     @property
     def cache(self) -> bool:
@@ -713,14 +713,14 @@ class _Client(ABC):
         """
         self._tags = value
 
-    def set_message_content_only(self, value: bool) -> None:
+    def set_return_full_completion(self, value: bool) -> None:
         """
-        Set the default message content only bool.  # noqa: DAR101.
+        Set the default return full completion bool.  # noqa: DAR101.
 
         Args:
-            value: The default message content only bool.
+            value: The default return full completion bool.
         """
-        self._message_content_only = value
+        self._return_full_completion = value
 
     def set_cache(self, value: bool) -> None:
         """
@@ -801,7 +801,7 @@ class _Client(ABC):
         use_custom_keys: Optional[bool] = None,
         tags: Optional[List[str]] = None,
         # python client arguments
-        message_content_only: Optional[bool] = None,
+        return_full_completion: Optional[bool] = None,
         cache: Optional[bool] = None,
         # passthrough arguments
         extra_headers: Optional[Headers] = None,
@@ -912,10 +912,10 @@ class _Client(ABC):
             tags: Arbitrary number of tags to classify this API query as needed. Helpful
             for generally grouping queries across tasks and users, for logging purposes.
 
-            message_content_only: If True, only return the message content
+            return_full_completion: If False, only return the message content
             chat_completion.choices[0].message.content.strip(" ") from the OpenAI
             return. Otherwise, the full response chat_completion is returned.
-            Defaults to True.
+            Defaults to False.
 
             cache: If True, then the arguments will be stored in a local cache file, and
             any future calls with identical arguments will read from the cache instead
@@ -969,8 +969,8 @@ class _Client(ABC):
                 _default(use_custom_keys, self._use_custom_keys), False),
             tags=_default(tags, self._tags),
             # python client arguments
-            message_content_only=_default(_default(message_content_only,
-                                          self._message_content_only), True),
+            return_full_completion=_default(_default(return_full_completion,
+                                            self._return_full_completion), False),
             cache=_default(_default(cache, self._cache), False),
             # passthrough arguments
             extra_headers=_default(extra_headers, self._extra_headers),
@@ -1040,7 +1040,7 @@ class _Client(ABC):
             use_custom_keys: bool = False,
             tags: Optional[List[str]] = None,
             # python client arguments
-            message_content_only: bool = True,
+            return_full_completion: bool = False,
             cache: bool = False,
             # passthrough arguments
             extra_headers: Optional[Headers] = None,

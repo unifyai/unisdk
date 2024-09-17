@@ -58,7 +58,7 @@ class TestUnifyToolUse(unittest.TestCase):
             ),
             tool_choice="required",
             tools=tools,
-            message_content_only=False,
+            return_full_completion=True,
         )
         message = result.choices[0].message
         self.assertIsInstance(message, ChatCompletionMessage)
@@ -117,7 +117,7 @@ class TestUnifyToolUse(unittest.TestCase):
             ),
             tool_choice={"type": "any"},
             tools=tools,
-            message_content_only=False,
+            return_full_completion=True,
         )
 
 

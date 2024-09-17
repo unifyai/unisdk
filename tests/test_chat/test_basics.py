@@ -48,7 +48,7 @@ class TestChatBasics(unittest.TestCase):
     def test_default_params_handled_correctly(self) -> None:
         client = Unify(
             api_key=self.valid_api_key, endpoint="gpt-4o@openai", n=2,
-            message_content_only=False,
+            return_full_completion=True,
         )
         result = client.generate(user_message="hello")
         self.assertEqual(len(result.choices), 2)
@@ -107,7 +107,7 @@ class TestAsyncUnifyBasics(unittest.IsolatedAsyncioTestCase):
     async def test_default_params_handled_correctly(self) -> None:
         async_client = AsyncUnify(
             api_key=self.valid_api_key, endpoint="gpt-4o@openai", n=2,
-            message_content_only=False,
+            return_full_completion=True,
         )
         result = await async_client.generate(user_message="hello")
         self.assertEqual(len(result.choices), 2)
