@@ -26,13 +26,11 @@ class _Formatted(abc.ABC):
 
     @staticmethod
     def _repr(to_print):
+        # ToDO find more elegant way to do this
         global RICH_CONSOLE
-        RICH_CONSOLE.print(to_print)
-        ret = RICH_CONSOLE.file.getvalue()
-        RICH_CONSOLE.file.close()
-        RICH_CONSOLE = Console(file=StringIO())
-        # ToDO find more elegant way to flush this
-        return ret
+        with RICH_CONSOLE.capture() as capture:
+            RICH_CONSOLE.print(to_print)
+        return capture.get()
 
     def __repr__(self) -> str:
         return self._repr(self)
