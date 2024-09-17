@@ -44,10 +44,16 @@ class _Formatted(abc.ABC):
 @rich.repr.auto
 class _FormattedBaseModel(_Formatted, BaseModel):
 
-    def _prune_dict(self, val):
-        if not isinstance(val, dict):
+    def _prune_iterable(self, val):
+        if not isinstance(val, dict) and not isinstance(val, list) and \
+                not isinstance(val, tuple):
             return val
-        return {k: self._prune_dict(v) for k, v in val.items() if v is not None}
+        elif isinstance(val, dict):
+            return {k: self._prune_iterable(v) for k, v in val.items() if v is not None}
+        elif isinstance(val, list):
+            return [self._prune_iterable(v) for v in val if v is not None]
+        else:
+            return (self._prune_iterable(v) for v in val if v is not None)
 
     def _prune_pydantic(self, val, dct):
         if not inspect.isclass(val) or not issubclass(val, BaseModel):
@@ -73,7 +79,7 @@ class _FormattedBaseModel(_Formatted, BaseModel):
         return None
 
     def _prune(self):
-        dct = self._prune_dict(self.dict())
+        dct = self._prune_iterable(self.dict())
         fields = self.model_fields
         if self.model_extra is not None:
             fields = {**fields, **self.model_extra}
