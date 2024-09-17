@@ -177,6 +177,11 @@ class ChatCompletion(_FormattedBaseModel, _ChatCompletion):
     def __str__(self) -> str:
         return self._repr(self._chat_completion_pruned())
 
+    def __rich_repr__(self):
+        pruned = self._chat_completion_pruned()
+        for k in pruned.model_fields:
+            yield k, pruned.__dict__[k]
+
 
 class Datum(_FormattedBaseModel, extra=Extra.allow):
     prompt: Prompt
