@@ -1,9 +1,9 @@
 import os
 import json
-from typing import Dict, Union
-from openai.types.chat.chat_completion import ChatCompletion
+from typing import Dict, Union, Optional
+from unify.types import ChatCompletion
 
-_cache = None
+_cache: Optional[Dict] = None
 _cache_dir = os.environ["UNIFY_CACHE_DIR"] if "UNIFY_CACHE_DIR" in os.environ \
     else os.getcwd()
 _cache_fpath: str = os.path.join(_cache_dir, ".cache.json")
@@ -25,7 +25,7 @@ def _get_cache(kw: Dict) -> Union[None, Dict]:
     kw = {k: v for k, v in kw.items() if v is not None}
     kw_str = json.dumps(kw)
     if kw_str in _cache:
-        return ChatCompletion.parse_obj(json.loads(_cache[kw_str]))
+        return ChatCompletion(**json.loads(_cache[kw_str]))
 
 
 # noinspection PyTypeChecker,PyUnresolvedReferences
