@@ -3,7 +3,8 @@ import abc
 import asyncio
 import requests
 from typing import Optional, Union, List, Tuple, Dict, Iterable
-from openai._types import Headers, Query, Body
+# noinspection PyProtectedMember
+from openai._types import Headers, Query
 from openai.types.chat import (
     ChatCompletionToolParam,
     ChatCompletionToolChoiceOptionParam,
@@ -13,8 +14,9 @@ from openai.types.chat.completion_create_params import ResponseFormat
 
 # local
 from unify import BASE_URL
+# noinspection PyProtectedMember
 from unify.utils.helpers import _validate_api_key
-from unify.chat.clients import _Client, _UniLLMClient, Unify, AsyncUnify
+from unify.chat.clients import _Client, _UniLLMClient, AsyncUnify
 
 
 class _MultiLLMClient(_Client, abc.ABC):

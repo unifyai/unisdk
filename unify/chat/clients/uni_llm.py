@@ -1,7 +1,8 @@
 # global
 import abc
 import openai
-from openai._types import Headers, Query, Body
+# noinspection PyProtectedMember
+from openai._types import Headers, Query
 from openai.types.chat import (
     ChatCompletionToolParam,
     ChatCompletionToolChoiceOptionParam,
@@ -96,10 +97,10 @@ class _UniLLMClient(_Client, abc.ABC):
             likely tokens to return at each token position, each with an associated log
             probability. logprobs must be set to true if this parameter is used.
 
-            max_completion_tokens: The maximum number of tokens that can be generated in the chat
-            completion. The total length of input tokens and generated tokens is limited
-            by the model's context length. Defaults to the provider's default max_completion_tokens
-            when the value is None.
+            max_completion_tokens: The maximum number of tokens that can be generated in
+            the chat completion. The total length of input tokens and generated tokens
+            is limited by the model's context length. Defaults to the provider's default
+            max_completion_tokens when the value is None.
 
             n: How many chat completion choices to generate for each input message. Note
             that you will be charged based on the number of generated tokens across all
@@ -134,7 +135,8 @@ class _UniLLMClient(_Client, abc.ABC):
             Higher values like 0.8 will make the output more random,
             while lower values like 0.2 will make it more focused and deterministic.
             It is generally recommended to alter this or top_p, but not both.
-            Defaults to the provider's default max_completion_tokens when the value is None.
+            Defaults to the provider's default max_completion_tokens when the value is
+            None.
 
             top_p: An alternative to sampling with temperature, called nucleus sampling,
             where the model considers the results of the tokens with top_p probability
@@ -308,7 +310,8 @@ class _UniLLMClient(_Client, abc.ABC):
                     )
                 )
             raise Exception(
-                "The specified model {} is not one of the models supported by Unify: {}".format(
+                "The specified model {} is not one of the models supported by Unify: "
+                "{}".format(
                     value, valid_models
                 )
             )
@@ -425,7 +428,7 @@ class Unify(_UniLLMClient):
         # python client arguments
         return_full_completion: bool = False,
         cache: bool = False,
-    ) -> str:
+    ) -> Union[str, ChatCompletion]:
         prompt_dict = prompt.model_dump()
         if "extra_body" in prompt_dict:
             extra_body = prompt_dict["extra_body"]
@@ -634,7 +637,7 @@ class AsyncUnify(_UniLLMClient):
         # python client arguments
         return_full_completion: bool = False,
         cache: bool = False,
-    ) -> str:
+    ) -> Union[str, ChatCompletion]:
         prompt_dict = prompt.model_dump()
         if "extra_body" in prompt_dict:
             extra_body = prompt_dict["extra_body"]
@@ -653,7 +656,7 @@ class AsyncUnify(_UniLLMClient):
             },
         )
         kw = {k: v for k, v in kw.items() if v is not None}
-        chat_completion = None
+        chat_completion, async_response = None, None
         if cache:
             chat_completion = _get_cache(kw)
         if chat_completion is None:

@@ -1,5 +1,6 @@
 # global
 import requests
+# noinspection PyProtectedMember
 from openai._types import Headers, Query, Body
 from openai.types.chat import (
     ChatCompletionToolParam,
@@ -14,6 +15,7 @@ from typing import Mapping, Dict, List, Optional, Union, Iterable
 # local
 from unify import BASE_URL
 from unify.types import Prompt
+# noinspection PyProtectedMember
 from unify.utils.helpers import _validate_api_key, _default
 
 
@@ -87,10 +89,10 @@ class _Client(ABC):
             likely tokens to return at each token position, each with an associated log
             probability. logprobs must be set to true if this parameter is used.
 
-            max_completion_tokens: The maximum number of tokens that can be generated in the chat
-            completion. The total length of input tokens and generated tokens is limited
-            by the model's context length. Defaults to the provider's default max_completion_tokens
-            when the value is None.
+            max_completion_tokens: The maximum number of tokens that can be generated in
+            the chat completion. The total length of input tokens and generated tokens
+            is limited by the model's context length. Defaults to the provider's default
+            max_completion_tokens when the value is None.
 
             n: How many chat completion choices to generate for each input message. Note
             that you will be charged based on the number of generated tokens across all
@@ -125,7 +127,8 @@ class _Client(ABC):
             Higher values like 0.8 will make the output more random,
             while lower values like 0.2 will make it more focused and deterministic.
             It is generally recommended to alter this or top_p, but not both.
-            Defaults to the provider's default max_completion_tokens when the value is None.
+            Defaults to the provider's default max_completion_tokens when the value is
+            None.
 
             top_p: An alternative to sampling with temperature, called nucleus sampling,
             where the model considers the results of the tokens with top_p probability
@@ -842,10 +845,10 @@ class _Client(ABC):
             likely tokens to return at each token position, each with an associated log
             probability. logprobs must be set to true if this parameter is used.
 
-            max_completion_tokens: The maximum number of tokens that can be generated in the chat
-            completion. The total length of input tokens and generated tokens is limited
-            by the model's context length. Defaults value is 1024. Uses the provider's
-            default max_completion_tokens when None is explicitly passed.
+            max_completion_tokens: The maximum number of tokens that can be generated in
+            the chat completion. The total length of input tokens and generated tokens
+            is limited by the model's context length. Defaults value is 1024. Uses the
+            provider's default max_completion_tokens when None is explicitly passed.
 
             n: How many chat completion choices to generate for each input message. Note
             that you will be charged based on the number of generated tokens across all
@@ -950,7 +953,8 @@ class _Client(ABC):
             logit_bias=_default(logit_bias, self._logit_bias),
             logprobs=_default(logprobs, self._logprobs),
             top_logprobs=_default(top_logprobs, self._top_logprobs),
-            max_completion_tokens=_default(_default(max_completion_tokens, self._max_completion_tokens), 1024),
+            max_completion_tokens=_default(_default(max_completion_tokens,
+                                                    self._max_completion_tokens), 1024),
             n=_default(n, self._n),
             presence_penalty=_default(presence_penalty, self._presence_penalty),
             response_format=_default(response_format, self._response_format),
