@@ -378,12 +378,12 @@ class Unify(_UniLLMClient):
         endpoint: str,
         prompt: Prompt,
         # stream
-        stream_options: Optional[ChatCompletionStreamOptionsParam] = None,
+        stream_options: Optional[ChatCompletionStreamOptionsParam],
         # platform arguments
-        use_custom_keys: bool = False,
-        tags: Optional[List[str]] = None,
+        use_custom_keys: bool,
+        tags: Optional[List[str]],
         # python client arguments
-        return_full_completion: bool = False,
+        return_full_completion: bool,
     ) -> Generator[str, None, None]:
         prompt_dict = prompt.model_dump()
         if "extra_body" in prompt_dict:
@@ -423,11 +423,11 @@ class Unify(_UniLLMClient):
         endpoint: str,
         prompt: Prompt,
         # platform arguments
-        use_custom_keys: bool = False,
-        tags: Optional[List[str]] = None,
+        use_custom_keys: bool,
+        tags: Optional[List[str]],
         # python client arguments
-        return_full_completion: bool = False,
-        cache: bool = False,
+        return_full_completion: bool,
+        cache: bool,
     ) -> Union[str, ChatCompletion]:
         prompt_dict = prompt.model_dump()
         if "extra_body" in prompt_dict:
@@ -483,36 +483,36 @@ class Unify(_UniLLMClient):
 
     def _generate(  # noqa: WPS234, WPS211
         self,
-        user_message: Optional[str] = None,
-        system_message: Optional[str] = None,
-        messages: Optional[List[ChatCompletionMessageParam]] = None,
+        user_message: Optional[str],
+        system_message: Optional[str],
+        messages: Optional[List[ChatCompletionMessageParam]],
         *,
-        frequency_penalty: Optional[float] = None,
-        logit_bias: Optional[Dict[str, int]] = None,
-        logprobs: Optional[bool] = None,
-        top_logprobs: Optional[int] = None,
-        max_completion_tokens: Optional[int] = 1024,
-        n: Optional[int] = None,
-        presence_penalty: Optional[float] = None,
-        response_format: Optional[ResponseFormat] = None,
-        seed: Optional[int] = None,
-        stop: Union[Optional[str], List[str]] = None,
-        stream: Optional[bool] = False,
-        stream_options: Optional[ChatCompletionStreamOptionsParam] = None,
-        temperature: Optional[float] = 1.0,
-        top_p: Optional[float] = None,
-        tools: Optional[Iterable[ChatCompletionToolParam]] = None,
-        tool_choice: Optional[ChatCompletionToolChoiceOptionParam] = None,
-        parallel_tool_calls: Optional[bool] = None,
+        frequency_penalty: Optional[float],
+        logit_bias: Optional[Dict[str, int]],
+        logprobs: Optional[bool],
+        top_logprobs: Optional[int],
+        max_completion_tokens: Optional[int],
+        n: Optional[int],
+        presence_penalty: Optional[float],
+        response_format: Optional[ResponseFormat],
+        seed: Optional[int],
+        stop: Union[Optional[str], List[str]],
+        stream: Optional[bool],
+        stream_options: Optional[ChatCompletionStreamOptionsParam],
+        temperature: Optional[float],
+        top_p: Optional[float],
+        tools: Optional[Iterable[ChatCompletionToolParam]],
+        tool_choice: Optional[ChatCompletionToolChoiceOptionParam],
+        parallel_tool_calls: Optional[bool],
         # platform arguments
-        use_custom_keys: bool = False,
-        tags: Optional[List[str]] = None,
+        use_custom_keys: bool,
+        tags: Optional[List[str]],
         # python client arguments
-        return_full_completion: bool = False,
-        cache: bool = False,
+        return_full_completion: bool,
+        cache: bool,
         # passthrough arguments
-        extra_headers: Optional[Headers] = None,
-        extra_query: Optional[Query] = None,
+        extra_headers: Optional[Headers],
+        extra_query: Optional[Query],
         **kwargs,
     ) -> Union[Generator[str, None, None], str]:  # noqa: DAR101, DAR201, DAR401
         contents = []
@@ -522,9 +522,6 @@ class Unify(_UniLLMClient):
             contents.extend(messages)
         if user_message:
             contents.append({"role": "user", "content": user_message})
-
-        if tools:
-            return_full_completion = True
 
         prompt = Prompt(
             messages=contents,
@@ -589,12 +586,12 @@ class AsyncUnify(_UniLLMClient):
         endpoint: str,
         prompt: Prompt,
         # stream
-        stream_options: Optional[ChatCompletionStreamOptionsParam] = None,
+        stream_options: Optional[ChatCompletionStreamOptionsParam],
         # platform arguments
-        use_custom_keys: bool = False,
-        tags: Optional[List[str]] = None,
+        use_custom_keys: bool,
+        tags: Optional[List[str]],
         # python client arguments
-        return_full_completion: bool = False,
+        return_full_completion: bool,
     ) -> AsyncGenerator[str, None]:
         prompt_dict = prompt.model_dump()
         if "extra_body" in prompt_dict:
@@ -632,11 +629,11 @@ class AsyncUnify(_UniLLMClient):
         endpoint: str,
         prompt: Prompt,
         # platform arguments
-        use_custom_keys: bool = False,
-        tags: Optional[List[str]] = None,
+        use_custom_keys: bool,
+        tags: Optional[List[str]],
         # python client arguments
-        return_full_completion: bool = False,
-        cache: bool = False,
+        return_full_completion: bool,
+        cache: bool,
     ) -> Union[str, ChatCompletion]:
         prompt_dict = prompt.model_dump()
         if "extra_body" in prompt_dict:
@@ -677,36 +674,36 @@ class AsyncUnify(_UniLLMClient):
 
     async def _generate(  # noqa: WPS234, WPS211
         self,
-        user_message: Optional[str] = None,
-        system_message: Optional[str] = None,
-        messages: Optional[List[ChatCompletionMessageParam]] = None,
+        user_message: Optional[str],
+        system_message: Optional[str],
+        messages: Optional[List[ChatCompletionMessageParam]],
         *,
-        frequency_penalty: Optional[float] = None,
-        logit_bias: Optional[Dict[str, int]] = None,
-        logprobs: Optional[bool] = None,
-        top_logprobs: Optional[int] = None,
-        max_completion_tokens: Optional[int] = 1024,
-        n: Optional[int] = None,
-        presence_penalty: Optional[float] = None,
-        response_format: Optional[ResponseFormat] = None,
-        seed: Optional[int] = None,
-        stop: Union[Optional[str], List[str]] = None,
-        stream: Optional[bool] = False,
-        stream_options: Optional[ChatCompletionStreamOptionsParam] = None,
-        temperature: Optional[float] = 1.0,
-        top_p: Optional[float] = None,
-        tools: Optional[Iterable[ChatCompletionToolParam]] = None,
-        tool_choice: Optional[ChatCompletionToolChoiceOptionParam] = None,
-        parallel_tool_calls: Optional[bool] = None,
+        frequency_penalty: Optional[float],
+        logit_bias: Optional[Dict[str, int]],
+        logprobs: Optional[bool],
+        top_logprobs: Optional[int],
+        max_completion_tokens: Optional[int],
+        n: Optional[int],
+        presence_penalty: Optional[float],
+        response_format: Optional[ResponseFormat],
+        seed: Optional[int],
+        stop: Union[Optional[str], List[str]],
+        stream: Optional[bool],
+        stream_options: Optional[ChatCompletionStreamOptionsParam],
+        temperature: Optional[float],
+        top_p: Optional[float],
+        tools: Optional[Iterable[ChatCompletionToolParam]],
+        tool_choice: Optional[ChatCompletionToolChoiceOptionParam],
+        parallel_tool_calls: Optional[bool],
         # platform arguments
-        use_custom_keys: bool = False,
-        tags: Optional[List[str]] = None,
+        use_custom_keys: bool,
+        tags: Optional[List[str]],
         # python client arguments
-        return_full_completion: bool = False,
-        cache: bool = False,
+        return_full_completion: bool,
+        cache: bool,
         # passthrough arguments
-        extra_headers: Optional[Headers] = None,
-        extra_query: Optional[Query] = None,
+        extra_headers: Optional[Headers],
+        extra_query: Optional[Query],
         **kwargs,
     ) -> Union[AsyncGenerator[str, None], str]:  # noqa: DAR101, DAR201, DAR401
         contents = []

@@ -23,40 +23,40 @@ class _Client(ABC):
     """Base Abstract class for interacting with the Unify chat completions endpoint."""
 
     def __init__(
-        self,
-        *,
-        system_message: Optional[str] = None,
-        messages: Optional[
-            Union[List[ChatCompletionMessageParam],
-                  Dict[str, List[ChatCompletionMessageParam]]]] = None,
-        frequency_penalty: Optional[float] = None,
-        logit_bias: Optional[Dict[str, int]] = None,
-        logprobs: Optional[bool] = None,
-        top_logprobs: Optional[int] = None,
-        max_completion_tokens: Optional[int] = 1024,
-        n: Optional[int] = None,
-        presence_penalty: Optional[float] = None,
-        response_format: Optional[ResponseFormat] = None,
-        seed: Optional[int] = None,
-        stop: Union[Optional[str], List[str]] = None,
-        stream: Optional[bool] = False,
-        stream_options: Optional[ChatCompletionStreamOptionsParam] = None,
-        temperature: Optional[float] = 1.0,
-        top_p: Optional[float] = None,
-        tools: Optional[Iterable[ChatCompletionToolParam]] = None,
-        tool_choice: Optional[ChatCompletionToolChoiceOptionParam] = None,
-        parallel_tool_calls: Optional[bool] = None,
-        # platform arguments
-        use_custom_keys: bool = False,
-        tags: Optional[List[str]] = None,
-        api_key: Optional[str] = None,
-        # python client arguments
-        return_full_completion: bool = False,
-        cache: bool = False,
-        # passthrough arguments
-        extra_headers: Optional[Headers] = None,
-        extra_query: Optional[Query] = None,
-        **kwargs,
+            self,
+            *,
+            system_message: Optional[str] = None,
+            messages: Optional[
+                Union[List[ChatCompletionMessageParam],
+                      Dict[str, List[ChatCompletionMessageParam]]]] = None,
+            frequency_penalty: Optional[float] = None,
+            logit_bias: Optional[Dict[str, int]] = None,
+            logprobs: Optional[bool] = None,
+            top_logprobs: Optional[int] = None,
+            max_completion_tokens: Optional[int] = 1024,
+            n: Optional[int] = None,
+            presence_penalty: Optional[float] = None,
+            response_format: Optional[ResponseFormat] = None,
+            seed: Optional[int] = None,
+            stop: Union[Optional[str], List[str]] = None,
+            stream: Optional[bool] = False,
+            stream_options: Optional[ChatCompletionStreamOptionsParam] = None,
+            temperature: Optional[float] = 1.0,
+            top_p: Optional[float] = None,
+            tools: Optional[Iterable[ChatCompletionToolParam]] = None,
+            tool_choice: Optional[ChatCompletionToolChoiceOptionParam] = None,
+            parallel_tool_calls: Optional[bool] = None,
+            # platform arguments
+            use_custom_keys: bool = False,
+            tags: Optional[List[str]] = None,
+            api_key: Optional[str] = None,
+            # python client arguments
+            return_full_completion: bool = False,
+            cache: bool = False,
+            # passthrough arguments
+            extra_headers: Optional[Headers] = None,
+            extra_query: Optional[Query] = None,
+            **kwargs,
     ) -> None:  # noqa: DAR101, DAR401
         """Initialize the base Unify client.
 
@@ -257,8 +257,8 @@ class _Client(ABC):
 
     @property
     def messages(self) -> Optional[
-            Union[List[ChatCompletionMessageParam],
-                  Dict[str, List[ChatCompletionMessageParam]]]]:
+        Union[List[ChatCompletionMessageParam],
+              Dict[str, List[ChatCompletionMessageParam]]]]:
         """
         Get the default messages, if set.
 
@@ -776,40 +776,40 @@ class _Client(ABC):
     # ---------#
 
     def generate(
-        self,
-        user_message: Optional[str] = None,
-        system_message: Optional[str] = None,
-        messages: Optional[
-            Union[List[ChatCompletionMessageParam],
-                  Dict[str, List[ChatCompletionMessageParam]]]] = None,
-        *,
-        frequency_penalty: Optional[float] = None,
-        logit_bias: Optional[Dict[str, int]] = None,
-        logprobs: Optional[bool] = None,
-        top_logprobs: Optional[int] = None,
-        max_completion_tokens: Optional[int] = None,
-        n: Optional[int] = None,
-        presence_penalty: Optional[float] = None,
-        response_format: Optional[ResponseFormat] = None,
-        seed: Optional[int] = None,
-        stop: Union[Optional[str], List[str]] = None,
-        stream: Optional[bool] = None,
-        stream_options: Optional[ChatCompletionStreamOptionsParam] = None,
-        temperature: Optional[float] = None,
-        top_p: Optional[float] = None,
-        tools: Optional[Iterable[ChatCompletionToolParam]] = None,
-        tool_choice: Optional[ChatCompletionToolChoiceOptionParam] = None,
-        parallel_tool_calls: Optional[bool] = None,
-        # platform arguments
-        use_custom_keys: Optional[bool] = None,
-        tags: Optional[List[str]] = None,
-        # python client arguments
-        return_full_completion: Optional[bool] = None,
-        cache: Optional[bool] = None,
-        # passthrough arguments
-        extra_headers: Optional[Headers] = None,
-        extra_query: Optional[Query] = None,
-        **kwargs,
+            self,
+            user_message: Optional[str] = None,
+            system_message: Optional[str] = None,
+            messages: Optional[
+                Union[List[ChatCompletionMessageParam],
+                      Dict[str, List[ChatCompletionMessageParam]]]] = None,
+            *,
+            frequency_penalty: Optional[float] = None,
+            logit_bias: Optional[Dict[str, int]] = None,
+            logprobs: Optional[bool] = None,
+            top_logprobs: Optional[int] = None,
+            max_completion_tokens: Optional[int] = None,
+            n: Optional[int] = None,
+            presence_penalty: Optional[float] = None,
+            response_format: Optional[ResponseFormat] = None,
+            seed: Optional[int] = None,
+            stop: Union[Optional[str], List[str]] = None,
+            stream: Optional[bool] = None,
+            stream_options: Optional[ChatCompletionStreamOptionsParam] = None,
+            temperature: Optional[float] = None,
+            top_p: Optional[float] = None,
+            tools: Optional[Iterable[ChatCompletionToolParam]] = None,
+            tool_choice: Optional[ChatCompletionToolChoiceOptionParam] = None,
+            parallel_tool_calls: Optional[bool] = None,
+            # platform arguments
+            use_custom_keys: Optional[bool] = None,
+            tags: Optional[List[str]] = None,
+            # python client arguments
+            return_full_completion: Optional[bool] = None,
+            cache: Optional[bool] = None,
+            # passthrough arguments
+            extra_headers: Optional[Headers] = None,
+            extra_query: Optional[Query] = None,
+            **kwargs,
     ):
         """Generate content using the Unify API.
 
@@ -953,29 +953,28 @@ class _Client(ABC):
             logit_bias=_default(logit_bias, self._logit_bias),
             logprobs=_default(logprobs, self._logprobs),
             top_logprobs=_default(top_logprobs, self._top_logprobs),
-            max_completion_tokens=_default(_default(max_completion_tokens,
-                                                    self._max_completion_tokens), 1024),
+            max_completion_tokens=_default(max_completion_tokens,
+                                           self._max_completion_tokens),
             n=_default(n, self._n),
             presence_penalty=_default(presence_penalty, self._presence_penalty),
             response_format=_default(response_format, self._response_format),
             seed=_default(seed, self._seed),
             stop=_default(stop, self._stop),
-            stream=_default(_default(stream, self._stream), False),
+            stream=_default(stream, self._stream),
             stream_options=_default(stream_options, self._stream_options),
-            temperature=_default(_default(temperature, self._temperature), 1.0),
+            temperature=_default(temperature, self._temperature),
             top_p=_default(top_p, self._top_p),
             tools=_default(tools, self._tools),
             tool_choice=_default(tool_choice, self._tool_choice),
             parallel_tool_calls=_default(parallel_tool_calls,
                                          self._parallel_tool_calls),
             # platform arguments
-            use_custom_keys=_default(
-                _default(use_custom_keys, self._use_custom_keys), False),
+            use_custom_keys=_default(use_custom_keys, self._use_custom_keys),
             tags=_default(tags, self._tags),
             # python client arguments
-            return_full_completion=_default(_default(return_full_completion,
-                                            self._return_full_completion), False),
-            cache=_default(_default(cache, self._cache), False),
+            return_full_completion=True if _default(tools, self._tools) else
+            _default(return_full_completion, self._return_full_completion),
+            cache=_default(cache, self._cache),
             # passthrough arguments
             extra_headers=_default(extra_headers, self._extra_headers),
             extra_query=_default(extra_query, self._extra_query),
@@ -1017,38 +1016,38 @@ class _Client(ABC):
     @abstractmethod
     def _generate(
             self,
-            user_message: Optional[str] = None,
-            system_message: Optional[str] = None,
+            user_message: str,
+            system_message: str,
             messages: Optional[
                 Union[List[ChatCompletionMessageParam],
-                      Dict[str, List[ChatCompletionMessageParam]]]] = None,
+                      Dict[str, List[ChatCompletionMessageParam]]]],
             *,
-            frequency_penalty: Optional[float] = None,
-            logit_bias: Optional[Dict[str, int]] = None,
-            logprobs: Optional[bool] = None,
-            top_logprobs: Optional[int] = None,
-            max_completion_tokens: Optional[int] = 1024,
-            n: Optional[int] = None,
-            presence_penalty: Optional[float] = None,
-            response_format: Optional[ResponseFormat] = None,
-            seed: Optional[int] = None,
-            stop: Union[Optional[str], List[str]] = None,
-            stream: Optional[bool] = False,
-            stream_options: Optional[ChatCompletionStreamOptionsParam] = None,
-            temperature: Optional[float] = 1.0,
-            top_p: Optional[float] = None,
-            tools: Optional[Iterable[ChatCompletionToolParam]] = None,
-            tool_choice: Optional[ChatCompletionToolChoiceOptionParam] = None,
-            parallel_tool_calls: Optional[bool] = None,
+            frequency_penalty: Optional[float],
+            logit_bias: Optional[Dict[str, int]],
+            logprobs: Optional[bool],
+            top_logprobs: Optional[int],
+            max_completion_tokens: Optional[int],
+            n: Optional[int],
+            presence_penalty: Optional[float],
+            response_format: Optional[ResponseFormat],
+            seed: Optional[int],
+            stop: Union[Optional[str], List[str]],
+            stream: Optional[bool],
+            stream_options: Optional[ChatCompletionStreamOptionsParam],
+            temperature: Optional[float],
+            top_p: Optional[float],
+            tools: Optional[Iterable[ChatCompletionToolParam]],
+            tool_choice: Optional[ChatCompletionToolChoiceOptionParam],
+            parallel_tool_calls: Optional[bool],
             # platform arguments
-            use_custom_keys: bool = False,
-            tags: Optional[List[str]] = None,
+            use_custom_keys: bool,
+            tags: Optional[List[str]],
             # python client arguments
-            return_full_completion: bool = False,
-            cache: bool = False,
+            return_full_completion: bool,
+            cache: bool,
             # passthrough arguments
-            extra_headers: Optional[Headers] = None,
-            extra_query: Optional[Query] = None,
+            extra_headers: Optional[Headers],
+            extra_query: Optional[Query],
             **kwargs,
     ):
         raise NotImplementedError
