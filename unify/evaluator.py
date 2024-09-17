@@ -3,8 +3,7 @@ from abc import abstractmethod
 from typing import Type, Union
 from openai.types.chat.chat_completion import ChatCompletionMessage, Choice
 
-import unify.chat.clients
-
+from unify.agent import Agent
 from unify.chat.clients import _Client
 from unify.evaluation import Evaluation
 from unify.types import Score, Prompt, Datum, ChatCompletion
@@ -40,7 +39,7 @@ class Evaluator(abc.ABC):
             self,
             datum: Union[Prompt, Datum],
             response: Union[ChatCompletion, str],
-            agent: Union[str, _Client, unify.Agent]
+            agent: Union[str, _Client, Agent]
     ):
         """
         Evaluate the given response for this datum.
@@ -64,7 +63,7 @@ class Evaluator(abc.ABC):
             datum = Datum(prompt=datum)
         # handle response
         if isinstance(response, str):
-            response = unify.ChatCompletion(
+            response = ChatCompletion(
                 id="",
                 choices=[
                     Choice(
