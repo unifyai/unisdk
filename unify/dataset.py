@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import List, Dict, Union, Optional
 
 import unify
+from unify.casting import cast
 from unify.types import _Formatted
 from unify.types import Prompt, Datum
 # noinspection PyProtectedMember
@@ -54,15 +55,11 @@ class Dataset(_Formatted):
         elif not isinstance(data, list):
             data = [data]
         if isinstance(data[0], str):
-            self._data =\
-                [Datum(prompt=Prompt(
-                    messages=[{"role": "user", "content": usr_msg}]
-                ))
-                    for usr_msg in data]
+            self._data = [cast(usr_msg, Datum) for usr_msg in data]
         elif isinstance(data[0], Prompt):
-            self._data = [Datum(prompt=prompt) for prompt in data]
+            self._data = [cast(prompt, Datum) for prompt in data]
         elif isinstance(data[0], dict) and _dict_aligns_with_pydantic(data[0], Prompt):
-            self._data = [Datum(prompt=Prompt(**dct)) for dct in data]
+            self._data = [cast(Prompt(**dct), Datum) for dct in data]
         elif isinstance(data[0], Datum):
             self._data = data
         elif isinstance(data[0], dict) and \
