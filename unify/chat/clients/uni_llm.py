@@ -304,6 +304,9 @@ class _UniLLMClient(_Client, abc.ABC):
 
         Args:
             value: The endpoint name.
+
+        Returns:
+            This client, useful for chaining inplace calls.
         """
         valid_endpoints = unify.list_endpoints(api_key=self._api_key)
         if value not in valid_endpoints:
@@ -321,6 +324,9 @@ class _UniLLMClient(_Client, abc.ABC):
 
         Args:
             value: The model name.
+
+        Returns:
+            This client, useful for chaining inplace calls.
         """
         valid_models = unify.list_models(self._provider, api_key=self._api_key)
         if value not in valid_models:
@@ -348,6 +354,9 @@ class _UniLLMClient(_Client, abc.ABC):
 
         Args:
             value: The provider name.
+
+        Returns:
+            This client, useful for chaining inplace calls.
         """
         valid_providers = unify.list_providers(self._model, api_key=self._api_key)
         if value not in valid_providers:

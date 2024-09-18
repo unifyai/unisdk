@@ -455,6 +455,9 @@ class _Client(ABC):
 
         Args:
             value: The default system message.
+
+        Returns:
+            This client, useful for chaining inplace calls.
         """
         self._system_message = value
         return self
@@ -469,6 +472,9 @@ class _Client(ABC):
 
         Args:
             value: The default messages.
+
+        Returns:
+            This client, useful for chaining inplace calls.
         """
         self._messages = value
         return self
@@ -479,6 +485,9 @@ class _Client(ABC):
 
         Args:
             value: The default frequency penalty.
+
+        Returns:
+            This client, useful for chaining inplace calls.
         """
         self._frequency_penalty = value
         return self
@@ -489,6 +498,9 @@ class _Client(ABC):
 
         Args:
             value: The default logit bias.
+
+        Returns:
+            This client, useful for chaining inplace calls.
         """
         self._logit_bias = value
         return self
@@ -499,6 +511,9 @@ class _Client(ABC):
 
         Args:
             value: The default logprobs.
+
+        Returns:
+            This client, useful for chaining inplace calls.
         """
         self._logprobs = value
         return self
@@ -509,6 +524,9 @@ class _Client(ABC):
 
         Args:
             value: The default top logprobs.
+
+        Returns:
+            This client, useful for chaining inplace calls.
         """
         self._top_logprobs = value
         return self
@@ -519,6 +537,9 @@ class _Client(ABC):
 
         Args:
             value: The default max tokens.
+
+        Returns:
+            This client, useful for chaining inplace calls.
         """
         self._max_completion_tokens = value
         return self
@@ -529,6 +550,9 @@ class _Client(ABC):
 
         Args:
             value: The default n value.
+
+        Returns:
+            This client, useful for chaining inplace calls.
         """
         self._n = value
         return self
@@ -539,6 +563,9 @@ class _Client(ABC):
 
         Args:
             value: The default presence penalty.
+
+        Returns:
+            This client, useful for chaining inplace calls.
         """
         self._presence_penalty = value
         return self
@@ -549,6 +576,9 @@ class _Client(ABC):
 
         Args:
             value: The default response format.
+
+        Returns:
+            This client, useful for chaining inplace calls.
         """
         self._response_format = value
         return self
@@ -559,6 +589,9 @@ class _Client(ABC):
 
         Args:
             value: The default seed value.
+
+        Returns:
+            This client, useful for chaining inplace calls.
         """
         self._seed = value
         return self
@@ -569,6 +602,9 @@ class _Client(ABC):
 
         Args:
             value: The default stop value.
+
+        Returns:
+            This client, useful for chaining inplace calls.
         """
         self._stop = value
         return self
@@ -579,6 +615,9 @@ class _Client(ABC):
 
         Args:
             value: The default stream bool.
+
+        Returns:
+            This client, useful for chaining inplace calls.
         """
         self._stream = value
         return self
@@ -589,6 +628,9 @@ class _Client(ABC):
 
         Args:
             value: The default stream options.
+
+        Returns:
+            This client, useful for chaining inplace calls.
         """
         self._stream_options = value
         return self
@@ -599,6 +641,9 @@ class _Client(ABC):
 
         Args:
             value: The default temperature.
+
+        Returns:
+            This client, useful for chaining inplace calls.
         """
         self._temperature = value
         return self
@@ -609,6 +654,9 @@ class _Client(ABC):
 
         Args:
             value: The default top p value.
+
+        Returns:
+            This client, useful for chaining inplace calls.
         """
         self._top_p = value
         return self
@@ -619,6 +667,9 @@ class _Client(ABC):
 
         Args:
             value: The default tools.
+
+        Returns:
+            This client, useful for chaining inplace calls.
         """
         self._tools = value
         return self
@@ -629,6 +680,9 @@ class _Client(ABC):
 
         Args:
             value: The default tool choice.
+
+        Returns:
+            This client, useful for chaining inplace calls.
         """
         self._tool_choice = value
         return self
@@ -639,6 +693,9 @@ class _Client(ABC):
 
         Args:
             value: The default parallel tool calls bool.
+
+        Returns:
+            This client, useful for chaining inplace calls.
         """
         self._parallel_tool_calls = value
         return self
@@ -649,6 +706,9 @@ class _Client(ABC):
 
         Args:
             value: The default use custom keys bool.
+
+        Returns:
+            This client, useful for chaining inplace calls.
         """
         self._use_custom_keys = value
         return self
@@ -659,6 +719,9 @@ class _Client(ABC):
 
         Args:
             value: The default tags.
+
+        Returns:
+            This client, useful for chaining inplace calls.
         """
         self._tags = value
         return self
@@ -669,6 +732,9 @@ class _Client(ABC):
 
         Args:
             value: The default drop params bool.
+
+        Returns:
+            This client, useful for chaining inplace calls.
         """
         self._drop_params = value
         return self
@@ -679,6 +745,9 @@ class _Client(ABC):
 
         Args:
             value: The default region.
+
+        Returns:
+            This client, useful for chaining inplace calls.
         """
         self._region = value
         return self
@@ -689,6 +758,9 @@ class _Client(ABC):
 
         Args:
             value: The default log query body bool.
+
+        Returns:
+            This client, useful for chaining inplace calls.
         """
         self._log_query_body = value
         return self
@@ -699,6 +771,9 @@ class _Client(ABC):
 
         Args:
             value: The default log response body bool.
+
+        Returns:
+            This client, useful for chaining inplace calls.
         """
         self._log_response_body = value
         return self
@@ -709,6 +784,9 @@ class _Client(ABC):
 
         Args:
             value: The default return full completion bool.
+
+        Returns:
+            This client, useful for chaining inplace calls.
         """
         self._return_full_completion = value
         return self
@@ -719,6 +797,9 @@ class _Client(ABC):
 
         Args:
             value: The default cache bool.
+
+        Returns:
+            This client, useful for chaining inplace calls.
         """
         self._cache = value
         return self
@@ -729,6 +810,9 @@ class _Client(ABC):
 
         Args:
             value: The default extra headers.
+
+        Returns:
+            This client, useful for chaining inplace calls.
         """
         self._extra_headers = value
         return self
@@ -739,6 +823,9 @@ class _Client(ABC):
 
         Args:
             value: The default extra query.
+
+        Returns:
+            This client, useful for chaining inplace calls.
         """
         self._extra_query = value
         return self
@@ -749,6 +836,9 @@ class _Client(ABC):
 
         Args:
             value: The default extra body.
+
+        Returns:
+            This client, useful for chaining inplace calls.
         """
         self._extra_body = value
         return self
@@ -759,6 +849,9 @@ class _Client(ABC):
 
         Args:
               The default prompt.
+
+        Returns:
+            This client, useful for chaining inplace calls.
         """
         for f in value.model_fields:
             if hasattr(self, f):
