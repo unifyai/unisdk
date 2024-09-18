@@ -232,17 +232,19 @@ class ChatCompletion(_FormattedBaseModel, _ChatCompletion):
 class Datum(_FormattedBaseModel, extra=Extra.allow):
     prompt: Prompt
 
-    def __init__(self, *args, **kwargs):
-        if args:
-            assert len(args) == 1, "Can only accept one positional argument."
-            arg = args[0]
-            if isinstance(arg, str):
-                kwargs["prompt"] = Prompt(arg)
-            elif isinstance(arg, Prompt):
-                kwargs["prompt"] = arg
-            else:
-                raise Exception("Positional argument must either be a str or Prompt.")
-        super().__init__(**kwargs)
+    def __init__(self, prompt: Optional[Union[str, Prompt]]):
+        """
+        Create Datum instance.
+
+        Args:
+            prompt: The prompt, either as a user message or as the full prompt.
+
+        Returns:
+            The pydantic Datum instance.
+        """
+        if isinstance(prompt, str):
+            prompt = Prompt(prompt)
+        super().__init__(prompt=prompt)
 
     def __add__(self, other):
         return unify.Dataset(self) +\
