@@ -113,6 +113,25 @@ class TestMultiLLM(unittest.TestCase):
             self.assertGreater(len(response), 0)
             self.assertIn(animals[endpoint], response.lower())
 
+    def test_setter_chaining(self):
+        endpoints = (
+            "llama-3-8b-chat@together-ai",
+            "gpt-4o@openai",
+            "claude-3.5-sonnet@anthropic"
+        )
+        client = MultiLLM(endpoints=endpoints)
+        client.add_endpoints(
+            ["gpt-4@openai", "gpt-4-turbo@openai"]
+        ).remove_endpoints(
+            "claude-3.5-sonnet@anthropic"
+        )
+        assert set(client.endpoints) == {
+            "llama-3-8b-chat@together-ai",
+            "gpt-4o@openai",
+            "gpt-4@openai",
+            "gpt-4-turbo@openai"
+        }
+
 
 class TestAsyncMultiLLM(unittest.IsolatedAsyncioTestCase):
     def setUp(self) -> None:
