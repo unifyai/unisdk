@@ -148,6 +148,17 @@ class _MultiLLMClient(_Client, abc.ABC):
     def add_endpoints(
         self, endpoints: Union[List[str], str], ignore_duplicates: bool = True
     ) -> Self:
+        """
+        Add extra endpoints to be queried for each call to generate.
+
+        Args:
+            endpoints: The extra endpoints to add.
+
+            ignore_duplicates: Whether or not to ignore duplicate endpoints passed.
+
+        Returns:
+            This client, useful for chaining inplace calls.
+        """
         if isinstance(endpoints, str):
             endpoints = [endpoints]
         # remove duplicates
@@ -172,6 +183,19 @@ class _MultiLLMClient(_Client, abc.ABC):
     def remove_endpoints(
         self, endpoints: Union[List[str], str], ignore_missing: bool = True
     ) -> Self:
+        """
+        Remove endpoints from the current list, which are queried for each call to
+        generate.
+
+        Args:
+            endpoints: The extra endpoints to add.
+
+            ignore_missing: Whether or not to ignore endpoints passed which are not
+            currently present in the client endpoint list.
+
+        Returns:
+            This client, useful for chaining inplace calls.
+        """
         if isinstance(endpoints, str):
             endpoints = [endpoints]
         # remove irrelevant
@@ -219,10 +243,23 @@ class _MultiLLMClient(_Client, abc.ABC):
 
     @property
     def endpoints(self) -> Tuple[str, ...]:
+        """
+        Get the current tuple of endpoints.
+
+        Returns:
+            The tuple of endpoints.
+        """
         return tuple(self._endpoints)
 
     @property
     def clients(self) -> Dict[str, _UniLLMClient]:
+        """
+        Get the current dictionary of clients, with endpoint names as keys and
+        Unify or AsyncUnify instances as values.
+
+        Returns:
+            The dictionary of clients.
+        """
         return self._clients
 
     # Representation #

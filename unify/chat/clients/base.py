@@ -808,7 +808,8 @@ class _Client(ABC):
             extra_query: Optional[Query] = None,
             **kwargs,
     ):
-        """Generate content using the Unify API.
+        """Generate a ChatCompletion response for the specified endpoint,
+        from the provided query parameters.
 
         Args:
             user_message: A string containing the user message.
