@@ -189,8 +189,15 @@ class Datum(_FormattedBaseModel, extra=Extra.allow):
     prompt: Prompt
 
     def __init__(self, *args, **kwargs):
-        if args and isinstance(args[0], str):
-            kwargs["prompt"] = Prompt(args[0])
+        if args:
+            assert len(args) == 1, "Can only accept one positional argument."
+            arg = args[0]
+            if isinstance(arg, str):
+                kwargs["prompt"] = Prompt(arg)
+            elif isinstance(arg, Prompt):
+                kwargs["prompt"] = arg
+            else:
+                raise Exception("Positional argument must either be a str or Prompt.")
         super().__init__(**kwargs)
 
     def __add__(self, other):
