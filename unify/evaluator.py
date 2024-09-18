@@ -1,13 +1,12 @@
 import abc
 from abc import abstractmethod
 from typing import Type, Union
-from openai.types.chat.chat_completion import ChatCompletionMessage, Choice
 
 from unify.agent import Agent
 from unify.chat.clients import _Client
 from unify.evaluation import Evaluation
 from unify.casting import cast
-from unify.types import Score, Prompt, Datum, ChatCompletion
+from unify.types import Score, Prompt, ChatCompletion
 
 
 class Evaluator(abc.ABC):
@@ -64,6 +63,9 @@ class Evaluator(abc.ABC):
             An Evaluation instance, containing the prompt, response, agent, score and
             optional extra data used during the evaluation.
         """
+
+        # upcast or downcast inputs
+
         # get type hints for self._evaluation, if they exist
         eval_ann = self._evaluate.__annotations__
         # upcast or downcast prompt to the expected type
@@ -73,34 +75,18 @@ class Evaluator(abc.ABC):
         expected_response_type = eval_ann["response"] if "response" in eval_ann \
             else ChatCompletion
         response = cast(response, expected_response_type)
+
         # perform the evaluation
         score = self._evaluate(prompt, response, **kwargs)
-        # handle prompt upcasting
-        if isinstance(prompt, str):
-            prompt = Prompt(prompt)
-        # handle response up casting
-        if isinstance(response, str):
-            response = ChatCompletion(
-                id="",
-                choices=[
-                    Choice(
-                        finish_reason="stop",
-                        index=0,
-                        message=ChatCompletionMessage(
-                            role="assistant",
-                            content=response
-                        )
-                    )
-                ],
-                created=0,
-                model="",
-                object="chat.completion"
-            )
-        # handle score upcasting
-        if isinstance(score, bool):
-            score = float(score)
-        if isinstance(score, float):
-            score = self.class_config(score)
+
+        # upcast to full type for storage in Evaluation
+
+        # prompt upcasting
+        prompt = cast(prompt, Prompt)
+        # response upcasting
+        response = cast(response, ChatCompletion)
+        # score upcasting
+        score = cast(score, self.class_config)
         # return evaluation
         return Evaluation(
             prompt=prompt,
