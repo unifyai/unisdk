@@ -291,3 +291,48 @@ class Score(_FormattedBaseModel, abc.ABC):
     @abc.abstractmethod
     def config(self) -> Dict[float, str]:
         raise NotImplementedError
+
+
+# Representation #
+# ---------------#
+
+_REPR_MODE = None
+
+
+def repr_mode() -> str:
+    global _REPR_MODE
+    return _REPR_MODE
+
+
+def set_repr_mode(mode: str) -> None:
+    global _REPR_MODE
+    _REPR_MODE = ReprMode(mode)
+
+
+class ReprMode(str):
+
+    def __init__(self, val: str):
+        assert val in ("verbose", "concise"),\
+            "Expected value to be either 'verbose' or 'concise', " \
+            "but found {}".format(val)
+        self._prev_val = repr_mode()
+        self._val = val
+
+    def __enter__(self) -> None:
+        rep_mode = ReprMode(self._val)
+        set_repr_mode(rep_mode)
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self._val = self._prev_val
+        self._prev_val = None
+        set_repr_mode(ReprMode(self._val))
+
+    def __repr__(self):
+        return str(self._val)
+
+    def __str__(self):
+        return str(self._val)
+
+
+# noinspection PyRedeclaration
+_REPR_MODE = ReprMode("verbose")
