@@ -4,7 +4,7 @@ import rich.repr
 from io import StringIO
 from rich.console import Console
 from pydantic import BaseModel, Extra
-from typing import Optional, Union, Tuple, List, Dict, Mapping, Any
+from typing import Optional, Union, Tuple, List, Dict, Mapping
 from openai.types.chat import (
     ChatCompletionToolParam,
     ChatCompletionToolChoiceOptionParam,
@@ -13,7 +13,7 @@ from openai.types.chat import (
 )
 from pydantic import create_model
 from pydantic._internal._model_construction import ModelMetaclass
-from openai._types import Headers, Query, Body
+from openai._types import Query, Body
 from openai.types.chat.completion_create_params import ResponseFormat
 from openai.types.chat.chat_completion import ChatCompletionMessage, Choice
 
@@ -125,8 +125,8 @@ class Prompt(_FormattedBaseModel):
 
     def __init__(
             self,
-            user_message=None,
-            system_message=None,
+            user_message: Optional[str] = None,
+            system_message: Optional[str] = None,
             **kwargs
     ):
         """
@@ -176,11 +176,17 @@ class Prompt(_FormattedBaseModel):
 
 class ChatCompletion(_FormattedBaseModel, _ChatCompletion):
 
-    def __init__(self, *args, **kwargs):
-        if args:
-            assert len(args) == 1 and isinstance(args[0], str), \
-                "Can only accept one positional argument, and this must be a string " \
-                "representing the user message."
+    def __init__(self, assistant_message: Optional[str] = None, **kwargs):
+        """
+        Create ChatCompletion instance.
+
+        Args:
+            assistant_message: The assistant message, optional.
+
+        Returns:
+            The pydantic ChatCompletion instance.
+        """
+        if assistant_message:
             kwargs = {
                 **dict(
                     id="",
@@ -190,7 +196,7 @@ class ChatCompletion(_FormattedBaseModel, _ChatCompletion):
                             index=0,
                             message=ChatCompletionMessage(
                                 role="assistant",
-                                content=args[0]
+                                content=assistant_message
                             )
                         )
                     ],
