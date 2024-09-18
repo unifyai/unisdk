@@ -10,8 +10,8 @@ from openai.types.chat import (
     ChatCompletionStreamOptionsParam,
 )
 from openai.types.chat.completion_create_params import ResponseFormat
-from typing import AsyncGenerator, Dict, Generator, List, Optional, Union, Iterable, \
-    Self
+from typing_extensions import Self
+from typing import AsyncGenerator, Dict, Generator, List, Optional, Union, Iterable
 
 # local
 import unify

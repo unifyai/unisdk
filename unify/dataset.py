@@ -1,5 +1,6 @@
 from __future__ import annotations
-from typing import List, Dict, Union, Optional, Self
+from typing_extensions import Self
+from typing import List, Dict, Union, Optional
 
 import unify
 from unify.casting import cast

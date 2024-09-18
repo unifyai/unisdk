@@ -10,7 +10,8 @@ from openai.types.chat import (
 )
 from openai.types.chat.completion_create_params import ResponseFormat
 from abc import ABC, abstractmethod
-from typing import Mapping, Dict, List, Optional, Union, Iterable, Self
+from typing import Mapping, Dict, List, Optional, Union, Iterable
+from typing_extensions import Self
 
 # local
 from unify import BASE_URL

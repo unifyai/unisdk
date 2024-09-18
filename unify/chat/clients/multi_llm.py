@@ -2,7 +2,8 @@
 import abc
 import asyncio
 import requests
-from typing import Optional, Union, List, Tuple, Dict, Iterable, Self
+from typing_extensions import Self
+from typing import Optional, Union, List, Tuple, Dict, Iterable
 # noinspection PyProtectedMember
 from openai._types import Headers, Query
 from openai.types.chat import (
