@@ -10,7 +10,8 @@ from openai.types.chat import (
     ChatCompletionStreamOptionsParam,
 )
 from openai.types.chat.completion_create_params import ResponseFormat
-from typing import AsyncGenerator, Dict, Generator, List, Optional, Union, Iterable
+from typing import AsyncGenerator, Dict, Generator, List, Optional, Union, Iterable, \
+    Self
 
 # local
 import unify
@@ -297,7 +298,7 @@ class _UniLLMClient(_Client, abc.ABC):
     # Setters #
     # --------#
 
-    def set_endpoint(self, value: str) -> None:
+    def set_endpoint(self, value: str) -> Self:
         """
         Set the endpoint name.  # noqa: DAR101.
 
@@ -312,8 +313,9 @@ class _UniLLMClient(_Client, abc.ABC):
             )
         self._endpoint = value
         self._model, self._provider = value.split("@")  # noqa: WPS414
+        return self
 
-    def set_model(self, value: str) -> None:
+    def set_model(self, value: str) -> Self:
         """
         Set the model name.  # noqa: DAR101.
 
@@ -338,8 +340,9 @@ class _UniLLMClient(_Client, abc.ABC):
         self._model = value
         if self._provider:
             self._endpoint = "@".join([value, self._provider])
+        return self
 
-    def set_provider(self, value: str) -> None:
+    def set_provider(self, value: str) -> Self:
         """
         Set the provider name.  # noqa: DAR101.
 
@@ -362,6 +365,7 @@ class _UniLLMClient(_Client, abc.ABC):
         self._provider = value
         if self._model:
             self._endpoint = "@".join([self._model, value])
+        return self
 
     # Representation #
     # ---------------#
