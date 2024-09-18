@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import List, Dict, Union, Optional
+from typing import List, Dict, Union, Optional, Self
 
 import unify
 from unify.casting import cast
@@ -35,12 +35,12 @@ class Dataset(_Formatted):
             will be bi-directional, if "upload" then all local changes will be
             uploaded to the upstream account without any downloads, if "download"
             then all upstream changes will be downloaded locally without any uploads.
-            If "upstream_mirrors_local" then the upstream dataset will be anchored to the
-            local version at all times, and any other uploads outside the local dataset
-            will be overwritten. If "local_mirrors_upstream" then the local version will be
-            anchored to the upstream version at all times, and any local changes will be
-            overwritten. If `False` or "neither" then no synchronization will be done
-            automatically.
+            If "upstream_mirrors_local" then the upstream dataset will be anchored to
+            the local version at all times, and any other uploads outside the local
+            dataset will be overwritten. If "local_mirrors_upstream" then the local
+            version will be anchored to the upstream version at all times, and any local
+            changes will be overwritten. If `False` or "neither" then no synchronization
+            will be done automatically.
 
             api_key: API key for accessing the Unify API. If None, it attempts to
             retrieve the API key from the environment variable UNIFY_KEY. Defaults to
@@ -99,7 +99,7 @@ class Dataset(_Formatted):
         self._auto_sync()
         return self._auto_sync_flag
 
-    def set_name(self, name: str) -> Dataset:
+    def set_name(self, name: str) -> Self:
         """
         Set the name of the dataset.
 
@@ -113,7 +113,7 @@ class Dataset(_Formatted):
         self._name = name
         return self
 
-    def set_auto_sync(self, auto_sync: Union[bool, str]) -> Dataset:
+    def set_auto_sync(self, auto_sync: Union[bool, str]) -> Self:
         """
         Set the value of the auto-sync flag.
 
@@ -123,12 +123,12 @@ class Dataset(_Formatted):
             will be bi-directional, if "upload" then all local changes will be
             uploaded to the upstream account without any downloads, if "download"
             then all upstream changes will be downloaded locally without any uploads.
-            If "upstream_mirrors_local" then the upstream dataset will be anchored to the
-            local version at all times, and any other uploads outside the local dataset
-            will be overwritten. If "local_mirrors_upstream" then the local version will be
-            anchored to the upstream version at all times, and any local changes will be
-            overwritten. If `False` or "neither" then no synchronization will be done
-            automatically.
+            If "upstream_mirrors_local" then the upstream dataset will be anchored to
+            the local version at all times, and any other uploads outside the local
+            dataset will be overwritten. If "local_mirrors_upstream" then the local
+            version will be anchored to the upstream version at all times, and any local
+            changes will be overwritten. If `False` or "neither" then no synchronization
+            will be done automatically.
 
         Returns:
             This dataset, useful for chaining methods.
@@ -142,7 +142,7 @@ class Dataset(_Formatted):
         name: str,
         auto_sync: Union[bool, str] = False,
         api_key: Optional[str] = None,
-    ) -> Dataset:
+    ) -> Self:
         """
         Initialize a local dataset of LLM queries, from the upstream dataset.
 
@@ -173,7 +173,7 @@ class Dataset(_Formatted):
             "upstream dataset, or create a new name if it doesn't yet exist upstream."
         )
 
-    def upload(self, overwrite: bool = False) -> Dataset:
+    def upload(self, overwrite: bool = False) -> Self:
         """
         Uploads all unique local data in the dataset to the user account upstream.
         This function will not download any uniques from upstream.
@@ -223,7 +223,7 @@ class Dataset(_Formatted):
             self._auto_sync_flag = auto_sync_flag
         return self
 
-    def download(self, overwrite: bool = False) -> Dataset:
+    def download(self, overwrite: bool = False) -> Self:
         """
         Downloads all unique upstream data from the user account to the local dataset.
         This function will not upload any unique values stored locally.
@@ -269,7 +269,7 @@ class Dataset(_Formatted):
             self.upload(overwrite=overwrite)
             self._auto_sync_flag = auto_sync_flag
 
-    def sync(self) -> Dataset:
+    def sync(self) -> Self:
         """
         Synchronize the dataset in both directions, downloading any values missing
         locally, and uploading any values missing from upstream in the account.
@@ -284,7 +284,7 @@ class Dataset(_Formatted):
         self._auto_sync_flag = auto_sync_flag
         return self
 
-    def upstream_diff(self) -> Dataset:
+    def upstream_diff(self) -> Self:
         """
         Prints the difference between the local dataset and the upstream dataset.
 
@@ -307,7 +307,7 @@ class Dataset(_Formatted):
         return self
 
     def add(self, other: Union[Dataset, str, Dict, Prompt, Datum,
-                               List[Union[str, Dict, Prompt, Datum]]]) -> Dataset:
+                               List[Union[str, Dict, Prompt, Datum]]]) -> Self:
         """
         Adds another dataset to this one, return a new Dataset instance, with this
         new dataset receiving all unique queries from the other added dataset.
@@ -323,7 +323,7 @@ class Dataset(_Formatted):
         return Dataset(data=data, auto_sync=self._auto_sync_flag, api_key=self._api_key)
 
     def sub(self, other: Union[Dataset, str, Dict, Prompt, Datum,
-                               List[Union[str, Dict, Prompt, Datum]]]) -> Dataset:
+                               List[Union[str, Dict, Prompt, Datum]]]) -> Self:
         """
         Subtracts another dataset from this one, return a new Dataset instance, with
         this new dataset losing all queries from the other subtracted dataset.
@@ -346,7 +346,7 @@ class Dataset(_Formatted):
             self,
             other: Union[Dataset, str, Dict, Prompt, Datum,
                          List[Union[str, Dict, Prompt, Datum]]]
-    ) -> Dataset:
+    ) -> Self:
         """
         Adds another dataset to this one, with this dataset receiving all unique queries
         from the other added dataset.
@@ -368,7 +368,7 @@ class Dataset(_Formatted):
             self,
             other: Union[Dataset, str, Dict, Prompt, Datum,
                          List[Union[str, Dict, Prompt, Datum]]]
-    ) -> Dataset:
+    ) -> Self:
         """
         Subtracts another dataset from this one, with this dataset losing all queries
         from the other subtracted dataset.
@@ -391,7 +391,7 @@ class Dataset(_Formatted):
         return self
 
     def __add__(self, other: Union[Dataset, str, Dict, Prompt, Datum,
-                                   List[Union[str, Dict, Prompt, Datum]]]) -> Dataset:
+                                   List[Union[str, Dict, Prompt, Datum]]]) -> Self:
         """
         Adds another dataset to this one via the + operator, return a new Dataset
         instance, with this new dataset receiving all unique queries from the other
@@ -406,7 +406,7 @@ class Dataset(_Formatted):
         return self.add(other)
 
     def __radd__(self, other: Union[Dataset, str, Dict, Prompt, Datum,
-                                    List[Union[str, Dict, Prompt, Datum]]]) -> Dataset:
+                                    List[Union[str, Dict, Prompt, Datum]]]) -> Self:
         """
         Adds another dataset to this one via the + operator, this is used if the
         other item does not have a valid __add__ method for these two types. Return a
@@ -422,7 +422,7 @@ class Dataset(_Formatted):
         return Dataset(other).add(self)
 
     def __iadd__(self, other: Union[Dataset, str, Dict, Prompt, Datum,
-                                    List[Union[str, Dict, Prompt, Datum]]]) -> Dataset:
+                                    List[Union[str, Dict, Prompt, Datum]]]) -> Self:
         """
         Adds another dataset to this one, with this dataset receiving all unique queries
         from the other added dataset.
@@ -436,7 +436,7 @@ class Dataset(_Formatted):
         return self.inplace_add(other)
 
     def __sub__(self, other: Union[Dataset, str, Dict, Prompt, Datum,
-                                   List[Union[str, Dict, Prompt, Datum]]]) -> Dataset:
+                                   List[Union[str, Dict, Prompt, Datum]]]) -> Self:
         """
         Subtracts another dataset from this one via the - operator, return a new Dataset
         instance, with this new dataset losing all queries from the other subtracted
@@ -451,7 +451,7 @@ class Dataset(_Formatted):
         return self.sub(other)
 
     def __rsub__(self, other: Union[Dataset, str, Dict, Prompt, Datum,
-                                    List[Union[str, Dict, Prompt, Datum]]]) -> Dataset:
+                                    List[Union[str, Dict, Prompt, Datum]]]) -> Self:
         """
         Subtracts another dataset from this one via the - operator, this is used if the
         other item does not have a valid __sub__ method for these two types. Return a
@@ -470,7 +470,7 @@ class Dataset(_Formatted):
             self,
             other: Union[Dataset, str, Dict, Prompt, Datum,
                          List[Union[str, Dict, Prompt, Datum]]]
-    ) -> Dataset:
+    ) -> Self:
         """
         Subtracts another dataset from this one, with this dataset losing all queries
         from the other subtracted dataset.
