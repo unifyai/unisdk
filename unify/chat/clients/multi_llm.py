@@ -47,6 +47,10 @@ class _MultiLLMClient(_Client, abc.ABC):
         # platform arguments
         use_custom_keys: bool = False,
         tags: Optional[List[str]] = None,
+        drop_params: Optional[bool] = True,
+        region: Optional[str] = None,
+        log_query_body: Optional[bool] = True,
+        log_response_body: Optional[bool] = True,
         api_key: Optional[str] = None,
         # python client arguments
         return_full_completion: bool = False,
@@ -77,6 +81,10 @@ class _MultiLLMClient(_Client, abc.ABC):
             # platform arguments
             use_custom_keys=use_custom_keys,
             tags=tags,
+            drop_params=drop_params,
+            region=region,
+            log_query_body=log_query_body,
+            log_response_body=log_response_body,
             api_key=api_key,
             # python client arguments
             return_full_completion=return_full_completion,
@@ -118,6 +126,10 @@ class _MultiLLMClient(_Client, abc.ABC):
                 # platform arguments
                 use_custom_keys=self.use_custom_keys,
                 tags=self.tags,
+                drop_params=self.drop_params,
+                region=self.region,
+                log_query_body=self.log_query_body,
+                log_response_body=self.log_response_body,
                 api_key=self._api_key,
                 # python client arguments
                 return_full_completion=self.return_full_completion,
@@ -246,6 +258,10 @@ class MultiLLM(_MultiLLMClient):
         # platform arguments
         use_custom_keys: bool = False,
         tags: Optional[List[str]] = None,
+        drop_params: Optional[bool] = True,
+        region: Optional[str] = None,
+        log_query_body: Optional[bool] = True,
+        log_response_body: Optional[bool] = True,
         api_key: Optional[str] = None,
         # python client arguments
         return_full_completion: bool = False,
@@ -277,6 +293,10 @@ class MultiLLM(_MultiLLMClient):
             # platform arguments
             use_custom_keys=use_custom_keys,
             tags=tags,
+            drop_params=drop_params,
+            region=region,
+            log_query_body=log_query_body,
+            log_response_body=log_response_body,
             api_key=api_key,
             # python client arguments
             return_full_completion=return_full_completion,
@@ -313,6 +333,10 @@ class MultiLLM(_MultiLLMClient):
         # platform arguments
         use_custom_keys: bool = False,
         tags: Optional[List[str]] = None,
+        drop_params: Optional[bool] = True,
+        region: Optional[str] = None,
+        log_query_body: Optional[bool] = True,
+        log_response_body: Optional[bool] = True,
         # python client arguments
         return_full_completion: bool = False,
         # passthrough arguments
@@ -341,6 +365,10 @@ class MultiLLM(_MultiLLMClient):
             parallel_tool_calls=parallel_tool_calls,
             use_custom_keys=use_custom_keys,
             tags=tags,
+            drop_params=drop_params,
+            region=region,
+            log_query_body=log_query_body,
+            log_response_body=log_response_body,
             return_full_completion=return_full_completion,
             extra_headers=extra_headers,
             extra_query=extra_query,
@@ -389,6 +417,10 @@ class MultiLLMAsync(_MultiLLMClient):
         # platform arguments
         use_custom_keys: bool = False,
         tags: Optional[List[str]] = None,
+        drop_params: Optional[bool] = True,
+        region: Optional[str] = None,
+        log_query_body: Optional[bool] = True,
+        log_response_body: Optional[bool] = True,
         api_key: Optional[str] = None,
         # python client arguments
         return_full_completion: bool = False,
@@ -420,6 +452,10 @@ class MultiLLMAsync(_MultiLLMClient):
             # platform arguments
             use_custom_keys=use_custom_keys,
             tags=tags,
+            drop_params=drop_params,
+            region=region,
+            log_query_body=log_query_body,
+            log_response_body=log_response_body,
             api_key=api_key,
             # python client arguments
             return_full_completion=return_full_completion,
@@ -456,6 +492,10 @@ class MultiLLMAsync(_MultiLLMClient):
         # platform arguments
         use_custom_keys: bool = False,
         tags: Optional[List[str]] = None,
+        drop_params: Optional[bool] = True,
+        region: Optional[str] = None,
+        log_query_body: Optional[bool] = True,
+        log_response_body: Optional[bool] = True,
         # python client arguments
         return_full_completion: bool = False,
         # passthrough arguments
@@ -484,6 +524,10 @@ class MultiLLMAsync(_MultiLLMClient):
             parallel_tool_calls=parallel_tool_calls,
             use_custom_keys=use_custom_keys,
             tags=tags,
+            drop_params=drop_params,
+            region=region,
+            log_query_body=log_query_body,
+            log_response_body=log_response_body,
             return_full_completion=return_full_completion,
             extra_headers=extra_headers,
             extra_query=extra_query,

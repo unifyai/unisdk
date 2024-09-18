@@ -50,6 +50,10 @@ class _UniLLMClient(_Client, abc.ABC):
         # platform arguments
         use_custom_keys: bool = False,
         tags: Optional[List[str]] = None,
+        drop_params: Optional[bool] = True,
+        region: Optional[str] = None,
+        log_query_body: Optional[bool] = True,
+        log_response_body: Optional[bool] = True,
         api_key: Optional[str] = None,
         # python client arguments
         return_full_completion: bool = False,
@@ -167,6 +171,18 @@ class _UniLLMClient(_Client, abc.ABC):
             tags: Arbitrary number of tags to classify this API query as needed. Helpful
             for generally grouping queries across tasks and users, for logging purposes.
 
+            drop_params: Whether or not to drop unsupported OpenAI params by the
+            provider you’re using.
+
+            region: A string used to represent the region where the endpoint is
+            accessed. Only relevant for on-prem deployments with certain providers like
+            `vertex-ai`, `aws-bedrock` and `azure-ml`, where the endpoint is being
+            accessed through a specified region.
+
+            log_query_body: Whether to log the contents of the query json body.
+
+            log_response_body: Whether to log the contents of the response json body.
+
             return_full_completion: If False, only return the message content
             chat_completion.choices[0].message.content.strip(" ") from the OpenAI
             return. Otherwise, the full response chat_completion is returned.
@@ -216,6 +232,10 @@ class _UniLLMClient(_Client, abc.ABC):
             # platform arguments
             use_custom_keys=use_custom_keys,
             tags=tags,
+            drop_params=drop_params,
+            region=region,
+            log_query_body=log_query_body,
+            log_response_body=log_response_body,
             api_key=api_key,
             # python client arguments
             return_full_completion=return_full_completion,
@@ -382,6 +402,10 @@ class Unify(_UniLLMClient):
         # platform arguments
         use_custom_keys: bool,
         tags: Optional[List[str]],
+        drop_params: Optional[bool],
+        region: Optional[str],
+        log_query_body: Optional[bool],
+        log_response_body: Optional[bool],
         # python client arguments
         return_full_completion: bool,
     ) -> Generator[str, None, None]:
@@ -400,6 +424,10 @@ class Unify(_UniLLMClient):
                 "signature": "python",
                 "use_custom_keys": use_custom_keys,
                 "tags": tags,
+                "drop_params": drop_params,
+                "region": region,
+                "log_query_body": log_query_body,
+                "log_response_body": log_response_body,
                 # passthrough json arguments
                 **extra_body,
             },
@@ -425,6 +453,10 @@ class Unify(_UniLLMClient):
         # platform arguments
         use_custom_keys: bool,
         tags: Optional[List[str]],
+        drop_params: Optional[bool],
+        region: Optional[str],
+        log_query_body: Optional[bool],
+        log_response_body: Optional[bool],
         # python client arguments
         return_full_completion: bool,
         cache: bool,
@@ -451,6 +483,10 @@ class Unify(_UniLLMClient):
                 "signature": "python",
                 "use_custom_keys": use_custom_keys,
                 "tags": tags,
+                "drop_params": drop_params,
+                "region": region,
+                "log_query_body": log_query_body,
+                "log_response_body": log_response_body,
                 # passthrough json arguments
                 **extra_body,
             },
@@ -507,6 +543,10 @@ class Unify(_UniLLMClient):
         # platform arguments
         use_custom_keys: bool,
         tags: Optional[List[str]],
+        drop_params: Optional[bool],
+        region: Optional[str],
+        log_query_body: Optional[bool],
+        log_response_body: Optional[bool],
         # python client arguments
         return_full_completion: bool,
         cache: bool,
@@ -553,6 +593,10 @@ class Unify(_UniLLMClient):
                 # platform arguments
                 use_custom_keys=use_custom_keys,
                 tags=tags,
+                drop_params=drop_params,
+                region=region,
+                log_query_body=log_query_body,
+                log_response_body=log_response_body,
                 # python client arguments
                 return_full_completion=return_full_completion,
             )
@@ -562,6 +606,10 @@ class Unify(_UniLLMClient):
             # platform arguments
             use_custom_keys=use_custom_keys,
             tags=tags,
+            drop_params=drop_params,
+            region=region,
+            log_query_body=log_query_body,
+            log_response_body=log_response_body,
             # python client arguments
             return_full_completion=return_full_completion,
             cache=cache,
@@ -590,6 +638,10 @@ class AsyncUnify(_UniLLMClient):
         # platform arguments
         use_custom_keys: bool,
         tags: Optional[List[str]],
+        drop_params: Optional[bool],
+        region: Optional[str],
+        log_query_body: Optional[bool],
+        log_response_body: Optional[bool],
         # python client arguments
         return_full_completion: bool,
     ) -> AsyncGenerator[str, None]:
@@ -608,6 +660,10 @@ class AsyncUnify(_UniLLMClient):
                 "signature": "python",
                 "use_custom_keys": use_custom_keys,
                 "tags": tags,
+                "drop_params": drop_params,
+                "region": region,
+                "log_query_body": log_query_body,
+                "log_response_body": log_response_body,
                 # passthrough json arguments
                 **extra_body,
             },
@@ -631,6 +687,10 @@ class AsyncUnify(_UniLLMClient):
         # platform arguments
         use_custom_keys: bool,
         tags: Optional[List[str]],
+        drop_params: Optional[bool],
+        region: Optional[str],
+        log_query_body: Optional[bool],
+        log_response_body: Optional[bool],
         # python client arguments
         return_full_completion: bool,
         cache: bool,
@@ -648,6 +708,10 @@ class AsyncUnify(_UniLLMClient):
                 "signature": "python",
                 "use_custom_keys": use_custom_keys,
                 "tags": tags,
+                "drop_params": drop_params,
+                "region": region,
+                "log_query_body": log_query_body,
+                "log_response_body": log_response_body,
                 # passthrough json arguments
                 **extra_body,
             },
@@ -698,6 +762,10 @@ class AsyncUnify(_UniLLMClient):
         # platform arguments
         use_custom_keys: bool,
         tags: Optional[List[str]],
+        drop_params: Optional[bool],
+        region: Optional[str],
+        log_query_body: Optional[bool],
+        log_response_body: Optional[bool],
         # python client arguments
         return_full_completion: bool,
         cache: bool,
@@ -746,6 +814,10 @@ class AsyncUnify(_UniLLMClient):
                 # platform arguments
                 use_custom_keys=use_custom_keys,
                 tags=tags,
+                drop_params=drop_params,
+                region=region,
+                log_query_body=log_query_body,
+                log_response_body=log_response_body,
                 # python client arguments
                 return_full_completion=return_full_completion,
             )
@@ -755,6 +827,10 @@ class AsyncUnify(_UniLLMClient):
             # platform arguments
             use_custom_keys=use_custom_keys,
             tags=tags,
+            drop_params=drop_params,
+            region=region,
+            log_query_body=log_query_body,
+            log_response_body=log_response_body,
             # python client arguments
             return_full_completion=return_full_completion,
             cache=cache,

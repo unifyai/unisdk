@@ -49,6 +49,10 @@ class _Client(ABC):
             # platform arguments
             use_custom_keys: bool = False,
             tags: Optional[List[str]] = None,
+            drop_params: Optional[bool] = True,
+            region: Optional[str] = None,
+            log_query_body: Optional[bool] = True,
+            log_response_body: Optional[bool] = True,
             api_key: Optional[str] = None,
             # python client arguments
             return_full_completion: bool = False,
@@ -159,6 +163,18 @@ class _Client(ABC):
             tags: Arbitrary number of tags to classify this API query as needed. Helpful
             for generally grouping queries across tasks and users, for logging purposes.
 
+            drop_params: Whether or not to drop unsupported OpenAI params by the
+            provider you’re using.
+
+            region: A string used to represent the region where the endpoint is
+            accessed. Only relevant for on-prem deployments with certain providers like
+            `vertex-ai`, `aws-bedrock` and `azure-ml`, where the endpoint is being
+            accessed through a specified region.
+
+            log_query_body: Whether to log the contents of the query json body.
+
+            log_response_body: Whether to log the contents of the response json body.
+
             return_full_completion: If False, only return the message content
             chat_completion.choices[0].message.content.strip(" ") from the OpenAI
             return. Otherwise, the full response chat_completion is returned.
@@ -229,6 +245,14 @@ class _Client(ABC):
         self.set_use_custom_keys(use_custom_keys)
         self._tags = None
         self.set_tags(tags)
+        self._drop_params = None
+        self.set_drop_params(drop_params)
+        self._region = None
+        self.set_region(region)
+        self._log_query_body = None
+        self.set_log_query_body(log_query_body)
+        self._log_response_body = None
+        self.set_log_response_body(log_response_body)
         # python client arguments
         self._return_full_completion = None
         self.set_return_full_completion(return_full_completion)
@@ -456,6 +480,46 @@ class _Client(ABC):
              The default tags.
          """
         return self._tags
+
+    @property
+    def drop_params(self) -> Optional[bool]:
+        """
+         Get the default drop_params bool, if set.
+
+         Returns:
+             The default drop_params bool.
+         """
+        return self._drop_params
+
+    @property
+    def region(self) -> Optional[str]:
+        """
+         Get the default region, if set.
+
+         Returns:
+             The default region.
+         """
+        return self._region
+
+    @property
+    def log_query_body(self) -> Optional[bool]:
+        """
+         Get the default log query body bool, if set.
+
+         Returns:
+             The default log query body bool.
+         """
+        return self._log_query_body
+
+    @property
+    def log_response_body(self) -> Optional[bool]:
+        """
+         Get the default log response body bool, if set.
+
+         Returns:
+             The default log response body bool.
+         """
+        return self._log_response_body
 
     @property
     def return_full_completion(self) -> bool:
@@ -716,6 +780,45 @@ class _Client(ABC):
         """
         self._tags = value
 
+        # self._log_response_body = None
+        # self.set_log_response_body(log_response_body)
+
+    def set_drop_params(self, value: bool) -> None:
+        """
+        Set the default drop params bool.  # noqa: DAR101.
+
+        Args:
+            value: The default drop params bool.
+        """
+        self._drop_params = value
+
+    def set_region(self, value: str) -> None:
+        """
+        Set the default region.  # noqa: DAR101.
+
+        Args:
+            value: The default region.
+        """
+        self._region = value
+
+    def set_log_query_body(self, value: bool) -> None:
+        """
+        Set the default log query body bool.  # noqa: DAR101.
+
+        Args:
+            value: The default log query body bool.
+        """
+        self._log_query_body = value
+
+    def set_log_response_body(self, value: bool) -> None:
+        """
+        Set the default log response body bool.  # noqa: DAR101.
+
+        Args:
+            value: The default log response body bool.
+        """
+        self._log_response_body = value
+
     def set_return_full_completion(self, value: bool) -> None:
         """
         Set the default return full completion bool.  # noqa: DAR101.
@@ -803,6 +906,10 @@ class _Client(ABC):
             # platform arguments
             use_custom_keys: Optional[bool] = None,
             tags: Optional[List[str]] = None,
+            drop_params: Optional[bool] = None,
+            region: Optional[str] = None,
+            log_query_body: Optional[bool] = None,
+            log_response_body: Optional[bool] = None,
             # python client arguments
             return_full_completion: Optional[bool] = None,
             cache: Optional[bool] = None,
@@ -915,6 +1022,18 @@ class _Client(ABC):
             tags: Arbitrary number of tags to classify this API query as needed. Helpful
             for generally grouping queries across tasks and users, for logging purposes.
 
+            drop_params: Whether or not to drop unsupported OpenAI params by the
+            provider you’re using.
+
+            region: A string used to represent the region where the endpoint is
+            accessed. Only relevant for on-prem deployments with certain providers like
+            `vertex-ai`, `aws-bedrock` and `azure-ml`, where the endpoint is being
+            accessed through a specified region.
+
+            log_query_body: Whether to log the contents of the query json body.
+
+            log_response_body: Whether to log the contents of the response json body.
+
             return_full_completion: If False, only return the message content
             chat_completion.choices[0].message.content.strip(" ") from the OpenAI
             return. Otherwise, the full response chat_completion is returned.
@@ -971,6 +1090,10 @@ class _Client(ABC):
             # platform arguments
             use_custom_keys=_default(use_custom_keys, self._use_custom_keys),
             tags=_default(tags, self._tags),
+            drop_params=_default(drop_params, self._drop_params),
+            region=_default(region, self._region),
+            log_query_body=_default(log_query_body, self._log_query_body),
+            log_response_body=_default(log_response_body, self._log_response_body),
             # python client arguments
             return_full_completion=True if _default(tools, self._tools) else
             _default(return_full_completion, self._return_full_completion),
@@ -1042,6 +1165,10 @@ class _Client(ABC):
             # platform arguments
             use_custom_keys: bool,
             tags: Optional[List[str]],
+            drop_params: Optional[bool],
+            region: Optional[str],
+            log_query_body: Optional[bool],
+            log_response_body: Optional[bool],
             # python client arguments
             return_full_completion: bool,
             cache: bool,
