@@ -123,23 +123,33 @@ class Prompt(_FormattedBaseModel):
     extra_query: Optional[Query] = None
     extra_body: Optional[Body] = None
 
-    def __init__(self, *args, **kwargs):
+    def __init__(
+            self,
+            user_message=None,
+            system_message=None,
+            **kwargs
+    ):
+        """
+        Create Prompt instance.
+
+        Args:
+            user_message: The user message, optional.
+
+            system_message: The system message, optional.
+
+            kwargs: All fields expressed in the pydantic type.
+
+        Returns:
+            The pydantic Prompt instance.
+        """
         if "messages" not in kwargs:
             kwargs["messages"] = list()
-        if "system_message" in kwargs:
+        if system_message:
             kwargs["messages"] = \
-                [{"content": kwargs["system_message"], "role": "system"}] + \
+                [{"content": system_message, "role": "system"}] + \
                 kwargs["messages"]
-            del kwargs["system_message"]
-        if "user_message" in kwargs:
-            assert not args, "If user_message is passed, positional args must be empty."
-            kwargs["messages"] += [{"content": kwargs["user_message"], "role": "user"}]
-            del kwargs["user_message"]
-        elif args:
-            assert len(args) == 1 and isinstance(args[0], str), \
-                "Can only accept one positional argument, and this must be a string " \
-                "representing the user message."
-            kwargs["messages"] += [{"content": args[0], "role": "user"}]
+        if user_message:
+            kwargs["messages"] += [{"content": user_message, "role": "user"}]
         if not kwargs["messages"]:
             kwargs["messages"] = None
         super().__init__(**kwargs)
