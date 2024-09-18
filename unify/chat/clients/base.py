@@ -10,7 +10,7 @@ from openai.types.chat import (
 )
 from openai.types.chat.completion_create_params import ResponseFormat
 from abc import ABC, abstractmethod
-from typing import Mapping, Dict, List, Optional, Union, Iterable
+from typing import Mapping, Dict, List, Optional, Union, Iterable, Self
 
 # local
 from unify import BASE_URL
@@ -587,7 +587,7 @@ class _Client(ABC):
     # Setters #
     # --------#
 
-    def set_system_message(self, value: str) -> None:
+    def set_system_message(self, value: str) -> Self:
         """
         Set the default system message.  # noqa: DAR101.
 
@@ -595,12 +595,13 @@ class _Client(ABC):
             value: The default system message.
         """
         self._system_message = value
+        return self
 
     def set_messages(
             self,
             value: Union[List[ChatCompletionMessageParam],
                          Dict[str, List[ChatCompletionMessageParam]]]
-    ) -> None:
+    ) -> Self:
         """
         Set the default messages.  # noqa: DAR101.
 
@@ -608,8 +609,9 @@ class _Client(ABC):
             value: The default messages.
         """
         self._messages = value
+        return self
 
-    def set_frequency_penalty(self, value: float) -> None:
+    def set_frequency_penalty(self, value: float) -> Self:
         """
         Set the default frequency penalty.  # noqa: DAR101.
 
@@ -617,8 +619,9 @@ class _Client(ABC):
             value: The default frequency penalty.
         """
         self._frequency_penalty = value
+        return self
 
-    def set_logit_bias(self, value: Dict[str, int]) -> None:
+    def set_logit_bias(self, value: Dict[str, int]) -> Self:
         """
         Set the default logit bias.  # noqa: DAR101.
 
@@ -626,8 +629,9 @@ class _Client(ABC):
             value: The default logit bias.
         """
         self._logit_bias = value
+        return self
 
-    def set_logprobs(self, value: bool) -> None:
+    def set_logprobs(self, value: bool) -> Self:
         """
         Set the default logprobs.  # noqa: DAR101.
 
@@ -635,8 +639,9 @@ class _Client(ABC):
             value: The default logprobs.
         """
         self._logprobs = value
+        return self
 
-    def set_top_logprobs(self, value: int) -> None:
+    def set_top_logprobs(self, value: int) -> Self:
         """
         Set the default top logprobs.  # noqa: DAR101.
 
@@ -644,8 +649,9 @@ class _Client(ABC):
             value: The default top logprobs.
         """
         self._top_logprobs = value
+        return self
 
-    def set_max_completion_tokens(self, value: int) -> None:
+    def set_max_completion_tokens(self, value: int) -> Self:
         """
         Set the default max tokens.  # noqa: DAR101.
 
@@ -653,8 +659,9 @@ class _Client(ABC):
             value: The default max tokens.
         """
         self._max_completion_tokens = value
+        return self
 
-    def set_n(self, value: int) -> None:
+    def set_n(self, value: int) -> Self:
         """
         Set the default n value.  # noqa: DAR101.
 
@@ -662,8 +669,9 @@ class _Client(ABC):
             value: The default n value.
         """
         self._n = value
+        return self
 
-    def set_presence_penalty(self, value: float) -> None:
+    def set_presence_penalty(self, value: float) -> Self:
         """
         Set the default presence penalty.  # noqa: DAR101.
 
@@ -671,8 +679,9 @@ class _Client(ABC):
             value: The default presence penalty.
         """
         self._presence_penalty = value
+        return self
 
-    def set_response_format(self, value: ResponseFormat) -> None:
+    def set_response_format(self, value: ResponseFormat) -> Self:
         """
         Set the default response format.  # noqa: DAR101.
 
@@ -680,8 +689,9 @@ class _Client(ABC):
             value: The default response format.
         """
         self._response_format = value
+        return self
 
-    def set_seed(self, value: int) -> None:
+    def set_seed(self, value: int) -> Self:
         """
         Set the default seed value.  # noqa: DAR101.
 
@@ -689,8 +699,9 @@ class _Client(ABC):
             value: The default seed value.
         """
         self._seed = value
+        return self
 
-    def set_stop(self, value: Union[str, List[str]]) -> None:
+    def set_stop(self, value: Union[str, List[str]]) -> Self:
         """
         Set the default stop value.  # noqa: DAR101.
 
@@ -698,8 +709,9 @@ class _Client(ABC):
             value: The default stop value.
         """
         self._stop = value
+        return self
 
-    def set_stream(self, value: bool) -> None:
+    def set_stream(self, value: bool) -> Self:
         """
         Set the default stream bool.  # noqa: DAR101.
 
@@ -707,8 +719,9 @@ class _Client(ABC):
             value: The default stream bool.
         """
         self._stream = value
+        return self
 
-    def set_stream_options(self, value: ChatCompletionStreamOptionsParam) -> None:
+    def set_stream_options(self, value: ChatCompletionStreamOptionsParam) -> Self:
         """
         Set the default stream options.  # noqa: DAR101.
 
@@ -716,8 +729,9 @@ class _Client(ABC):
             value: The default stream options.
         """
         self._stream_options = value
+        return self
 
-    def set_temperature(self, value: float) -> None:
+    def set_temperature(self, value: float) -> Self:
         """
         Set the default temperature.  # noqa: DAR101.
 
@@ -725,8 +739,9 @@ class _Client(ABC):
             value: The default temperature.
         """
         self._temperature = value
+        return self
 
-    def set_top_p(self, value: float) -> None:
+    def set_top_p(self, value: float) -> Self:
         """
         Set the default top p value.  # noqa: DAR101.
 
@@ -734,8 +749,9 @@ class _Client(ABC):
             value: The default top p value.
         """
         self._top_p = value
+        return self
 
-    def set_tools(self, value: Iterable[ChatCompletionToolParam]) -> None:
+    def set_tools(self, value: Iterable[ChatCompletionToolParam]) -> Self:
         """
         Set the default tools.  # noqa: DAR101.
 
@@ -743,8 +759,9 @@ class _Client(ABC):
             value: The default tools.
         """
         self._tools = value
+        return self
 
-    def set_tool_choice(self, value: ChatCompletionToolChoiceOptionParam) -> None:
+    def set_tool_choice(self, value: ChatCompletionToolChoiceOptionParam) -> Self:
         """
         Set the default tool choice.  # noqa: DAR101.
 
@@ -752,8 +769,9 @@ class _Client(ABC):
             value: The default tool choice.
         """
         self._tool_choice = value
+        return self
 
-    def set_parallel_tool_calls(self, value: bool) -> None:
+    def set_parallel_tool_calls(self, value: bool) -> Self:
         """
         Set the default parallel tool calls bool.  # noqa: DAR101.
 
@@ -761,8 +779,9 @@ class _Client(ABC):
             value: The default parallel tool calls bool.
         """
         self._parallel_tool_calls = value
+        return self
 
-    def set_use_custom_keys(self, value: bool) -> None:
+    def set_use_custom_keys(self, value: bool) -> Self:
         """
         Set the default use custom keys bool.  # noqa: DAR101.
 
@@ -770,8 +789,9 @@ class _Client(ABC):
             value: The default use custom keys bool.
         """
         self._use_custom_keys = value
+        return self
 
-    def set_tags(self, value: List[str]) -> None:
+    def set_tags(self, value: List[str]) -> Self:
         """
         Set the default tags.  # noqa: DAR101.
 
@@ -779,11 +799,9 @@ class _Client(ABC):
             value: The default tags.
         """
         self._tags = value
+        return self
 
-        # self._log_response_body = None
-        # self.set_log_response_body(log_response_body)
-
-    def set_drop_params(self, value: bool) -> None:
+    def set_drop_params(self, value: bool) -> Self:
         """
         Set the default drop params bool.  # noqa: DAR101.
 
@@ -791,8 +809,9 @@ class _Client(ABC):
             value: The default drop params bool.
         """
         self._drop_params = value
+        return self
 
-    def set_region(self, value: str) -> None:
+    def set_region(self, value: str) -> Self:
         """
         Set the default region.  # noqa: DAR101.
 
@@ -800,8 +819,9 @@ class _Client(ABC):
             value: The default region.
         """
         self._region = value
+        return self
 
-    def set_log_query_body(self, value: bool) -> None:
+    def set_log_query_body(self, value: bool) -> Self:
         """
         Set the default log query body bool.  # noqa: DAR101.
 
@@ -809,8 +829,9 @@ class _Client(ABC):
             value: The default log query body bool.
         """
         self._log_query_body = value
+        return self
 
-    def set_log_response_body(self, value: bool) -> None:
+    def set_log_response_body(self, value: bool) -> Self:
         """
         Set the default log response body bool.  # noqa: DAR101.
 
@@ -818,8 +839,9 @@ class _Client(ABC):
             value: The default log response body bool.
         """
         self._log_response_body = value
+        return self
 
-    def set_return_full_completion(self, value: bool) -> None:
+    def set_return_full_completion(self, value: bool) -> Self:
         """
         Set the default return full completion bool.  # noqa: DAR101.
 
@@ -827,8 +849,9 @@ class _Client(ABC):
             value: The default return full completion bool.
         """
         self._return_full_completion = value
+        return self
 
-    def set_cache(self, value: bool) -> None:
+    def set_cache(self, value: bool) -> Self:
         """
         Set the default cache bool.  # noqa: DAR101.
 
@@ -836,8 +859,9 @@ class _Client(ABC):
             value: The default cache bool.
         """
         self._cache = value
+        return self
 
-    def set_extra_headers(self, value: Headers) -> None:
+    def set_extra_headers(self, value: Headers) -> Self:
         """
         Set the default extra headers.  # noqa: DAR101.
 
@@ -845,8 +869,9 @@ class _Client(ABC):
             value: The default extra headers.
         """
         self._extra_headers = value
+        return self
 
-    def set_extra_query(self, value: Query) -> None:
+    def set_extra_query(self, value: Query) -> Self:
         """
         Set the default extra query.  # noqa: DAR101.
 
@@ -854,8 +879,9 @@ class _Client(ABC):
             value: The default extra query.
         """
         self._extra_query = value
+        return self
 
-    def set_extra_body(self, value: Body) -> None:
+    def set_extra_body(self, value: Body) -> Self:
         """
         Set the default extra body.  # noqa: DAR101.
 
@@ -863,8 +889,9 @@ class _Client(ABC):
             value: The default extra body.
         """
         self._extra_body = value
+        return self
 
-    def set_default_prompt(self, value: Prompt) -> None:
+    def set_default_prompt(self, value: Prompt) -> Self:
         """
         Set the default prompt.  # noqa: DAR101.
 
@@ -874,6 +901,7 @@ class _Client(ABC):
         for f in value.model_fields:
             if hasattr(self, f):
                 getattr(self, "set_" + f)(getattr(value, f))
+        return self
 
     # Generate #
     # ---------#
