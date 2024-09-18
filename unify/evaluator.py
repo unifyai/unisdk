@@ -6,6 +6,7 @@ from openai.types.chat.chat_completion import ChatCompletionMessage, Choice
 from unify.agent import Agent
 from unify.chat.clients import _Client
 from unify.evaluation import Evaluation
+from unify.casting import cast
 from unify.types import Score, Prompt, Datum, ChatCompletion
 
 
@@ -63,11 +64,21 @@ class Evaluator(abc.ABC):
             An Evaluation instance, containing the prompt, response, agent, score and
             optional extra data used during the evaluation.
         """
+        # get type hints for self._evaluation, if they exist
+        eval_ann = self._evaluate.__annotations__
+        # upcast or downcast prompt to the expected type
+        expected_prompt_type = eval_ann["prompt"] if "prompt" in eval_ann else Prompt
+        prompt = cast(prompt, expected_prompt_type)
+        # upcast or downcast response to the expected type
+        expected_response_type = eval_ann["response"] if "response" in eval_ann \
+            else ChatCompletion
+        response = cast(response, expected_response_type)
+        # perform the evaluation
         score = self._evaluate(prompt, response, **kwargs)
-        # handle datum
+        # handle prompt upcasting
         if isinstance(prompt, str):
             prompt = Prompt(prompt)
-        # handle response
+        # handle response up casting
         if isinstance(response, str):
             response = ChatCompletion(
                 id="",
@@ -85,11 +96,12 @@ class Evaluator(abc.ABC):
                 model="",
                 object="chat.completion"
             )
-        # handle score
+        # handle score upcasting
         if isinstance(score, bool):
             score = float(score)
         if isinstance(score, float):
             score = self.class_config(score)
+        # return evaluation
         return Evaluation(
             prompt=prompt,
             response=response,
