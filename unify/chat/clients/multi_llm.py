@@ -74,6 +74,8 @@ class _MultiLLMClient(_Client, abc.ABC):
             response_format=response_format,
             seed=seed,
             stop=stop,
+            stream=False,
+            stream_options=None,
             temperature=temperature,
             top_p=top_p,
             tools=tools,
@@ -235,81 +237,6 @@ class _MultiLLMClient(_Client, abc.ABC):
 
 class MultiLLM(_MultiLLMClient):
 
-    def __init__(
-        self,
-        endpoints: Optional[Iterable[str]] = None,
-        *,
-        system_message: Optional[str] = None,
-        messages: Optional[
-            Union[List[ChatCompletionMessageParam],
-                  Dict[str, List[ChatCompletionMessageParam]]]] = None,
-        frequency_penalty: Optional[float] = None,
-        logit_bias: Optional[Dict[str, int]] = None,
-        logprobs: Optional[bool] = None,
-        top_logprobs: Optional[int] = None,
-        max_completion_tokens: Optional[int] = 1024,
-        n: Optional[int] = None,
-        presence_penalty: Optional[float] = None,
-        response_format: Optional[ResponseFormat] = None,
-        seed: Optional[int] = None,
-        stop: Union[Optional[str], List[str]] = None,
-        temperature: Optional[float] = 1.0,
-        top_p: Optional[float] = None,
-        tools: Optional[Iterable[ChatCompletionToolParam]] = None,
-        tool_choice: Optional[ChatCompletionToolChoiceOptionParam] = None,
-        parallel_tool_calls: Optional[bool] = None,
-        # platform arguments
-        use_custom_keys: bool = False,
-        tags: Optional[List[str]] = None,
-        drop_params: Optional[bool] = True,
-        region: Optional[str] = None,
-        log_query_body: Optional[bool] = True,
-        log_response_body: Optional[bool] = True,
-        api_key: Optional[str] = None,
-        # python client arguments
-        return_full_completion: bool = False,
-        cache: bool = False,
-        # passthrough arguments
-        extra_headers: Optional[Headers] = None,
-        extra_query: Optional[Query] = None,
-        **kwargs,
-    ) -> None:
-        super().__init__(
-            endpoints=endpoints,
-            system_message=system_message,
-            messages=messages,
-            frequency_penalty=frequency_penalty,
-            logit_bias=logit_bias,
-            logprobs=logprobs,
-            top_logprobs=top_logprobs,
-            max_completion_tokens=max_completion_tokens,
-            n=n,
-            presence_penalty=presence_penalty,
-            response_format=response_format,
-            seed=seed,
-            stop=stop,
-            temperature=temperature,
-            top_p=top_p,
-            tools=tools,
-            tool_choice=tool_choice,
-            parallel_tool_calls=parallel_tool_calls,
-            # platform arguments
-            use_custom_keys=use_custom_keys,
-            tags=tags,
-            drop_params=drop_params,
-            region=region,
-            log_query_body=log_query_body,
-            log_response_body=log_response_body,
-            api_key=api_key,
-            # python client arguments
-            return_full_completion=return_full_completion,
-            cache=cache,
-            # passthrough arguments
-            extra_headers=extra_headers,
-            extra_query=extra_query,
-            **kwargs
-        )
-
     def _generate(  # noqa: WPS234, WPS211
         self,
         user_message: Optional[str] = None,
@@ -393,81 +320,6 @@ class MultiLLM(_MultiLLMClient):
 
 
 class MultiLLMAsync(_MultiLLMClient):
-
-    def __init__(
-        self,
-        endpoints: Optional[Iterable[str]] = None,
-        *,
-        system_message: Optional[str] = None,
-        messages: Optional[
-            Union[List[ChatCompletionMessageParam],
-                  Dict[str, List[ChatCompletionMessageParam]]]] = None,
-        frequency_penalty: Optional[float] = None,
-        logit_bias: Optional[Dict[str, int]] = None,
-        logprobs: Optional[bool] = None,
-        top_logprobs: Optional[int] = None,
-        max_completion_tokens: Optional[int] = 1024,
-        n: Optional[int] = None,
-        presence_penalty: Optional[float] = None,
-        response_format: Optional[ResponseFormat] = None,
-        seed: Optional[int] = None,
-        stop: Union[Optional[str], List[str]] = None,
-        temperature: Optional[float] = 1.0,
-        top_p: Optional[float] = None,
-        tools: Optional[Iterable[ChatCompletionToolParam]] = None,
-        tool_choice: Optional[ChatCompletionToolChoiceOptionParam] = None,
-        parallel_tool_calls: Optional[bool] = None,
-        # platform arguments
-        use_custom_keys: bool = False,
-        tags: Optional[List[str]] = None,
-        drop_params: Optional[bool] = True,
-        region: Optional[str] = None,
-        log_query_body: Optional[bool] = True,
-        log_response_body: Optional[bool] = True,
-        api_key: Optional[str] = None,
-        # python client arguments
-        return_full_completion: bool = False,
-        cache: bool = False,
-        # passthrough arguments
-        extra_headers: Optional[Headers] = None,
-        extra_query: Optional[Query] = None,
-        **kwargs,
-    ) -> None:
-        super().__init__(
-            endpoints=endpoints,
-            system_message=system_message,
-            messages=messages,
-            frequency_penalty=frequency_penalty,
-            logit_bias=logit_bias,
-            logprobs=logprobs,
-            top_logprobs=top_logprobs,
-            max_completion_tokens=max_completion_tokens,
-            n=n,
-            presence_penalty=presence_penalty,
-            response_format=response_format,
-            seed=seed,
-            stop=stop,
-            temperature=temperature,
-            top_p=top_p,
-            tools=tools,
-            tool_choice=tool_choice,
-            parallel_tool_calls=parallel_tool_calls,
-            # platform arguments
-            use_custom_keys=use_custom_keys,
-            tags=tags,
-            drop_params=drop_params,
-            region=region,
-            log_query_body=log_query_body,
-            log_response_body=log_response_body,
-            api_key=api_key,
-            # python client arguments
-            return_full_completion=return_full_completion,
-            cache=cache,
-            # passthrough arguments
-            extra_headers=extra_headers,
-            extra_query=extra_query,
-            **kwargs
-        )
 
     async def _generate(  # noqa: WPS234, WPS211
         self,
