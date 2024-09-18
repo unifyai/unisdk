@@ -270,6 +270,15 @@ class Score(_FormattedBaseModel, abc.ABC):
     score: Tuple[float, str]
 
     def __init__(self, value: float):
+        """
+        Create Score instance.
+
+        Args:
+            value: The value of the assigned score
+
+        Returns:
+            The pydantic Score instance, with associated value and class description
+        """
         assert value in self.config,\
             "value {} passed is not a valid value, " \
             "based on the config for this Score class {}".format(value, self.config)
