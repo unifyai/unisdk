@@ -2,7 +2,7 @@
 import abc
 import asyncio
 import requests
-from typing import Optional, Union, List, Tuple, Dict, Iterable
+from typing import Optional, Union, List, Tuple, Dict, Iterable, Self
 # noinspection PyProtectedMember
 from openai._types import Headers, Query
 from openai.types.chat import (
@@ -144,7 +144,7 @@ class _MultiLLMClient(_Client, abc.ABC):
 
     def add_endpoints(
         self, endpoints: Union[List[str], str], ignore_duplicates: bool = True
-    ) -> None:
+    ) -> Self:
         if isinstance(endpoints, str):
             endpoints = [endpoints]
         # remove duplicates
@@ -164,10 +164,11 @@ class _MultiLLMClient(_Client, abc.ABC):
         self._endpoints = self._endpoints + endpoints
         # create new clients
         self._clients.update(self._create_clients(endpoints))
+        return self
 
     def remove_endpoints(
         self, endpoints: Union[List[str], str], ignore_missing: bool = True
-    ) -> None:
+    ) -> Self:
         if isinstance(endpoints, str):
             endpoints = [endpoints]
         # remove irrelevant
@@ -187,6 +188,7 @@ class _MultiLLMClient(_Client, abc.ABC):
         for endpoint in endpoints:
             self._endpoints.remove(endpoint)
             del self._clients[endpoint]
+        return self
 
     def get_credit_balance(self) -> Union[float, None]:
         """
