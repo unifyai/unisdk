@@ -105,9 +105,9 @@ _CAST_DICT = {
 # Public function
 
 def cast(
-        input: Union[str, bool, float, Prompt, Datum, ChatCompletion],
-        to_type: Type[Union[str, bool, float, Prompt, Datum, ChatCompletion]],
-) -> Union[str, bool, float, Prompt, Datum, ChatCompletion]:
+        input: Union[str, bool, float, Score, Prompt, Datum, ChatCompletion],
+        to_type: Type[Union[str, bool, float, Score, Prompt, Datum, ChatCompletion]],
+) -> Union[str, bool, float, Score, Prompt, Datum, ChatCompletion]:
     """
     Cast the input to the specified type.
 
