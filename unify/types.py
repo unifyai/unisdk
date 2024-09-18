@@ -33,9 +33,13 @@ class _Formatted(abc.ABC):
         return capture.get()
 
     def __repr__(self) -> str:
+        if unify.repr_mode() == "verbose":
+            return super().__repr__()
         return self._repr(self)
 
     def __str__(self) -> str:
+        if unify.repr_mode() == "verbose":
+            return super().__str__()
         return self._repr(self)
 
 
@@ -90,9 +94,13 @@ class _FormattedBaseModel(_Formatted, BaseModel):
         )(**dct)
 
     def __repr__(self) -> str:
+        if unify.repr_mode() == "verbose":
+            return super().__repr__()
         return self._repr(self._prune())
 
     def __str__(self) -> str:
+        if unify.repr_mode() == "verbose":
+            return super().__str__()
         return self._repr(self._prune())
 
     def __rich_repr__(self):
