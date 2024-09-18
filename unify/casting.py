@@ -30,6 +30,8 @@ def _datum_to_usr_msg(datum: Datum) -> str:
     return _prompt_to_usr_msg(_datum_to_prompt(datum))
 
 
+# Cast Dict
+
 _CAST_DICT = {
     str: {
         Prompt: _usr_msg_to_prompt,
@@ -46,6 +48,8 @@ _CAST_DICT = {
 }
 
 
+# Public function
+
 def cast(
         input: Union[str, Prompt, Datum],
         to_type: Type[Union[str, Prompt, Datum]],
@@ -61,4 +65,7 @@ def cast(
     Returns:
         The input after casting to the new type.
     """
-    return _CAST_DICT[type(input)][to_type](input)
+    input_type = type(input)
+    if input_type is to_type:
+        return input
+    return _CAST_DICT[input_type][to_type](input)
