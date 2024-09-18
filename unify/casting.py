@@ -40,6 +40,14 @@ def _bool_to_float(boolean: bool) -> float:
     return float(boolean)
 
 
+def _float_to_score(float_in: float, score_type: Type[Score]) -> Score:
+    return score_type(float_in)
+
+
+def _bool_to_score(boolean: bool, score_type: Type[Score]) -> Score:
+    return _float_to_score(_bool_to_float(boolean), score_type)
+
+
 # Downcasting
 
 def _prompt_to_usr_msg(prompt: Prompt) -> str:
@@ -90,10 +98,12 @@ _CAST_DICT = {
         str: _chat_completion_to_assis_msg
     },
     bool: {
-        float: _bool_to_float
+        float: _bool_to_float,
+        Score: _bool_to_score
     },
     float: {
-        bool: _float_to_bool
+        bool: _float_to_bool,
+        Score: _float_to_score
     },
     Score: {
         bool: _score_to_bool,
@@ -122,4 +132,6 @@ def cast(
     input_type = type(input)
     if input_type is to_type:
         return input
+    if issubclass(to_type, Score):
+        return _CAST_DICT[input_type][Score](input, to_type)
     return _CAST_DICT[input_type][to_type](input)
