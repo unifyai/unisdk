@@ -33,13 +33,9 @@ class _Formatted(abc.ABC):
         return capture.get()
 
     def __repr__(self) -> str:
-        if unify.repr_mode() == "verbose":
-            return super().__repr__()
         return self._repr(self)
 
     def __str__(self) -> str:
-        if unify.repr_mode() == "verbose":
-            return super().__str__()
         return self._repr(self)
 
 
@@ -94,19 +90,15 @@ class _FormattedBaseModel(_Formatted, BaseModel):
         )(**dct)
 
     def __repr__(self) -> str:
-        if unify.repr_mode() == "verbose":
-            return super().__repr__()
-        return self._repr(self._prune())
+        return self._repr(self._prune() if unify.repr_mode() == "concise" else self)
 
     def __str__(self) -> str:
-        if unify.repr_mode() == "verbose":
-            return super().__str__()
-        return self._repr(self._prune())
+        return self._repr(self._prune() if unify.repr_mode() == "concise" else self)
 
     def __rich_repr__(self):
-        pruned = self._prune()
-        for k in pruned.model_fields:
-            yield k, pruned.__dict__[k]
+        rep = self._prune() if unify.repr_mode() == "concise" else self
+        for k in rep.model_fields:
+            yield k, rep.__dict__[k]
 
 
 class Prompt(_FormattedBaseModel):
