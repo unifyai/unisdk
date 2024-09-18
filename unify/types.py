@@ -3,7 +3,7 @@ import inspect
 import rich.repr
 from io import StringIO
 from rich.console import Console
-from pydantic import BaseModel, Extra
+from pydantic import BaseModel, Extra, ConfigDict
 from typing import Optional, Union, Tuple, List, Dict, Mapping
 from openai.types.chat import (
     ChatCompletionToolParam,
@@ -102,6 +102,7 @@ class _FormattedBaseModel(_Formatted, BaseModel):
 
 
 class Prompt(_FormattedBaseModel):
+    model_config = ConfigDict(extra="forbid")
     messages: Optional[List[ChatCompletionMessageParam]] = None
     frequency_penalty: Optional[float] = None
     logit_bias: Optional[Dict[str, int]] = None
@@ -175,6 +176,7 @@ class Prompt(_FormattedBaseModel):
 
 
 class ChatCompletion(_FormattedBaseModel, _ChatCompletion):
+    model_config = ConfigDict(extra="forbid")
 
     def __init__(self, assistant_message: Optional[str] = None, **kwargs):
         """
@@ -267,6 +269,7 @@ class Datum(_FormattedBaseModel, extra=Extra.allow):
 
 
 class Score(_FormattedBaseModel, abc.ABC):
+    model_config = ConfigDict(extra="forbid")
     score: Tuple[float, str]
 
     def __init__(self, value: float):
