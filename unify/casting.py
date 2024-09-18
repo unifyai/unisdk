@@ -1,5 +1,5 @@
 from typing import Union, Type
-from unify.types import Prompt, Datum, ChatCompletion
+from unify.types import Prompt, Datum, ChatCompletion, Score
 from openai.types.chat.chat_completion import ChatCompletionMessage, Choice
 
 
@@ -36,6 +36,10 @@ def _assis_msg_to_chat_completion(assistant_message: str) -> ChatCompletion:
     )
 
 
+def _bool_to_float(boolean: bool) -> float:
+    return float(boolean)
+
+
 # Downcasting
 
 def _prompt_to_usr_msg(prompt: Prompt) -> str:
@@ -52,6 +56,10 @@ def _datum_to_usr_msg(datum: Datum) -> str:
 
 def _chat_completion_to_assis_msg(chat_completion: ChatCompletion) -> str:
     return chat_completion.choices[0].message.content
+
+
+def _float_to_bool(float_in: float) -> bool:
+    return bool(float_in)
 
 
 # Cast Dict
@@ -72,6 +80,12 @@ _CAST_DICT = {
     },
     ChatCompletion: {
         str: _chat_completion_to_assis_msg
+    },
+    bool: {
+        float: _bool_to_float
+    },
+    float: {
+        bool: _float_to_bool
     }
 }
 
@@ -79,9 +93,9 @@ _CAST_DICT = {
 # Public function
 
 def cast(
-        input: Union[str, Prompt, Datum, ChatCompletion],
-        to_type: Type[Union[str, Prompt, Datum, ChatCompletion]],
-) -> Union[str, Prompt, Datum, ChatCompletion]:
+        input: Union[str, bool, float, Prompt, Datum, ChatCompletion],
+        to_type: Type[Union[str, bool, float, Prompt, Datum, ChatCompletion]],
+) -> Union[str, bool, float, Prompt, Datum, ChatCompletion]:
     """
     Cast the input to the specified type.
 
