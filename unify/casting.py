@@ -1,5 +1,6 @@
 from typing import Union, Type
-from unify.types import Prompt, Datum
+from unify.types import Prompt, Datum, ChatCompletion
+from openai.types.chat.chat_completion import ChatCompletionMessage, Choice
 
 
 # Upcasting
@@ -16,6 +17,25 @@ def _usr_msg_to_datum(user_message: str) -> Datum:
     return _prompt_to_datum(_usr_msg_to_prompt(user_message))
 
 
+def _assis_msg_to_chat_completion(assistant_message: str) -> ChatCompletion:
+    return ChatCompletion(
+        id="",
+        choices=[
+            Choice(
+                finish_reason="stop",
+                index=0,
+                message=ChatCompletionMessage(
+                    role="assistant",
+                    content=assistant_message
+                )
+            )
+        ],
+        created=0,
+        model="",
+        object="chat.completion"
+    )
+
+
 # Downcasting
 
 def _prompt_to_usr_msg(prompt: Prompt) -> str:
@@ -30,12 +50,17 @@ def _datum_to_usr_msg(datum: Datum) -> str:
     return _prompt_to_usr_msg(_datum_to_prompt(datum))
 
 
+def _chat_completion_to_assis_msg(chat_completion: ChatCompletion) -> str:
+    return chat_completion.choices[0].message.content
+
+
 # Cast Dict
 
 _CAST_DICT = {
     str: {
         Prompt: _usr_msg_to_prompt,
-        Datum: _usr_msg_to_datum
+        Datum: _usr_msg_to_datum,
+        ChatCompletion: _assis_msg_to_chat_completion
     },
     Prompt: {
         str: _prompt_to_usr_msg,
@@ -44,6 +69,9 @@ _CAST_DICT = {
     Datum: {
         str: _datum_to_usr_msg,
         Prompt: _datum_to_prompt
+    },
+    ChatCompletion: {
+        str: _chat_completion_to_assis_msg
     }
 }
 
@@ -51,9 +79,9 @@ _CAST_DICT = {
 # Public function
 
 def cast(
-        input: Union[str, Prompt, Datum],
-        to_type: Type[Union[str, Prompt, Datum]],
-) -> Union[str, Prompt, Datum]:
+        input: Union[str, Prompt, Datum, ChatCompletion],
+        to_type: Type[Union[str, Prompt, Datum, ChatCompletion]],
+) -> Union[str, Prompt, Datum, ChatCompletion]:
     """
     Cast the input to the specified type.
 
