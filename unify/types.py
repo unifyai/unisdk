@@ -15,6 +15,7 @@ from pydantic import create_model
 from pydantic._internal._model_construction import ModelMetaclass
 from openai._types import Headers, Query, Body
 from openai.types.chat.completion_create_params import ResponseFormat
+from openai.types.chat.chat_completion import ChatCompletionMessage, Choice
 
 import unify
 
@@ -164,6 +165,33 @@ class Prompt(_FormattedBaseModel):
 
 
 class ChatCompletion(_FormattedBaseModel, _ChatCompletion):
+
+    def __init__(self, *args, **kwargs):
+        if args:
+            assert len(args) == 1 and isinstance(args[0], str), \
+                "Can only accept one positional argument, and this must be a string " \
+                "representing the user message."
+            kwargs = {
+                **dict(
+                    id="",
+                    choices=[
+                        Choice(
+                            finish_reason="stop",
+                            index=0,
+                            message=ChatCompletionMessage(
+                                role="assistant",
+                                content=args[0]
+                            )
+                        )
+                    ],
+                    created=0,
+                    model="",
+                    object="chat.completion",
+                    **kwargs
+                ),
+                **kwargs
+            }
+        super().__init__(**kwargs)
 
     def _chat_completion_pruned(self):
         return create_model(

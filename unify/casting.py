@@ -1,6 +1,5 @@
 from typing import Union, Type
 from unify.types import Prompt, Datum, ChatCompletion, Score
-from openai.types.chat.chat_completion import ChatCompletionMessage, Choice
 
 
 # Upcasting
@@ -18,22 +17,7 @@ def _usr_msg_to_datum(user_message: str) -> Datum:
 
 
 def _assis_msg_to_chat_completion(assistant_message: str) -> ChatCompletion:
-    return ChatCompletion(
-        id="",
-        choices=[
-            Choice(
-                finish_reason="stop",
-                index=0,
-                message=ChatCompletionMessage(
-                    role="assistant",
-                    content=assistant_message
-                )
-            )
-        ],
-        created=0,
-        model="",
-        object="chat.completion"
-    )
+    return ChatCompletion(assistant_message)
 
 
 def _bool_to_float(boolean: bool) -> float:
