@@ -11,7 +11,6 @@ from openai.types.chat import (
     ChatCompletionMessageParam,
     ChatCompletion as _ChatCompletion
 )
-from openai.types.chat.chat_completion import Choice
 from pydantic import create_model
 from pydantic._internal._model_construction import ModelMetaclass
 from openai._types import Headers, Query, Body
@@ -135,7 +134,10 @@ class Prompt(_FormattedBaseModel):
             assert not args, "If user_message is passed, positional args must be empty."
             kwargs["messages"] += [{"content": kwargs["user_message"], "role": "user"}]
             del kwargs["user_message"]
-        elif args and isinstance(args[0], str):
+        elif args:
+            assert len(args) == 1 and isinstance(args[0], str), \
+                "Can only accept one positional argument, and this must be a string " \
+                "representing the user message."
             kwargs["messages"] += [{"content": args[0], "role": "user"}]
         if not kwargs["messages"]:
             kwargs["messages"] = None
