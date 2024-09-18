@@ -62,6 +62,14 @@ def _float_to_bool(float_in: float) -> bool:
     return bool(float_in)
 
 
+def _score_to_float(score: Score) -> float:
+    return score.score[0]
+
+
+def _score_to_bool(score: Score) -> bool:
+    return _float_to_bool(_score_to_float(score))
+
+
 # Cast Dict
 
 _CAST_DICT = {
@@ -86,6 +94,10 @@ _CAST_DICT = {
     },
     float: {
         bool: _float_to_bool
+    },
+    Score: {
+        bool: _score_to_bool,
+        float: _score_to_float
     }
 }
 
