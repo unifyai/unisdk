@@ -65,6 +65,12 @@ class TestChatBasics(unittest.TestCase):
         self.assertEqual(client.temperature, 0.4)
         self.assertIs(client.n, None)
 
+    def test_setter_chaining(self):
+        client = Unify("gpt-4o@openai")
+        client.set_temperature(0.5).set_n(2)
+        assert client.temperature == 0.5
+        assert client.n == 2
+
 
 class TestAsyncUnifyBasics(unittest.IsolatedAsyncioTestCase):
     def setUp(self) -> None:
