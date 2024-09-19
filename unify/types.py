@@ -99,7 +99,7 @@ class _FormattedBaseModel(_Formatted, BaseModel):
             return {k: self._prune_keys(v, prune_policy[k] if k in prune_policy else {})
                     for k, v in obj.items() if check_fn(k)}
         elif isinstance(obj, list):
-            return [self._prune_keys(v, prune_policy[k] if k in prune_policy else {})
+            return [self._prune_keys(v, prune_policy[i] if i in prune_policy else {})
                     for i, v in enumerate(obj) if check_fn(i)]
 
     def _prune(self):
