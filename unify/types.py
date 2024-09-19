@@ -76,6 +76,12 @@ class _FormattedBaseModel(_Formatted, BaseModel):
             return v.default
         return None
 
+    @staticmethod
+    def _prune_keys(config: dict, dct: dict):
+        to_skip = keys_to_skip()
+        return {k: v for k, v in config.items() if k not in to_skip},\
+               {k: v for k, v in dct.items() if k not in to_skip}
+
     def _prune(self):
         dct = self._prune_iterable(self.dict())
         fields = self.model_fields
@@ -83,6 +89,7 @@ class _FormattedBaseModel(_Formatted, BaseModel):
             fields = {**fields, **self.model_extra}
         config = {k: (self._prune_pydantic(self._annotation(fields[k]), v),
                       self._default(fields[k])) for k, v in dct.items()}
+        config, dct = self._prune_keys(config, dct)
         return create_model(
             self.__class__.__name__,
             **config,
@@ -211,29 +218,6 @@ class ChatCompletion(_FormattedBaseModel, _ChatCompletion):
             }
         super().__init__(**kwargs)
 
-    def _chat_completion_pruned(self):
-        return create_model(
-            self.__class__.__name__,
-            choices=(self.model_fields["choices"].annotation,
-                     self.model_fields["choices"].default),
-            __cls_kwargs__={"arbitrary_types_allowed": True}
-        )(choices=self.dict()["choices"])
-
-    def __repr__(self) -> str:
-        return self._repr(
-            self._chat_completion_pruned() if unify.repr_mode() == "concise" else self
-        )
-
-    def __str__(self) -> str:
-        return self._repr(
-            self._chat_completion_pruned() if unify.repr_mode() == "concise" else self
-        )
-
-    def __rich_repr__(self):
-        rep = self._chat_completion_pruned() if unify.repr_mode() == "concise" else self
-        for k in rep.model_fields:
-            yield k, rep.__dict__[k]
-
 
 class Datum(_FormattedBaseModel, extra=Extra.allow):
     prompt: Prompt
@@ -339,7 +323,7 @@ def set_repr_mode(mode: str, skip_keys: Optional[List[str]] = None) -> None:
     _KEYS_TO_SKIP = list(set(_KEYS_TO_SKIP + skip_keys if skip_keys else []))
 
 
-class ReprMode(str):
+class ReprMode:
 
     def __init__(self, val: str, skip_keys: Optional[List[str]] = None):
         """
