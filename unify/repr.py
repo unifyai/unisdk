@@ -65,9 +65,9 @@ def key_repr(instance: _FormattedBaseModel) -> Union[Dict, List]:
         "Cannot have specification for keys to skip AND to keep," \
         "please only set one of these."
     if to_skip:
-        return {"skip": _KEYS_TO_SKIP[ins_type]}
+        return {**ret, **{"skip": _KEYS_TO_SKIP[ins_type]}}
     elif to_keep:
-        return {"keep": _KEYS_TO_KEEP[ins_type]}
+        return {**ret, **{"keep": _KEYS_TO_KEEP[ins_type]}}
     return ret
 
 
