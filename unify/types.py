@@ -56,14 +56,12 @@ class _FormattedBaseModel(_Formatted, BaseModel):
                     "keep" not in prune_pol and "skip" not in prune_pol:
                 return True
             if "keep" in prune_pol:
-                contains_k = k in prune_pol["keep"]
-                if not contains_k:
+                if k not in prune_pol["keep"]:
                     return False
                 prune_val = prune_pol["keep"][k]
                 return prune_val is None or prune_val == v
             elif "skip" in prune_pol:
-                contains_k = k in prune_pol["skip"]
-                if not contains_k:
+                if k not in prune_pol["skip"]:
                     return True
                 prune_val = prune_pol["skip"][k]
                 return prune_val is not None and prune_val != v
