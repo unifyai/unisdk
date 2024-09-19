@@ -300,7 +300,7 @@ class Score(_FormattedBaseModel, abc.ABC):
 # Representation #
 # ---------------#
 
-_REPR_MODE: Optional[str] = None
+_REPR_MODE = None
 _KEYS_TO_SKIP: List[str] = list()
 
 
@@ -310,7 +310,8 @@ def repr_mode() -> str:
     the various unify types on screen. Can be either "verbose" or "concise".
     """
     global _REPR_MODE
-    return _REPR_MODE
+    # noinspection PyProtectedMember
+    return _REPR_MODE._val if _REPR_MODE is not None else "verbose"
 
 
 def keys_to_skip() -> Tuple[str]:
@@ -322,8 +323,7 @@ def keys_to_skip() -> Tuple[str]:
     return tuple(_KEYS_TO_SKIP)
 
 
-# noinspection PyShadowingNames
-def set_repr_mode(mode: str, keys_to_skip: Optional[List[str]] = None) -> None:
+def set_repr_mode(mode: str, skip_keys: Optional[List[str]] = None) -> None:
     """
     Sets the global representation mode, to be used when representing the various unify
     types on screen. Can be either "verbose" or "concise".
@@ -331,44 +331,61 @@ def set_repr_mode(mode: str, keys_to_skip: Optional[List[str]] = None) -> None:
     Args:
         mode: The value to set the mode to, either "verbose" or "concise".
 
-        keys_to_skip: The value of the keys to skip.
+        skip_keys: The value of the keys to skip.
 
     """
     global _REPR_MODE, _KEYS_TO_SKIP
     _REPR_MODE = ReprMode(mode)
-    _KEYS_TO_SKIP = list(set(_KEYS_TO_SKIP + keys_to_skip))
+    _KEYS_TO_SKIP = list(set(_KEYS_TO_SKIP + skip_keys if skip_keys else []))
 
 
 class ReprMode(str):
 
-    def __init__(self, val: str):
+    def __init__(self, val: str, skip_keys: Optional[List[str]] = None):
         """
         Set a representation mode for a specific context in the code, by using the
         `with` an instantiation of this class.
 
         Args:
             val: The value of the string, must be either "verbose" or "concise".
+
+            skip_keys: The value of the keys to skip.
         """
+        self._check_str(val)
+        # noinspection PyProtectedMember
+
+        self._prev_val = "verbose" if _REPR_MODE is None else repr_mode()
+        self._prev_skip_keys = list(keys_to_skip())
+        self._val = val
+        self._skip_keys = skip_keys
+
+    @staticmethod
+    def _check_str(val: str):
         assert val in ("verbose", "concise"),\
             "Expected value to be either 'verbose' or 'concise', " \
             "but found {}".format(val)
-        self._prev_val = repr_mode()
-        self._val = val
 
     def __enter__(self) -> None:
-        rep_mode = ReprMode(self._val)
-        set_repr_mode(rep_mode)
+        set_repr_mode(self._val, self._skip_keys)
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self._val = self._prev_val
+        self._skip_keys = self._prev_skip_keys
         self._prev_val = None
-        set_repr_mode(ReprMode(self._val))
+        self._prev_skip_keys = None
+        set_repr_mode(self._val, self._skip_keys)
 
     def __repr__(self):
-        return str(self._val)
+        return str(
+            self._val + ((", keys to skip: " + str(self._skip_keys))
+                         if self._skip_keys else "")
+        )
 
     def __str__(self):
-        return str(self._val)
+        return str(
+            self._val + ((", keys to skip: " + str(self._skip_keys))
+                         if self._skip_keys else "")
+        )
 
 
 # noinspection PyRedeclaration
