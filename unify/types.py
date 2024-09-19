@@ -4,18 +4,20 @@ import rich.repr
 from io import StringIO
 from rich.console import Console
 from pydantic import BaseModel, Extra, ConfigDict
-from typing import Optional, Union, Tuple, List, Dict, Mapping
+from pydantic import create_model
+from pydantic._internal._model_construction import ModelMetaclass
+from typing import Optional, Union, Tuple, List, Dict, Mapping, Literal
+from openai._types import Query, Body
 from openai.types.chat import (
     ChatCompletionToolParam,
     ChatCompletionToolChoiceOptionParam,
     ChatCompletionMessageParam,
     ChatCompletion as _ChatCompletion
 )
-from pydantic import create_model
-from pydantic._internal._model_construction import ModelMetaclass
-from openai._types import Query, Body
+from openai.types.completion_usage import CompletionUsage as _CompletionUsage
 from openai.types.chat.completion_create_params import ResponseFormat
-from openai.types.chat.chat_completion import ChatCompletionMessage, Choice
+from openai.types.chat.chat_completion import \
+    ChatCompletionMessage as _ChatCompletionMessage, Choice as _Choice
 
 import unify
 
@@ -182,8 +184,27 @@ class Prompt(_FormattedBaseModel):
         return hash(str(self))
 
 
-class ChatCompletion(_FormattedBaseModel, _ChatCompletion):
-    model_config = ConfigDict(extra="forbid")
+class Choice(_FormattedBaseModel, _Choice):
+    pass
+
+
+class ChatCompletionMessage(_FormattedBaseModel, _ChatCompletionMessage):
+    pass
+
+
+class CompletionUsage(_FormattedBaseModel, _CompletionUsage):
+    pass
+
+
+class ChatCompletion(_FormattedBaseModel):
+    id: str
+    choices: List[Choice]
+    created: int
+    model: str
+    object: Literal["chat.completion"]
+    service_tier: Optional[Literal["scale", "default"]] = None
+    system_fingerprint: Optional[str] = None
+    usage: Optional[CompletionUsage] = None
 
     def __init__(self, assistant_message: Optional[str] = None, **kwargs):
         """
