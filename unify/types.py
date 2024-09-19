@@ -129,6 +129,13 @@ class _FormattedBaseModel(_Formatted, BaseModel):
         for k in rep.model_fields:
             yield k, rep.__dict__[k]
 
+    def full_repr(self):
+        """
+        Return the full un-pruned representation, regardless of the mode currently set.
+        """
+        with unify.ReprMode("verbose"):
+            return self._repr(self)
+
 
 class Prompt(_FormattedBaseModel):
     model_config = ConfigDict(extra="forbid")
