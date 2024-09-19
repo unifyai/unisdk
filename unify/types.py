@@ -45,16 +45,52 @@ class _Formatted(abc.ABC):
 @rich.repr.auto
 class _FormattedBaseModel(_Formatted, BaseModel):
 
-    def _prune_iterable(self, val):
+    def _prune_dict(self, val, prune_policy):
+
+        def keep(v, k=None, prune_pol=None):
+            if v is None:
+                return False
+            if not prune_pol:
+                return True
+            if isinstance(prune_pol, dict) and k in prune_pol:
+                return True
+            assert len(prune_pol.keys()) == 1,\
+                "expected either 'keep' or 'skip' as the only key, thus length one," \
+                "but found {}.".format(prune_pol)
+            if "keep" in prune_pol:
+                return k in prune_pol["keep"]
+            elif "skip" in prune_pol:
+                return k not in prune_pol["skip"]
+            else:
+                raise Exception("expected either 'keep' or 'skip' as the only key, "
+                                "but found {}.".format(prune_pol))
+
         if not isinstance(val, dict) and not isinstance(val, list) and \
                 not isinstance(val, tuple):
             return val
         elif isinstance(val, dict):
-            return {k: self._prune_iterable(v) for k, v in val.items() if v is not None}
+            return {
+                k: self._prune_dict(
+                    v, prune_policy[k] if
+                    (isinstance(prune_policy, dict) and k in prune_policy) else None
+                ) for k, v in val.items() if keep(v, k, prune_policy)
+            }
         elif isinstance(val, list):
-            return [self._prune_iterable(v) for v in val if v is not None]
+            return [
+                self._prune_dict(
+                    v, prune_policy[i] if
+                    (isinstance(prune_policy, list ) and i < len(prune_policy))
+                    else None
+                ) for i, v in enumerate(val) if keep(v, prune_pol=prune_policy)
+            ]
         else:
-            return (self._prune_iterable(v) for v in val if v is not None)
+            return (
+                self._prune_dict(
+                    v, prune_policy[i] if
+                    (isinstance(prune_policy, tuple) and i < len(prune_policy))
+                    else None
+                ) for i, v in enumerate(val) if keep(v, prune_pol=prune_policy)
+            )
 
     def _prune_pydantic(self, val, dct):
         if not inspect.isclass(val) or not issubclass(val, BaseModel):
@@ -79,39 +115,14 @@ class _FormattedBaseModel(_Formatted, BaseModel):
             return v.default
         return None
 
-    def _prune_keys(self, obj: Union[Dict, List], prune_policy: Dict[str, Dict]):
-        if not prune_policy or isinstance(prune_policy, bool):
-            return obj
-        keys = list(prune_policy.keys())
-        assert len(keys) == 1 and "keep" in keys or "skip" in keys,\
-            "keys should only be length one"
-        keep_or_skip = keys[0]
-        prune_policy = prune_policy[keep_or_skip]
-        if not isinstance(obj, dict) and not isinstance(obj, list):
-            return obj
-        if keep_or_skip == "keep":
-            check_fn = lambda v: v in prune_policy
-        elif keep_or_skip == "skip":
-            check_fn = lambda v: v not in prune_policy
-        else:
-            raise Exception("keys can only contain either 'keep' or 'skip'")
-        if isinstance(obj, dict):
-            return {k: self._prune_keys(v, prune_policy[k] if k in prune_policy else {})
-                    for k, v in obj.items() if check_fn(k)}
-        elif isinstance(obj, list):
-            return [self._prune_keys(v, prune_policy[i] if i in prune_policy else {})
-                    for i, v in enumerate(obj) if check_fn(i)]
-
     def _prune(self):
-        dct = self._prune_iterable(self.dict())
+        prune_policy = key_repr(self)
+        dct = self._prune_dict(self.dict(), prune_policy)
         fields = self.model_fields
         if self.model_extra is not None:
             fields = {**fields, **self.model_extra}
         config = {k: (self._prune_pydantic(self._annotation(fields[k]), v),
                       self._default(fields[k])) for k, v in dct.items()}
-        prune_policy = key_repr(self)
-        config, dct = \
-            self._prune_keys(config, prune_policy), self._prune_keys(dct, prune_policy)
         return create_model(
             self.__class__.__name__,
             **config,
@@ -365,12 +376,20 @@ def key_repr(instance: _FormattedBaseModel) -> Union[Dict, List]:
     the keys to remove.
 
     Args:
-        The instance for which we want to retrieve the key representation policy.
+        instance: The instance for which we want to retrieve the key repr policy.
 
     Returns:
         Dict containing the policy, with a base key of "skip" or "keep", followed by
         the nested structure of the elements to either remove or keep.
     """
+    ret = dict()
+    fields = instance.model_fields
+    if instance.model_extra is not None:
+        fields = {**fields, **instance.model_extra}
+    for key, field in fields.items():
+        annotation = field.annotation
+        if annotation in _KEYS_TO_SKIP or annotation in _KEYS_TO_KEEP:
+            ret[key] = key_repr(getattr(instance, key))
     ins_type = type(instance)
     to_skip = ins_type in _KEYS_TO_SKIP
     to_keep = ins_type in _KEYS_TO_KEEP
@@ -381,7 +400,7 @@ def key_repr(instance: _FormattedBaseModel) -> Union[Dict, List]:
         return {"skip": _KEYS_TO_SKIP[ins_type]}
     elif to_keep:
         return {"keep": _KEYS_TO_KEEP[ins_type]}
-    return {}
+    return ret
 
 
 def keys_to_skip() -> Dict[Type, Dict]:
