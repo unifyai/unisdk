@@ -52,8 +52,9 @@ class _FormattedBaseModel(_Formatted, BaseModel):
                 return False
             if not prune_pol:
                 return True
-            if isinstance(prune_pol, dict) and k in prune_pol:
-                return True
+            if isinstance(prune_pol, dict) and \
+                    list(prune_pol.keys())[0] not in ("keep", "skip"):
+                return k in prune_pol
             assert len(prune_pol.keys()) == 1,\
                 "expected either 'keep' or 'skip' as the only key, thus length one," \
                 "but found {}.".format(prune_pol)
