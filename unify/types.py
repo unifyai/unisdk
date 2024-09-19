@@ -361,8 +361,8 @@ def set_keys_to_skip(skip_keys: Dict[Type, Dict]) -> None:
     and the nested structure to skip as values.
 
     Args:
-        skip_keys: A dictionary with the types as keys and dictionary representing the
-        structure of the keys to skip for that type.
+        skip_keys: The types as keywords arguments and dictionary representing the
+        structure of the keys to skip for that type as values.
     """
     global _KEYS_TO_SKIP
     _KEYS_TO_SKIP = skip_keys
@@ -383,8 +383,8 @@ def set_keys_to_keep(keep_keys: Dict[Type, Dict]) -> None:
     and the nested structure to keep as values.
 
     Args:
-        keep_keys: A dictionary with the types as keys and dictionary representing the
-        structure of the keys to keep for that type.
+        keep_keys: The types as keywords arguments and dictionary representing the
+        structure of the keys to keep for that type as values.
     """
     global _KEYS_TO_KEEP
     _KEYS_TO_KEEP = keep_keys
@@ -431,6 +431,76 @@ class ReprMode(str):
         self._val = self._prev_val
         self._prev_val = None
         set_repr_mode(self._val)
+
+    def __repr__(self):
+        return str(self._val)
+
+    def __str__(self):
+        return str(self._val)
+
+
+class KeepKeys:
+
+    def __init__(self, keep_keys: Dict[Type, Dict]):
+        """
+        Set a the keys to keep for a specific context in the code, by using the
+        `with` an instantiation of this class.
+
+        Args:
+            keep_keys: The types as keywords arguments and dictionary representing the
+            structure of the keys to keep for that type as values.
+        """
+        self._prev_val = keys_to_keep()
+        self._val = keep_keys
+
+    @staticmethod
+    def _check_str(val: str):
+        assert val in ("verbose", "concise"),\
+            "Expected value to be either 'verbose' or 'concise', " \
+            "but found {}".format(val)
+
+    def __enter__(self) -> None:
+        set_keys_to_keep(self._val)
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self._val = self._prev_val
+        self._prev_val = None
+        set_keys_to_keep(self._val)
+
+    def __repr__(self):
+        return str(self._val)
+
+    def __str__(self):
+        return str(self._val)
+
+
+class SkipKeys:
+
+    def __init__(self, skip_keys: Dict[Type, Dict]):
+        """
+        Set a the keys to skip for a specific context in the code, by using the
+        `with` an instantiation of this class.
+
+        Args:
+            skip_keys: The types as keywords arguments and dictionary representing the
+            structure of the keys to skip for that type as values.
+        """
+        self._prev_val = keys_to_keep()
+        self._val = skip_keys
+
+    @staticmethod
+    def _check_str(val: str):
+        assert val in ("verbose", "concise"), \
+            "Expected value to be either 'verbose' or 'concise', " \
+            "but found {}".format(val)
+
+    def __enter__(self) -> None:
+        set_keys_to_skip(self._val)
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self._val = self._prev_val
+        self._prev_val = None
+        set_keys_to_skip(self._val)
 
     def __repr__(self):
         return str(self._val)
