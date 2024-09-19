@@ -184,12 +184,14 @@ class Prompt(_FormattedBaseModel):
         return hash(str(self))
 
 
-class Choice(_FormattedBaseModel, _Choice):
-    model_config = ConfigDict(extra="forbid")
-
-
 class ChatCompletionMessage(_FormattedBaseModel, _ChatCompletionMessage):
     model_config = ConfigDict(extra="forbid")
+
+
+class Choice(_FormattedBaseModel, _Choice):
+    model_config = ConfigDict(extra="forbid")
+    # only override pydantic types  which require FormattedBaseModel
+    message: ChatCompletionMessage
 
 
 class CompletionUsage(_FormattedBaseModel, _CompletionUsage):
