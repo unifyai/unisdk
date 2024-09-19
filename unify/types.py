@@ -300,22 +300,55 @@ class Score(_FormattedBaseModel, abc.ABC):
 # Representation #
 # ---------------#
 
-_REPR_MODE = None
+_REPR_MODE: Optional[str] = None
+_KEYS_TO_SKIP: List[str] = list()
 
 
 def repr_mode() -> str:
+    """
+    Gets the global representation mode as currently set. This is used when representing
+    the various unify types on screen. Can be either "verbose" or "concise".
+    """
     global _REPR_MODE
     return _REPR_MODE
 
 
-def set_repr_mode(mode: str) -> None:
-    global _REPR_MODE
+def keys_to_skip() -> Tuple[str]:
+    """
+    Return the currently set keys to skip as part of the representation to mode.
+    This is a tuple of arbitrary strings.
+    """
+    global _KEYS_TO_SKIP
+    return tuple(_KEYS_TO_SKIP)
+
+
+# noinspection PyShadowingNames
+def set_repr_mode(mode: str, keys_to_skip: Optional[List[str]] = None) -> None:
+    """
+    Sets the global representation mode, to be used when representing the various unify
+    types on screen. Can be either "verbose" or "concise".
+
+    Args:
+        mode: The value to set the mode to, either "verbose" or "concise".
+
+        keys_to_skip: The value of the keys to skip.
+
+    """
+    global _REPR_MODE, _KEYS_TO_SKIP
     _REPR_MODE = ReprMode(mode)
+    _KEYS_TO_SKIP = list(set(_KEYS_TO_SKIP + keys_to_skip))
 
 
 class ReprMode(str):
 
     def __init__(self, val: str):
+        """
+        Set a representation mode for a specific context in the code, by using the
+        `with` an instantiation of this class.
+
+        Args:
+            val: The value of the string, must be either "verbose" or "concise".
+        """
         assert val in ("verbose", "concise"),\
             "Expected value to be either 'verbose' or 'concise', " \
             "but found {}".format(val)
