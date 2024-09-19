@@ -309,12 +309,18 @@ class Score(_FormattedBaseModel, abc.ABC):
 _REPR_MODE = None
 _KEYS_TO_SKIP: Dict[Type, Dict] = dict()
 _KEYS_TO_KEEP: Dict[Type, Dict] = dict()
-_DEFAULT_KEYS_TO_KEEP: Dict[Type, Dict] = {
-    ChatCompletion: {
-        "choices": True
-    }
+_DEFAULT_KEYS_TO_KEEP: Dict[str, Dict[Type, Dict]] = {
+    "concise": {
+        ChatCompletion: {
+            "choices": True
+        }
+    },
+    "verbose": {}
 }
-_DEFAULT_KEYS_TO_SKIP: Dict[Type, Dict] = {}
+_DEFAULT_KEYS_TO_SKIP: Dict[str, Dict[Type, Dict]] = {
+    "concise": {},
+    "verbose": {}
+}
 
 
 def repr_mode() -> str:
@@ -399,7 +405,7 @@ def set_keys_to_keep(keep_keys: Union[Dict[Type, Dict], str]) -> None:
     global _KEYS_TO_KEEP
     if keep_keys == "default":
         global _DEFAULT_KEYS_TO_KEEP
-        _KEYS_TO_KEEP = _DEFAULT_KEYS_TO_KEEP
+        _KEYS_TO_KEEP = _DEFAULT_KEYS_TO_KEEP[keep_keys]
         return
     _KEYS_TO_KEEP = keep_keys
 
@@ -414,6 +420,8 @@ def set_repr_mode(mode: str) -> None:
     """
     global _REPR_MODE, _KEYS_TO_SKIP
     _REPR_MODE = ReprMode(mode)
+    set_keys_to_skip(mode)
+    set_keys_to_keep(mode)
 
 
 class ReprMode(str):
