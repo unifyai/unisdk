@@ -220,15 +220,19 @@ class ChatCompletion(_FormattedBaseModel, _ChatCompletion):
         )(choices=self.dict()["choices"])
 
     def __repr__(self) -> str:
-        return self._repr(self._chat_completion_pruned())
+        return self._repr(
+            self._chat_completion_pruned() if unify.repr_mode() == "concise" else self
+        )
 
     def __str__(self) -> str:
-        return self._repr(self._chat_completion_pruned())
+        return self._repr(
+            self._chat_completion_pruned() if unify.repr_mode() == "concise" else self
+        )
 
     def __rich_repr__(self):
-        pruned = self._chat_completion_pruned()
-        for k in pruned.model_fields:
-            yield k, pruned.__dict__[k]
+        rep = self._chat_completion_pruned() if unify.repr_mode() == "concise" else self
+        for k in rep.model_fields:
+            yield k, rep.__dict__[k]
 
 
 class Datum(_FormattedBaseModel, extra=Extra.allow):
