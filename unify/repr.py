@@ -1,6 +1,7 @@
 import copy
 from typing import Union, List, Dict, Type
-from unify.types import ChatCompletion, _FormattedBaseModel
+from unify.types import _FormattedBaseModel, ChatCompletion, Choice,\
+    ChatCompletionMessage
 
 _REPR_MODE = None
 _KEYS_TO_SKIP: Dict[Type, Dict] = dict()
@@ -8,14 +9,22 @@ _KEYS_TO_KEEP: Dict[Type, Dict] = dict()
 _DEFAULT_KEYS_TO_KEEP: Dict[str, Dict[Type, Dict]] = {
     "concise": {
         ChatCompletion: {
-            "choices": True
+            "choices": None
         }
     },
     "verbose": {}
 }
 _DEFAULT_KEYS_TO_SKIP: Dict[str, Dict[Type, Dict]] = {
-    "concise": {},
-    "verbose": {}
+    "concise": {
+        Choice: {
+            "finish_reason": "stop",
+            "index": 0
+        },
+        ChatCompletionMessage: {
+            "role": "assistant"
+        },
+        "verbose": {}
+    }
 }
 
 

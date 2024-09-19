@@ -59,9 +59,17 @@ class _FormattedBaseModel(_Formatted, BaseModel):
                 "expected either 'keep' or 'skip' as the only key, thus length one," \
                 "but found {}.".format(prune_pol)
             if "keep" in prune_pol:
-                return k in prune_pol["keep"]
+                contains_k = k in prune_pol["keep"]
+                if not contains_k:
+                    return False
+                prune_val = prune_pol["keep"][k]
+                return prune_val is None or prune_val == v
             elif "skip" in prune_pol:
-                return k not in prune_pol["skip"]
+                contains_k = k in prune_pol["skip"]
+                if not contains_k:
+                    return True
+                prune_val = prune_pol["skip"][k]
+                return prune_val is not None and prune_val != v
             else:
                 raise Exception("expected either 'keep' or 'skip' as the only key, "
                                 "but found {}.".format(prune_pol))
