@@ -47,4 +47,5 @@ from .dataset import *
 from .evaluation import *
 from .evaluator import *
 from .logging import *
+from .repr import *
 from .types import *
