@@ -53,11 +53,8 @@ class _FormattedBaseModel(_Formatted, BaseModel):
             if not prune_pol:
                 return True
             if isinstance(prune_pol, dict) and \
-                    list(prune_pol.keys())[0] not in ("keep", "skip"):
+                    "keep" not in prune_pol and "skip" not in prune_pol:
                 return True
-            assert len(prune_pol.keys()) == 1,\
-                "expected either 'keep' or 'skip' as the only key, thus length one," \
-                "but found {}.".format(prune_pol)
             if "keep" in prune_pol:
                 contains_k = k in prune_pol["keep"]
                 if not contains_k:
@@ -71,8 +68,8 @@ class _FormattedBaseModel(_Formatted, BaseModel):
                 prune_val = prune_pol["skip"][k]
                 return prune_val is not None and prune_val != v
             else:
-                raise Exception("expected either 'keep' or 'skip' as the only key, "
-                                "but found {}.".format(prune_pol))
+                raise Exception("expected prune_pol to contain either 'keep' or 'skip',"
+                                "but neither were present: {}.".format(prune_pol))
 
         if not isinstance(val, dict) and not isinstance(val, list) and \
                 not isinstance(val, tuple):
