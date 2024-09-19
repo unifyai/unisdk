@@ -185,25 +185,22 @@ class Prompt(_FormattedBaseModel):
 
 
 class Choice(_FormattedBaseModel, _Choice):
-    pass
+    model_config = ConfigDict(extra="forbid")
 
 
 class ChatCompletionMessage(_FormattedBaseModel, _ChatCompletionMessage):
-    pass
+    model_config = ConfigDict(extra="forbid")
 
 
 class CompletionUsage(_FormattedBaseModel, _CompletionUsage):
-    pass
+    model_config = ConfigDict(extra="forbid")
+    cost: float
 
 
-class ChatCompletion(_FormattedBaseModel):
-    id: str
+class ChatCompletion(_FormattedBaseModel, _ChatCompletion):
+    model_config = ConfigDict(extra="forbid")
+    # only override pydantic types  which require FormattedBaseModel
     choices: List[Choice]
-    created: int
-    model: str
-    object: Literal["chat.completion"]
-    service_tier: Optional[Literal["scale", "default"]] = None
-    system_fingerprint: Optional[str] = None
     usage: Optional[CompletionUsage] = None
 
     def __init__(self, assistant_message: Optional[str] = None, **kwargs):
