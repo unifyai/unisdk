@@ -309,6 +309,12 @@ class Score(_FormattedBaseModel, abc.ABC):
 _REPR_MODE = None
 _KEYS_TO_SKIP: Dict[Type, Dict] = dict()
 _KEYS_TO_KEEP: Dict[Type, Dict] = dict()
+_DEFAULT_KEYS_TO_KEEP: Dict[Type, Dict] = {
+    ChatCompletion: {
+        "choices": True
+    }
+}
+_DEFAULT_KEYS_TO_SKIP: Dict[Type, Dict] = {}
 
 
 def repr_mode() -> str:
@@ -355,7 +361,7 @@ def keys_to_skip() -> Dict[Type, Dict]:
     return copy.deepcopy(_KEYS_TO_SKIP)
 
 
-def set_keys_to_skip(skip_keys: Dict[Type, Dict]) -> None:
+def set_keys_to_skip(skip_keys: Union[Dict[Type, Dict], str]) -> None:
     """
     Set the keys to be skipped during representation, which is a dict with types as keys
     and the nested structure to skip as values.
@@ -365,6 +371,10 @@ def set_keys_to_skip(skip_keys: Dict[Type, Dict]) -> None:
         structure of the keys to skip for that type as values.
     """
     global _KEYS_TO_SKIP
+    if skip_keys == "default":
+        global _DEFAULT_KEYS_TO_SKIP
+        _KEYS_TO_SKIP = _DEFAULT_KEYS_TO_SKIP
+        return
     _KEYS_TO_SKIP = skip_keys
 
 
@@ -377,7 +387,7 @@ def keys_to_keep() -> Dict[Type, Dict]:
     return copy.deepcopy(_KEYS_TO_KEEP)
 
 
-def set_keys_to_keep(keep_keys: Dict[Type, Dict]) -> None:
+def set_keys_to_keep(keep_keys: Union[Dict[Type, Dict], str]) -> None:
     """
     Set the keys to be kept during representation, which is a dict with types as keys
     and the nested structure to keep as values.
@@ -387,6 +397,10 @@ def set_keys_to_keep(keep_keys: Dict[Type, Dict]) -> None:
         structure of the keys to keep for that type as values.
     """
     global _KEYS_TO_KEEP
+    if keep_keys == "default":
+        global _DEFAULT_KEYS_TO_KEEP
+        _KEYS_TO_KEEP = _DEFAULT_KEYS_TO_KEEP
+        return
     _KEYS_TO_KEEP = keep_keys
 
 
@@ -441,7 +455,7 @@ class ReprMode(str):
 
 class KeepKeys:
 
-    def __init__(self, keep_keys: Dict[Type, Dict]):
+    def __init__(self, keep_keys: Union[Dict[Type, Dict], str]):
         """
         Set a the keys to keep for a specific context in the code, by using the
         `with` an instantiation of this class.
@@ -476,7 +490,7 @@ class KeepKeys:
 
 class SkipKeys:
 
-    def __init__(self, skip_keys: Dict[Type, Dict]):
+    def __init__(self, skip_keys: Union[Dict[Type, Dict], str]):
         """
         Set a the keys to skip for a specific context in the code, by using the
         `with` an instantiation of this class.
