@@ -6,7 +6,7 @@ from unify.types import _FormattedBaseModel, ChatCompletion, Choice,\
 _REPR_MODE = None
 _KEYS_TO_SKIP: Dict[Type, Dict] = dict()
 _KEYS_TO_KEEP: Dict[Type, Dict] = dict()
-_DEFAULT_KEYS_TO_KEEP: Dict[str, Dict[Type, Dict]] = {
+_KEYS_TO_KEEP_MODES: Dict[str, Dict[Type, Dict]] = {
     "concise": {
         ChatCompletion: {
             "choices": None
@@ -14,7 +14,7 @@ _DEFAULT_KEYS_TO_KEEP: Dict[str, Dict[Type, Dict]] = {
     },
     "verbose": {}
 }
-_DEFAULT_KEYS_TO_SKIP: Dict[str, Dict[Type, Dict]] = {
+_KEYS_TO_SKIP_MODES: Dict[str, Dict[Type, Dict]] = {
     "concise": {
         Choice: {
             "finish_reason": "stop",
@@ -91,8 +91,8 @@ def set_keys_to_skip(skip_keys: Union[Dict[Type, Dict], str]) -> None:
     """
     global _KEYS_TO_SKIP
     if isinstance(skip_keys, str):
-        global _DEFAULT_KEYS_TO_SKIP
-        _KEYS_TO_SKIP = _DEFAULT_KEYS_TO_SKIP[skip_keys]
+        global _KEYS_TO_SKIP_MODES
+        _KEYS_TO_SKIP = _KEYS_TO_SKIP_MODES[skip_keys]
         return
     _KEYS_TO_SKIP = skip_keys
 
@@ -117,8 +117,8 @@ def set_keys_to_keep(keep_keys: Union[Dict[Type, Dict], str]) -> None:
     """
     global _KEYS_TO_KEEP
     if isinstance(keep_keys, str):
-        global _DEFAULT_KEYS_TO_KEEP
-        _KEYS_TO_KEEP = _DEFAULT_KEYS_TO_KEEP[keep_keys]
+        global _KEYS_TO_KEEP_MODES
+        _KEYS_TO_KEEP = _KEYS_TO_KEEP_MODES[keep_keys]
         return
     _KEYS_TO_KEEP = keep_keys
 
