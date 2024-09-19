@@ -79,11 +79,28 @@ class _FormattedBaseModel(_Formatted, BaseModel):
             return v.default
         return None
 
-    @staticmethod
-    def _prune_keys(config: dict, dct: dict):
-        to_skip = keys_to_skip()
-        return {k: v for k, v in config.items() if k not in to_skip},\
-               {k: v for k, v in dct.items() if k not in to_skip}
+    def _prune_keys(self, obj: Union[Dict, List], prune_policy: Dict[str, Dict]):
+        if not prune_policy or isinstance(prune_policy, bool):
+            return obj
+        keys = list(prune_policy.keys())
+        assert len(keys) == 1 and "keep" in keys or "skip" in keys,\
+            "keys should only be length one"
+        keep_or_skip = keys[0]
+        prune_policy = prune_policy[keep_or_skip]
+        if not isinstance(obj, dict) and not isinstance(obj, list):
+            return obj
+        if keep_or_skip == "keep":
+            check_fn = lambda v: v in prune_policy
+        elif keep_or_skip == "skip":
+            check_fn = lambda v: v not in prune_policy
+        else:
+            raise Exception("keys can only contain either 'keep' or 'skip'")
+        if isinstance(obj, dict):
+            return {k: self._prune_keys(v, prune_policy[k] if k in prune_policy else {})
+                    for k, v in obj.items() if check_fn(k)}
+        elif isinstance(obj, list):
+            return [self._prune_keys(v, prune_policy[k] if k in prune_policy else {})
+                    for i, v in enumerate(obj) if check_fn(i)]
 
     def _prune(self):
         dct = self._prune_iterable(self.dict())
@@ -92,7 +109,9 @@ class _FormattedBaseModel(_Formatted, BaseModel):
             fields = {**fields, **self.model_extra}
         config = {k: (self._prune_pydantic(self._annotation(fields[k]), v),
                       self._default(fields[k])) for k, v in dct.items()}
-        config, dct = self._prune_keys(config, dct)
+        prune_policy = key_repr(self)
+        config, dct = \
+            self._prune_keys(config, prune_policy), self._prune_keys(dct, prune_policy)
         return create_model(
             self.__class__.__name__,
             **config,
@@ -348,7 +367,7 @@ def key_repr(instance: _FormattedBaseModel) -> Union[Dict, List]:
     ins_type = type(instance)
     to_skip = ins_type in _KEYS_TO_SKIP
     to_keep = ins_type in _KEYS_TO_KEEP
-    assert not to_skip and to_keep,\
+    assert not (to_skip and to_keep),\
         "Cannot have specification for keys to skip AND to keep," \
         "please only set one of these."
     if to_skip:
@@ -377,9 +396,9 @@ def set_keys_to_skip(skip_keys: Union[Dict[Type, Dict], str]) -> None:
         structure of the keys to skip for that type as values.
     """
     global _KEYS_TO_SKIP
-    if skip_keys == "default":
+    if isinstance(skip_keys, str):
         global _DEFAULT_KEYS_TO_SKIP
-        _KEYS_TO_SKIP = _DEFAULT_KEYS_TO_SKIP
+        _KEYS_TO_SKIP = _DEFAULT_KEYS_TO_SKIP[skip_keys]
         return
     _KEYS_TO_SKIP = skip_keys
 
@@ -403,7 +422,7 @@ def set_keys_to_keep(keep_keys: Union[Dict[Type, Dict], str]) -> None:
         structure of the keys to keep for that type as values.
     """
     global _KEYS_TO_KEEP
-    if keep_keys == "default":
+    if isinstance(keep_keys, str):
         global _DEFAULT_KEYS_TO_KEEP
         _KEYS_TO_KEEP = _DEFAULT_KEYS_TO_KEEP[keep_keys]
         return
