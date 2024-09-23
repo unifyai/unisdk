@@ -480,11 +480,6 @@ class Unify(_UniLLMClient):
             del prompt_dict["extra_body"]
         else:
             extra_body = {}
-        # o1-preview and o1-mini don't work properly if we pass max_completion_tokens
-        # this logic hasn't been added to the stream function because o1
-        # models don't work when streaming
-        if endpoint.startswith("o1") and "max_completion_tokens" in prompt_dict:
-            del prompt_dict["max_completion_tokens"]
         kw = dict(
             model=endpoint,
             **prompt_dict,
