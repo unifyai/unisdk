@@ -195,6 +195,9 @@ def get_formatted_docstring(func):
 
 
 def write_function_and_class_jsons(details, private_modules):
+    # create the json_files folder
+    os.makedirs("json_files", exist_ok=True)
+
     # load all function and class docs
     for module_path in details:
         # skip private modules
