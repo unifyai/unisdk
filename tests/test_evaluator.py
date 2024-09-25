@@ -1,6 +1,11 @@
-import unify
+import abc
+import random
 import unittest
+import builtins
+import traceback
 from typing import Type, Dict
+
+import unify
 
 
 class TestMathsEvaluator(unittest.TestCase):
@@ -25,7 +30,7 @@ class TestMathsEvaluator(unittest.TestCase):
         class MathsEvaluator(unify.Evaluator):
 
             @property
-            def class_config(self) -> Type[unify.Score]:
+            def scorer(self) -> Type[unify.Score]:
                 return Binary
 
             def _evaluate(self, prompt: str, response: str) -> bool:

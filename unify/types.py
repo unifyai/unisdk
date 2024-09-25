@@ -326,7 +326,7 @@ class Score(_FormattedBaseModel, abc.ABC):
     value: float
     description: str
 
-    def __init__(self, value: float):
+    def __init__(self, value: Optional[float] = None):
         """
         Create Score instance.
 
@@ -336,7 +336,8 @@ class Score(_FormattedBaseModel, abc.ABC):
         Returns:
             The pydantic Score instance, with associated value and class description
         """
-        assert value in self.config,\
+        value = 0. if value is None else value
+        assert value in self.config, \
             "value {} passed is not a valid value, " \
             "based on the config for this Score class {}".format(value, self.config)
         super().__init__(value=value, description=self.config[value])

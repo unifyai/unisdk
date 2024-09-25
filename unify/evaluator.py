@@ -13,7 +13,7 @@ class Evaluator(abc.ABC):
 
     @property
     @abstractmethod
-    def class_config(self) -> Type[Score]:
+    def scorer(self) -> Type[Score]:
         raise NotImplemented
 
     @abstractmethod
@@ -87,7 +87,7 @@ class Evaluator(abc.ABC):
         # response upcasting
         response = cast(response, ChatCompletion)
         # score upcasting
-        score = cast(score, self.class_config)
+        score = cast(score, self.scorer)
         # return evaluation
         return Evaluation(
             prompt=prompt,
