@@ -13,10 +13,10 @@ import unify
 class TestMathsEvaluator(unittest.TestCase):
 
     def setUp(self) -> None:
-        self._system_msg = "Answer the following maths question, " \
-                           "returning only the numeric answer, and nothing else."
+        system_msg = ("Answer the following maths question, "
+                      "returning only the numeric answer, and nothing else.")
         self._dataset = unify.Dataset(
-            [unify.Prompt(q, system_message=self._system_msg) for q in
+            [unify.Prompt(q, system_message=system_msg) for q in
              ["1 + 3", "4 + 7", "6 + 5"]]
         )
 
@@ -83,12 +83,12 @@ class SimulateFloatInput:
 class TestHumanEvaluator(unittest.TestCase):
 
     def setUp(self) -> None:
-        self._system_msg = \
+        system_msg = \
             ("You are an AI assistant medical advisor, please only give medical advice "
              "if you are confident. Ask follow on questions to get more information if "
              "required. Be very succinct in your answers.")
         self._dataset = unify.Dataset([
-            unify.Prompt(q, system_message=self._system_msg) for q in
+            unify.Prompt(q, system_message=system_msg) for q in
             [
                 "I have a sore throat, red spots, and a headache. What should I do?",
                 "My ankle really hurts when I apply pressure, should I wrap it up?",
@@ -213,7 +213,7 @@ class TestHumanEvaluator(unittest.TestCase):
 class TestCodeEvaluator(unittest.TestCase):
 
     def setUp(self) -> None:
-        self._system_msg = \
+        system_msg = \
             ("You are an expert software engineer, write the code asked of you to the "
              "highest quality. Give good variable names, ensure the code compiles and "
              "is robust to edge cases, and always gives the correct result. "
@@ -242,7 +242,7 @@ class TestCodeEvaluator(unittest.TestCase):
         ]
         _answers = [[fn(*i) for i in ins]
                     for ins, fn in zip(_inputs, _reference_functions)]
-        _prompts = [unify.Prompt(q, system_message=self._system_msg)
+        _prompts = [unify.Prompt(q, system_message=system_msg)
                     for q in _questions]
         _data = [unify.Datum(prompt=p, inputs=i, answers=a)
                  for p, i, a in zip(_prompts, _inputs, _answers)]
@@ -351,9 +351,9 @@ class TestCodeEvaluator(unittest.TestCase):
 class TestToolEvaluator(unittest.TestCase):
 
     def setUp(self) -> None:
-        self._system_msg = \
+        system_msg = \
             ("You are a travel assistant, helping people choose which bus or tube "
-             "train to catch for their journey. People often want to which which buses "
+             "train to catch for their journey. People often want to see which buses "
              "and trains are currently running, and this information changes "
              "frequently. If somebody asks which bus or trains are currently running, "
              "or if they ask whether they are able to catch a particular bus or train, "
@@ -387,7 +387,7 @@ class TestToolEvaluator(unittest.TestCase):
 
         _prompts = [
             unify.Prompt(
-                q, system_message=self._system_msg, tools=tools, tool_choice="auto"
+                q, system_message=system_msg, tools=tools, tool_choice="auto"
             ) for q in _questions
         ]
 
