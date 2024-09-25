@@ -1,6 +1,6 @@
 import abc
 from abc import abstractmethod
-from typing import Type, Union, Optional, Tuple
+from typing import Type, Union, Optional, Tuple, Dict
 
 from unify.agent import Agent
 from unify.chat.clients import _Client
@@ -10,6 +10,10 @@ from unify.types import Score, Prompt, ChatCompletion
 
 
 class Evaluator(abc.ABC):
+
+    @property
+    def class_config(self) -> Dict[float, str]:
+        return self.scorer().config
 
     @property
     @abstractmethod
