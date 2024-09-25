@@ -1,5 +1,5 @@
-from typing import Union
 from pydantic import Extra
+from typing import Union, Optional
 
 from unify.agent import Agent
 from unify.chat.clients import _Client
@@ -11,3 +11,4 @@ class Evaluation(_FormattedBaseModel, extra=Extra.allow, arbitrary_types_allowed
     response: ChatCompletion
     agent: Union[str, _Client, Agent]
     score: Score
+    rationale: Optional[str]

@@ -1,6 +1,6 @@
 import abc
 from abc import abstractmethod
-from typing import Type, Union
+from typing import Type, Union, Optional, Tuple
 
 from unify.agent import Agent
 from unify.chat.clients import _Client
@@ -22,7 +22,7 @@ class Evaluator(abc.ABC):
             prompt: Union[str, Prompt],
             response: Union[str, ChatCompletion],
             **kwargs
-    ) -> Union[bool, float, Score]:
+    ) -> Tuple[Union[bool, float, Score], Optional[str]]:
         """
         Evaluate the given response for this input prompt, with optional extra data.
 
@@ -77,7 +77,8 @@ class Evaluator(abc.ABC):
         response = cast(response, expected_response_type)
 
         # perform the evaluation
-        score = self._evaluate(prompt, response, **kwargs)
+        ret = self._evaluate(prompt, response, **kwargs)
+        score, rationale = ret if isinstance(ret, tuple) else (ret, None)
 
         # upcast to full type for storage in Evaluation
 
@@ -93,5 +94,6 @@ class Evaluator(abc.ABC):
             response=response,
             agent=agent,
             score=score,
+            rationale=rationale,
             **kwargs
         )
