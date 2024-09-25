@@ -49,5 +49,5 @@ class TestMathsEvaluator(unittest.TestCase):
                     response=response,
                     agent=self._client
                 )
-                self.assertEqual(evaluation.score.score[0], 1.)
-                self.assertEqual(evaluation.score.score[1], "correct")
+                self.assertEqual(evaluation.score.value, 1.)
+                self.assertEqual(evaluation.score.description, "correct")

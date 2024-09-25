@@ -323,7 +323,8 @@ class Datum(_FormattedBaseModel, extra=Extra.allow):
 
 class Score(_FormattedBaseModel, abc.ABC):
     model_config = ConfigDict(extra="forbid")
-    score: Tuple[float, str]
+    value: float
+    description: str
 
     def __init__(self, value: float):
         """
@@ -338,7 +339,7 @@ class Score(_FormattedBaseModel, abc.ABC):
         assert value in self.config,\
             "value {} passed is not a valid value, " \
             "based on the config for this Score class {}".format(value, self.config)
-        super().__init__(score=(value, self.config[value]))
+        super().__init__(value=value, description=self.config[value])
 
     @property
     @abc.abstractmethod
