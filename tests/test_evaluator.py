@@ -1,14 +1,13 @@
 import abc
-import os.path
 import random
+import os.path
 import unittest
 import builtins
 import importlib
 import traceback
-from typing import Type, Dict, List, Any, Union, Tuple, Optional
+from typing import Type, Dict, List, Any, Union, Optional
 
 import unify
-from unify import Prompt, ChatCompletion, Score
 
 
 class TestMathsEvaluator(unittest.TestCase):
@@ -347,3 +346,101 @@ class TestCodeEvaluator(unittest.TestCase):
                 score = evaluation.score.value
                 self.assertIn(score, class_config)
                 self.assertEqual(evaluation.score.description, class_config[score])
+
+
+class TestToolEvaluator(unittest.TestCase):
+
+    def setUp(self) -> None:
+        self._system_msg = \
+            ("You are a travel assistant, helping people choose which bus or tube "
+             "train to catch for their journey. People often want to which which buses "
+             "and trains are currently running, and this information changes "
+             "frequently. If somebody asks which bus or trains are currently running, "
+             "or if they ask whether they are able to catch a particular bus or train, "
+             "you should use the appropriate tool to check if it's running. If they "
+             "ask a question which does not require this information, then you should "
+             "not make use of the tool.")
+        _questions = [
+            "Which buses are currently running?",
+            "I'm planning to catch the Jubilee line right now, is that possible?",
+            "I'm going to walk to the cafe, do you know how long it will take?"
+        ]
+
+        tools = [
+            {
+                "type": "function",
+                "function": {
+                    "name": "get_running_buses",
+                    "description": "Get all of the buses which are currently "
+                                   "in service."
+                },
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "get_running_tube_lines",
+                    "description": "Get all of the tube lines which are currently "
+                                   "in service."
+                },
+            }
+        ]
+
+        _prompts = [
+            unify.Prompt(
+                q, system_message=self._system_msg, tools=tools, tool_choice="auto"
+            ) for q in _questions
+        ]
+
+        _correct_tool_use = ["get_running_buses", "get_running_tube_lines", None]
+
+        self._dataset = unify.Dataset(
+            [unify.Datum(prompt=p, correct_tool_use=ctu)
+             for p, ctu in zip(_prompts, _correct_tool_use)]
+        )
+
+        class CorrectToolUse(unify.Score):
+
+            @property
+            def config(self) -> Dict[float, str]:
+                return {
+                    0.: "The tool was not used appropriately, "
+                        "either being used when not needed or not used when needed.",
+                    1.: "Tool use was appropriate, "
+                        "being used if needed or ignored if not needed."
+                }
+
+        class CorrectToolUseEvaluator(unify.Evaluator):
+
+            @property
+            def scorer(self) -> Type[CorrectToolUse]:
+                return CorrectToolUse
+
+            def _evaluate(self, prompt: str, response: unify.ChatCompletion,
+                          correct_tool_use: Optional[str]) -> bool:
+                tool_calls = response.choices[0].message.tool_calls
+                if correct_tool_use is None:
+                    return tool_calls is None
+                return tool_calls[0].function.name == correct_tool_use
+
+        self._client = unify.Unify(
+            "gpt-4o@openai",
+            cache=True,
+            return_full_completion=True
+        )
+        self._evaluator = CorrectToolUseEvaluator()
+
+    def test_evals(self) -> None:
+        unify.set_repr_mode("concise")
+        for datum in self._dataset:
+            response = self._client.generate(**datum.prompt.model_dump())
+            class_config = self._evaluator.class_config
+            evaluation = self._evaluator.evaluate(
+                prompt=datum.prompt,
+                response=response,
+                agent=self._client,
+                **datum.model_extra
+            )
+            score = evaluation.score.value
+            self.assertIn(score, class_config)
+            self.assertEqual(score, 1.)
+            self.assertEqual(evaluation.score.description, class_config[score])
