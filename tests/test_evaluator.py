@@ -3,7 +3,7 @@ import unittest
 from typing import Type, Dict
 
 
-class TestEvaluators(unittest.TestCase):
+class TestMathsEvaluator(unittest.TestCase):
 
     def setUp(self) -> None:
         self._system_msg = "Answer the following maths question, " \
@@ -39,13 +39,15 @@ class TestEvaluators(unittest.TestCase):
                     return False
 
         self._evaluator = MathsEvaluator()
-        self._client = unify.Unify("gpt-4o@openai", cache=True)
+        self._client = unify.Unify("gpt-4o@openai")
 
     def test_evals(self) -> None:
         for prompt in (unify.Datum("1 + 3"), unify.Prompt("1 + 3"), "1 + 3"):
             for response in (unify.ChatCompletion("4"), "4"):
-                print(self._evaluator.evaluate(
+                evaluation = self._evaluator.evaluate(
                     prompt=prompt,
                     response=response,
                     agent=self._client
-                ))
+                )
+                self.assertEqual(evaluation.score.score[0], 1.)
+                self.assertEqual(evaluation.score.score[1], "correct")
