@@ -153,3 +153,4 @@ bin/
 
 # Tests
 .cache.json
+prompts.jsonl
