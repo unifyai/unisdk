@@ -72,6 +72,8 @@ class Evaluator(abc.ABC):
 
         # get type hints for self._evaluation, if they exist
         eval_ann = self._evaluate.__annotations__
+        # prune kwargs based on the arguments expected by _evaluate
+        kwargs = {k: v for k, v in kwargs.items() if k in eval_ann}
         # upcast or downcast prompt to the expected type
         expected_prompt_type = eval_ann["prompt"] if "prompt" in eval_ann else Prompt
         prompt = cast(prompt, expected_prompt_type)
