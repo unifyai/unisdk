@@ -121,7 +121,7 @@ class _FormattedBaseModel(_Formatted, BaseModel):
 
     def _prune(self):
         prune_policy = unify.key_repr(self)
-        dct = self._prune_dict(self.dict(), prune_policy)
+        dct = self._prune_dict(self.model_dump(), prune_policy)
         fields = self.model_fields
         if self.model_extra is not None:
             fields = {**fields, **self.model_extra}

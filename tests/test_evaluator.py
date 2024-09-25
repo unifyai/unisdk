@@ -197,7 +197,7 @@ class TestHumanEvaluator(unittest.TestCase):
     def test_evals(self) -> None:
         unify.set_repr_mode("concise")
         for datum in self._dataset:
-            response = self._client.generate(**datum.prompt.dict())
+            response = self._client.generate(**datum.prompt.model_dump())
             for evaluator in self._evaluators.values():
                 class_config = evaluator.class_config
                 with SimulateFloatInput(class_config):
@@ -335,7 +335,7 @@ class TestCodeEvaluator(unittest.TestCase):
     def test_evals(self) -> None:
         unify.set_repr_mode("concise")
         for datum in self._dataset:
-            response = self._client.generate(**datum.prompt.dict())
+            response = self._client.generate(**datum.prompt.model_dump())
             for evaluator in self._evaluators.values():
                 class_config = evaluator.class_config
                 evaluation = evaluator.evaluate(
