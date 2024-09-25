@@ -3,7 +3,7 @@ import unittest
 from typing import Type, Dict
 
 
-class TestDatasetConstruction(unittest.TestCase):
+class TestEvaluators(unittest.TestCase):
 
     def setUp(self) -> None:
         self._system_msg = "Answer the following maths question, " \
