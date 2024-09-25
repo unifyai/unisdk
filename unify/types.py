@@ -285,19 +285,21 @@ class ChatCompletion(_FormattedBaseModel, _ChatCompletion):
 class Datum(_FormattedBaseModel, extra=Extra.allow):
     prompt: Prompt
 
-    def __init__(self, prompt: Optional[Union[str, Prompt]]):
+    def __init__(self, prompt: Optional[Union[str, Prompt]], **kwargs):
         """
         Create Datum instance.
 
         Args:
             prompt: The prompt, either as a user message or as the full prompt.
 
+            kwargs: Optional extra fields passed.
+
         Returns:
             The pydantic Datum instance.
         """
         if isinstance(prompt, str):
             prompt = Prompt(prompt)
-        super().__init__(prompt=prompt)
+        super().__init__(prompt=prompt, **kwargs)
 
     def __add__(self, other):
         return unify.Dataset(self) +\
