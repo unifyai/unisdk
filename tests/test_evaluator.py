@@ -1,11 +1,14 @@
 import abc
+import os.path
 import random
 import unittest
 import builtins
+import importlib
 import traceback
-from typing import Type, Dict
+from typing import Type, Dict, List, Any, Union, Tuple, Optional
 
 import unify
+from unify import Prompt, ChatCompletion, Score
 
 
 class TestMathsEvaluator(unittest.TestCase):
@@ -81,7 +84,7 @@ class SimulateFloatInput:
 class TestHumanEvaluator(unittest.TestCase):
 
     def setUp(self) -> None:
-        self._system_msg =\
+        self._system_msg = \
             ("You are an AI assistant medical advisor, please only give medical advice "
              "if you are confident. Ask follow on questions to get more information if "
              "required. Be very succinct in your answers.")
@@ -206,3 +209,141 @@ class TestHumanEvaluator(unittest.TestCase):
                     score = evaluation.score.value
                     self.assertIn(score, class_config)
                     self.assertEqual(evaluation.score.description, class_config[score])
+
+
+class TestCodeEvaluator(unittest.TestCase):
+
+    def setUp(self) -> None:
+        self._system_msg = \
+            ("You are an expert software engineer, write the code asked of you to the "
+             "highest quality. Give good variable names, ensure the code compiles and "
+             "is robust to edge cases, and always gives the correct result. "
+             "Please enclose the code inside appending and prepending triple dashes "
+             "like so:\n"
+             "```\n"
+             "your code\n"
+             "```")
+        _questions = [
+            "Write a python function to sort and merge two lists.",
+            "Write a python function to find the nth largest number in a set.",
+            "Write a python function to remove all None values from a dictionary."
+        ]
+        _inputs = [
+            [([random.random() for _ in range(10)],
+              [random.random() for _ in range(10)]) for _ in range(3)],
+            [(set([random.random() for _ in range(10)]), random.randint(0, 9))
+             for _ in range(3)],
+            [({"a": 1., "b": None, "c": 3.},), ({"a": 1., "b": 2., "c": 3.},),
+             ({"a": None, "b": 2.},)],
+        ]
+        _reference_functions = [
+            lambda x, y: sorted(x + y),
+            lambda x, n: sorted(list(x))[n],
+            lambda dct: {k: v for k, v in dct.items() if v is not None}
+        ]
+        _answers = [[fn(*i) for i in ins]
+                    for ins, fn in zip(_inputs, _reference_functions)]
+        _prompts = [unify.Prompt(q, system_message=self._system_msg)
+                    for q in _questions]
+        _data = [unify.Datum(prompt=p, inputs=i, answers=a)
+                 for p, i, a in zip(_prompts, _inputs, _answers)]
+        self._dataset = unify.Dataset(_data)
+
+        class Runs(unify.Score):
+
+            @property
+            def config(self) -> Dict[float, str]:
+                return {
+                    0.: "An error is raised when the code is run.",
+                    1.: "Code runs without error."
+                }
+
+        class Correct(unify.Score):
+
+            @property
+            def config(self) -> Dict[float, str]:
+                return {
+                    0.: "The answer was incorrect.",
+                    1.: "The answer was correct."
+                }
+
+        class RunsEvaluator(unify.Evaluator):
+
+            @property
+            def scorer(self) -> Type[Runs]:
+                return Runs
+
+            # noinspection PyMethodOverriding
+            @staticmethod
+            def _load_function(response: str) -> Union[callable, bool]:
+                # noinspection PyBroadException
+                try:
+                    code = response.split("```")[1]
+                    with open("new_module.py", "w+") as file:
+                        file.write(code)
+                    module = importlib.import_module("new_module")
+                    fn_name = code.split("def ")[1].split("(")[0]
+                    fn = getattr(module, fn_name)
+                    return fn
+                except:
+                    return False
+
+            def _evaluate(self, prompt: str, response: str, inputs: List[Any]) -> bool:
+                fn = self._load_function(response)
+                if fn is False:
+                    return False
+                for inp in inputs:
+                    # noinspection PyBroadException
+                    try:
+                        fn(*inp)
+                    except:
+                        return False
+                return True
+
+        class CorrectEvaluator(RunsEvaluator):
+
+            @property
+            def scorer(self) -> Type[Correct]:
+                return Correct
+
+            # noinspection PyMethodOverriding
+            def _evaluate(self, prompt: str, response: str, inputs: List[Any],
+                          answers: List[Any]) -> bool:
+                fn = self._load_function(response)
+                if fn is False:
+                    return False
+                for inp, ans in zip(inputs, answers):
+                    # noinspection PyBroadException
+                    try:
+                        response = fn(*inp)
+                        if response != ans:
+                            return False
+                    except:
+                        return False
+                return True
+
+        self._client = unify.Unify("gpt-4o@openai", cache=True)
+        self._evaluators = {
+            "runs": RunsEvaluator(),
+            "correct": CorrectEvaluator()
+        }
+
+    def tearDown(self) -> None:
+        if os.path.exists("new_module.py"):
+            os.remove("new_module.py")
+
+    def test_evals(self) -> None:
+        unify.set_repr_mode("concise")
+        for datum in self._dataset:
+            response = self._client.generate(**datum.prompt.dict())
+            for evaluator in self._evaluators.values():
+                class_config = evaluator.class_config
+                evaluation = evaluator.evaluate(
+                    prompt=datum.prompt,
+                    response=response,
+                    agent=self._client,
+                    **datum.model_extra
+                )
+                score = evaluation.score.value
+                self.assertIn(score, class_config)
+                self.assertEqual(evaluation.score.description, class_config[score])
