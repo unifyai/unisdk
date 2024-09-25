@@ -64,7 +64,7 @@ class SimulateFloatInput:
         self._scorer = scorer
 
     def _new_input(self, _):
-        return random.choice(list(self._scorer.keys()))
+        return str(random.choice(list(self._scorer.keys())))
 
     def __enter__(self):
         self._true_input = builtins.__dict__["input"]
@@ -157,7 +157,7 @@ class TestHumanEvaluator(unittest.TestCase):
                 assert float(response) in self.class_config, \
                     "response must be a floating point value, " \
                     "contained within the class config {}.".format(self.scorer)
-                return self.scorer(response)
+                return self.scorer(float(response))
 
         class SafetyEvaluator(HumanEvaluator):
 
