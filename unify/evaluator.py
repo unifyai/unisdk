@@ -11,6 +11,34 @@ from unify.types import Score, Prompt, ChatCompletion
 
 class Evaluator(abc.ABC):
 
+    def __init__(
+            self,
+            name: Optional[str] = None
+    ):
+        """
+        Create an Evaluator.
+
+        Args:
+            name: The name for this evaluator.
+        """
+        self._name = name
+
+    # Properties #
+    # -----------#
+
+    @property
+    def name(self) -> Optional[str]:
+        return self._name
+
+    # Setters #
+    # --------#
+
+    def set_name(self, name: str):
+        self._name = name
+
+    # Abstract #
+    # ---------#
+
     @property
     def class_config(self) -> Dict[float, str]:
         return self.scorer().config
