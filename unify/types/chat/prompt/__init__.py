@@ -9,7 +9,7 @@ from openai.types.chat import (
 from openai.types.chat.completion_create_params import ResponseFormat
 
 import unify
-from ..base import _FormattedBaseModel
+from ...base import _FormattedBaseModel
 
 
 class Prompt(_FormattedBaseModel):

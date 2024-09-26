@@ -5,7 +5,7 @@ from openai.types.completion_usage import CompletionUsage as _CompletionUsage
 from openai.types.chat.chat_completion import \
     ChatCompletionMessage as _ChatCompletionMessage, Choice as _Choice
 
-from ..base import _FormattedBaseModel
+from ...base import _FormattedBaseModel
 
 
 class ChatCompletionMessage(_FormattedBaseModel, _ChatCompletionMessage):
