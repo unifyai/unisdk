@@ -1,10 +1,15 @@
 from typing import List
-from pydantic import ConfigDict
 from openai.types.chat.chat_completion import (
     ChatCompletionTokenLogprob as _ChatCompletionTokenLogprob)
+from pydantic import ConfigDict
+from openai.types.chat.chat_completion_token_logprob import TopLogprob as _TopLogprob
 
 from ......base import _FormattedBaseModel
-from .top_logprob import TopLogprob
+
+
+class TopLogprob(_FormattedBaseModel, _TopLogprob):
+    model_config = ConfigDict(extra="forbid")
+    # no custom types
 
 
 class ChatCompletionTokenLogprob(_FormattedBaseModel, _ChatCompletionTokenLogprob):
