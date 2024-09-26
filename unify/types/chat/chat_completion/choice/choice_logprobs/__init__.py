@@ -1,10 +1,10 @@
-from pydantic import ConfigDict
-from typing import Optional, List
+from typing import Optional
 from openai.types.chat.chat_completion import (
     ChoiceLogprobs as _ChoiceLogprobs)
 
 from .....base import _FormattedBaseModel
-from .chat_completion_token_logprob import ChatCompletionTokenLogprob
+from .chat_completion_token_logprob import *
+from . import chat_completion_token_logprob
 
 
 class ChoiceLogprobs(_FormattedBaseModel, _ChoiceLogprobs):

@@ -1,9 +1,9 @@
-from pydantic import ConfigDict
 from openai.types.chat.chat_completion_message_tool_call import (
     ChatCompletionMessageToolCall as _ChatCompletionMessageToolCall)
 
 from ......base import _FormattedBaseModel
-from .function import Function
+from .function import *
+from . import function
 
 
 class ChatCompletionMessageToolCall(
