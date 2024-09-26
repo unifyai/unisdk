@@ -1,4 +1,6 @@
 import abc
+import copy
+import json
 import random
 import os.path
 import unittest
@@ -6,8 +8,12 @@ import builtins
 import importlib
 import traceback
 from typing import Type, Dict, List, Any, Union, Optional
+from openai.types.chat.chat_completion_tool_message_param import (
+    ChatCompletionToolMessageParam
+)
 
 import unify
+from unify import Prompt
 
 
 class TestMathsEvaluator(unittest.TestCase):
@@ -366,7 +372,7 @@ class TestToolEvaluator(unittest.TestCase):
             "I'm going to walk to the cafe, do you know how long it will take?"
         ]
 
-        tools = [
+        _tools = [
             {
                 "type": "function",
                 "function": {
@@ -387,15 +393,37 @@ class TestToolEvaluator(unittest.TestCase):
 
         _prompts = [
             unify.Prompt(
-                q, system_message=system_msg, tools=tools, tool_choice="auto"
+                q, system_message=system_msg, tools=_tools, tool_choice="auto"
             ) for q in _questions
         ]
 
+        def get_running_buses():
+            return {
+                "549": True,
+                "W12": False,
+                "W13": True,
+                "W14": False
+            }
+
+        def get_running_tube_lines():
+            return {
+                "Circle": True,
+                "Jubilee": False,
+                "Northern": True,
+                "Central": True
+            }
+
         _correct_tool_use = ["get_running_buses", "get_running_tube_lines", None]
+        _content_check = [
+            {"should_contain": ("549", "W13"),
+             "should_omit": ("W12", "W14")},
+            {"should_contain": "No", "should_omit": "Yes"},
+            None
+        ]
 
         self._dataset = unify.Dataset(
-            [unify.Datum(prompt=p, correct_tool_use=ctu)
-             for p, ctu in zip(_prompts, _correct_tool_use)]
+            [unify.Datum(prompt=p, correct_tool_use=ctu, content_check=cc)
+             for p, ctu, cc in zip(_prompts, _correct_tool_use, _content_check)]
         )
 
         class CorrectToolUse(unify.Score):
@@ -407,6 +435,24 @@ class TestToolEvaluator(unittest.TestCase):
                         "either being used when not needed or not used when needed.",
                     1.: "Tool use was appropriate, "
                         "being used if needed or ignored if not needed."
+                }
+
+        class Contains(unify.Score):
+
+            @property
+            def config(self) -> Dict[float, str]:
+                return {
+                    0.: "The response contains all of the keywords expected.",
+                    1.: "The response does not contain all of the keywords expected."
+                }
+
+        class Omits(unify.Score):
+
+            @property
+            def config(self) -> Dict[float, str]:
+                return {
+                    0.: "The response omits all of the keywords expected.",
+                    1.: "The response does not omit all of the keywords expected."
                 }
 
         class CorrectToolUseEvaluator(unify.Evaluator):
@@ -422,19 +468,83 @@ class TestToolEvaluator(unittest.TestCase):
                     return tool_calls is None
                 return tool_calls[0].function.name == correct_tool_use
 
+        class ContainsEvaluator(unify.Evaluator):
+
+            @property
+            def scorer(self) -> Type[Contains]:
+                return Contains
+
+            def _evaluate(self, prompt: str, response: str,
+                          content_check: Optional[Dict[str, List[str]]]) -> bool:
+                if content_check is None:
+                    return True
+                for item in content_check["should_contain"]:
+                    if item not in response:
+                        return False
+                return True
+
+        class OmitsEvaluator(unify.Evaluator):
+
+            @property
+            def scorer(self) -> Type[Omits]:
+                return Omits
+
+            def _evaluate(self, prompt: str, response: str,
+                          content_check: Optional[Dict[str, List[str]]]) -> bool:
+                if content_check is None:
+                    return True
+                for item in content_check["should_omit"]:
+                    if item in response:
+                        return False
+                return True
+
+        class TravelAssistantAgent(unify.Agent):
+
+            def __init__(self, client: unify.Unify, tools: Dict[str, callable]):
+                self._client = client
+                self._tools = tools
+                super().__init__()
+
+            def __call__(self, prompt: Union[str, Prompt]):
+                prompt = copy.deepcopy(prompt)
+                for i in range(3):
+                    response = self._client.generate(**prompt.model_dump())
+                    choice = response.choices[0]
+                    if choice.finish_reason == "tool_calls":
+                        prompt.messages += [choice.message.model_dump()]
+                        tool_calls = choice.message.tool_calls
+                        for tool_call in tool_calls:
+                            tool_ret = self._tools[tool_call.function.name]()
+                            result_msg = ChatCompletionToolMessageParam(
+                                content=json.dumps(tool_ret),
+                                role="tool",
+                                tool_call_id=tool_call.id
+                            )
+                            prompt.messages += [result_msg]
+                        continue
+                    return choice.message.content
+                raise Exception("Three iterations were performed, "
+                                "and no answer was found")
+
         self._client = unify.Unify(
             "gpt-4o@openai",
-            cache=True,
             return_full_completion=True
         )
-        self._evaluator = CorrectToolUseEvaluator()
+        self._agent = TravelAssistantAgent(
+            self._client,
+            {"get_running_buses": get_running_buses,
+             "get_running_tube_lines": get_running_tube_lines}
+        )
+        self._tool_use_evaluator = CorrectToolUseEvaluator()
+        self._contains_evaluator = ContainsEvaluator()
+        self._omits_evaluator = OmitsEvaluator()
 
     def test_evals(self) -> None:
         unify.set_repr_mode("concise")
         for datum in self._dataset:
             response = self._client.generate(**datum.prompt.model_dump())
-            class_config = self._evaluator.class_config
-            evaluation = self._evaluator.evaluate(
+            class_config = self._tool_use_evaluator.class_config
+            evaluation = self._tool_use_evaluator.evaluate(
                 prompt=datum.prompt,
                 response=response,
                 agent=self._client,
@@ -444,3 +554,19 @@ class TestToolEvaluator(unittest.TestCase):
             self.assertIn(score, class_config)
             self.assertEqual(score, 1.)
             self.assertEqual(evaluation.score.description, class_config[score])
+
+    def test_agentic_evals(self) -> None:
+        unify.set_repr_mode("concise")
+        for datum in self._dataset:
+            response = self._agent(datum.prompt)
+            for evaluator in (self._contains_evaluator, self._omits_evaluator):
+                class_config = evaluator.class_config
+                evaluation = evaluator.evaluate(
+                    prompt=datum.prompt,
+                    response=response,
+                    agent=self._client,
+                    **datum.model_extra
+                )
+                score = evaluation.score.value
+                self.assertIn(score, class_config)
+                self.assertEqual(evaluation.score.description, class_config[score])
