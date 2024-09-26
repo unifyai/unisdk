@@ -398,7 +398,7 @@ class TestDatasetSync(unittest.TestCase):
             for i, char in enumerate(("a", "b", "c", "d")):
                 self.assertEqual(dataset[i].prompt.messages[0]["content"], char)
             # add data to upstream dataset
-            unify.add_data("test_dataset", [unify.Datum("e").dict()])
+            unify.add_data("test_dataset", [unify.Datum("e").model_dump()])
             # not synced if local Dataset not interacted with
             self.assertEqual(len(dataset), 4)
             # synced after irrelevant interaction
@@ -413,7 +413,7 @@ class TestDatasetSync(unittest.TestCase):
             )
             with self.assertRaises(TypeError):
                 dataset += "a"
-            unify.add_data("test_dataset", unify.Datum("d").dict())
+            unify.add_data("test_dataset", unify.Datum("d").model_dump())
             print(dataset.name)  # random interaction, which triggers the sync
             self.assertEqual(len(dataset), 4)
             self.assertEqual(dataset[0].prompt.messages[0]["content"], "a")
@@ -429,7 +429,7 @@ class TestDatasetSync(unittest.TestCase):
             # data added upstream outside of the mirrored class
             unify.add_data(
                 "test_dataset",
-                [unify.Datum("d").dict(), unify.Datum("e").dict()]
+                [unify.Datum("d").model_dump(), unify.Datum("e").model_dump()]
             )
             # these additions have been registered upstream
             upstream_dataset = unify.Dataset.from_upstream("test_dataset")

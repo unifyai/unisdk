@@ -450,7 +450,7 @@ class Unify(_UniLLMClient):
             chat_completion = self._client.chat.completions.create(**kw)
             for chunk in chat_completion:
                 if return_full_completion:
-                    content = ChatCompletion(**chunk.dict())
+                    content = ChatCompletion(**chunk.model_dump())
                 else:
                     content = chunk.choices[0].delta.content  # type: ignore[union-attr]    # noqa: E501
                 self.set_provider(chunk.model.split("@")[-1])  # type: ignore[union-attr]   # noqa: E501
@@ -502,7 +502,7 @@ class Unify(_UniLLMClient):
         if chat_completion is None:
             try:
                 chat_completion = ChatCompletion(
-                    **self._client.chat.completions.create(**kw).dict()
+                    **self._client.chat.completions.create(**kw).model_dump()
                 )
             except openai.APIStatusError as e:
                 raise Exception(e.message)
@@ -678,7 +678,7 @@ class AsyncUnify(_UniLLMClient):
             async for chunk in async_stream:  # type: ignore[union-attr]
                 self.set_provider(chunk.model.split("@")[-1])
                 if return_full_completion:
-                    yield ChatCompletion(**chunk.dict())
+                    yield ChatCompletion(**chunk.model_dump())
                 else:
                     yield chunk.choices[0].delta.content or ""
         except openai.APIStatusError as e:
@@ -727,7 +727,7 @@ class AsyncUnify(_UniLLMClient):
         if chat_completion is None:
             try:
                 async_response = await self._client.chat.completions.create(**kw)
-                async_response = ChatCompletion(**async_response.dict())
+                async_response = ChatCompletion(**async_response.model_dump())
             except openai.APIStatusError as e:
                 raise Exception(e.message)
             if cache:

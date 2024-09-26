@@ -41,7 +41,7 @@ class TestPrompt(unittest.TestCase):
             messages=[{"role": "user", "content": "Hello"}],
             temperature=0.5
         )
-        client = unify.Unify(**prompt.dict())
+        client = unify.Unify(**prompt.model_dump())
         self.assertEqual(client.temperature, 0.5)
 
 
