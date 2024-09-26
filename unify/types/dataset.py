@@ -3,7 +3,7 @@ from typing import Optional, Union
 
 import unify
 from .chat import Prompt
-from .types import _FormattedBaseModel
+from .base import _FormattedBaseModel
 
 
 class Datum(_FormattedBaseModel, extra=Extra.allow):

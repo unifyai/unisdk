@@ -13,7 +13,7 @@ from openai.types.chat.chat_completion import \
     ChatCompletionMessage as _ChatCompletionMessage, Choice as _Choice
 
 import unify
-from .types import _FormattedBaseModel
+from .base import _FormattedBaseModel
 
 
 class Prompt(_FormattedBaseModel):

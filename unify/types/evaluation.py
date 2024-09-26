@@ -2,7 +2,7 @@ import abc
 from pydantic import ConfigDict
 from typing import Optional, Dict
 
-from .types import _FormattedBaseModel
+from .base import _FormattedBaseModel
 
 
 class Score(_FormattedBaseModel, abc.ABC):
