@@ -1,6 +1,4 @@
-from pydantic import ConfigDict
 from typing import Optional, Union, List, Dict, Mapping
-from openai._types import Query, Body
 from openai.types.chat import (
     ChatCompletionToolParam,
     ChatCompletionToolChoiceOptionParam,
@@ -10,6 +8,12 @@ from openai.types.chat.completion_create_params import ResponseFormat
 
 import unify
 from ...base import _FormattedBaseModel
+from .body import *
+from .headers import *
+from .query import *
+from . import body
+from . import headers
+from . import query
 
 
 class Prompt(_FormattedBaseModel):
