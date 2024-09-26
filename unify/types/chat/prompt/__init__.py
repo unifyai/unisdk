@@ -1,19 +1,21 @@
 from typing import Optional, Union, List, Dict, Mapping
-from openai.types.chat import (
-    ChatCompletionToolParam,
-    ChatCompletionToolChoiceOptionParam,
-    ChatCompletionMessageParam
-)
-from openai.types.chat.completion_create_params import ResponseFormat
 
 import unify
 from ...base import _FormattedBaseModel
 from .body import *
 from .headers import *
 from .query import *
+from .chat_completion_message_param import *
+from .chat_completion_tool_choice_option_param import *
+from .chat_completion_tool_param import *
+from .response_format import *
 from . import body
 from . import headers
 from . import query
+from . import chat_completion_message_param
+from . import chat_completion_tool_choice_option_param
+from . import chat_completion_tool_param
+from . import response_format
 
 
 class Prompt(_FormattedBaseModel):
