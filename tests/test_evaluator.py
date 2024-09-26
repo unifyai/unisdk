@@ -511,7 +511,7 @@ class TestToolEvaluator(unittest.TestCase):
                     response = self._client.generate(**prompt.model_dump())
                     choice = response.choices[0]
                     if choice.finish_reason == "tool_calls":
-                        prompt.messages += [choice.message]
+                        prompt.messages += [choice.message.model_dump()]
                         tool_calls = choice.message.tool_calls
                         for tool_call in tool_calls:
                             tool_ret = self._tools[tool_call.function.name]()
