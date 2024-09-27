@@ -393,7 +393,7 @@ def update_mint():
     }
 
     with open("mint.json", "w") as f:
-        json.dump(mint, f)
+        json.dump(mint, f, indent=4)
 
 
 if __name__ == "__main__":
