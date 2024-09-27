@@ -298,3 +298,51 @@ class LLMJudge(Evaluator, abc.ABC):
         if self._include_rationale:
             return score, judge_message
         return score
+
+
+class LLMJury(Evaluator, abc.ABC):
+
+    def __init__(
+            self,
+            judges: List[LLMJudge],
+            name: Optional[str] = None,
+            include_rationale: bool = False,
+    ):
+        """
+        Creates an LLM as a Judge Evaluator.
+
+        Args:
+            judges: The client to use as the LLM Judge.
+
+            name: The name to give to this LLM Judge evaluator, optional.
+
+            include_rationale: Whether to include the LLM's rationale as part of
+            the evaluation response. Default is False.
+        """
+        [judge.set_include_rationale(include_rationale) for judge in judges]
+        self._judges = judges
+        self._include_rationale = include_rationale
+        self._num_judges = len(judges)
+        super().__init__(name)
+
+    def _evaluate(
+            self,
+            prompt: Prompt,
+            response: ChatCompletion,
+            **kwargs
+    ) -> Union[Tuple[float, str], float]:
+        scores = dict()
+        rationales = dict()
+        for judge in self._judges:
+            result = judge.evaluate(prompt, response, **kwargs)
+            if self._include_rationale:
+                score, rationale = result
+                rationales[judge] = {"score": score, "rationale": rationale}
+            else:
+                score = result
+            if score != -1:
+                scores[judge] = score
+        combined_score = sum(scores.values())/self._num_judges if scores != {} else -1.
+        if self._include_rationale:
+            return combined_score, json.dumps(rationales)
+        return combined_score
