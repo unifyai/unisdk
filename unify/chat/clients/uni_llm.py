@@ -309,7 +309,7 @@ class _UniLLMClient(_Client, abc.ABC):
             This client, useful for chaining inplace calls.
         """
         valid_endpoints = unify.list_endpoints(api_key=self._api_key)
-        if value not in valid_endpoints:
+        if value not in valid_endpoints and "@custom" not in value:
             raise Exception(
                 "The specified endpoint {} is not one of the endpoints supported by "
                 "Unify: {}".format(value, valid_endpoints)
@@ -329,7 +329,7 @@ class _UniLLMClient(_Client, abc.ABC):
             This client, useful for chaining inplace calls.
         """
         valid_models = unify.list_models(self._provider, api_key=self._api_key)
-        if value not in valid_models:
+        if value not in valid_models and "@custom" not in self._provider:
             if self._provider:
                 raise Exception(
                     "Current provider {} does not support the specified model {},"
@@ -359,7 +359,7 @@ class _UniLLMClient(_Client, abc.ABC):
             This client, useful for chaining inplace calls.
         """
         valid_providers = unify.list_providers(self._model, api_key=self._api_key)
-        if value not in valid_providers:
+        if value not in valid_providers and "custom" not in self._provider:
             if self._model:
                 raise Exception(
                     "Current model {} does not support the specified provider {},"
