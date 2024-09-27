@@ -1,9 +1,12 @@
 import abc
+import copy
+import json
+import inspect
 from abc import abstractmethod
-from typing import Type, Union, Optional, Tuple, Dict
+from typing import Type, Union, Optional, Tuple, Dict, List
 
 from unify.agent import Agent
-from unify.chat.clients import _Client
+from unify.chat.clients import _Client, _UniLLMClient
 from unify.evaluation import Evaluation
 from unify.casting import cast
 from unify.types import Score, Prompt, ChatCompletion
@@ -99,14 +102,16 @@ class Evaluator(abc.ABC):
         # upcast or downcast inputs
 
         # get type hints for self._evaluation, if they exist
-        eval_ann = self._evaluate.__annotations__
+        params = inspect.signature(self._evaluate).parameters
         # prune kwargs based on the arguments expected by _evaluate
-        kwargs = {k: v for k, v in kwargs.items() if k in eval_ann}
+        if "kwargs" not in params or params["kwargs"].annotation is not inspect._empty:
+            kwargs = {k: v for k, v in kwargs.items() if k in params}
         # upcast or downcast prompt to the expected type
-        expected_prompt_type = eval_ann["prompt"] if "prompt" in eval_ann else Prompt
+        expected_prompt_type = params["prompt"].annotation if "prompt" in params \
+            else Prompt
         prompt = cast(prompt, expected_prompt_type)
         # upcast or downcast response to the expected type
-        expected_response_type = eval_ann["response"] if "response" in eval_ann \
+        expected_response_type = params["response"].annotation if "response" in params \
             else ChatCompletion
         response = cast(response, expected_response_type)
 
