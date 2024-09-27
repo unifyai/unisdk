@@ -307,7 +307,7 @@ class Dataset(_Formatted):
         self._auto_sync()
         return self
 
-    def add(self, other: Union[Dataset, str, Dict, Prompt, Datum,
+    def add(self, other: Union[Dataset, str, Dict, Prompt, Datum, int,
                                List[Union[str, Dict, Prompt, Datum]]]) -> Self:
         """
         Adds another dataset to this one, return a new Dataset instance, with this
@@ -319,6 +319,8 @@ class Dataset(_Formatted):
         Returns:
             The new dataset following the addition.
         """
+        if other == 0:
+            return self
         other = other if isinstance(other, Dataset) else Dataset(other)
         data = list(dict.fromkeys(self._data + other._data))
         return Dataset(data=data, auto_sync=self._auto_sync_flag, api_key=self._api_key)
@@ -345,7 +347,7 @@ class Dataset(_Formatted):
 
     def inplace_add(
             self,
-            other: Union[Dataset, str, Dict, Prompt, Datum,
+            other: Union[Dataset, str, Dict, Prompt, Datum, int,
                          List[Union[str, Dict, Prompt, Datum]]]
     ) -> Self:
         """
@@ -358,6 +360,8 @@ class Dataset(_Formatted):
         Returns:
             This dataset following the in-place addition.
         """
+        if other == 0:
+            return self
         if self._auto_sync_flag == "local_mirrors_upstream":
             raise TypeError("Adding entries not permitted when local mirrors upstream")
         other = other if isinstance(other, Dataset) else Dataset(other)
@@ -406,7 +410,7 @@ class Dataset(_Formatted):
         """
         return self.add(other)
 
-    def __radd__(self, other: Union[Dataset, str, Dict, Prompt, Datum,
+    def __radd__(self, other: Union[Dataset, str, Dict, Prompt, Datum, int,
                                     List[Union[str, Dict, Prompt, Datum]]]) -> Self:
         """
         Adds another dataset to this one via the + operator, this is used if the
@@ -420,6 +424,8 @@ class Dataset(_Formatted):
         Returns:
             The new dataset following the addition.
         """
+        if other == 0:
+            return self
         return Dataset(other).add(self)
 
     def __iadd__(self, other: Union[Dataset, str, Dict, Prompt, Datum,

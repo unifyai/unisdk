@@ -147,6 +147,15 @@ class TestDatasetCombining(unittest.TestCase):
         for datum, msg in zip(dataset, msgs):
             self.assertEqual(datum.prompt.messages[0]["content"], msg)
 
+    def test_sum_datasets(self) -> None:
+        msgs = ["a", "b", "c", "d"]
+        dataset1 = unify.Dataset(msgs[0:2])
+        dataset2 = unify.Dataset(msgs[2:])
+        dataset = sum([dataset1, dataset2])
+        self.assertEqual(len(dataset), len(msgs))
+        for datum, msg in zip(dataset, msgs):
+            self.assertEqual(datum.prompt.messages[0]["content"], msg)
+
     def test_add_datasets_w_duplicates(self) -> None:
         msgs1 = ["a", "b"]
         msgs2 = ["b", "c"]
