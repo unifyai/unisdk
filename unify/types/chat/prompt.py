@@ -67,16 +67,20 @@ class Prompt(_FormattedBaseModel):
         super().__init__(**kwargs)
 
     def __add__(self, other):
-        return unify.Dataset(self) +\
-               (other if isinstance(other, unify.Dataset) else unify.Dataset(other))
+        if other == 0:
+            return self
+        return (unify.Dataset(self) +
+                (other if isinstance(other, unify.Dataset) else unify.Dataset(other)))
 
     def __sub__(self, other):
         return unify.Dataset(self) -\
                (other if isinstance(other, unify.Dataset) else unify.Dataset(other))
 
     def __radd__(self, other):
-        return (other if isinstance(other, unify.Dataset) else unify.Dataset(other)) +\
-               unify.Dataset(self)
+        if other == 0:
+            return self
+        return ((other if isinstance(other, unify.Dataset) else unify.Dataset(other)) +
+                unify.Dataset(self))
 
     def __rsub__(self, other):
         return (other if isinstance(other, unify.Dataset) else unify.Dataset(other)) -\
