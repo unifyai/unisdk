@@ -111,6 +111,8 @@ class Evaluator(abc.ABC):
         # prune kwargs based on the arguments expected by _evaluate
         if "kwargs" not in params:
             kwargs = {k: v for k, v in kwargs.items() if k in params}
+        if "agent" in params:
+            kwargs["agent"] = agent
         # upcast or downcast prompt to the expected type
         expected_prompt_type = params["prompt"].annotation if "prompt" in params \
             else Prompt
