@@ -80,17 +80,17 @@ class LLMJuryEvaluationSet(EvaluationSet):
             auto_sync: Union[bool, str] = False,
             api_key: Optional[str] = None
     ) -> None:
-        self._judge_score_distribution =\
-            {
-                k: [e.evaluator.name for e in evaluations]
-                for k in self._class_config.keys()
-            }
         super().__init__(
             evaluations=evaluations,
             name=name,
             auto_sync=auto_sync,
             api_key=api_key
         )
+        self._judge_score_distribution =\
+            {
+                k: [e.evaluator for e in evaluations if e.score.value == k]
+                for k in self.class_config.keys()
+            }
 
     # Properties
 
