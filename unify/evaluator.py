@@ -198,6 +198,7 @@ class LLMJudge(Evaluator, abc.ABC):
         self._extra_parser = extra_parser
         self._include_rationale = include_rationale
         self._class_config_parser = {"class_config": None}
+        name = name if name is not None else self._client.endpoint
         super().__init__(name)
 
     # Properties
