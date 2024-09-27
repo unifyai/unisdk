@@ -315,6 +315,72 @@ class LLMJudge(Evaluator, abc.ABC):
         return score
 
 
+class DefaultJudgeScore(Score):
+
+    @property
+    def config(self) -> Dict[float, str]:
+        return {
+            0.0: "bad",
+            0.5: "good",
+            0.8: "very good",
+            1.0: "excellent"
+        }
+
+
+class DefaultLLMJudge(LLMJudge):
+
+    def __init__(
+            self,
+            client: Union[Unify, AsyncUnify]
+    ):
+        """
+        Create a default Judge, which uses a standard task-agnostic score and a generic
+        system prompt. This should judge work okay on a range of tasks, but the best
+        performance will be achieved by subclassing LLMJudge and creating your own.
+
+        Args:
+            client: The client which holds the LLM used under the hood for judging.
+        """
+        sys = "[System]\n"
+        "Please act as an impartial judge and evaluate the quality of the response "
+        "provided by an assistant to the user question displayed below. "
+        "Your job is to evaluate how good the assistant's answer is. "
+        "Your evaluation should consider correctness and helpfulness. "
+        "Identify any mistakes. "
+        "Be as objective as possible."
+        template_no_ref = """
+        {class_config}
+
+        [start of user question]
+        {user_prompt}
+        [end of user question]
+
+        [start of assistant answer]
+        {response}
+        [end of assistant answer]"""
+        judge_prompt = Prompt(
+            messages=[
+                {
+                    "role": "system",
+                    "content": sys,
+                },
+                {
+                    "role": "user",
+                    "content": template_no_ref,
+                },
+            ],
+        )
+        super().__init__(
+            client=client,
+            judge_prompt=judge_prompt,
+            name="default_llm_judge"
+        )
+
+    @property
+    def scorer(self) -> Type[DefaultJudgeScore]:
+        return DefaultJudgeScore
+
+
 class LLMJury(Evaluator, abc.ABC):
 
     def __init__(
