@@ -7,7 +7,7 @@ from .base import _FormattedBaseModel
 
 class Score(_FormattedBaseModel, abc.ABC):
     model_config = ConfigDict(extra="forbid")
-    value: float
+    value: Optional[float]
     description: str
 
     def __init__(self, value: Optional[float] = None):
@@ -20,11 +20,14 @@ class Score(_FormattedBaseModel, abc.ABC):
         Returns:
             The pydantic Score instance, with associated value and class description
         """
-        value = 0. if value is None else value
-        assert value in self.config, \
+        assert value in self.config or value is None, \
             "value {} passed is not a valid value, " \
             "based on the config for this Score class {}".format(value, self.config)
-        super().__init__(value=value, description=self.config[value])
+        super().__init__(
+            value=value,
+            description="Failed to parse judge response" if value is None
+            else self.config[value]
+        )
 
     @property
     @abc.abstractmethod

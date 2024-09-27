@@ -89,6 +89,9 @@ _CAST_DICT = {
         bool: _float_to_bool,
         Score: _float_to_score
     },
+    type(None): {
+        Score: _float_to_score
+    },
     Score: {
         bool: _score_to_bool,
         float: _score_to_float

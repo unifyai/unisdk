@@ -223,7 +223,7 @@ class LLMJudge(Evaluator, abc.ABC):
             response, flags=re.DOTALL | re.MULTILINE
         ).group(0)
 
-    def _parse_score_from_llm_response(self, response) -> float:
+    def _parse_score_from_llm_response(self, response) -> Optional[float]:
         # noinspection PyBroadException
         try:
             judge_response = json.loads(self._extract_json_from_llm_response(response))
@@ -234,9 +234,9 @@ class LLMJudge(Evaluator, abc.ABC):
                 return float(rating)
             elif isinstance(rating, float):
                 return rating
-            return -1.
+            return
         except Exception:
-            return -1.
+            return
 
     def _create_judge_rubric(self):
         prompt = ("First provide your explanation, "
