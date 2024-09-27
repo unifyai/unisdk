@@ -308,7 +308,10 @@ class LLMJudge(Evaluator, abc.ABC):
         kw = self._judge_prompt.model_dump()
         kw["messages"] = messages
         judge_response = self._client.generate(**kw)
-        judge_message = judge_response.choices[0].message.content
+        if self._client.return_full_completion:
+            judge_message = judge_response.choices[0].message.content
+        else:
+            judge_message = judge_response
         score = self._parse_score_from_llm_response(judge_message)
         if self._include_rationale:
             return score, judge_message
