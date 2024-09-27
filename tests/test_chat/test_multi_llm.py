@@ -1,6 +1,6 @@
 import os
 import unittest
-from unify import MultiLLM, MultiLLMAsync
+from unify import MultiLLM, AsyncMultiLLM
 
 
 class TestMultiLLM(unittest.TestCase):
@@ -143,7 +143,7 @@ class TestAsyncMultiLLM(unittest.IsolatedAsyncioTestCase):
             "gpt-4o@openai",
             "claude-3.5-sonnet@anthropic",
         )
-        client = MultiLLMAsync(api_key=self.valid_api_key, endpoints=endpoints)
+        client = AsyncMultiLLM(api_key=self.valid_api_key, endpoints=endpoints)
         responses = await client.generate("Hello, how it is going?")
         for endpoint, (response_endpoint, response) in zip(
             endpoints,
@@ -158,7 +158,7 @@ class TestAsyncMultiLLM(unittest.IsolatedAsyncioTestCase):
             "gpt-4o@openai",
             "gpt-4@openai"
         )
-        client = MultiLLMAsync(api_key=self.valid_api_key, endpoints=endpoints, n=2,
+        client = AsyncMultiLLM(api_key=self.valid_api_key, endpoints=endpoints, n=2,
                                return_full_completion=True)
         responses = await client.generate("Hello, how it is going?")
         for endpoint, (response_endpoint, response) in zip(
