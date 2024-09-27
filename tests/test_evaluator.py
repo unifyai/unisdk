@@ -579,11 +579,7 @@ class TestToolEvaluator(unittest.TestCase):
                    "example answer word-for-word. The assistant might phrase an "
                    "equally correct answer differently. The correct answer provided is "
                    "is phrased in one of many equally correct ways, but the contents "
-                   "of the response is correct."
-                   "You should use the following grading system:"
-                   "\n{class_config}\n\n"
-                   "Please state your reasoning, "
-                   "and finally provide the numeric score on a new line at the end.")
+                   "of the response is correct.")
 
         class CorrectAnswerEvaluator(unify.LLMJudge):
 

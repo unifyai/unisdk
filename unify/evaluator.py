@@ -1,3 +1,4 @@
+import re
 import abc
 import copy
 import json
@@ -171,6 +172,9 @@ class LLMJudge(Evaluator, abc.ABC):
         """
         self._client = client
         self._judge_prompt = cast(judge_prompt, Prompt)
+        assert self._judge_prompt.messages is not None, \
+            "Judge prompt must have at least one message"
+        self._judge_prompt.messages[0]["content"] += self._create_judge_rubric()
         if prompt_parser is None:
             self._prompt_parser = {"user_message": ["messages", -1, "content"]}
         else:
@@ -184,6 +188,46 @@ class LLMJudge(Evaluator, abc.ABC):
         self._extra_parser = extra_parser
         self._class_config_parser = {"class_config": None}
         super().__init__(name)
+
+    @staticmethod
+    def _extract_json_from_llm_response(response) -> str:
+        return re.search(
+            '\{[\n\r\s]*"assistant_rating":.*?\}',
+            response, flags=re.DOTALL | re.MULTILINE
+        ).group(0)
+
+    def _parse_score_from_llm_response(self, response) -> float:
+        # noinspection PyBroadException
+        try:
+            judge_response = json.loads(self._extract_json_from_llm_response(response))
+            rating = judge_response["assistant_rating"]
+            if isinstance(rating, list):
+                rating = rating[0]
+            if isinstance(rating, int):
+                return float(rating)
+            elif isinstance(rating, float):
+                return rating
+            return -1.
+        except Exception:
+            return -1.
+
+    def _create_judge_rubric(self):
+        prompt = ("First provide your explanation, "
+                  "then write down your final rating according to the "
+                  "following guidelines:")
+        for score_val, description in self.class_config.items():
+            head_str = f"""\n\t - "{score_val}" """
+            head_str += f""": {description}"""
+            prompt += head_str
+
+        prompt += """\nAfter that, you must output your final verdict in JSON by 
+        **strictly** following this format:
+
+        {"assistant_rating": RATING}
+
+        Do not output anything else after your final verdict, but make sure you do give 
+        a verdict, that's the most important part!"""
+        return prompt
 
     @staticmethod
     def _parse(item, parse_rule):
@@ -211,9 +255,6 @@ class LLMJudge(Evaluator, abc.ABC):
                 content = self._parse(
                     item if isinstance(item, dict) else item.model_dump(), parse_rule
                 )
-            print("item: {}".format(item))
-            print("parse_rule: {}".format(parse_rule))
-            print("content: {}".format(content))
             messages = [
                 {k: (v.replace("{" + key + "}", content) if k == "content" else v)
                  for k, v in msg.items()} for msg in messages
@@ -225,7 +266,7 @@ class LLMJudge(Evaluator, abc.ABC):
             prompt: Prompt,
             response: ChatCompletion,
             **kwargs
-    ) -> Tuple[Union[bool, float, Score], Optional[str]]:
+    ) -> Union[Tuple[Union[bool, float, Score], str], Union[bool, float, Score]]:
         messages = copy.deepcopy(self._judge_prompt.messages)
         for i, (item, parser) in enumerate(zip(
                 (prompt, response, kwargs, self.class_config),
@@ -241,6 +282,4 @@ class LLMJudge(Evaluator, abc.ABC):
         kw["messages"] = messages
         judge_response = self._client.generate(**kw)
         judge_message = judge_response.choices[0].message.content
-        judge_score = judge_message.split("\n")[-1]
-        return float("".join(c for c in judge_score if c.isdigit() or c == "."))
-        d = 0
+        return self._parse_score_from_llm_response(judge_message)
