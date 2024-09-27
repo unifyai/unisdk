@@ -2,14 +2,13 @@ import re
 import abc
 import copy
 import json
-import asyncio
 import inspect
 from abc import abstractmethod
 from typing import Type, Union, Optional, Tuple, Dict, List
 
 from unify.agent import Agent
 from unify.chat.clients import _Client, Unify, AsyncUnify
-from unify.evaluation import Evaluation
+from unify.evaluation import Evaluation, EvaluationSet, LLMJuryEvaluationSet
 from unify.casting import cast
 from unify.types import Score, Prompt, ChatCompletion
 
@@ -140,6 +139,7 @@ class Evaluator(abc.ABC):
             response=response,
             agent=agent,
             score=score,
+            evaluator=self.name,
             rationale=rationale,
             **kwargs
         )
@@ -379,7 +379,7 @@ class DefaultLLMJudge(LLMJudge):
         super().__init__(
             client=client,
             judge_prompt=judge_prompt,
-            name="default_llm_judge"
+            name="default_llm_judge<{}>".format(client.endpoint)
         )
 
     @property
