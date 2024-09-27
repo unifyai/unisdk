@@ -35,6 +35,8 @@ class EvaluationSet(Dataset):
         assert all(e.score.config == evaluations[0].score.config
                    for e in evaluations), consistency_msg.format("class_config")
         self._class_config = evaluations[0].score.config
+        valid_scores = [e.score.value for e in evaluations if e.score.value is not None]
+        self._mean_score = sum(valid_scores)/len(valid_scores)
 
         super().__init__(
             data=evaluations,
@@ -52,3 +54,7 @@ class EvaluationSet(Dataset):
     @property
     def class_config(self) -> Dict[float, str]:
         return self._class_config
+
+    @property
+    def mean_score(self) -> float:
+        return self._mean_score
