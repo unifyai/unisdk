@@ -1,5 +1,5 @@
 from pydantic import Extra
-from typing import Union, Optional, List
+from typing import Union, Optional, List, Dict
 
 from unify.agent import Agent
 from unify.dataset import Dataset
@@ -19,15 +19,36 @@ class EvaluationSet(Dataset):
 
     def __init__(
             self,
-            data: Union[Evaluation, List[Evaluation]],
+            evaluations: Union[Evaluation, List[Evaluation]],
             *,
             name: str = None,
             auto_sync: Union[bool, str] = False,
             api_key: Optional[str] = None,
     ) -> None:
+        if not isinstance(evaluations, list):
+            evaluations = [evaluations]
+        consistency_msg = \
+            "All evaluations passed to an EvaluationSet must shared the same {}."
+        assert all(e.agent == evaluations[0].agent for e in evaluations), (
+            consistency_msg.format("agent"))
+        self._agent = evaluations[0].agent
+        assert all(e.score.config == evaluations[0].score.config
+                   for e in evaluations), consistency_msg.format("class_config")
+        self._class_config = evaluations[0].score.config
+
         super().__init__(
-            data=data,
+            data=evaluations,
             name=name,
             auto_sync=auto_sync,
             api_key=api_key
         )
+
+    # Properties
+
+    @property
+    def agent(self) -> Union[str, _Client, Agent]:
+        return self._agent
+
+    @property
+    def class_config(self) -> Dict[float, str]:
+        return self._class_config
