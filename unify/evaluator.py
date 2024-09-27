@@ -59,7 +59,10 @@ class Evaluator(abc.ABC):
             prompt: Union[str, Prompt],
             response: Union[str, ChatCompletion],
             **kwargs
-    ) -> Tuple[Union[bool, float, Score], Optional[str]]:
+    ) -> Union[
+            Union[bool, float, Score],
+            Tuple[Union[bool, float, Score], Union[str, Dict]]
+    ]:
         """
         Evaluate the given response for this input prompt, with optional extra data.
 
@@ -82,7 +85,7 @@ class Evaluator(abc.ABC):
             response: Union[ChatCompletion, str],
             agent: Union[str, _Client, Agent],
             **kwargs
-    ):
+    ) -> Evaluation:
         """
         Evaluate the given response for this input prompt, with optional extra data.
 
@@ -106,7 +109,7 @@ class Evaluator(abc.ABC):
         # get type hints for self._evaluation, if they exist
         params = inspect.signature(self._evaluate).parameters
         # prune kwargs based on the arguments expected by _evaluate
-        if "kwargs" not in params or params["kwargs"].annotation is not inspect._empty:
+        if "kwargs" not in params:
             kwargs = {k: v for k, v in kwargs.items() if k in params}
         # upcast or downcast prompt to the expected type
         expected_prompt_type = params["prompt"].annotation if "prompt" in params \
@@ -216,7 +219,7 @@ class LLMJudge(Evaluator, abc.ABC):
     @staticmethod
     def _extract_json_from_llm_response(response) -> str:
         return re.search(
-            '\{[\n\r\s]*"assistant_rating":.*?\}',
+            '\{[\n\r\s]*"assistant_rating":.*?}',
             response, flags=re.DOTALL | re.MULTILINE
         ).group(0)
 
@@ -348,7 +351,7 @@ class LLMJury(Evaluator, abc.ABC):
             prompt: Prompt,
             response: ChatCompletion,
             **kwargs
-    ) -> Union[Tuple[float, str], float]:
+    ) -> Union[Tuple[float, Union[str, Dict]], float]:
         async def gen(_prompt, _response, **_kwargs):
             scores = dict()
             rationales = dict()
@@ -361,8 +364,9 @@ class LLMJury(Evaluator, abc.ABC):
                     score = result
                 if score != -1:
                     scores[judge] = score
-            combined_score = sum(scores.values())/self._num_judges if scores != {} else -1.
+            combined_score = sum(scores.values())/self._num_judges \
+                if scores != {} else -1.
             if self._include_rationale:
-                return combined_score, json.dumps(rationales)
+                return combined_score, rationales
             return combined_score
         return asyncio.run(gen(prompt, response, **kwargs))
