@@ -194,6 +194,13 @@ class LLMJudge(Evaluator, abc.ABC):
         self._class_config_parser = {"class_config": None}
         super().__init__(name)
 
+    @property
+    def include_rationale(self) -> bool:
+        return self._include_rationale
+
+    def set_include_rationale(self, value: bool):
+        self._include_rationale = value
+
     @staticmethod
     def _extract_json_from_llm_response(response) -> str:
         return re.search(
