@@ -13,7 +13,7 @@ from openai.types.chat.chat_completion_tool_message_param import (
 )
 
 import unify
-from unify import Prompt
+from unify import Prompt, Score
 
 
 class TestMathsEvaluator(unittest.TestCase):
@@ -420,10 +420,24 @@ class TestToolEvaluator(unittest.TestCase):
             {"should_contain": "No", "should_omit": "Yes"},
             None
         ]
+        _example_answers = [
+            "The bus lines currently running are 549 and W13.",
+            "No it is not possible, as the Jubilee line is currently not running.",
+            "No I do not know how long it will take, I don't have enough information."
+        ]
 
         self._dataset = unify.Dataset(
-            [unify.Datum(prompt=p, correct_tool_use=ctu, content_check=cc)
-             for p, ctu, cc in zip(_prompts, _correct_tool_use, _content_check)]
+            [
+                unify.Datum(
+                    prompt=p,
+                    correct_tool_use=ctu,
+                    content_check=cc,
+                    example_answer=ea
+                )
+                for p, ctu, cc, ea in zip(
+                    _prompts, _correct_tool_use, _content_check, _example_answers
+                )
+            ]
         )
 
         class CorrectToolUse(unify.Score):
@@ -453,6 +467,16 @@ class TestToolEvaluator(unittest.TestCase):
                 return {
                     0.: "The response omits all of the keywords expected.",
                     1.: "The response does not omit all of the keywords expected."
+                }
+
+        class CorrectAnswer(unify.Score):
+
+            @property
+            def config(self) -> Dict[float, str]:
+                return {
+                    0.: "The response is totally incorrect.",
+                    0.5: "The response is partially correct.",
+                    1.: "The response is totally correct."
                 }
 
         class CorrectToolUseEvaluator(unify.Evaluator):
@@ -538,6 +562,40 @@ class TestToolEvaluator(unittest.TestCase):
         self._tool_use_evaluator = CorrectToolUseEvaluator()
         self._contains_evaluator = ContainsEvaluator()
         self._omits_evaluator = OmitsEvaluator()
+        usr_msg = ("Given the following user request:"
+                   "\n<begin user request>"
+                   "\n{user_message}\n"
+                   "<end user request>\n\n"
+                   "this response from an assistant:"
+                   "\n<begin assistant response>"
+                   "\n{assistant_response}\n"
+                   "<end assistant response>\n\n"
+                   "and this known example of a correct answer:"
+                   "\n<begin example correct answer>"
+                   "\n{example_answer}\n"
+                   "<end example correct answer>\n\n"
+                   "How would you grade the assistant's response? "
+                   "Remember that the assistant response does not need to match the "
+                   "example answer word-for-word. The assistant might phrase an "
+                   "equally correct answer differently. The correct answer provided is "
+                   "is phrased in one of many equally correct ways, but the contents "
+                   "of the response is correct."
+                   "You should use the following grading system:"
+                   "\n{class_config}\n\n"
+                   "Please state your reasoning, "
+                   "and finally provide the numeric score on a new line at the end.")
+
+        class CorrectAnswerEvaluator(unify.LLMJudge):
+
+            @property
+            def scorer(self) -> Type[CorrectAnswer]:
+                return CorrectAnswer
+
+        self._llm_judge = CorrectAnswerEvaluator(
+            self._client,
+            usr_msg,
+            extra_parser={"example_answer": ["example_answer"]}
+        )
 
     def test_evals(self) -> None:
         unify.set_repr_mode("concise")
@@ -555,7 +613,7 @@ class TestToolEvaluator(unittest.TestCase):
             self.assertEqual(score, 1.)
             self.assertEqual(evaluation.score.description, class_config[score])
 
-    def test_agentic_evals(self) -> None:
+    def test_agentic_evals_inclusion_n_omission(self) -> None:
         unify.set_repr_mode("concise")
         for datum in self._dataset:
             response = self._agent(datum.prompt)
@@ -570,3 +628,18 @@ class TestToolEvaluator(unittest.TestCase):
                 score = evaluation.score.value
                 self.assertIn(score, class_config)
                 self.assertEqual(evaluation.score.description, class_config[score])
+
+    def test_agentic_evals_w_llm_judge(self) -> None:
+        unify.set_repr_mode("concise")
+        for datum in self._dataset:
+            response = self._agent(datum.prompt)
+            class_config = self._llm_judge.class_config
+            evaluation = self._llm_judge.evaluate(
+                prompt=datum.prompt,
+                response=response,
+                agent=self._agent,
+                **datum.model_extra
+            )
+            score = evaluation.score.value
+            self.assertIn(score, class_config)
+            self.assertEqual(evaluation.score.description, class_config[score])
