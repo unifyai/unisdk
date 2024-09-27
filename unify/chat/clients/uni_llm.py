@@ -210,7 +210,7 @@ class _UniLLMClient(_Client, abc.ABC):
         Raises:
             UnifyError: If the API key is missing.
         """
-        super().__init__(
+        self._constructor_args = dict(
             system_message=system_message,
             messages=messages,
             frequency_penalty=frequency_penalty,
@@ -246,6 +246,7 @@ class _UniLLMClient(_Client, abc.ABC):
             extra_query=extra_query,
             **kwargs,
         )
+        super().__init__(**self._constructor_args)
         if endpoint and (model or provider):
             raise Exception(
                 "if the model or provider are passed, then the endpoint must not be"
@@ -619,6 +620,17 @@ class Unify(_UniLLMClient):
             cache=cache,
         )
 
+    def to_async_client(self):
+        """
+        Return an asynchronous version of the client (`AsyncUnify` instance), with the
+        exact same configuration as this synchronous (`Unify`) client.
+
+        Returns:
+            An `AsyncUnify` instance with the same configuration as this `Unify`
+            instance.
+        """
+        return AsyncUnify(**self._constructor_args)
+
 
 class AsyncUnify(_UniLLMClient):
     """Class for interacting with the Unify chat completions endpoint in a synchronous
@@ -839,3 +851,14 @@ class AsyncUnify(_UniLLMClient):
             return_full_completion=return_full_completion,
             cache=cache,
         )
+
+    def to_sync_client(self):
+        """
+        Return a synchronous version of the client (`Unify` instance), with the
+        exact same configuration as this asynchronous (`AsyncUnify`) client.
+
+        Returns:
+            A `Unify` instance with the same configuration as this `AsyncUnify`
+            instance.
+        """
+        return AsyncUnify(**self._constructor_args)
