@@ -354,7 +354,7 @@ class TestCodeEvaluator(unittest.TestCase):
                 self.assertEqual(evaluation.score.description, class_config[score])
 
 
-class TestToolEvaluator(unittest.TestCase):
+class TestToolAgentAndLLMJudgeEvaluations(unittest.TestCase):
 
     def setUp(self) -> None:
         system_msg = \
