@@ -196,7 +196,7 @@ class _MultiLLMClient(_Client, abc.ABC):
         Raises:
             UnifyError: If the API key is missing.
         """
-        super().__init__(
+        self._constructor_args = dict(
             system_message=system_message,
             messages=messages,
             frequency_penalty=frequency_penalty,
@@ -232,6 +232,7 @@ class _MultiLLMClient(_Client, abc.ABC):
             extra_query=extra_query,
             **kwargs
         )
+        super().__init__(**self._constructor_args)
         endpoints = list(endpoints)
         self._api_key = _validate_api_key(api_key)
         self._endpoints = endpoints
@@ -490,8 +491,19 @@ class MultiLLM(_MultiLLMClient):
             return responses
         return asyncio.run(gen(kw))
 
+    def to_async_client(self):
+        """
+        Return an asynchronous version of the client (`AsyncMultiLLM` instance), with
+        the exact same configuration as this synchronous (`MultiLLM`) client.
 
-class MultiLLMAsync(_MultiLLMClient):
+        Returns:
+            An `AsyncMultiLLM` instance with the same configuration as this `MultiLLM`
+            instance.
+        """
+        return AsyncMultiLLM(**self._constructor_args)
+
+
+class AsyncMultiLLM(_MultiLLMClient):
 
     async def _generate(  # noqa: WPS234, WPS211
         self,
@@ -569,3 +581,14 @@ class MultiLLMAsync(_MultiLLMClient):
                 these_kw["messages"] = these_kw["messages"][endpoint]
             responses[endpoint] = await client.generate(**these_kw)
         return responses
+
+    def to_sync_client(self):
+        """
+        Return a synchronous version of the client (`MultiLLM` instance), with the
+        exact same configuration as this asynchronous (`AsyncMultiLLM`) client.
+
+        Returns:
+            A `MultiLLM` instance with the same configuration as this `AsyncMultiLLM`
+            instance.
+        """
+        return MultiLLM(**self._constructor_args)
