@@ -37,8 +37,8 @@ class Evaluator(abc.ABC):
     # Setters #
     # --------#
 
-    def set_name(self, name: str):
-        self._name = name
+    def set_name(self, value: str):
+        self._name = value
 
     # Abstract #
     # ---------#
@@ -149,6 +149,7 @@ class LLMJudge(Evaluator, abc.ABC):
             prompt_parser: Optional[Dict[str, List[Union[str, int]]]] = None,
             response_parser: Optional[Dict[str, List[Union[str, int]]]] = None,
             extra_parser: Optional[Dict[str, List[Union[str, int]]]] = None,
+            include_rationale: bool = False,
     ):
         """
         Creates an LLM as a Judge Evaluator.
@@ -169,6 +170,9 @@ class LLMJudge(Evaluator, abc.ABC):
             extra_parser: Function to parse the extra fields provided alongside the
             prompt, and update corresponding placeholders in the judge user message and
             system message, optional.
+
+            include_rationale: Whether to include the LLM's rationale as part of
+            the evaluation response. Default is False.
         """
         self._client = client
         self._judge_prompt = cast(judge_prompt, Prompt)
@@ -186,6 +190,7 @@ class LLMJudge(Evaluator, abc.ABC):
         else:
             self._response_parser = response_parser
         self._extra_parser = extra_parser
+        self._include_rationale = include_rationale
         self._class_config_parser = {"class_config": None}
         super().__init__(name)
 
@@ -266,7 +271,7 @@ class LLMJudge(Evaluator, abc.ABC):
             prompt: Prompt,
             response: ChatCompletion,
             **kwargs
-    ) -> Union[Tuple[Union[bool, float, Score], str], Union[bool, float, Score]]:
+    ) -> Union[Tuple[float, str], float]:
         messages = copy.deepcopy(self._judge_prompt.messages)
         for i, (item, parser) in enumerate(zip(
                 (prompt, response, kwargs, self.class_config),
@@ -282,4 +287,7 @@ class LLMJudge(Evaluator, abc.ABC):
         kw["messages"] = messages
         judge_response = self._client.generate(**kw)
         judge_message = judge_response.choices[0].message.content
-        return self._parse_score_from_llm_response(judge_message)
+        score = self._parse_score_from_llm_response(judge_message)
+        if self._include_rationale:
+            return score, judge_message
+        return score
