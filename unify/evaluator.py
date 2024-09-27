@@ -2,6 +2,7 @@ import re
 import abc
 import copy
 import json
+import asyncio
 import inspect
 from abc import abstractmethod
 from typing import Type, Union, Optional, Tuple, Dict, List
@@ -330,7 +331,13 @@ class LLMJury(Evaluator, abc.ABC):
             include_rationale: Whether to include the LLM's rationale as part of
             the evaluation response. Default is False.
         """
-        [judge.set_include_rationale(include_rationale) for judge in judges]
+        judges = [copy.deepcopy(judge) for judge in judges]
+        for judge in judges:
+            judge.set_include_rationale(include_rationale)
+            client = judge.client
+            if not isinstance(client, AsyncUnify):
+                judge.set_client(client.to_async_client())
+
         self._judges = judges
         self._include_rationale = include_rationale
         self._num_judges = len(judges)
@@ -342,18 +349,20 @@ class LLMJury(Evaluator, abc.ABC):
             response: ChatCompletion,
             **kwargs
     ) -> Union[Tuple[float, str], float]:
-        scores = dict()
-        rationales = dict()
-        for judge in self._judges:
-            result = judge.evaluate(prompt, response, **kwargs)
+        async def gen(_prompt, _response, **_kwargs):
+            scores = dict()
+            rationales = dict()
+            for judge in self._judges:
+                result = await judge.evaluate(_prompt, _response, **_kwargs)
+                if self._include_rationale:
+                    score, rationale = result
+                    rationales[judge] = {"score": score, "rationale": rationale}
+                else:
+                    score = result
+                if score != -1:
+                    scores[judge] = score
+            combined_score = sum(scores.values())/self._num_judges if scores != {} else -1.
             if self._include_rationale:
-                score, rationale = result
-                rationales[judge] = {"score": score, "rationale": rationale}
-            else:
-                score = result
-            if score != -1:
-                scores[judge] = score
-        combined_score = sum(scores.values())/self._num_judges if scores != {} else -1.
-        if self._include_rationale:
-            return combined_score, json.dumps(rationales)
-        return combined_score
+                return combined_score, json.dumps(rationales)
+            return combined_score
+        return asyncio.run(gen(prompt, response, **kwargs))
