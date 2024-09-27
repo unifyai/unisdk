@@ -7,7 +7,7 @@ from abc import abstractmethod
 from typing import Type, Union, Optional, Tuple, Dict, List
 
 from unify.agent import Agent
-from unify.chat.clients import _Client, _UniLLMClient
+from unify.chat.clients import _Client, Unify, AsyncUnify
 from unify.evaluation import Evaluation
 from unify.casting import cast
 from unify.types import Score, Prompt, ChatCompletion
@@ -143,7 +143,7 @@ class LLMJudge(Evaluator, abc.ABC):
 
     def __init__(
             self,
-            client: _UniLLMClient,
+            client: Union[Unify, AsyncUnify],
             judge_prompt: Union[str, Prompt],
             name: Optional[str] = None,
             prompt_parser: Optional[Dict[str, List[Union[str, int]]]] = None,
@@ -194,12 +194,23 @@ class LLMJudge(Evaluator, abc.ABC):
         self._class_config_parser = {"class_config": None}
         super().__init__(name)
 
+    # Properties
+
     @property
     def include_rationale(self) -> bool:
         return self._include_rationale
 
-    def set_include_rationale(self, value: bool):
+    @property
+    def client(self) -> Union[Unify, AsyncUnify]:
+        return self._client
+
+    # Setters
+
+    def set_include_rationale(self, value: bool) -> None:
         self._include_rationale = value
+
+    def set_client(self, value: Union[Unify, AsyncUnify]) -> None:
+        self._client = value
 
     @staticmethod
     def _extract_json_from_llm_response(response) -> str:
