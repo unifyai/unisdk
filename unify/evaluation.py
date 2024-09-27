@@ -3,7 +3,6 @@ from typing import Union, Optional, List, Dict
 
 from unify.agent import Agent
 from unify.dataset import Dataset
-from unify.evaluator import Evaluator
 from unify.chat.clients import _Client
 from unify.types import Prompt, Score, Datum, ChatCompletion
 
@@ -13,8 +12,8 @@ class Evaluation(Datum, extra=Extra.allow, arbitrary_types_allowed=True):
     response: ChatCompletion
     agent: Union[str, _Client, Agent]
     score: Score
-    evaluator: Optional[Evaluator]
-    rationale: Optional[str]
+    evaluator: Optional[str] = None
+    rationale: Optional[str] = None
 
 
 class EvaluationSet(Dataset):
