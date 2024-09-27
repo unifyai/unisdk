@@ -639,3 +639,82 @@ class TestToolAgentAndLLMJudgeEvaluations(unittest.TestCase):
             score = evaluation.score.value
             self.assertIn(score, class_config)
             self.assertEqual(evaluation.score.description, class_config[score])
+
+
+class TestLLMJuryEvaluator(unittest.TestCase):
+
+    def setUp(self) -> None:
+        system_msg = \
+            ("Your task is to take long complex passages of text provided by the user, "
+             "and to summarize the text for them, only explaining the most important "
+             "aspects in simple terms.")
+        _passages = [
+            "A nuclear reactor is a device used to initiate and control a fission "
+            "nuclear chain reaction. Nuclear reactors are used at nuclear power "
+            "plants for electricity generation and in nuclear marine propulsion. When "
+            "a fissile nucleus like uranium-235 or plutonium-239 absorbs a neutron, "
+            "it splits into lighter nuclei, releasing energy, gamma radiation, "
+            "and free neutrons, which can induce further fission in a self-sustaining "
+            "chain reaction. The process is carefully controlled using control rods "
+            "and neutron moderators to regulate the number of neutrons that continue "
+            "the reaction, ensuring the reactor operates safely. The efficiency of "
+            "energy conversion in nuclear reactors is significantly higher compared "
+            "to conventional fossil fuel plants; a kilo of uranium-235 can release "
+            "millions of times more energy than a kilo of coal.",
+
+            "I'm planning to catch the Jubilee line right now, is that possible?",
+            "I'm going to walk to the cafe, do you know how long it will take?",
+            "Atoms are the basic particles of the chemical elements. An atom consists "
+            "of a nucleus of protons and generally neutrons, surrounded by an "
+            "electromagnetically bound swarm of electrons. The chemical elements are "
+            "distinguished from each other by the number of protons that are in their "
+            "atoms. For example, any atom that contains 11 protons is sodium, "
+            "and any atom that contains 29 protons is copper. Atoms with the same "
+            "number of protons but a different number of neutrons are called isotopes "
+            "of the same element.",
+
+            "Apartheid was a system of institutionalised racial segregation that "
+            "existed in South Africa and South West Africa (now Namibia) from 1948 "
+            "to the early 1990s. It was characterised by an authoritarian "
+            "political culture based on baasskap, "
+            "which ensured that South Africa was dominated politically, socially, "
+            "and economically by the nation's minority white population. In this "
+            "minoritarian system, there was social stratification and campaigns of "
+            "marginalization such that white citizens had the highest status, "
+            "with them being followed by Indians as well as Coloureds and then Black "
+            "Africans. The economic legacy and social effects of apartheid "
+            "continue to the present day, particularly inequality."
+        ]
+        _prompts = [unify.Prompt(p, system_message=system_msg) for p in _passages]
+
+        self._dataset = unify.Dataset(_prompts)
+
+        class SummaryEvaluator(unify.LLMJury):
+
+            @property
+            def scorer(self) -> Type[unify.DefaultJudgeScore]:
+                return unify.DefaultJudgeScore
+
+        self._client = unify.Unify("gpt-4o@openai")
+        endpoints = [
+            "gpt-4o@openai",
+            "claude-3.5-sonnet@anthropic",
+            "llama-3.2-3b-chat@fireworks-ai"
+        ]
+        judges = [unify.DefaultLLMJudge(unify.Unify(ep)) for ep in endpoints]
+        self._evaluator = SummaryEvaluator(judges, include_rationale=True)
+
+    def test_agentic_evals_w_llm_judge(self) -> None:
+        unify.set_repr_mode("concise")
+        for datum in self._dataset:
+            response = self._client.generate(**datum.prompt.model_dump())
+            class_config = self._evaluator.class_config
+            evaluation = self._evaluator.evaluate(
+                prompt=datum.prompt,
+                response=response,
+                agent=self._client,
+                **datum.model_extra
+            )
+            score = evaluation.score.value
+            self.assertIn(score, class_config)
+            self.assertEqual(evaluation.score.description, class_config[score])
