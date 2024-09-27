@@ -406,39 +406,29 @@ class LLMJury(Evaluator, abc.ABC):
             include_rationale: Whether to include the LLM's rationale as part of
             the evaluation response. Default is False.
         """
-        judges = [copy.deepcopy(judge) for judge in judges]
+        judges = [copy.copy(judge) for judge in judges]
         for judge in judges:
             judge.set_include_rationale(include_rationale)
-            client = judge.client
-            if not isinstance(client, AsyncUnify):
-                judge.set_client(client.to_async_client())
+            # client = judge.client
+            # if not isinstance(client, AsyncUnify):
+            #     judge.set_client(client.to_async_client())
 
         self._judges = judges
         self._include_rationale = include_rationale
         self._num_judges = len(judges)
         super().__init__(name)
 
+    # noinspection PyMethodOverriding
     def _evaluate(
             self,
             prompt: Prompt,
             response: ChatCompletion,
+            agent: Union[str, _Client, Agent],
             **kwargs
-    ) -> Union[Tuple[float, Union[str, Dict]], float]:
-        async def gen(_prompt, _response, **_kwargs):
-            scores = dict()
-            rationales = dict()
-            for judge in self._judges:
-                result = await judge.evaluate(_prompt, _response, **_kwargs)
-                if self._include_rationale:
-                    score, rationale = result
-                    rationales[judge] = {"score": score, "rationale": rationale}
-                else:
-                    score = result
-                if score != -1:
-                    scores[judge] = score
-            combined_score = sum(scores.values())/self._num_judges \
-                if scores != {} else -1.
-            if self._include_rationale:
-                return combined_score, rationales
-            return combined_score
-        return asyncio.run(gen(prompt, response, **kwargs))
+    ) -> EvaluationSet:
+        evaluations = list()
+        for judge in self._judges:
+            evaluations.append(
+                judge.evaluate(prompt, response, agent, **kwargs)
+            )
+        return LLMJuryEvaluationSet(evaluations)
