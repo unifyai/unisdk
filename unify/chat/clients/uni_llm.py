@@ -377,6 +377,44 @@ class _UniLLMClient(_Client, abc.ABC):
             self._endpoint = "@".join([self._model, value])
         return self
 
+    @staticmethod
+    def _handle_kw(
+            prompt,
+            endpoint,
+            stream,
+            stream_options,
+            use_custom_keys,
+            tags,
+            drop_params,
+            region,
+            log_query_body,
+            log_response_body
+    ):
+        prompt_dict = prompt.model_dump()
+        if "extra_body" in prompt_dict:
+            extra_body = prompt_dict["extra_body"]
+            del prompt_dict["extra_body"]
+        else:
+            extra_body = {}
+        kw = dict(
+            model=endpoint,
+            **prompt_dict,
+            stream=stream,
+            stream_options=stream_options,
+            extra_body={  # platform arguments
+                "signature": "python",
+                "use_custom_keys": use_custom_keys,
+                "tags": tags,
+                "drop_params": drop_params,
+                "region": region,
+                "log_query_body": log_query_body,
+                "log_response_body": log_response_body,
+                # passthrough json arguments
+                **extra_body,
+            },
+        )
+        return {k: v for k, v in kw.items() if v is not None}
+
     # Representation #
     # ---------------#
 
@@ -423,30 +461,18 @@ class Unify(_UniLLMClient):
         # python client arguments
         return_full_completion: bool,
     ) -> Generator[str, None, None]:
-        prompt_dict = prompt.model_dump()
-        if "extra_body" in prompt_dict:
-            extra_body = prompt_dict["extra_body"]
-            del prompt_dict["extra_body"]
-        else:
-            extra_body = {}
-        kw = dict(
-            model=endpoint,
-            **prompt_dict,
+        kw = self._handle_kw(
+            prompt=prompt,
+            endpoint=endpoint,
             stream=True,
             stream_options=stream_options,
-            extra_body={  # platform arguments
-                "signature": "python",
-                "use_custom_keys": use_custom_keys,
-                "tags": tags,
-                "drop_params": drop_params,
-                "region": region,
-                "log_query_body": log_query_body,
-                "log_response_body": log_response_body,
-                # passthrough json arguments
-                **extra_body,
-            },
+            use_custom_keys=use_custom_keys,
+            tags=tags,
+            drop_params=drop_params,
+            region=region,
+            log_query_body=log_query_body,
+            log_response_body=log_response_body
         )
-        kw = {k: v for k, v in kw.items() if v is not None}
         try:
             chat_completion = self._client.chat.completions.create(**kw)
             for chunk in chat_completion:
@@ -475,28 +501,18 @@ class Unify(_UniLLMClient):
         return_full_completion: bool,
         cache: bool,
     ) -> Union[str, ChatCompletion]:
-        prompt_dict = prompt.model_dump()
-        if "extra_body" in prompt_dict:
-            extra_body = prompt_dict["extra_body"]
-            del prompt_dict["extra_body"]
-        else:
-            extra_body = {}
-        kw = dict(
-            model=endpoint,
-            **prompt_dict,
-            extra_body={  # platform arguments
-                "signature": "python",
-                "use_custom_keys": use_custom_keys,
-                "tags": tags,
-                "drop_params": drop_params,
-                "region": region,
-                "log_query_body": log_query_body,
-                "log_response_body": log_response_body,
-                # passthrough json arguments
-                **extra_body,
-            },
+        kw = self._handle_kw(
+            prompt=prompt,
+            endpoint=endpoint,
+            stream=False,
+            stream_options=None,
+            use_custom_keys=use_custom_keys,
+            tags=tags,
+            drop_params=drop_params,
+            region=region,
+            log_query_body=log_query_body,
+            log_response_body=log_response_body
         )
-        kw = {k: v for k, v in kw.items() if v is not None}
         chat_completion = None
         if cache:
             chat_completion = _get_cache(kw)
@@ -661,30 +677,18 @@ class AsyncUnify(_UniLLMClient):
         # python client arguments
         return_full_completion: bool,
     ) -> AsyncGenerator[str, None]:
-        prompt_dict = prompt.model_dump()
-        if "extra_body" in prompt_dict:
-            extra_body = prompt_dict["extra_body"]
-            del prompt_dict["extra_body"]
-        else:
-            extra_body = {}
-        kw = dict(
-            model=endpoint,
-            **prompt_dict,
+        kw = self._handle_kw(
+            prompt=prompt,
+            endpoint=endpoint,
             stream=True,
             stream_options=stream_options,
-            extra_body={  # platform arguments
-                "signature": "python",
-                "use_custom_keys": use_custom_keys,
-                "tags": tags,
-                "drop_params": drop_params,
-                "region": region,
-                "log_query_body": log_query_body,
-                "log_response_body": log_response_body,
-                # passthrough json arguments
-                **extra_body,
-            },
+            use_custom_keys=use_custom_keys,
+            tags=tags,
+            drop_params=drop_params,
+            region=region,
+            log_query_body=log_query_body,
+            log_response_body=log_response_body
         )
-        kw = {k: v for k, v in kw.items() if v is not None}
         try:
             async_stream = await self._client.chat.completions.create(**kw)
             async for chunk in async_stream:  # type: ignore[union-attr]
@@ -711,28 +715,18 @@ class AsyncUnify(_UniLLMClient):
         return_full_completion: bool,
         cache: bool,
     ) -> Union[str, ChatCompletion]:
-        prompt_dict = prompt.model_dump()
-        if "extra_body" in prompt_dict:
-            extra_body = prompt_dict["extra_body"]
-            del prompt_dict["extra_body"]
-        else:
-            extra_body = {}
-        kw = dict(
-            model=endpoint,
-            **prompt_dict,
-            extra_body={  # platform arguments
-                "signature": "python",
-                "use_custom_keys": use_custom_keys,
-                "tags": tags,
-                "drop_params": drop_params,
-                "region": region,
-                "log_query_body": log_query_body,
-                "log_response_body": log_response_body,
-                # passthrough json arguments
-                **extra_body,
-            },
+        kw = self._handle_kw(
+            prompt=prompt,
+            endpoint=endpoint,
+            stream=False,
+            stream_options=None,
+            use_custom_keys=use_custom_keys,
+            tags=tags,
+            drop_params=drop_params,
+            region=region,
+            log_query_body=log_query_body,
+            log_response_body=log_response_body
         )
-        kw = {k: v for k, v in kw.items() if v is not None}
         chat_completion, async_response = None, None
         if cache:
             chat_completion = _get_cache(kw)
