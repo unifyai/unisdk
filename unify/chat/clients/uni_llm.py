@@ -855,4 +855,4 @@ class AsyncUnify(_UniLLMClient):
             A `Unify` instance with the same configuration as this `AsyncUnify`
             instance.
         """
-        return AsyncUnify(**self._constructor_args)
+        return Unify(**self._constructor_args)
