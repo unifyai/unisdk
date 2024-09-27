@@ -23,7 +23,7 @@ class EvaluationSet(Dataset):
             *,
             name: str = None,
             auto_sync: Union[bool, str] = False,
-            api_key: Optional[str] = None,
+            api_key: Optional[str] = None
     ) -> None:
         if not isinstance(evaluations, list):
             evaluations = [evaluations]
@@ -37,6 +37,11 @@ class EvaluationSet(Dataset):
         self._class_config = evaluations[0].score.config
         valid_scores = [e.score.value for e in evaluations if e.score.value is not None]
         self._mean_score = sum(valid_scores)/len(valid_scores)
+        self._score_distribution =\
+            {
+                k: sum([e.score.value == k for e in evaluations])
+                for k in self._class_config.keys()
+            }
 
         super().__init__(
             data=evaluations,
@@ -58,3 +63,7 @@ class EvaluationSet(Dataset):
     @property
     def mean_score(self) -> float:
         return self._mean_score
+
+    @property
+    def score_distribution(self) -> Dict[float, int]:
+        return self._score_distribution
