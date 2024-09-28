@@ -1,7 +1,8 @@
 import abc
 from pydantic import ConfigDict
-from typing import Optional, Dict
+from typing import Optional, Dict, Union, List
 
+import unify
 from .base import _FormattedBaseModel
 
 
@@ -33,3 +34,27 @@ class Score(_FormattedBaseModel, abc.ABC):
     @abc.abstractmethod
     def config(self) -> Dict[float, str]:
         raise NotImplementedError
+
+
+class ScoreSet(unify.Dataset):
+
+    def __init__(
+            self,
+            scores: Union[Score, List[Score]],
+            *,
+            name: str = None,
+            auto_sync: Union[bool, str] = False,
+            api_key: Optional[str] = None
+    ) -> None:
+        if not isinstance(scores, list):
+            scores = [scores]
+        assert all(type(s) is type(scores[0]) for s in scores), \
+            "All scores passed to a ScoreSet must be of the same type."
+        self._class_config = scores[0].config
+
+        super().__init__(
+            data=scores,
+            name=name,
+            auto_sync=auto_sync,
+            api_key=api_key
+        )
