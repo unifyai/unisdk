@@ -55,7 +55,7 @@ def key_repr(instance: _FormattedBaseModel) -> Union[Dict, List]:
     if instance.model_extra is not None:
         fields = {**fields, **instance.model_extra}
     for key, field in fields.items():
-        annotation = field.annotation
+        annotation = field.annotation if hasattr(field, "annotation") else type(field)
         if annotation in _KEYS_TO_SKIP or annotation in _KEYS_TO_KEEP:
             ret[key] = key_repr(getattr(instance, key))
     ins_type = type(instance)
