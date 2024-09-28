@@ -60,7 +60,7 @@ class Evaluator(abc.ABC):
             **kwargs
     ) -> Union[
             Union[bool, float, Score],
-            Tuple[Union[bool, float, Score], Union[str, Dict]]
+            Tuple[Union[bool, float, Score], Union[str, Dict, EvaluationSet]]
     ]:
         """
         Evaluate the given response for this input prompt, with optional extra data.
@@ -131,6 +131,9 @@ class Evaluator(abc.ABC):
         prompt = cast(prompt, Prompt)
         # response upcasting
         response = cast(response, ChatCompletion)
+        # remove agent from kwargs if present
+        if "agent" in kwargs:
+            del kwargs["agent"]
         # score upcasting
         score = cast(score, self.scorer)
         # return evaluation
@@ -425,10 +428,11 @@ class LLMJury(Evaluator, abc.ABC):
             response: ChatCompletion,
             agent: Union[str, _Client, Agent],
             **kwargs
-    ) -> EvaluationSet:
+    ) -> Tuple[float, EvaluationSet]:
         evaluations = list()
         for judge in self._judges:
             evaluations.append(
                 judge.evaluate(prompt, response, agent, **kwargs)
             )
-        return LLMJuryEvaluationSet(evaluations)
+        eval_set = LLMJuryEvaluationSet(evaluations)
+        return eval_set.mean_score, eval_set
