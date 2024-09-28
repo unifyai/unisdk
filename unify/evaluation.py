@@ -1,5 +1,5 @@
 from pydantic import Extra, BaseModel
-from typing import Union, Optional, List, Dict
+from typing import Union, Optional, List, Dict, Type
 
 from unify.agent import Agent
 from unify.dataset import Dataset
@@ -13,6 +13,7 @@ class ScoreSet(Dataset):
             self,
             scores: Union[Score, List[Score]],
             *,
+            scorer: Type[Score],
             name: str = None,
             auto_sync: Union[bool, str] = False,
             api_key: Optional[str] = None
@@ -21,14 +22,26 @@ class ScoreSet(Dataset):
             scores = [scores]
         assert all(type(s) is type(scores[0]) for s in scores), \
             "All scores passed to a ScoreSet must be of the same type."
-        self._class_config = scores[0].config
-
+        self._score_count = {
+            val: (desc, len([s for s in scores if s.value == val]))
+            for val, desc in scores[0].config.items()
+        }
+        self._scorer_name = scorer.__name__
         super().__init__(
             data=scores,
             name=name,
             auto_sync=auto_sync,
             api_key=api_key
         )
+
+    def __rich_repr__(self) -> Dict:
+        """
+        Used by the rich package for representing and print the instance.
+        """
+        yield {
+            "scorer": self._scorer_name,
+            "counts": self._score_count
+        }
 
 
 class Evaluation(Datum, extra=Extra.allow, arbitrary_types_allowed=True):
@@ -59,10 +72,11 @@ class EvaluationSet(Dataset):
         self._agent = evaluations[0].agent
         assert all(e.score.config == evaluations[0].score.config
                    for e in evaluations), consistency_msg.format("class_config")
+        scorer = type(evaluations[0].score)
         self._class_config = evaluations[0].score.config
         valid_scores = [e.score.value for e in evaluations if e.score.value is not None]
-        self._mean_score = sum(valid_scores)/len(valid_scores)
-        self._score_set = sum([e.score for e in evaluations])
+        self._mean_score = sum(valid_scores) / len(valid_scores)
+        self._score_set = ScoreSet([e.score for e in evaluations], scorer=scorer)
 
         super().__init__(
             data=evaluations,
@@ -107,7 +121,7 @@ class LLMJuryEvaluationSet(EvaluationSet):
             auto_sync=auto_sync,
             api_key=api_key
         )
-        self._judge_score_distribution =\
+        self._judge_score_distribution = \
             {
                 k: [e.evaluator for e in evaluations if e.score.value == k]
                 for k in self.class_config.keys()
