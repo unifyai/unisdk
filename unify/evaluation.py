@@ -62,11 +62,7 @@ class EvaluationSet(Dataset):
         self._class_config = evaluations[0].score.config
         valid_scores = [e.score.value for e in evaluations if e.score.value is not None]
         self._mean_score = sum(valid_scores)/len(valid_scores)
-        self._score_distribution =\
-            {
-                k: sum([e.score.value == k for e in evaluations])
-                for k in self._class_config.keys()
-            }
+        self._score_set = sum([e.score for e in evaluations])
 
         super().__init__(
             data=evaluations,
@@ -89,9 +85,10 @@ class EvaluationSet(Dataset):
     def mean_score(self) -> float:
         return self._mean_score
 
+    # noinspection PyTypeChecker
     @property
-    def score_distribution(self) -> Dict[float, int]:
-        return self._score_distribution
+    def score_set(self) -> ScoreSet:
+        return self._score_set
 
 
 class LLMJuryEvaluationSet(EvaluationSet):
