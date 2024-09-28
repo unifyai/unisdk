@@ -704,13 +704,12 @@ class TestLLMJuryEvaluator(unittest.TestCase):
         judges = [unify.DefaultLLMJudge(unify.Unify(ep)) for ep in endpoints]
         self._evaluator = SummaryEvaluator(judges, include_rationale=True)
 
-    def test_agentic_evals_w_llm_judge(self) -> None:
+    def test_evals(self) -> None:
         unify.set_repr_mode("concise")
         for datum in self._dataset:
             response = self._client.generate(**datum.prompt.model_dump())
             class_config = self._evaluator.class_config
             evaluation = self._evaluator.evaluate(
-                prompt=datum.prompt,
                 response=response,
                 agent=self._client,
                 **datum.model_extra
