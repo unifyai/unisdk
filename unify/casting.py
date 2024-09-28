@@ -164,6 +164,6 @@ def try_cast(
 ) -> Union[str, bool, float, Score, Prompt, Datum, ChatCompletion]:
     # noinspection PyBroadException
     try:
-        cast(inp, to_type)
+        return cast(inp, to_type)
     except:
         return inp
