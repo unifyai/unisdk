@@ -153,3 +153,17 @@ def cast(
     if issubclass(to_type, Score):
         return _CAST_DICT[input_type][Score](inp, to_type)
     return _CAST_DICT[input_type][to_type](inp)
+
+
+def try_cast(
+        inp: Union[str, bool, float, Score, Prompt, Datum, ChatCompletion],
+        to_type: Union[
+            Type[Union[str, bool, float, Score, Prompt, Datum, ChatCompletion]],
+            List[Type[Union[str, bool, float, Score, Prompt, Datum, ChatCompletion]]]
+        ],
+) -> Union[str, bool, float, Score, Prompt, Datum, ChatCompletion]:
+    # noinspection PyBroadException
+    try:
+        cast(inp, to_type)
+    except:
+        return inp
