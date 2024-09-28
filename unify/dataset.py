@@ -33,7 +33,7 @@ class Dataset(_Formatted):
 
             auto_sync: Whether to automatically keep this dataset fully synchronized
             with the upstream variant at all times. If `True` or "both" then the sync
-            will be bi-directional, if "upload" then all local changes will be
+            will be bidirectional, if "upload" then all local changes will be
             uploaded to the upstream account without any downloads, if "download"
             then all upstream changes will be downloaded locally without any uploads.
             If "upstream_mirrors_local" then the upstream dataset will be anchored to
@@ -87,7 +87,7 @@ class Dataset(_Formatted):
         The auto-sync mode currently selected.
         This dictates whether to automatically keep this dataset fully synchronized
         with the upstream variant at all times. If `True` or "both" then the sync
-        will be bi-directional, if "upload" then all local changes will be
+        will be bidirectional, if "upload" then all local changes will be
         uploaded to the upstream account without any downloads, if "download"
         then all upstream changes will be downloaded locally without any uploads.
         If "upstream_mirrors_local" then the upstream dataset will be anchored to the
@@ -121,7 +121,7 @@ class Dataset(_Formatted):
         Args:
             auto_sync: Whether to automatically keep this dataset fully synchronized
             with the upstream variant at all times. If `True` or "both" then the sync
-            will be bi-directional, if "upload" then all local changes will be
+            will be bidirectional, if "upload" then all local changes will be
             uploaded to the upstream account without any downloads, if "download"
             then all upstream changes will be downloaded locally without any uploads.
             If "upstream_mirrors_local" then the upstream dataset will be anchored to
@@ -143,7 +143,7 @@ class Dataset(_Formatted):
         name: str,
         auto_sync: Union[bool, str] = False,
         api_key: Optional[str] = None,
-    ) -> Self:
+    ) -> Dataset:
         """
         Initialize a local dataset of LLM queries, from the upstream dataset.
 
@@ -513,7 +513,7 @@ class Dataset(_Formatted):
             one.
 
         Returns:
-            Boolean, as to whether or not the passed Dataset is a subset of this one.
+            Boolean, whether the passed Dataset is a subset of this one.
         """
         item = item if isinstance(item, Dataset) else Dataset(item)
         this_set = set(self._data)
@@ -532,7 +532,7 @@ class Dataset(_Formatted):
     def __getitem__(self, item: Union[int, slice]) -> Union[Datum, Dataset]:
         """
         Gets an item from the dataset, either via an int or slice. In the case of an
-        int then a Datum instance is returned, and for a slice a Dataset instance is
+        int, then a data instance is returned, and for a slice a Dataset instance is
         returned.
 
         Args:
