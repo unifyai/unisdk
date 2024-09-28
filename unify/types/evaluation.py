@@ -2,10 +2,10 @@ import abc
 from pydantic import ConfigDict
 from typing import Optional, Dict
 
-from .base import _FormattedBaseModel
+from .dataset import Datum
 
 
-class Score(_FormattedBaseModel, abc.ABC):
+class Score(Datum, abc.ABC):
     model_config = ConfigDict(extra="forbid")
     value: Optional[float]
     description: str

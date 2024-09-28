@@ -8,8 +8,8 @@ from typing import Type, Union, Optional, Tuple, Dict, List
 
 from unify.agent import Agent
 from unify.chat.clients import _Client, Unify, AsyncUnify
-from unify.evaluation import Evaluation, EvaluationSet, LLMJuryEvaluationSet
-from unify.casting import cast
+from unify.evaluation import Evaluation, EvaluationSet, LLMJuryEvaluationSet, ScoreSet
+from unify.casting import cast, try_cast
 from unify.types import Score, Prompt, ChatCompletion
 
 
@@ -135,7 +135,7 @@ class Evaluator(abc.ABC):
         if "agent" in kwargs:
             del kwargs["agent"]
         # score upcasting
-        score = cast(score, self.scorer)
+        score = try_cast(score, self.scorer)
         # return evaluation
         return Evaluation(
             prompt=prompt,
@@ -428,11 +428,11 @@ class LLMJury(Evaluator, abc.ABC):
             response: ChatCompletion,
             agent: Union[str, _Client, Agent],
             **kwargs
-    ) -> Tuple[float, EvaluationSet]:
+    ) -> Tuple[ScoreSet, EvaluationSet]:
         evaluations = list()
         for judge in self._judges:
             evaluations.append(
                 judge.evaluate(prompt, response, agent, **kwargs)
             )
         eval_set = LLMJuryEvaluationSet(evaluations)
-        return eval_set.mean_score, eval_set
+        return eval_set.score_set, eval_set
