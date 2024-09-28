@@ -1,4 +1,4 @@
-from typing import Union, Type
+from typing import Union, Type, List
 from unify.types import Prompt, Datum, ChatCompletion, Score
 
 
@@ -99,26 +99,57 @@ _CAST_DICT = {
 }
 
 
+def _cast_from_selection(
+        inp: Union[str, bool, float, Score, Prompt, Datum, ChatCompletion],
+        targets: List[Union[float, Score, Prompt, Datum, ChatCompletion]]
+) -> Union[str, bool, float, Score, Prompt, Datum, ChatCompletion]:
+    """
+    Upcasts the input if possible, based on the permitted upcasting targets provided.
+
+    Args:
+        inp: The input to cast.
+
+        targets: The set of permitted upcasting targets.
+
+    Returns:
+        The input after casting to the new type, if it was possible.
+    """
+    input_type = type(inp)
+    assert input_type in _CAST_DICT, (
+        "Cannot upcast input {} of type {}, because this type is not in the "
+        "_CAST_DICT, meaning there are no functions for casting this type.")
+    cast_fns = _CAST_DICT[input_type]
+    targets = [target for target in targets if target in cast_fns]
+    assert len(targets) == 1, "There must be exactly one valid casting target."
+    target = targets[0]
+    return cast_fns[target](inp, target)
+
+
 # Public function
 
 def cast(
-        input: Union[str, bool, float, Score, Prompt, Datum, ChatCompletion],
-        to_type: Type[Union[str, bool, float, Score, Prompt, Datum, ChatCompletion]],
+        inp: Union[str, bool, float, Score, Prompt, Datum, ChatCompletion],
+        to_type: Union[
+            Type[Union[str, bool, float, Score, Prompt, Datum, ChatCompletion]],
+            List[Type[Union[str, bool, float, Score, Prompt, Datum, ChatCompletion]]]
+        ],
 ) -> Union[str, bool, float, Score, Prompt, Datum, ChatCompletion]:
     """
     Cast the input to the specified type.
 
     Args:
-        input: The input to cast.
+        inp: The input to cast.
 
         to_type: The type to cast the input to.
 
     Returns:
         The input after casting to the new type.
     """
-    input_type = type(input)
+    if isinstance(to_type, list):
+        return _cast_from_selection(inp, to_type)
+    input_type = type(inp)
     if input_type is to_type:
-        return input
+        return inp
     if issubclass(to_type, Score):
-        return _CAST_DICT[input_type][Score](input, to_type)
-    return _CAST_DICT[input_type][to_type](input)
+        return _CAST_DICT[input_type][Score](inp, to_type)
+    return _CAST_DICT[input_type][to_type](inp)
