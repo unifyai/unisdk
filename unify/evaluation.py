@@ -7,6 +7,30 @@ from unify.chat.clients import _Client
 from unify.types import Prompt, Score, Datum, ChatCompletion
 
 
+class ScoreSet(Dataset):
+
+    def __init__(
+            self,
+            scores: Union[Score, List[Score]],
+            *,
+            name: str = None,
+            auto_sync: Union[bool, str] = False,
+            api_key: Optional[str] = None
+    ) -> None:
+        if not isinstance(scores, list):
+            scores = [scores]
+        assert all(type(s) is type(scores[0]) for s in scores), \
+            "All scores passed to a ScoreSet must be of the same type."
+        self._class_config = scores[0].config
+
+        super().__init__(
+            data=scores,
+            name=name,
+            auto_sync=auto_sync,
+            api_key=api_key
+        )
+
+
 class Evaluation(Datum, extra=Extra.allow, arbitrary_types_allowed=True):
     prompt: Prompt
     response: ChatCompletion
