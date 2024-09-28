@@ -1,5 +1,4 @@
 from pydantic import Extra
-from typing import Optional, Union
 
 import unify
 from .chat import Prompt
@@ -7,23 +6,19 @@ from .base import _FormattedBaseModel
 
 
 class Datum(_FormattedBaseModel, extra=Extra.allow):
-    prompt: Prompt
 
-    def __init__(self, prompt: Optional[Union[str, Prompt]], **kwargs):
+    def __init__(self, **kwargs):
         """
         Create Datum instance.
 
         Args:
-            prompt: The prompt, either as a user message or as the full prompt.
-
-            kwargs: Optional extra fields passed.
+            kwargs: All the data fields to pass.
 
         Returns:
             The pydantic Datum instance.
         """
-        if isinstance(prompt, str):
-            prompt = Prompt(prompt)
-        super().__init__(prompt=prompt, **kwargs)
+        kwargs = {k: unify.try_cast(v, [Prompt]) for k, v in kwargs.items()}
+        super().__init__(**kwargs)
 
     def __add__(self, other):
         if other == 0:
