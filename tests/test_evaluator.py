@@ -695,7 +695,7 @@ class TestLLMJuryEvaluator(unittest.TestCase):
             def scorer(self) -> Type[unify.DefaultJudgeScore]:
                 return unify.DefaultJudgeScore
 
-        self._client = unify.Unify("gpt-4o@openai")
+        self._client = unify.Unify("gpt-4o@openai", cache=True)
         endpoints = [
             "gpt-4o@openai",
             "claude-3.5-sonnet@anthropic",
