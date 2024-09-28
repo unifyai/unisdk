@@ -1,4 +1,4 @@
-from pydantic import Extra
+from pydantic import Extra, BaseModel
 from typing import Union, Optional, List, Dict
 
 from unify.agent import Agent
@@ -37,7 +37,7 @@ class Evaluation(Datum, extra=Extra.allow, arbitrary_types_allowed=True):
     agent: Union[str, _Client, Agent]
     score: Score
     evaluator: Optional[str] = None
-    rationale: Optional[str] = None
+    rationale: Optional[Union[str, Dict, BaseModel]] = None
 
 
 class EvaluationSet(Dataset):

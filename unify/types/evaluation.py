@@ -1,8 +1,7 @@
 import abc
 from pydantic import ConfigDict
-from typing import Optional, Dict, Union, List
+from typing import Optional, Dict
 
-import unify
 from .base import _FormattedBaseModel
 
 
