@@ -344,7 +344,6 @@ class TestCodeEvaluator(unittest.TestCase):
             for evaluator in self._evaluators.values():
                 class_config = evaluator.class_config
                 evaluation = evaluator.evaluate(
-                    prompt=datum.prompt,
                     response=response,
                     agent=self._client,
                     **datum.model_extra
@@ -552,7 +551,8 @@ class TestToolAgentAndLLMJudgeEvaluations(unittest.TestCase):
 
         self._client = unify.Unify(
             "gpt-4o@openai",
-            return_full_completion=True
+            return_full_completion=True,
+            cache=True
         )
         self._agent = TravelAssistantAgent(
             self._client,
@@ -599,7 +599,6 @@ class TestToolAgentAndLLMJudgeEvaluations(unittest.TestCase):
             response = self._client.generate(**datum.prompt.model_dump())
             class_config = self._tool_use_evaluator.class_config
             evaluation = self._tool_use_evaluator.evaluate(
-                prompt=datum.prompt,
                 response=response,
                 agent=self._client,
                 **datum.model_extra
@@ -616,7 +615,6 @@ class TestToolAgentAndLLMJudgeEvaluations(unittest.TestCase):
             for evaluator in (self._contains_evaluator, self._omits_evaluator):
                 class_config = evaluator.class_config
                 evaluation = evaluator.evaluate(
-                    prompt=datum.prompt,
                     response=response,
                     agent=self._agent,
                     **datum.model_extra
@@ -631,7 +629,6 @@ class TestToolAgentAndLLMJudgeEvaluations(unittest.TestCase):
             response = self._agent(datum.prompt)
             class_config = self._llm_judge.class_config
             evaluation = self._llm_judge.evaluate(
-                prompt=datum.prompt,
                 response=response,
                 agent=self._agent,
                 **datum.model_extra
