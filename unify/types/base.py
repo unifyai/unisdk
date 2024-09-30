@@ -128,11 +128,11 @@ class _FormattedBaseModel(_Formatted, BaseModel):
 
     def __rich_repr__(self):
         rep = self._prune() if unify.repr_mode() == "concise" else self
-        for k in self.model_fields:
+        for k in rep.model_fields:
             yield k, rep.__dict__[k]
-        if self.model_extra is None:
+        if rep.model_extra is None:
             return
-        for k, v in self.model_extra.items():
+        for k, v in rep.model_extra.items():
             yield k, v
 
     def full_repr(self):
