@@ -83,8 +83,6 @@ class EvaluationSet(Dataset):
                 val = getattr(evaluations[0], field)
                 if isinstance(val, BaseModel):
                     val = val.model_dump()
-                elif isinstance(val, _UniLLMClient):
-                    val = val.endpoint
                 shared_data[field] = val
 
         valid_scores = [e.score.value for e in evaluations if e.score.value is not None]
