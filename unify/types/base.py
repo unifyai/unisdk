@@ -18,12 +18,17 @@ class _Formatted(abc.ABC):
     def _indent_text(to_print):
         chunks = to_print.split("\n")
         num_chunks = len(chunks)
+        detected = False
+        prev_chunk = chunks[0]
         for i, chunk in enumerate(chunks[:-1]):
             if i in (0, num_chunks-2) or chunk.startswith(" "):
+                detected = False
                 continue
-            prev_chunk = chunks[i-1]
+            if not detected:
+                prev_chunk = chunks[i-1]
+            detected = True
             leading_spaces = len(prev_chunk) - len(prev_chunk.lstrip())
-            chunks[i] = " " * leading_spaces + chunk
+            chunks[i] = " " * (leading_spaces + 11) + chunk
         return "\n".join(chunks)
 
     def _repr(self, to_print):
