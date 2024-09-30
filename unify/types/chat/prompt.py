@@ -3,8 +3,7 @@ from typing import Optional, Union, List, Dict, Mapping
 from openai._types import Query, Body
 from openai.types.chat import (
     ChatCompletionToolParam,
-    ChatCompletionToolChoiceOptionParam,
-    ChatCompletionMessageParam
+    ChatCompletionToolChoiceOptionParam
 )
 from openai.types.chat.completion_create_params import ResponseFormat
 
