@@ -24,7 +24,8 @@ _KEYS_TO_SKIP_MODES: Dict[str, Dict[Type, Dict]] = {
             "role": "assistant"
         },
         "verbose": {}
-    }
+    },
+    "verbose": {}
 }
 
 
