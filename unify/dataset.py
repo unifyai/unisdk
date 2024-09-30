@@ -578,29 +578,32 @@ class Dataset(_Formatted):
 
     def _shared_items_pruned(self, item, chain=""):
         if isinstance(item, list):
-            return [
+            ret = [
                 v for v in [
                     self._shared_items_pruned(v, chain + "/" + str(i))
                     for i, v in enumerate(item)
                 ]
                 if v is not None
             ]
+            return ret if bool(ret) else None
         elif isinstance(item, tuple):
-            return (
+            ret = (
                 v for v in [
                     self._shared_items_pruned(v, chain + "/" + str(i))
                     for i, v in enumerate(item)
                 ]
                 if v is not None
             )
+            return ret if bool(ret) else None
         elif isinstance(item, dict):
-            return {
+            ret = {
                 k: v for k, v in {
                     k: self._shared_items_pruned(v, chain + "/" + k)
                     for k, v in item.items()
                 }.items()
                 if v is not None
             }
+            return ret if bool(ret) else None
         elif isinstance(item, BaseModel):
             dct = {
                 k: v for k, v in {
@@ -609,6 +612,8 @@ class Dataset(_Formatted):
                 }.items()
                 if v is not None
             }
+            if dct == {}:
+                return None
             return self._create_pydantic_model(item, dct)
         elif self._contains_chain(self._shared_data, chain, item):
             return None
