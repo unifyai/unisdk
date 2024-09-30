@@ -15,12 +15,23 @@ RICH_CONSOLE = Console(file=StringIO())
 class _Formatted(abc.ABC):
 
     @staticmethod
-    def _repr(to_print):
+    def _indent_text(to_print):
+        chunks = to_print.split("\n")
+        num_chunks = len(chunks)
+        for i, chunk in enumerate(chunks[:-1]):
+            if i in (0, num_chunks-2) or chunk.startswith(" "):
+                continue
+            prev_chunk = chunks[i-1]
+            leading_spaces = len(prev_chunk) - len(prev_chunk.lstrip())
+            chunks[i] = " " * leading_spaces + chunk
+        return "\n".join(chunks)
+
+    def _repr(self, to_print):
         # ToDO find more elegant way to do this
         global RICH_CONSOLE
         with RICH_CONSOLE.capture() as capture:
             RICH_CONSOLE.print(to_print)
-        return capture.get()
+        return self._indent_text(capture.get())
 
     def __repr__(self) -> str:
         return self._repr(self)
