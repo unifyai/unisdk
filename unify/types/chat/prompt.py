@@ -14,7 +14,7 @@ from ..base import _FormattedBaseModel
 
 class Prompt(_FormattedBaseModel):
     model_config = ConfigDict(extra="forbid")
-    messages: Optional[List[ChatCompletionMessageParam]] = None
+    messages: Optional[List[Dict]] = None
     frequency_penalty: Optional[float] = None
     logit_bias: Optional[Dict[str, int]] = None
     logprobs: Optional[bool] = None
