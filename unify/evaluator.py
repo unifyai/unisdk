@@ -365,21 +365,21 @@ class DefaultLLMJudge(LLMJudge):
         """
         sys = "[System]\n"
         "Please act as an impartial judge and evaluate the quality of the response "
-        "provided by an assistant to the user question displayed below. "
-        "Your job is to evaluate how good the assistant's answer is. "
+        "provided by an assistant to the user message displayed below. "
+        "Your job is to evaluate how good the assistant's response is. "
         "Your evaluation should consider correctness and helpfulness. "
         "Identify any mistakes. "
         "Be as objective as possible."
         template_no_ref = """
         {class_config}
 
-        [start of user question]
-        {user_prompt}
-        [end of user question]
+        [start of user message]
+        {user_message}
+        [end of user message]
 
-        [start of assistant answer]
-        {response}
-        [end of assistant answer]"""
+        [start of assistant response]
+        {assistant_response}
+        [end of assistant response]"""
         judge_prompt = Prompt(
             messages=[
                 {
