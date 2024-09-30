@@ -248,12 +248,9 @@ class LLMJudge(Evaluator, abc.ABC):
             judge_response = json.loads(self._extract_json_from_llm_response(response))
             rating = judge_response["assistant_rating"]
             if isinstance(rating, list):
-                rating = rating[0]
-            if isinstance(rating, int):
+                return rating[0]
+            else:
                 return float(rating)
-            elif isinstance(rating, float):
-                return rating
-            return
         except Exception:
             return
 
@@ -425,9 +422,6 @@ class LLMJury(Evaluator, abc.ABC):
         judges = [copy.copy(judge) for judge in judges]
         for judge in judges:
             judge.set_include_rationale(include_rationale)
-            # client = judge.client
-            # if not isinstance(client, AsyncUnify):
-            #     judge.set_client(client.to_async_client())
 
         self._judges = judges
         self._include_rationale = include_rationale
