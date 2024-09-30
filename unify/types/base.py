@@ -28,10 +28,6 @@ class _Formatted(abc.ABC):
     def __str__(self) -> str:
         return self._repr(self)
 
-
-@rich.repr.auto
-class _FormattedBaseModel(_Formatted, BaseModel):
-
     def _prune_dict(self, val, prune_policy):
 
         def keep(v, k=None, prune_pol=None):
@@ -106,28 +102,32 @@ class _FormattedBaseModel(_Formatted, BaseModel):
             return v.default
         return None
 
-    def _prune(self):
-        prune_policy = unify.key_repr(self)
-        dct = self._prune_dict(self.model_dump(), prune_policy)
-        fields = self.model_fields
-        if self.model_extra is not None:
-            fields = {**fields, **self.model_extra}
+    def _prune(self, item):
+        prune_policy = unify.key_repr(item)
+        dct = self._prune_dict(item.model_dump(), prune_policy)
+        fields = item.model_fields
+        if item.model_extra is not None:
+            fields = {**fields, **item.model_extra}
         config = {k: (self._prune_pydantic(self._annotation(fields[k]), v),
                       self._default(fields[k])) for k, v in dct.items()}
         return create_model(
-            self.__class__.__name__,
+            item.__class__.__name__,
             **config,
             __cls_kwargs__={"arbitrary_types_allowed": True}
         )(**dct)
 
+
+@rich.repr.auto
+class _FormattedBaseModel(_Formatted, BaseModel):
+
     def __repr__(self) -> str:
-        return self._repr(self._prune() if unify.repr_mode() == "concise" else self)
+        return self._repr(self._prune(self) if unify.repr_mode() == "concise" else self)
 
     def __str__(self) -> str:
-        return self._repr(self._prune() if unify.repr_mode() == "concise" else self)
+        return self._repr(self._prune(self) if unify.repr_mode() == "concise" else self)
 
     def __rich_repr__(self):
-        rep = self._prune() if unify.repr_mode() == "concise" else self
+        rep = self._prune(self) if unify.repr_mode() == "concise" else self
         for k in rep.model_fields:
             yield k, rep.__dict__[k]
         if rep.model_extra is None:
