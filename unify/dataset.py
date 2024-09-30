@@ -628,7 +628,7 @@ class Dataset(_Formatted):
         if self._shared_data is None:
             yield self._data
         else:
-            yield "shared", self._create_pydantic_model(
+            yield "shared", self._prune(self._create_pydantic_model(
                 self._data[0], self._shared_data
-            )
+            ))
             yield [self._shared_items_pruned(d) for d in self._data]
