@@ -1,5 +1,6 @@
 from __future__ import annotations
 from typing_extensions import Self
+from pydantic import BaseModel, create_model
 from typing import List, Dict, Union, Optional
 
 import unify
@@ -11,6 +12,7 @@ from .utils.helpers import _validate_api_key, _dict_aligns_with_pydantic
 
 
 class Dataset(_Formatted):
+
     def __init__(
         self,
         data: Union[str, Dict, Prompt, Datum,
@@ -18,6 +20,7 @@ class Dataset(_Formatted):
         *,
         name: str = None,
         auto_sync: Union[bool, str] = False,
+        shared_data: Dict = None,
         api_key: Optional[str] = None,
     ) -> None:
         """
@@ -42,6 +45,10 @@ class Dataset(_Formatted):
             version will be anchored to the upstream version at all times, and any local
             changes will be overwritten. If `False` or "neither" then no synchronization
             will be done automatically.
+
+            shared_data: Data which is shared across all items in the dataset, with a
+            nested structure following the nested structure of each `Datum` in the
+            dataset, but in dictionary format rather than Pydantic instances.
 
             api_key: API key for accessing the Unify API. If None, it attempts to
             retrieve the API key from the environment variable UNIFY_KEY. Defaults to
@@ -71,7 +78,9 @@ class Dataset(_Formatted):
                             "expected input types.".format(data, type(data[0])))
         self._api_key = _validate_api_key(api_key)
         self._auto_sync_flag = auto_sync
+        self._shared_data = shared_data
         self._auto_sync()
+        super().__init__()
 
     @property
     def name(self) -> str:
@@ -549,9 +558,79 @@ class Dataset(_Formatted):
         raise TypeError("expected item to be of type int or slice,"
                         "but found {} of type {}".format(item, type(item)))
 
+    # noinspection PyBroadException
+    @staticmethod
+    def _contains_chain(nest, chain, value):
+        item = nest
+        for idx in chain.split("/")[1:]:
+            if isinstance(item, list) or isinstance(item, tuple):
+                try:
+                    idx = int(idx)
+                    item = item[idx]
+                except:
+                    return False
+            elif isinstance(item, dict):
+                try:
+                    item = item[idx]
+                except:
+                    return False
+        return item == value
+
+    def _shared_items_pruned(self, item, chain=""):
+        if isinstance(item, list):
+            return [
+                v for v in [
+                    self._shared_items_pruned(v, chain + "/" + str(i))
+                    for i, v in enumerate(item)
+                ]
+                if v is not None
+            ]
+        elif isinstance(item, tuple):
+            return (
+                v for v in [
+                    self._shared_items_pruned(v, chain + "/" + str(i))
+                    for i, v in enumerate(item)
+                ]
+                if v is not None
+            )
+        elif isinstance(item, dict):
+            return {
+                k: v for k, v in {
+                    k: self._shared_items_pruned(v, chain + "/" + k)
+                    for k, v in item.items()
+                }.items()
+                if v is not None
+            }
+        elif isinstance(item, BaseModel):
+            fields = item.model_fields
+            if item.model_extra is not None:
+                fields = {**fields, **item.model_extra}
+            dct = {
+                k: v for k, v in {
+                    k: self._shared_items_pruned(v, chain + "/" + k)
+                    for k, v in item.model_dump().items()
+                }.items()
+                if v is not None
+            }
+            config = {k: (self._prune_pydantic(self._annotation(fields[k]), v),
+                          self._default(fields[k])) for k, v in dct.items()}
+            return create_model(
+                item.__class__.__name__,
+                **config,
+                __cls_kwargs__={"arbitrary_types_allowed": True}
+            )(**dct)
+        elif self._contains_chain(self._shared_data, chain, item):
+            return None
+        else:
+            return item
+
     def __rich_repr__(self) -> List[Datum]:
         """
         Used by the rich package for representing and print the instance.
         """
         self._auto_sync()
-        yield self._data
+        if self._shared_data is None:
+            yield self._data
+        else:
+            yield "shared", self._shared_data
+            yield [self._shared_items_pruned(d) for d in self._data]
