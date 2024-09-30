@@ -3,12 +3,13 @@ import abc
 import copy
 import json
 import inspect
+from pydantic import BaseModel
 from abc import abstractmethod
 from typing import Type, Union, Optional, Tuple, Dict, List
 
 from unify.agent import Agent
+from unify.evaluation import Evaluation, EvaluationSet
 from unify.chat.clients import _Client, Unify, AsyncUnify
-from unify.evaluation import Evaluation, EvaluationSet, LLMJuryEvaluationSet, ScoreSet
 from unify.casting import cast, try_cast
 from unify.types import Score, Prompt, ChatCompletion
 
@@ -84,7 +85,7 @@ class Evaluator(abc.ABC):
             response: Union[ChatCompletion, str],
             agent: Union[str, _Client, Agent],
             **kwargs
-    ) -> Evaluation:
+    ) -> Union[Evaluation, EvaluationSet]:
         """
         Evaluate the given response for this input prompt, with optional extra data.
 
@@ -136,6 +137,18 @@ class Evaluator(abc.ABC):
             del kwargs["agent"]
         # score upcasting
         score = try_cast(score, self.scorer)
+        if isinstance(score, dict):
+            return EvaluationSet([
+                Evaluation(
+                    prompt=prompt,
+                    response=response,
+                    agent=agent,
+                    score=scr,
+                    evaluator=evaluator,
+                    rationale=rationale[evaluator] if rationale is not None else None,
+                    **kwargs
+                ) for evaluator, scr in score.items()
+            ])
         # return evaluation
         return Evaluation(
             prompt=prompt,
@@ -428,11 +441,11 @@ class LLMJury(Evaluator, abc.ABC):
             response: ChatCompletion,
             agent: Union[str, _Client, Agent],
             **kwargs
-    ) -> Tuple[ScoreSet, EvaluationSet]:
-        evaluations = list()
+    ) -> Tuple[Dict[str, Score], Dict[str, Union[str, Dict, BaseModel]]]:
+        scores = dict()
+        rationales = dict()
         for judge in self._judges:
-            evaluations.append(
-                judge.evaluate(prompt, response, agent, **kwargs)
-            )
-        eval_set = LLMJuryEvaluationSet(evaluations)
-        return eval_set.score_set, eval_set
+            evaluation = judge.evaluate(prompt, response, agent, **kwargs)
+            scores[judge.name] = evaluation.score
+            rationales[judge.name] = evaluation.rationale
+        return scores, rationales

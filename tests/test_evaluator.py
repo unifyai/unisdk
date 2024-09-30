@@ -712,6 +712,6 @@ class TestLLMJuryEvaluator(unittest.TestCase):
                 agent=self._client,
                 **datum.model_extra
             )
-            score = evaluation.score.value
+            score = evaluation[0].score.value
             self.assertIn(score, class_config)
-            self.assertEqual(evaluation.score.description, class_config[score])
+            self.assertEqual(evaluation[0].score.description, class_config[score])
