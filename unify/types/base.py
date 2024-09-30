@@ -80,10 +80,12 @@ class _Formatted(abc.ABC):
             )
 
     def _prune_pydantic(self, val, dct):
+        if isinstance(dct, BaseModel):
+            dct = dct.model_dump()
         if not inspect.isclass(val) or not issubclass(val, BaseModel):
-            return val
+            return type(dct)
         config = {k: (self._prune_pydantic(val.model_fields[k].annotation, v),
-                      val.model_fields[k].default) for k, v in dct.items()}
+                      None) for k, v in dct.items()}
         if isinstance(val, ModelMetaclass):
             name = val.__qualname__
         else:
@@ -103,16 +105,19 @@ class _Formatted(abc.ABC):
         return None
 
     def _create_pydantic_model(self, item, dct):
+        if isinstance(dct, BaseModel):
+            dct = dct.model_dump()
         fields = item.model_fields
         if item.model_extra is not None:
             fields = {**fields, **item.model_extra}
         config = {k: (self._prune_pydantic(self._annotation(fields[k]), v),
-                      self._default(fields[k])) for k, v in dct.items()}
-        return create_model(
-            item.__class__.__name__,
-            **config,
-            __cls_kwargs__={"arbitrary_types_allowed": True}
-        )(**dct)
+                      None) for k, v in dct.items()}
+        model = create_model(
+                item.__class__.__name__,
+                **config,
+                __cls_kwargs__={"arbitrary_types_allowed": True}
+            )
+        return model(**dct)
 
     def _prune(self, item):
         prune_policy = unify.key_repr(item)
