@@ -3,7 +3,7 @@ from typing import Union, Optional, List, Dict, Type
 
 from unify.agent import Agent
 from unify.dataset import Dataset
-from unify.chat.clients import _Client
+from unify.chat.clients import _Client, _UniLLMClient
 from unify.types import Prompt, Score, Datum, ChatCompletion
 
 
@@ -74,6 +74,19 @@ class EvaluationSet(Dataset):
                    for e in evaluations), consistency_msg.format("class_config")
         scorer = type(evaluations[0].score)
         self._class_config = evaluations[0].score.config
+
+        # extract the shared data
+        shared_data = dict()
+        for field in Evaluation.model_fields:
+            if all(getattr(e, field) == getattr(evaluations[0], field)
+                   for e in evaluations):
+                val = getattr(evaluations[0], field)
+                if isinstance(val, BaseModel):
+                    val = val.model_dump()
+                elif isinstance(val, _UniLLMClient):
+                    val = val.endpoint
+                shared_data[field] = val
+
         valid_scores = [e.score.value for e in evaluations if e.score.value is not None]
         self._mean_score = sum(valid_scores) / len(valid_scores)
         self._score_set = ScoreSet([e.score for e in evaluations], scorer=scorer)
@@ -82,6 +95,7 @@ class EvaluationSet(Dataset):
             data=evaluations,
             name=name,
             auto_sync=auto_sync,
+            shared_data=shared_data,
             api_key=api_key
         )
 
