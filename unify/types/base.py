@@ -102,9 +102,7 @@ class _Formatted(abc.ABC):
             return v.default
         return None
 
-    def _prune(self, item):
-        prune_policy = unify.key_repr(item)
-        dct = self._prune_dict(item.model_dump(), prune_policy)
+    def _create_pydantic_model(self, item, dct):
         fields = item.model_fields
         if item.model_extra is not None:
             fields = {**fields, **item.model_extra}
@@ -115,6 +113,11 @@ class _Formatted(abc.ABC):
             **config,
             __cls_kwargs__={"arbitrary_types_allowed": True}
         )(**dct)
+
+    def _prune(self, item):
+        prune_policy = unify.key_repr(item)
+        dct = self._prune_dict(item.model_dump(), prune_policy)
+        return self._create_pydantic_model(item, dct)
 
 
 @rich.repr.auto

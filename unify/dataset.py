@@ -602,9 +602,6 @@ class Dataset(_Formatted):
                 if v is not None
             }
         elif isinstance(item, BaseModel):
-            fields = item.model_fields
-            if item.model_extra is not None:
-                fields = {**fields, **item.model_extra}
             dct = {
                 k: v for k, v in {
                     k: self._shared_items_pruned(v, chain + "/" + k)
@@ -612,13 +609,7 @@ class Dataset(_Formatted):
                 }.items()
                 if v is not None
             }
-            config = {k: (self._prune_pydantic(self._annotation(fields[k]), v),
-                          self._default(fields[k])) for k, v in dct.items()}
-            return create_model(
-                item.__class__.__name__,
-                **config,
-                __cls_kwargs__={"arbitrary_types_allowed": True}
-            )(**dct)
+            return self._create_pydantic_model(item, dct)
         elif self._contains_chain(self._shared_data, chain, item):
             return None
         else:
