@@ -52,7 +52,7 @@ class TestMathsEvaluator(unittest.TestCase):
                     return False
 
         self._evaluator = MathsEvaluator()
-        self._client = unify.Unify("gpt-4o@openai")
+        self._client = unify.Unify("gpt-4o@openai", cache=True)
 
     def test_evals(self) -> None:
         for prompt in (unify.Datum("1 + 3"), unify.Prompt("1 + 3"), "1 + 3"):
@@ -698,7 +698,8 @@ class TestLLMJuryEvaluator(unittest.TestCase):
             "claude-3.5-sonnet@anthropic",
             "llama-3.2-3b-chat@fireworks-ai"
         ]
-        judges = [unify.DefaultLLMJudge(unify.Unify(ep)) for ep in endpoints]
+        judges = [unify.DefaultLLMJudge(unify.Unify(ep, cache=True))
+                  for ep in endpoints]
         self._evaluator = SummaryEvaluator(judges, include_rationale=True)
 
     def test_evals(self) -> None:
