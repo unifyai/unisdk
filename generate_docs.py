@@ -307,7 +307,7 @@ def write_function_and_class_jsons(details, private_modules):
             for member_name in member_names:
                 if members[member_name]["source_code"].strip().startswith("@property"):
                     properties[member_name] = members[member_name]
-                if member_name.startswith("set_"):
+                elif member_name.startswith("set_"):
                     setters[member_name] = members[member_name]
                 elif member_name.startswith("__"):
                     dunders[member_name] = members[member_name]
