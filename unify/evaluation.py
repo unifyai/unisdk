@@ -6,7 +6,7 @@ from typing import Union, Optional, List, Dict, Type
 from unify.agent import Agent
 from unify.dataset import Dataset
 from unify.chat.clients import _Client
-from unify.types import Prompt, Score, Datum, ChatCompletion
+from unify.types import Prompt, Score, Datum, ChatCompletion, _Formatted
 
 
 class ScoreSet(Dataset):
@@ -46,24 +46,17 @@ class ScoreSet(Dataset):
         }
 
 
-class Scores(dict):
+class Scores(dict, _Formatted):
 
     def __init__(
             self,
             dct: Optional[Dict[str, float]] = None,
-            **scores: Optional[Dict]
+            **scores: Optional[Dict[str, float]]
     ) -> None:
         if dct is None:
             dct = dict(**scores)
         self._data = dct
         super().__init__(dct)
-
-    def __repr__(self) -> str:
-        rep = str(self._data)
-        return rep.replace("{", "Scores(").replace("}", ")")
-
-    def __str__(self) -> str:
-        return self.__repr__()
 
     def __add__(self, other: Union[Dict, float, int]):
         if isinstance(other, dict):
@@ -107,6 +100,31 @@ class Scores(dict):
     def __pos__(self):
         return self
 
+    def __rich_repr__(self) -> Dict:
+        """
+        Used by the rich package for representing and print the instance.
+        """
+        yield self._data
+
+
+class Rationales(dict, _Formatted):
+
+    def __init__(
+            self,
+            dct: Optional[Dict[str, str]] = None,
+            **rationales: Optional[Dict[str, str]]
+    ) -> None:
+        if dct is None:
+            dct = dict(**rationales)
+        self._data = dct
+        super().__init__(dct)
+
+    def __rich_repr__(self) -> Dict:
+        """
+        Used by the rich package for representing and print the instance.
+        """
+        yield self._data
+
 
 class Evaluation(Datum, extra=Extra.allow, arbitrary_types_allowed=True):
     prompt: Prompt
@@ -115,7 +133,7 @@ class Evaluation(Datum, extra=Extra.allow, arbitrary_types_allowed=True):
     score: Union[float, Scores]
     scorer: Type[Score]
     evaluator: Optional[str] = None
-    rationale: Optional[Union[str, Dict[str, str]]] = None
+    rationale: Optional[Union[str, Rationales]] = None
 
     def __add__(self, other):
         if other == 0:
@@ -191,14 +209,14 @@ class EvaluationSet(Dataset):
             shared_data["response"] = val
         else:
             self._response = [e.response for e in evaluations]
-        # score
+        # score and rationale
         if isinstance(evaluations[0].score, dict):
             self._score = [Scores({k: self._scorer(v) for k, v in e.score.items()})
                            for e in evaluations]
+            self._rationale = [Rationales(e.rationale) for e in evaluations]
         else:
             self._score = [self._scorer(e.score) for e in evaluations]
-        # rationale
-        self._rationale = [e.rationale for e in evaluations]
+            self._rationale = [e.rationale for e in evaluations]
 
         super().__init__(
             data=evaluations,
