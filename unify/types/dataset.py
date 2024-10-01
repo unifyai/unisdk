@@ -1,28 +1,21 @@
-from typing import Union
 from pydantic import Extra
 
 import unify
-from .chat import Prompt
 from .base import _FormattedBaseModel
 
 
 class Datum(_FormattedBaseModel, extra=Extra.allow):
 
-    def __init__(self, prompt: Union[str, Prompt] = None, **kwargs):
+    def __init__(self, **kwargs):
         """
         Create Datum instance.
 
         Args:
-            prompt: Optional prompt passed directly.
-
             kwargs: All the data fields to pass.
 
         Returns:
             The pydantic Datum instance.
         """
-        if prompt is not None:
-            kwargs["prompt"] = prompt
-        kwargs = {k: unify.try_cast(v, [Prompt]) for k, v in kwargs.items()}
         super().__init__(**kwargs)
 
     def __add__(self, other):
