@@ -20,6 +20,8 @@ class Scores(dict, _Formatted):
         if dct is None:
             dct = dict(**scores)
         self._data = dct
+        score0 = list(dct.values())[0]
+        self._config = score0.config
         super().__init__(dct)
 
     def __sub__(self, other: Union[Dict, Score, float, int]):
@@ -60,7 +62,12 @@ class Scores(dict, _Formatted):
         """
         Used by the rich package for representing and print the instance.
         """
-        yield self._data
+        if len(self._config) == 1:
+            config = {float: list(self._config.values())[0]}
+        else:
+            config = self._config
+        yield "config", config
+        yield {k: v.value for k, v in self._data.items()}
 
 
 class Rationales(dict, _Formatted):
