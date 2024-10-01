@@ -60,7 +60,7 @@ class Scores(dict):
 
     def __repr__(self) -> str:
         rep = str(self._data)
-        return rep.replace("{\n", "JudgeScores(\n").replace("}", ")")
+        return rep.replace("{", "Scores(").replace("}", ")")
 
     def __str__(self) -> str:
         return self.__repr__()
