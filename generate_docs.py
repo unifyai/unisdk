@@ -298,7 +298,7 @@ def write_function_and_class_jsons(details, private_modules):
                 "setters": setters,
                 "dunder_methods": dunders,
                 "methods": methods,
-                "docstring": class_docstring
+                "docstring": class_docstring,
             }
 
         # write all the functions to separate files
@@ -342,10 +342,7 @@ def write_docs():
 
             # if the module is a class
             sections = ["properties", "setters", "methods", "dunder_methods"]
-            if any(
-                member in module_data
-                for member in sections
-            ):
+            if any(member in module_data for member in sections):
                 # add class def python block
                 new_line(f)
                 f.write(f"```python\n" f"class {name}\n" "```")
