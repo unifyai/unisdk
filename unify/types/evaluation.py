@@ -35,7 +35,12 @@ class Score(Datum, abc.ABC):
         raise NotImplementedError
 
 
-class L1DiffConfig(dict):
+class DiffConfig(dict, abc.ABC):
+
+    def __init__(self, mode: str):
+        assert mode in ("Relative", "L1", "L2"), "Invalid mode specified."
+        self._mode = mode
+        super().__init__()
 
     @staticmethod
     def _check_bounds(key: float):
@@ -53,13 +58,42 @@ class L1DiffConfig(dict):
         return super().__getitem__(key)
 
     def __missing__(self, key):
-        self.__setitem__(key, "The L1 Difference between the two scores.")
+        self.__setitem__(
+            key, "The {} Difference between the two scores.".format(self._mode)
+        )
         return self.__getitem__(key)
 
     def __contains__(self, key: float) -> bool:
         self._check_bounds(key)
-        self.__setitem__(key, "The L1 Difference between the two scores.")
+        self.__setitem__(
+            key, "The {} Difference between the two scores.".format(self._mode)
+        )
         return True
+
+
+class RelDiffConfig(DiffConfig):
+
+    def __init__(self):
+        super().__init__("Relative")
+
+
+class L1DiffConfig(DiffConfig):
+
+    def __init__(self):
+        super().__init__("L1")
+
+
+class L2DiffConfig(DiffConfig):
+
+    def __init__(self):
+        super().__init__("L2")
+
+
+class RelDiffScore(Score):
+
+    @property
+    def config(self) -> Dict[float, str]:
+        return RelDiffConfig()
 
 
 class L1DiffScore(Score):
@@ -67,3 +101,10 @@ class L1DiffScore(Score):
     @property
     def config(self) -> Dict[float, str]:
         return L1DiffConfig()
+
+
+class L2DiffScore(Score):
+
+    @property
+    def config(self) -> Dict[float, str]:
+        return L2DiffConfig()

@@ -6,7 +6,8 @@ from typing import Union, Optional, List, Dict, Type
 from unify.agent import Agent
 from unify.dataset import Dataset
 from unify.chat.clients import _Client
-from unify.types import _Formatted, Prompt, Score, L1DiffScore, Datum, ChatCompletion
+from unify.types import (_Formatted, Prompt, Score, RelDiffScore, L1DiffScore,
+                         L2DiffScore, Datum, ChatCompletion)
 
 
 class ScoreSet(Dataset):
@@ -309,12 +310,23 @@ class EvaluationSet(Dataset):
             api_key=self._api_key
         )
 
-    def score_diff(self, other: EvaluationSet):
-        scores = [s.score - o.score for s, o in zip(self._data, other._data)]
+    def score_diff(self, other: EvaluationSet, mode: str = "relative") -> EvaluationSet:
+        assert mode in ("relative", "l1", "l2"), "Invalid mode specified."
+        if mode == "relative":
+            scores = [s.score - o.score for s, o in zip(self._data, other._data)]
+        elif mode == "l1":
+            scores = [abs(s.score - o.score) for s, o in zip(self._data, other._data)]
+        else:
+            scores = [(s.score**2 - o.score**2)**0.5
+                      for s, o in zip(self._data, other._data)]
         data = [copy.copy(d) for d in self._data]
         for d, s in zip(data, scores):
             d.score = s
-            d.scorer = L1DiffScore
+            d.scorer = {
+                "relative": RelDiffScore,
+                "l1": L1DiffScore,
+                "l2": L2DiffScore
+            }[mode]
         return EvaluationSet(
             data,
             name=self._name,
