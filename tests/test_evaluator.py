@@ -714,9 +714,8 @@ class TestLLMJuryEvaluator(unittest.TestCase):
                 assert isinstance(val, str)
             jury_evaluations.append(evaluation)
             human_evaluation = copy.copy(evaluation)
-            human_evaluation.score = (
-                random.choice(list(evaluation.scorer().config.keys()))
-            )
+            score_val = random.choice(list(evaluation.scorer().config.keys()))
+            human_evaluation.score = evaluation.scorer(score_val)
             human_evaluation.rationale = "It felt right."
             human_evaluations.append(human_evaluation)
         jury_eval_set = sum(jury_evaluations)

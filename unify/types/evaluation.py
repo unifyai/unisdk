@@ -3,6 +3,7 @@ import abc
 from pydantic import ConfigDict
 from typing import Optional, Dict, Union
 
+import unify
 from .dataset import Datum
 
 DEFAULT_CONFIG = {
@@ -48,19 +49,23 @@ class Score(Datum):
             config=config
         )
 
-    def __sub__(self, other: Union[Dict, Score, float, int]):
+    def __sub__(self, other: Union[Dict, Score, unify.Scores, float, int]):
         if isinstance(other, Score):
             other = other.value
-        assert isinstance(other, float) or isinstance(other, int), \
-            "other must either be numeric"
-        return RelDiffScore(self.value - other)
+        elif not isinstance(other, unify.Scores):
+            assert isinstance(other, float) or isinstance(other, int), \
+                "other must either be numeric"
+            return RelDiffScore(self.value - other)
+        return self.value - other
 
-    def __add__(self, other: Union[Dict, Score, float, int]):
+    def __add__(self, other: Union[Dict, Score, unify.Scores, float, int]):
         if isinstance(other, Score):
             other = other.value
-        assert isinstance(other, float) or isinstance(other, int), \
-            "other must either be numeric"
-        return RelDiffScore(self.value + other)
+        elif not isinstance(other, unify.Scores):
+            assert isinstance(other, float) or isinstance(other, int), \
+                "other must either be numeric"
+            return RelDiffScore(self.value + other)
+        return self.value + other
 
     def __rsub__(self, other: Union[Dict, float, int]):
         return self.__neg__().__add__(other)

@@ -187,7 +187,7 @@ class EvaluationSet(Dataset):
             ]
         else:
             self._score = [e.score for e in evaluations]
-            valid_scores = [s for s in self._score if s is not None]
+            valid_scores = [s.value for s in self._score if s is not None]
         # rationale
         if isinstance(evaluations[0].rationale, dict):
             self._rationale = [Rationales(e.rationale) for e in evaluations]
