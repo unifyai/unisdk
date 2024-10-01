@@ -76,7 +76,7 @@ class EvaluationSet(Dataset):
         self._class_config = evaluations[0].score.config
 
         # shared data
-        shared_data = dict()
+        shared_data = {"agent": self._agent}
 
         # evaluator
         if all(e.evaluator == evaluations[0].evaluator for e in evaluations):
