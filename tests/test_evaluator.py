@@ -721,6 +721,15 @@ class TestLLMJuryEvaluator(unittest.TestCase):
             human_evaluations.append(human_evaluation)
         jury_eval_set = sum(jury_evaluations)
         human_eval_set = sum(human_evaluations)
-        jury_performance = (
+        jury_perf_eval_set = (
             human_eval_set.score_diff(jury_eval_set, self._evaluator, mode="l1")
         )
+
+        # list types
+        assert isinstance(jury_perf_eval_set.prompt, list)
+        assert isinstance(jury_perf_eval_set.response, list)
+        assert isinstance(jury_perf_eval_set.agent, unify.Evaluator)
+        assert isinstance(jury_perf_eval_set.score, list)
+        assert issubclass(jury_perf_eval_set.scorer, unify.Score)
+        assert jury_perf_eval_set.evaluator is None
+        assert isinstance(jury_perf_eval_set.rationale, list)
