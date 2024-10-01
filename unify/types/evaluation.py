@@ -33,3 +33,37 @@ class Score(Datum, abc.ABC):
     @abc.abstractmethod
     def config(self) -> Dict[float, str]:
         raise NotImplementedError
+
+
+class L1DiffConfig(dict):
+
+    @staticmethod
+    def _check_bounds(key: float):
+        assert isinstance(key, float), (
+            "Expected a float, but found {} of type {}".format(key, type(key)))
+        assert 0. <= key <= 1., (
+            "Expected value between 0. and 1., but found {}".format(key))
+
+    def __setitem__(self, key: float, value: str):
+        self._check_bounds(key)
+        super().__setitem__(key, value)
+
+    def __getitem__(self, key):
+        self._check_bounds(key)
+        return super().__getitem__(key)
+
+    def __missing__(self, key):
+        self.__setitem__(key, "The L1 Difference between the two scores.")
+        return self.__getitem__(key)
+
+    def __contains__(self, key: float) -> bool:
+        self._check_bounds(key)
+        self.__setitem__(key, "The L1 Difference between the two scores.")
+        return True
+
+
+class L1DiffScore(Score):
+
+    @property
+    def config(self) -> Dict[float, str]:
+        return L1DiffConfig()
