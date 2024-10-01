@@ -715,10 +715,9 @@ class TestLLMJuryEvaluator(unittest.TestCase):
             assert isinstance(evaluation.score, dict)
             for key, val in evaluation.score.items():
                 assert isinstance(key, str)
-                assert isinstance(val, unify.DefaultJudgeScore)
-            assert isinstance(evaluation.evaluator, list)
-            for evaluator in evaluation.evaluator:
-                assert isinstance(evaluator, str)
+                assert isinstance(val, float)
+            assert issubclass(evaluation.scorer, unify.Score)
+            assert evaluation.evaluator is None
             assert isinstance(evaluation.rationale, dict)
             for key, val in evaluation.rationale.items():
                 assert isinstance(key, str)
