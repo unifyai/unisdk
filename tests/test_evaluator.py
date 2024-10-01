@@ -738,3 +738,7 @@ class TestLLMJuryEvaluator(unittest.TestCase):
 
         # test EvaluationSet reduction property types
         assert isinstance(jury_perf_eval_set.mean_score, float)
+        assert isinstance(jury_perf_eval_set.score_freq, dict)
+        for k, v in jury_perf_eval_set.score_freq.items():
+            assert isinstance(k, float)
+            assert isinstance(v, int)

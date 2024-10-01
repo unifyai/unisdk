@@ -196,6 +196,9 @@ class EvaluationSet(Dataset):
 
         # reductions
         self._mean_score = sum(valid_scores) / len(valid_scores)
+        self._score_freq = {
+            k: valid_scores.count(k) for k in sorted(list(set(valid_scores)))
+        }
 
         super().__init__(
             data=evaluations,
@@ -238,6 +241,10 @@ class EvaluationSet(Dataset):
     @property
     def mean_score(self) -> float:
         return self._mean_score
+
+    @property
+    def score_freq(self) -> Dict[float, int]:
+        return self._score_freq
 
     def __add__(self, other):
         if other == 0:

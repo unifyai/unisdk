@@ -38,7 +38,7 @@ class Score(Datum):
         global DEFAULT_CONFIG
         if config is None:
             config = DEFAULT_CONFIG
-        assert value in config or value is None, \
+        assert value is None or value in config, \
             "value {} passed is not a valid value, " \
             "based on the config for this Score class {}".format(value, config)
         super().__init__(
