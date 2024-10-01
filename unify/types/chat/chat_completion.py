@@ -1,5 +1,5 @@
 from pydantic import ConfigDict
-from typing import Optional, List
+from typing import Optional, List, Dict
 from openai.types.chat import ChatCompletion as _ChatCompletion
 from openai.types.completion_usage import CompletionUsage as _CompletionUsage
 from openai.types.chat.chat_completion import \
@@ -22,6 +22,7 @@ class CompletionUsage(_FormattedBaseModel, _CompletionUsage):
     model_config = ConfigDict(extra="forbid")
     # cost is an extra field we've added, not in the OpenAI standard
     cost: float
+    prompt_tokens_details: Optional[Dict[str, int]] = None
 
 
 class ChatCompletion(_FormattedBaseModel, _ChatCompletion):
