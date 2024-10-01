@@ -96,7 +96,7 @@ class Evaluation(Datum, extra=Extra.allow, arbitrary_types_allowed=True):
     # score: Union[Score, Scores]
     # ToDo work out why above fails the pydantic_validator when passing Scores,
     #  but the below line does not.
-    score: Union[Scores, Score]
+    score: Optional[Union[Scores, Score]]
     scorer: Type[Score]
     evaluator: Optional[str] = None
     # rationale: Optional[Union[str, Rationales]] = None
@@ -181,13 +181,21 @@ class EvaluationSet(Dataset):
         # score
         if isinstance(evaluations[0].score, dict):
             self._score = [Scores(e.score) for e in evaluations]
+            valid_scores = [
+                score.value for evl in evaluations for score in evl.score.values()
+                if score is not None
+            ]
         else:
             self._score = [e.score for e in evaluations]
+            valid_scores = [s for s in self._score if s is not None]
         # rationale
         if isinstance(evaluations[0].rationale, dict):
             self._rationale = [Rationales(e.rationale) for e in evaluations]
         else:
             self._rationale = [e.rationale for e in evaluations]
+
+        # reductions
+        self._mean_score = sum(valid_scores) / len(valid_scores)
 
         super().__init__(
             data=evaluations,
@@ -226,6 +234,10 @@ class EvaluationSet(Dataset):
     @property
     def scorer(self) -> Type[Score]:
         return self._scorer
+
+    @property
+    def mean_score(self) -> float:
+        return self._mean_score
 
     def __add__(self, other):
         if other == 0:

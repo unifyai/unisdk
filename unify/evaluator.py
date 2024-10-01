@@ -141,7 +141,7 @@ class Evaluator(abc.ABC):
         # score upcasting
         if isinstance(score, dict):
             score = Scores({k: cast(v, self.scorer) for k, v in score.items()})
-        else:
+        elif score is not None:
             score = cast(score, self.scorer)
         if isinstance(rationale, dict):
             rationale = Rationales(rationale)
