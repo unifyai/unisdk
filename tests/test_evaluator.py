@@ -721,4 +721,6 @@ class TestLLMJuryEvaluator(unittest.TestCase):
             human_evaluations.append(human_evaluation)
         jury_eval_set = sum(jury_evaluations)
         human_eval_set = sum(human_evaluations)
-        human_eval_set.score_diff(jury_eval_set, self._evaluator, mode="l1")
+        jury_performance = (
+            human_eval_set.score_diff(jury_eval_set, self._evaluator, mode="l1")
+        )

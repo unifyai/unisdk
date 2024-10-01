@@ -598,7 +598,7 @@ class Dataset(_Formatted):
         elif isinstance(item, dict):
             ret = {
                 k: v for k, v in {
-                    k: self._shared_items_pruned(v, chain + "/" + k)
+                    k: self._shared_items_pruned(v, chain + "/" + str(k))
                     for k, v in item.items()
                 }.items()
                 if v is not None
@@ -607,7 +607,7 @@ class Dataset(_Formatted):
         elif isinstance(item, BaseModel):
             dct = {
                 k: v for k, v in {
-                    k: self._shared_items_pruned(v, chain + "/" + k)
+                    k: self._shared_items_pruned(v, chain + "/" + str(k))
                     for k, v in item.model_dump().items()
                 }.items()
                 if v is not None

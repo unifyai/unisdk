@@ -1,6 +1,7 @@
+from __future__ import annotations
 import abc
 from pydantic import ConfigDict
-from typing import Optional, Dict
+from typing import Optional, Dict, Union
 
 from .dataset import Datum
 
@@ -46,6 +47,32 @@ class Score(Datum):
             else config[value],
             config=config
         )
+
+    def __sub__(self, other: Union[Dict, Score, float, int]):
+        if isinstance(other, Score):
+            other = other.value
+        assert isinstance(other, float) or isinstance(other, int), \
+            "other must either be numeric"
+        return RelDiffScore(self.value - other)
+
+    def __add__(self, other: Union[Dict, Score, float, int]):
+        if isinstance(other, Score):
+            other = other.value
+        assert isinstance(other, float) or isinstance(other, int), \
+            "other must either be numeric"
+        return RelDiffScore(self.value + other)
+
+    def __rsub__(self, other: Union[Dict, float, int]):
+        return self.__neg__().__add__(other)
+
+    def __neg__(self):
+        return RelDiffScore(-self.value)
+
+    def __pos__(self):
+        return self
+
+    def __abs__(self):
+        return RelDiffScore(abs(self.value))
 
 
 class DiffConfig(dict, abc.ABC):

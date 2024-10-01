@@ -59,38 +59,27 @@ class Scores(dict, _Formatted):
         self._data = dct
         super().__init__(dct)
 
-    def __add__(self, other: Union[Dict, float, int]):
+    def __sub__(self, other: Union[Dict, Score, float, int]):
         if isinstance(other, dict):
-            return Scores({k: v + other[k] for k, v in self._data.items()})
+            return Scores({k: RelDiffScore(v.value - other[k].value)
+                           for k, v in self._data.items()})
+        if isinstance(other, Score):
+            other = other.value
         assert isinstance(other, float) or isinstance(other, int), \
             "other must either be a dict or must be numeric"
-        return Scores({k: v + other for k, v in self._data.items()})
+        return Scores({k: RelDiffScore(v.value - other.value)
+                       for k, v in self._data.items()})
 
-    def __iadd__(self, other: Union[Dict, float, int]):
+    def __add__(self, other: Union[Dict, Score, float, int]):
         if isinstance(other, dict):
-            self._data = {k: v + other[k] for k, v in self._data.items()}
-        else:
-            assert isinstance(other, float) or isinstance(other, int), \
-                "other must either be a dict or must be numeric"
-            self._data = {k: v + other for k, v in self._data.items()}
-
-    def __radd__(self, other: Union[Dict, float, int]):
-        return self.__add__(self, other)
-
-    def __sub__(self, other: Union[Dict, float, int]):
-        if isinstance(other, dict):
-            return Scores({k: v - other[k] for k, v in self._data.items()})
+            return Scores({k: RelDiffScore(v.value + other[k].value)
+                           for k, v in self._data.items()})
+        if isinstance(other, Score):
+            other = other.value
         assert isinstance(other, float) or isinstance(other, int), \
             "other must either be a dict or must be numeric"
-        return Scores({k: v - other for k, v in self._data.items()})
-
-    def __isub__(self, other: Union[Dict, float, int]):
-        if isinstance(other, dict):
-            self._data = {k: v - other[k] for k, v in self._data.items()}
-        else:
-            assert isinstance(other, float) or isinstance(other, int), \
-                "other must either be a dict or must be numeric"
-            self._data = {k: v - other for k, v in self._data.items()}
+        return Scores({k: RelDiffScore(v.value + other)
+                       for k, v in self._data.items()})
 
     def __rsub__(self, other: Union[Dict, float, int]):
         return self.__neg__().__add__(other)
