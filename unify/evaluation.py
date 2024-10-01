@@ -313,7 +313,12 @@ class EvaluationSet(Dataset):
             api_key=self._api_key
         )
 
-    def score_diff(self, other: EvaluationSet, mode: str = "relative") -> EvaluationSet:
+    def score_diff(
+            self,
+            other: EvaluationSet,
+            agent: Union[str, _Client, Agent],
+            mode: str = "relative"
+    ) -> EvaluationSet:
         assert mode in ("relative", "l1"), "Invalid mode specified."
         if mode == "relative":
             scores = [s.score - o.score for s, o in zip(self._data, other._data)]
@@ -326,6 +331,7 @@ class EvaluationSet(Dataset):
                 "relative": RelDiffScore,
                 "l1": L1DiffScore
             }[mode]
+            d.agent = agent
         return EvaluationSet(
             data,
             name=self._name,
