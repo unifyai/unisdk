@@ -131,30 +131,25 @@ class Evaluator(abc.ABC):
         # prompt upcasting
         prompt = cast(prompt, Prompt)
         # response upcasting
-        response = cast(response, ChatCompletion)
+        if isinstance(response, dict):
+            response = {k: cast(v, ChatCompletion) for k, v in response.items()}
+        else:
+            response = cast(response, ChatCompletion)
         # remove agent from kwargs if present
         if "agent" in kwargs:
             del kwargs["agent"]
         # score upcasting
-        score = try_cast(score, self.scorer)
         if isinstance(score, dict):
-            return EvaluationSet([
-                Evaluation(
-                    prompt=prompt,
-                    response=response,
-                    agent=agent,
-                    score=scr,
-                    evaluator=evaluator,
-                    rationale=rationale[evaluator] if rationale is not None else None,
-                    **kwargs
-                ) for evaluator, scr in score.items()
-            ])
+            score = {k: cast(v, self.scorer).value for k, v in score.items()}
+        else:
+            score = cast(score, self.scorer).value
         # return evaluation
         return Evaluation(
             prompt=prompt,
             response=response,
             agent=agent,
             score=score,
+            scorer=self.scorer,
             evaluator=self.name,
             rationale=rationale,
             **kwargs

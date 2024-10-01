@@ -48,9 +48,10 @@ class Evaluation(Datum, extra=Extra.allow, arbitrary_types_allowed=True):
     prompt: Prompt
     response: ChatCompletion
     agent: Union[str, _Client, Agent]
-    score: Score
+    score: Union[float, Dict[str, float]]
+    scorer: Type[Score]
     evaluator: Optional[str] = None
-    rationale: Optional[Union[str, Dict, BaseModel]] = None
+    rationale: Optional[Union[str, Dict[str, str]]] = None
 
 
 class EvaluationSet(Dataset):
