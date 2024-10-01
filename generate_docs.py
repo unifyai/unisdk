@@ -357,6 +357,10 @@ def write_docs():
 
                 # add details for each instance method/property
                 for section in sections:
+                    # skip the section if no members under it
+                    if len(module_data[section]) == 0:
+                        continue
+
                     # add section header
                     new_line(f)
                     f.write(f"## {section}")
