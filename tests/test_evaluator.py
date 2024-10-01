@@ -690,6 +690,8 @@ class TestLLMJuryEvaluator(unittest.TestCase):
 
     def test_evals(self) -> None:
         unify.set_repr_mode("concise")
+        jury_evaluations = list()
+        human_evaluations = list()
         for datum in self._dataset:
             response = self._client.generate(**datum.prompt.model_dump())
             evaluation = self._evaluator.evaluate(
@@ -703,10 +705,20 @@ class TestLLMJuryEvaluator(unittest.TestCase):
             assert isinstance(evaluation.score, dict)
             for key, val in evaluation.score.items():
                 assert isinstance(key, str)
-                assert isinstance(val, float)
+                assert isinstance(val, unify.Score)
             assert issubclass(evaluation.scorer, unify.Score)
             assert evaluation.evaluator is None
             assert isinstance(evaluation.rationale, dict)
             for key, val in evaluation.rationale.items():
                 assert isinstance(key, str)
                 assert isinstance(val, str)
+            jury_evaluations.append(evaluation)
+            human_evaluation = copy.copy(evaluation)
+            human_evaluation.score = (
+                random.choice(list(evaluation.scorer().config.keys()))
+            )
+            human_evaluation.rationale = "It felt right."
+            human_evaluations.append(human_evaluation)
+        jury_eval_set = sum(jury_evaluations)
+        human_eval_set = sum(human_evaluations)
+        human_eval_set.score_diff(jury_eval_set, self._evaluator, mode="l1")
