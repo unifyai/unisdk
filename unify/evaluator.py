@@ -8,9 +8,9 @@ from abc import abstractmethod
 from typing import Type, Union, Optional, Tuple, Dict, List
 
 from unify.agent import Agent
-from unify.evaluation import Evaluation, EvaluationSet
+from unify.evaluation import Evaluation, EvaluationSet, Scores
 from unify.chat.clients import _Client, Unify, AsyncUnify
-from unify.casting import cast, try_cast
+from unify.casting import cast
 from unify.types import Score, Prompt, ChatCompletion
 
 
@@ -140,7 +140,7 @@ class Evaluator(abc.ABC):
             del kwargs["agent"]
         # score upcasting
         if isinstance(score, dict):
-            score = {k: cast(v, self.scorer).value for k, v in score.items()}
+            score = Scores({k: cast(v, self.scorer).value for k, v in score.items()})
         else:
             score = cast(score, self.scorer).value
         # return evaluation

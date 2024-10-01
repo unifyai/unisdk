@@ -1,3 +1,5 @@
+from __future__ import annotations
+import copy
 from pydantic import Extra, BaseModel
 from typing import Union, Optional, List, Dict, Type
 
@@ -44,11 +46,73 @@ class ScoreSet(Dataset):
         }
 
 
+class Scores(dict):
+
+    def __init__(
+            self,
+            dct: Optional[Dict[str, float]] = None,
+            **scores: Optional[Dict]
+    ) -> None:
+        if dct is None:
+            dct = dict(**scores)
+        self._data = dct
+        super().__init__(dct)
+
+    def __repr__(self) -> str:
+        rep = str(self._data)
+        return rep.replace("{\n", "JudgeScores(\n").replace("}", ")")
+
+    def __str__(self) -> str:
+        return self.__repr__()
+
+    def __add__(self, other: Union[Dict, float, int]):
+        if isinstance(other, dict):
+            return Scores({k: v + other[k] for k, v in self._data.items()})
+        assert isinstance(other, float) or isinstance(other, int), \
+            "other must either be a dict or must be numeric"
+        return Scores({k: v + other for k, v in self._data.items()})
+
+    def __iadd__(self, other: Union[Dict, float, int]):
+        if isinstance(other, dict):
+            self._data = {k: v + other[k] for k, v in self._data.items()}
+        else:
+            assert isinstance(other, float) or isinstance(other, int), \
+                "other must either be a dict or must be numeric"
+            self._data = {k: v + other for k, v in self._data.items()}
+
+    def __radd__(self, other: Union[Dict, float, int]):
+        return self.__add__(self, other)
+
+    def __sub__(self, other: Union[Dict, float, int]):
+        if isinstance(other, dict):
+            return Scores({k: v - other[k] for k, v in self._data.items()})
+        assert isinstance(other, float) or isinstance(other, int), \
+            "other must either be a dict or must be numeric"
+        return Scores({k: v - other for k, v in self._data.items()})
+
+    def __isub__(self, other: Union[Dict, float, int]):
+        if isinstance(other, dict):
+            self._data = {k: v - other[k] for k, v in self._data.items()}
+        else:
+            assert isinstance(other, float) or isinstance(other, int), \
+                "other must either be a dict or must be numeric"
+            self._data = {k: v - other for k, v in self._data.items()}
+
+    def __rsub__(self, other: Union[Dict, float, int]):
+        return self.__neg__().__add__(other)
+
+    def __neg__(self):
+        return Scores({k: -v for k, v in self._data.items()})
+
+    def __pos__(self):
+        return self
+
+
 class Evaluation(Datum, extra=Extra.allow, arbitrary_types_allowed=True):
     prompt: Prompt
     response: ChatCompletion
     agent: Union[str, _Client, Agent]
-    score: Union[float, Dict[str, float]]
+    score: Union[float, Scores]
     scorer: Type[Score]
     evaluator: Optional[str] = None
     rationale: Optional[Union[str, Dict[str, str]]] = None
@@ -129,7 +193,7 @@ class EvaluationSet(Dataset):
             self._response = [e.response for e in evaluations]
         # score
         if isinstance(evaluations[0].score, dict):
-            self._score = [{k: self._scorer(v) for k, v in e.score.items()}
+            self._score = [Scores({k: self._scorer(v) for k, v in e.score.items()})
                            for e in evaluations]
         else:
             self._score = [self._scorer(e.score) for e in evaluations]
@@ -188,6 +252,8 @@ class EvaluationSet(Dataset):
         )
 
     def __sub__(self, other):
+        if other == 0:
+            return self
         dataset = super().__sub__(
             EvaluationSet(other) if not isinstance(other, EvaluationSet) else other
         )
@@ -217,6 +283,18 @@ class EvaluationSet(Dataset):
         )
         return EvaluationSet(
             dataset._data,
+            name=self._name,
+            auto_sync=self._auto_sync_flag,
+            api_key=self._api_key
+        )
+
+    def score_diff(self, other: EvaluationSet):
+        scores = [s.score - o.score for s, o in zip(self._data, other._data)]
+        data = [copy.copy(d) for d in self._data]
+        for d, s in zip(data, scores):
+            d._score = s
+        return EvaluationSet(
+            data,
             name=self._name,
             auto_sync=self._auto_sync_flag,
             api_key=self._api_key
