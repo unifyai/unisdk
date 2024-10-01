@@ -242,8 +242,9 @@ def write_function_and_class_jsons(details, private_modules):
         # load all class docs
         classes = details[module_path]["classes"]
         for class_name in classes:
-            lineno = classes[class_name]["lineno"]
+            class_lineno = classes[class_name]["lineno"]
             class_ = classes[class_name]["obj"]
+            class_module = class_.__module__
             class_docstring = class_.__doc__
 
             # get all relevant members of the class
@@ -320,8 +321,8 @@ def write_function_and_class_jsons(details, private_modules):
                 "dunder_methods": dunders,
                 "methods": methods,
                 "docstring": class_docstring,
-                "lineno": lineno,
-                "module_path": module_path,
+                "lineno": class_lineno,
+                "module_path": class_module.replace(".", "/") + ".py",
             }
 
         # write all the functions to separate files
@@ -362,7 +363,7 @@ def write_docs(latest_hash: str):
         # write the results to an mdx
         name = module_name.split(".")[-1]
         python_file_path = module_data["module_path"]
-        lineno = module_data["lineno"]
+        class_lineno = module_data["lineno"]
         with open(f"{module_path}.mdx", "w") as f:
             f.write("---\n" f"title: '{name}'\n" "---")
 
@@ -370,7 +371,7 @@ def write_docs(latest_hash: str):
             sections = ["properties", "setters", "methods", "dunder_methods"]
             if any(member in module_data for member in sections):
                 # add class def python block
-                github_path = github_url + python_file_path + f"#L{lineno}"
+                github_path = github_url + python_file_path + f"#L{class_lineno}"
                 new_line(f)
                 f.write(f"```python\n" f"class {name}\n" "```")
                 new_line(f)
