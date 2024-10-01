@@ -1,4 +1,5 @@
 from pydantic import Extra
+from typing import Optional
 
 import unify
 from .base import _FormattedBaseModel
@@ -6,16 +7,21 @@ from .base import _FormattedBaseModel
 
 class Datum(_FormattedBaseModel, extra=Extra.allow):
 
-    def __init__(self, **kwargs):
+    def __init__(self, prompt: Optional[str] = None, /, **kwargs):
         """
         Create Datum instance.
 
         Args:
+            prompt: Optional positional-only prompt,
+            very common to store thus special treatment.
+
             kwargs: All the data fields to pass.
 
         Returns:
             The pydantic Datum instance.
         """
+        if prompt is not None:
+            kwargs["prompt"] = unify.cast(prompt, unify.Prompt)
         super().__init__(**kwargs)
 
     def __add__(self, other):

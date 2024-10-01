@@ -134,10 +134,16 @@ class Evaluation(Datum, extra=Extra.allow, arbitrary_types_allowed=True):
     prompt: Prompt
     response: ChatCompletion
     agent: Union[str, _Client, Agent]
-    score: Union[Score, Scores]
+    # score: Union[Score, Scores]
+    # ToDo work out why above fails the pydantic_validator when passing Scores,
+    #  but the below line does not.
+    score: Union[Scores, Score]
     scorer: Type[Score]
     evaluator: Optional[str] = None
-    rationale: Optional[Union[str, Rationales]] = None
+    # rationale: Optional[Union[str, Rationales]] = None
+    # ToDo work out why above fails the pydantic_validator when passing Rationales,
+    #  but the below line does not.
+    rationale: Optional[Union[Rationales, str]] = None
 
     def __add__(self, other):
         if other == 0:
@@ -215,10 +221,9 @@ class EvaluationSet(Dataset):
             self._response = [e.response for e in evaluations]
         # score
         if isinstance(evaluations[0].score, dict):
-            self._score = [Scores({k: self._scorer(v) for k, v in e.score.items()})
-                           for e in evaluations]
+            self._score = [Scores(e.score) for e in evaluations]
         else:
-            self._score = [self._scorer(e.score) for e in evaluations]
+            self._score = [e.score for e in evaluations]
         # rationale
         if isinstance(evaluations[0].rationale, dict):
             self._rationale = [Rationales(e.rationale) for e in evaluations]

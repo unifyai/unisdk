@@ -53,9 +53,7 @@ class TestMathsEvaluator(unittest.TestCase):
         self._client = unify.Unify("gpt-4o@openai", cache=True)
 
     def test_evals(self) -> None:
-        for prompt in (unify.Datum(prompt=unify.Prompt("1 + 3")),
-                       unify.Prompt("1 + 3"),
-                       "1 + 3"):
+        for prompt in (unify.Datum("1 + 3"), unify.Prompt("1 + 3"), "1 + 3"):
             for response in (unify.ChatCompletion("4"), "4"):
                 evaluation = self._evaluator.evaluate(
                     prompt=prompt,

@@ -141,9 +141,10 @@ class Evaluator(abc.ABC):
         # score upcasting
         if isinstance(score, dict):
             score = Scores({k: cast(v, self.scorer) for k, v in score.items()})
-            rationale = Rationales(rationale)
         else:
             score = cast(score, self.scorer)
+        if isinstance(rationale, dict):
+            rationale = Rationales(rationale)
         # return evaluation
         return Evaluation(
             prompt=prompt,
