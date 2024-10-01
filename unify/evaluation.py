@@ -6,8 +6,8 @@ from typing import Union, Optional, List, Dict, Type
 from unify.agent import Agent
 from unify.dataset import Dataset
 from unify.chat.clients import _Client
-from unify.types import (_Formatted, Prompt, Score, RelDiffScore, L1DiffScore,
-                         L2DiffScore, Datum, ChatCompletion)
+from unify.types import (_Formatted, Prompt, Score, RelDiffScore, L1DiffScore, Datum,
+                         ChatCompletion)
 
 
 class ScoreSet(Dataset):
@@ -100,6 +100,9 @@ class Scores(dict, _Formatted):
 
     def __pos__(self):
         return self
+
+    def __abs__(self):
+        return Scores({k: abs(v) for k, v in self._data.items()})
 
     def __rich_repr__(self) -> Dict:
         """
@@ -311,21 +314,17 @@ class EvaluationSet(Dataset):
         )
 
     def score_diff(self, other: EvaluationSet, mode: str = "relative") -> EvaluationSet:
-        assert mode in ("relative", "l1", "l2"), "Invalid mode specified."
+        assert mode in ("relative", "l1"), "Invalid mode specified."
         if mode == "relative":
             scores = [s.score - o.score for s, o in zip(self._data, other._data)]
-        elif mode == "l1":
-            scores = [abs(s.score - o.score) for s, o in zip(self._data, other._data)]
         else:
-            scores = [(s.score**2 - o.score**2)**0.5
-                      for s, o in zip(self._data, other._data)]
+            scores = [abs(s.score - o.score) for s, o in zip(self._data, other._data)]
         data = [copy.copy(d) for d in self._data]
         for d, s in zip(data, scores):
             d.score = s
             d.scorer = {
                 "relative": RelDiffScore,
-                "l1": L1DiffScore,
-                "l2": L2DiffScore
+                "l1": L1DiffScore
             }[mode]
         return EvaluationSet(
             data,

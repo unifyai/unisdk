@@ -38,7 +38,7 @@ class Score(Datum, abc.ABC):
 class DiffConfig(dict, abc.ABC):
 
     def __init__(self, mode: str):
-        assert mode in ("Relative", "L1", "L2"), "Invalid mode specified."
+        assert mode in ("Relative", "L1"), "Invalid mode specified."
         self._mode = mode
         super().__init__()
 
@@ -83,12 +83,6 @@ class L1DiffConfig(DiffConfig):
         super().__init__("L1")
 
 
-class L2DiffConfig(DiffConfig):
-
-    def __init__(self):
-        super().__init__("L2")
-
-
 class RelDiffScore(Score):
 
     @property
@@ -101,10 +95,3 @@ class L1DiffScore(Score):
     @property
     def config(self) -> Dict[float, str]:
         return L1DiffConfig()
-
-
-class L2DiffScore(Score):
-
-    @property
-    def config(self) -> Dict[float, str]:
-        return L2DiffConfig()
