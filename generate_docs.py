@@ -6,6 +6,7 @@ import json
 import os
 import re
 import shutil
+import subprocess
 
 
 replace = {
@@ -28,7 +29,10 @@ class Visitor(ast.NodeVisitor):
 
     def visit_ClassDef(self, node):
         self.class_stack.append(node.name)
-        self.classes.append(node.name)
+        self.classes.append({
+            "name": node.name,
+            "lineno": node.lineno
+        })
         self.generic_visit(node)
         self.class_stack.pop()
 
@@ -36,7 +40,10 @@ class Visitor(ast.NodeVisitor):
         if self.function_stack or self.class_stack:
             return
         self.function_stack.append(node.name)
-        self.functions.append(node.name)
+        self.functions.append({
+            "name": node.name,
+            "lineno": node.lineno
+        })
         self.generic_visit(node)
         self.function_stack.pop()
 
@@ -89,14 +96,20 @@ def filter_and_import(details):
 
         # import the functions and classes
         functions = {
-            function_name: importlib.import_module(module_name).__dict__[function_name]
+            function_name["name"]: {
+                "obj": importlib.import_module(module_name).__dict__[function_name["name"]],
+                "lineno": function_name["lineno"]
+            }
             for function_name in function_names
-            if not function_name.startswith("_")
+            if not function_name["name"].startswith("_")
         }
         classes = {
-            class_name: importlib.import_module(module_name).__dict__[class_name]
+            class_name["name"]: {
+                "obj": importlib.import_module(module_name).__dict__[class_name["name"]],
+                "lineno": class_name["lineno"]
+            }
             for class_name in class_names
-            if not class_name.startswith("_")
+            if not class_name["name"].startswith("_")
         }
 
         details[module_path]["module_name"] = module_name
@@ -210,8 +223,13 @@ def write_function_and_class_jsons(details, private_modules):
         # load all function docs
         functions = details[module_path]["functions"]
         for function_name in functions:
-            function = functions[function_name]
-            functions[function_name] = dict()
+            # get function details
+            lineno = functions[function_name]["lineno"]
+            function = functions[function_name]["obj"]
+            functions[function_name] = {
+                "lineno": lineno,
+                "module_path": module_path
+            }
 
             # get the signature of the function
             source_code = inspect.getsource(function)
@@ -229,7 +247,8 @@ def write_function_and_class_jsons(details, private_modules):
         # load all class docs
         classes = details[module_path]["classes"]
         for class_name in classes:
-            class_ = classes[class_name]
+            lineno = classes[class_name]["lineno"]
+            class_ = classes[class_name]["obj"]
             class_docstring = class_.__doc__
 
             # get all relevant members of the class
@@ -240,26 +259,34 @@ def write_function_and_class_jsons(details, private_modules):
                     (isinstance(module, str) and module.startswith("unify."))
                     or isinstance(member[1], property)
                 ) and (member[0].startswith("__") or not member[0].startswith("_")):
-                    members[member[0]] = member[1]
+                    if isinstance(member[1], property):
+                        module = member[1].fget.__module__
+                    members[member[0]] = {
+                        "obj": member[1],
+                        "module": module
+                    }
 
             # get the source code for all members
             for member in members:
-                obj = members[member]
+                obj = members[member]["obj"]
+                module = members[member]["module"]
                 if isinstance(obj, property):
-                    members[member] = {
-                        "obj": obj,
-                        "source_code": inspect.getsource(obj.fget),
-                    }
+                    source_lines, lineno = inspect.getsourcelines(obj.fget)
                 else:
-                    members[member] = {
-                        "obj": obj,
-                        "source_code": inspect.getsource(obj),
-                    }
+                    source_lines, lineno = inspect.getsourcelines(obj)
+                members[member] = {
+                    "obj": obj,
+                    "source_code": "".join(source_lines),
+                    "lineno": lineno,
+                    "module_path": module.replace(".", "/") + ".py"
+                }
 
             # get the method signature and docstring for all the methods
             for member in members:
                 obj = members[member]["obj"]
                 source_code = members[member]["source_code"]
+                lineno = members[member]["lineno"]
+                module_path = members[member]["module_path"]
 
                 # get signature
                 signature = get_function_signature(source_code)
@@ -276,6 +303,8 @@ def write_function_and_class_jsons(details, private_modules):
                     "source_code": source_code,
                     "signature": signature,
                     "docstring": formatted_docstring,
+                    "lineno": lineno,
+                    "module_path": module_path
                 }
 
             # separate the members into properties, setters,
@@ -299,6 +328,8 @@ def write_function_and_class_jsons(details, private_modules):
                 "dunder_methods": dunders,
                 "methods": methods,
                 "docstring": class_docstring,
+                "lineno": lineno,
+                "module_path": module_path
             }
 
         # write all the functions to separate files
@@ -312,10 +343,11 @@ def write_function_and_class_jsons(details, private_modules):
                 json.dump(classes[class_name], f)
 
 
-def write_docs():
+def write_docs(latest_hash: str):
     files = os.listdir("json_files")
     new_line = lambda f: f.write("\n\n")
     python_path_json = dict()
+    github_url = f"https://github.com/unifyai/unify/tree/{latest_hash}/"
 
     for file_path in sorted(files):
         # get the module str
@@ -337,6 +369,8 @@ def write_docs():
 
         # write the results to an mdx
         name = module_name.split(".")[-1]
+        python_file_path = module_data["module_path"]
+        lineno = module_data["lineno"]
         with open(f"{module_path}.mdx", "w") as f:
             f.write("---\n" f"title: '{name}'\n" "---")
 
@@ -344,8 +378,11 @@ def write_docs():
             sections = ["properties", "setters", "methods", "dunder_methods"]
             if any(member in module_data for member in sections):
                 # add class def python block
+                github_path = github_url + python_file_path + f"#L{lineno}"
                 new_line(f)
                 f.write(f"```python\n" f"class {name}\n" "```")
+                new_line(f)
+                f.write(f"<p align=\"right\">[source code]({github_path})</p>")
                 new_line(f)
 
                 # add docstring for python class
@@ -368,6 +405,8 @@ def write_docs():
                         escaped_member_name = member_name.replace("_", "\_")
                         signature = member["signature"]
                         docstring = member["docstring"]
+                        lineno = member["lineno"]
+                        github_path = github_url + member["module_path"] + f"#L{lineno}"
 
                         # add escape characters to the docstring
                         for key, value in replace.items():
@@ -379,18 +418,23 @@ def write_docs():
                         new_line(f)
                         f.write(f"### {escaped_member_name}")
                         new_line(f)
+                        f.write(f"<p align=\"right\">[source code]({github_path})</p>")
+                        new_line(f)
                         f.write("```python\n" f"{signature}\n" "```")
                         new_line(f)
                         f.write(docstring)
 
             # if the module is a function
             else:
+                github_path = github_url + python_file_path + f"#L{lineno}"
                 signature = module_data["signature"]
                 docstring = module_data["docstring"]
 
                 # add function info
                 new_line(f)
                 f.write("```python\n" f"{signature}\n" "```")
+                new_line(f)
+                f.write(f"<p align=\"right\">[source code]({github_path})</p>")
                 new_line(f)
                 f.write(docstring)
 
@@ -460,6 +504,10 @@ if __name__ == "__main__":
                 "and {} also does not exist for retrieval".format(docs_mint_filepath),
             )
 
+    latest_hash = subprocess.check_output(
+        "git log -1 --format=%H", shell=True, text=True
+    ).strip()
+
     module_paths = get_all_modules()
 
     details = get_functions_and_classes(module_paths)
@@ -468,7 +516,7 @@ if __name__ == "__main__":
 
     write_function_and_class_jsons(details, private_modules)
 
-    write_docs()
+    write_docs(latest_hash)
 
     update_mint()
 
