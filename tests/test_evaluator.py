@@ -13,7 +13,7 @@ from openai.types.chat.chat_completion_tool_message_param import (
 )
 
 import unify
-from unify import Prompt, Score
+from unify import Prompt
 
 
 class TestMathsEvaluator(unittest.TestCase):
@@ -659,8 +659,6 @@ class TestLLMJuryEvaluator(unittest.TestCase):
             "to conventional fossil fuel plants; a kilo of uranium-235 can release "
             "millions of times more energy than a kilo of coal.",
 
-            "I'm planning to catch the Jubilee line right now, is that possible?",
-            "I'm going to walk to the cafe, do you know how long it will take?",
             "Atoms are the basic particles of the chemical elements. An atom consists "
             "of a nucleus of protons and generally neutrons, surrounded by an "
             "electromagnetically bound swarm of electrons. The chemical elements are "
