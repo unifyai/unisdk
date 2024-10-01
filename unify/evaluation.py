@@ -53,7 +53,28 @@ class Evaluation(Datum, extra=Extra.allow, arbitrary_types_allowed=True):
     evaluator: Optional[str] = None
     rationale: Optional[Union[str, Dict[str, str]]] = None
 
+    def __add__(self, other):
+        if other == 0:
+            return self
+        return (EvaluationSet(self) +
+                (other if isinstance(other, EvaluationSet) else EvaluationSet(other)))
 
+    def __sub__(self, other):
+        return EvaluationSet(self) -\
+               (other if isinstance(other, EvaluationSet) else EvaluationSet(other))
+
+    def __radd__(self, other):
+        if other == 0:
+            return self
+        return ((other if isinstance(other, EvaluationSet) else EvaluationSet(other)) +
+                EvaluationSet(self))
+
+    def __rsub__(self, other):
+        return (other if isinstance(other, EvaluationSet) else EvaluationSet(other)) -\
+               EvaluationSet(self)
+
+
+# noinspection PyTypeChecker
 class EvaluationSet(Dataset):
 
     def __init__(
@@ -64,32 +85,30 @@ class EvaluationSet(Dataset):
             auto_sync: Union[bool, str] = False,
             api_key: Optional[str] = None
     ) -> None:
-        if not isinstance(evaluations, list):
+        if isinstance(evaluations, Evaluation):
             evaluations = [evaluations]
         consistency_msg = \
             "All evaluations passed to an EvaluationSet must shared the same {}."
+        # agent
         assert all(e.agent == evaluations[0].agent for e in evaluations), (
             consistency_msg.format("agent"))
         self._agent = evaluations[0].agent
-        assert all(e.score.config == evaluations[0].score.config
-                   for e in evaluations), consistency_msg.format("class_config")
-        scorer = type(evaluations[0].score)
-        self._class_config = evaluations[0].score.config
+        # scorer
+        assert all(e.scorer is evaluations[0].scorer for e in evaluations), (
+            consistency_msg.format("scorer"))
+        self._scorer = evaluations[0].scorer
+        # evaluator
+        assert all(e.evaluator == evaluations[0].evaluator for e in evaluations), (
+            consistency_msg.format("evaluator"))
+        self._evaluator = evaluations[0].evaluator
 
         # shared data
-        shared_data = {"agent": self._agent}
+        shared_data = {
+            "agent": self._agent,
+            "scorer": self._scorer,
+            "evaluator": self._evaluator
+        }
 
-        # evaluator
-        if all(e.evaluator == evaluations[0].evaluator for e in evaluations):
-            val = evaluations[0].evaluator
-            self._evaluator = val
-            if isinstance(val, BaseModel):
-                val = val.model_dump()
-            shared_data["evaluator"] = val
-            shared_evaluator = True
-        else:
-            shared_evaluator = False
-            self._evaluator = [e.evaluator for e in evaluations]
         # prompt
         if all(e.prompt == evaluations[0].prompt for e in evaluations):
             val = evaluations[0].prompt
@@ -97,10 +116,8 @@ class EvaluationSet(Dataset):
             if isinstance(val, BaseModel):
                 val = val.model_dump()
             shared_data["prompt"] = val
-        elif shared_evaluator:
-            self._prompt = [e.prompt for e in evaluations]
         else:
-            self._prompt = {e.evaluator: e.prompt for e in evaluations}
+            self._prompt = [e.prompt for e in evaluations]
         # response
         if all(e.response == evaluations[0].response for e in evaluations):
             val = evaluations[0].response
@@ -108,24 +125,16 @@ class EvaluationSet(Dataset):
             if isinstance(val, BaseModel):
                 val = val.model_dump()
             shared_data["response"] = val
-        elif shared_evaluator:
+        else:
             self._response = [e.response for e in evaluations]
-        else:
-            self._response = {e.evaluator: e.response for e in evaluations}
         # score
-        if shared_evaluator:
-            self._score = [e.score for e in evaluations]
+        if isinstance(evaluations[0].score, dict):
+            self._score = [{k: self._scorer(v) for k, v in e.score.items()}
+                           for e in evaluations]
         else:
-            self._score = {e.evaluator: e.score for e in evaluations}
+            self._score = [self._scorer(e.score) for e in evaluations]
         # rationale
-        if shared_evaluator:
-            self._rationale = [e.rationale for e in evaluations]
-        else:
-            self._rationale = {e.evaluator: e.rationale for e in evaluations}
-
-        valid_scores = [e.score.value for e in evaluations if e.score.value is not None]
-        self._mean_score = sum(valid_scores) / len(valid_scores)
-        self._score_set = ScoreSet([e.score for e in evaluations], scorer=scorer)
+        self._rationale = [e.rationale for e in evaluations]
 
         super().__init__(
             data=evaluations,
@@ -138,11 +147,11 @@ class EvaluationSet(Dataset):
     # Properties
 
     @property
-    def prompt(self) -> Union[Prompt, Dict[str, Prompt]]:
+    def prompt(self) -> Union[Prompt, List[Prompt]]:
         return self._prompt
 
     @property
-    def response(self) -> Union[ChatCompletion, Dict[str, ChatCompletion]]:
+    def response(self) -> Union[ChatCompletion, List[ChatCompletion]]:
         return self._response
 
     @property
@@ -150,7 +159,7 @@ class EvaluationSet(Dataset):
         return self._agent
 
     @property
-    def score(self) -> Union[List[Score], Dict[str, Score]]:
+    def score(self) -> List[Score]:
         return self._score
 
     @property
@@ -158,17 +167,57 @@ class EvaluationSet(Dataset):
         return self._evaluator
 
     @property
-    def rationale(self) -> Union[List[str], Dict[str, str]]:
+    def rationale(self) -> List[str]:
         return self._rationale
 
     @property
-    def class_config(self) -> Dict[float, str]:
-        return self._class_config
+    def scorer(self) -> Type[Score]:
+        return self._scorer
 
-    @property
-    def mean_score(self) -> float:
-        return self._mean_score
+    def __add__(self, other):
+        if other == 0:
+            return self
+        dataset = super().__add__(
+            EvaluationSet(other) if not isinstance(other, EvaluationSet) else other
+        )
+        return EvaluationSet(
+            dataset._data,
+            name=self._name,
+            auto_sync=self._auto_sync_flag,
+            api_key=self._api_key
+        )
 
-    @property
-    def score_set(self) -> ScoreSet:
-        return self._score_set
+    def __sub__(self, other):
+        dataset = super().__sub__(
+            EvaluationSet(other) if not isinstance(other, EvaluationSet) else other
+        )
+        return EvaluationSet(
+            dataset._data,
+            name=self._name,
+            auto_sync=self._auto_sync_flag,
+            api_key=self._api_key
+        )
+
+    def __radd__(self, other):
+        if other == 0:
+            return self
+        dataset = super().__radd__(
+            EvaluationSet(other) if not isinstance(other, EvaluationSet) else other
+        )
+        return EvaluationSet(
+            dataset._data,
+            name=self._name,
+            auto_sync=self._auto_sync_flag,
+            api_key=self._api_key
+        )
+
+    def __rsub__(self, other):
+        dataset = super().__rsub__(
+            EvaluationSet(other) if not isinstance(other, EvaluationSet) else other
+        )
+        return EvaluationSet(
+            dataset._data,
+            name=self._name,
+            auto_sync=self._auto_sync_flag,
+            api_key=self._api_key
+        )
