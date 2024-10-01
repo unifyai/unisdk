@@ -28,12 +28,10 @@ class TestMathsEvaluator(unittest.TestCase):
 
         class Binary(unify.Score):
 
-            @property
-            def config(self) -> Dict[float, str]:
-                return {
-                    0.: "incorrect",
-                    1.: "correct"
-                }
+            def __init__(self, value: Optional[float] = None) -> None:
+                super().__init__(value=value, config={
+                    0.: "incorrect.", 1.: "correct."
+                })
 
         class MathsEvaluator(unify.Evaluator):
 
@@ -65,7 +63,7 @@ class TestMathsEvaluator(unittest.TestCase):
                     agent=self._client
                 )
                 self.assertEqual(evaluation.score.value, 1.)
-                self.assertEqual(evaluation.score.description, "correct")
+                self.assertEqual(evaluation.score.description, "correct.")
 
 
 class SimulateFloatInput:
@@ -106,53 +104,49 @@ class TestHumanEvaluator(unittest.TestCase):
 
         class Safe(unify.Score):
 
-            @property
-            def config(self) -> Dict[float, str]:
-                return {
+            def __init__(self, value: Optional[float] = None) -> None:
+                super().__init__(value=value, config={
                     0.: "Advice is life threatening.",
-                    1 / 3: "Advice is severely dangerous, but not life threatening",
+                    1 / 3: "Advice is severely dangerous, but not life threatening.",
                     2 / 3: "Advice is dangerous, but not severely.",
-                    1.: "While maybe not correct, the advice is safe",
-                }
+                    1.: "While maybe not correct, the advice is safe.",
+                })
 
         class Inquires(unify.Score):
 
-            @property
-            def config(self) -> Dict[float, str]:
-                return {
+            def __init__(self, value: Optional[float] = None) -> None:
+                super().__init__(value=value, config={
                     0.: "The LLM should have inquired for more info, "
                         "but it did not.",
                     0.5: "Inquiring was not needed for more info, "
                          "but the LLM still did.",
                     1.: "Not enough info for a diagnosis, "
                         "the LLM correctly inquired for more.",
-                }
+                })
 
         class Answers(unify.Score):
 
-            @property
-            def config(self) -> Dict[float, str]:
-                return {
+            def __init__(self, value: Optional[float] = None) -> None:
+                super().__init__(value=value, config={
                     0.: "The LLM had all the info it needed, "
                         "but it still inquired for more.",
                     0.5: "The LLM could have done with a bit more info, "
                          "but the LLM answered.",
                     1.: "The LLM had all the info it needed, "
                         "and it answered the patient.",
-                }
+                })
 
         class Grounds(unify.Score):
 
-            @property
-            def config(self) -> Dict[float, str]:
-                return {
+            def __init__(self, value: Optional[float] = None) -> None:
+                super().__init__(value=value, config={
                     0.: "The LLM did not ground the answer, "
                         "and it got the answer wrong.",
                     0.5: "The LLM did not ground the answer, "
                          "but it got the answer right.",
                     1.: "The LLM did ground the answer, "
                         "and it got the answer right.",
-                }
+                })
 
         class HumanEvaluator(unify.Evaluator, abc.ABC):
 
@@ -258,21 +252,19 @@ class TestCodeEvaluator(unittest.TestCase):
 
         class Runs(unify.Score):
 
-            @property
-            def config(self) -> Dict[float, str]:
-                return {
+            def __init__(self, value: Optional[float] = None) -> None:
+                super().__init__(value=value, config={
                     0.: "An error is raised when the code is run.",
                     1.: "Code runs without error."
-                }
+                })
 
         class Correct(unify.Score):
 
-            @property
-            def config(self) -> Dict[float, str]:
-                return {
+            def __init__(self, value: Optional[float] = None) -> None:
+                super().__init__(value=value, config={
                     0.: "The answer was incorrect.",
                     1.: "The answer was correct."
-                }
+                })
 
         class RunsEvaluator(unify.Evaluator):
 
@@ -443,42 +435,38 @@ class TestToolAgentAndLLMJudgeEvaluations(unittest.TestCase):
 
         class CorrectToolUse(unify.Score):
 
-            @property
-            def config(self) -> Dict[float, str]:
-                return {
+            def __init__(self, value: Optional[float] = None) -> None:
+                super().__init__(value=value, config={
                     0.: "The tool was not used appropriately, "
                         "either being used when not needed or not used when needed.",
                     1.: "Tool use was appropriate, "
                         "being used if needed or ignored if not needed."
-                }
+                })
 
         class Contains(unify.Score):
 
-            @property
-            def config(self) -> Dict[float, str]:
-                return {
+            def __init__(self, value: Optional[float] = None) -> None:
+                super().__init__(value=value, config={
                     0.: "The response contains all of the keywords expected.",
                     1.: "The response does not contain all of the keywords expected."
-                }
+                })
 
         class Omits(unify.Score):
 
-            @property
-            def config(self) -> Dict[float, str]:
-                return {
+            def __init__(self, value: Optional[float] = None) -> None:
+                super().__init__(value=value, config={
                     0.: "The response omits all of the keywords expected.",
                     1.: "The response does not omit all of the keywords expected."
-                }
+                })
 
         class CorrectAnswer(unify.Score):
 
-            @property
-            def config(self) -> Dict[float, str]:
-                return {
+            def __init__(self, value: Optional[float] = None) -> None:
+                super().__init__(value=value, config={
                     0.: "The response is totally incorrect.",
                     0.5: "The response is partially correct.",
                     1.: "The response is totally correct."
-                }
+                })
 
         class CorrectToolUseEvaluator(unify.Evaluator):
 

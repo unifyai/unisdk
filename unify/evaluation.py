@@ -51,8 +51,8 @@ class Scores(dict, _Formatted):
 
     def __init__(
             self,
-            dct: Optional[Dict[str, float]] = None,
-            **scores: Optional[Dict[str, float]]
+            dct: Optional[Dict[str, Score]] = None,
+            **scores: Optional[Dict[str, Score]]
     ) -> None:
         if dct is None:
             dct = dict(**scores)
@@ -134,7 +134,7 @@ class Evaluation(Datum, extra=Extra.allow, arbitrary_types_allowed=True):
     prompt: Prompt
     response: ChatCompletion
     agent: Union[str, _Client, Agent]
-    score: Union[float, Scores]
+    score: Union[Score, Scores]
     scorer: Type[Score]
     evaluator: Optional[str] = None
     rationale: Optional[Union[str, Rationales]] = None

@@ -4,35 +4,48 @@ from typing import Optional, Dict
 
 from .dataset import Datum
 
+DEFAULT_CONFIG = {
+    0.0: "bad",
+    0.5: "good",
+    0.8: "very good",
+    1.0: "excellent"
+}
 
-class Score(Datum, abc.ABC):
+
+class Score(Datum):
     model_config = ConfigDict(extra="forbid")
     value: Optional[float]
     description: str
+    config: Dict[float, str]
 
-    def __init__(self, value: Optional[float] = None):
+    def __init__(
+            self,
+            value: Optional[float] = None,
+            config: Optional[Dict[float, str]] = None
+    ) -> None:
         """
         Create Score instance.
 
         Args:
-            value: The value of the assigned score
+            value: The value of the assigned score.
+
+            config: The configuration for the score. Defaults to
 
         Returns:
             The pydantic Score instance, with associated value and class description
         """
-        assert value in self.config or value is None, \
+        global DEFAULT_CONFIG
+        if config is None:
+            config = DEFAULT_CONFIG
+        assert value in config or value is None, \
             "value {} passed is not a valid value, " \
-            "based on the config for this Score class {}".format(value, self.config)
+            "based on the config for this Score class {}".format(value, config)
         super().__init__(
             value=value,
             description="Failed to parse judge response" if value is None
-            else self.config[value]
+            else config[value],
+            config=config
         )
-
-    @property
-    @abc.abstractmethod
-    def config(self) -> Dict[float, str]:
-        raise NotImplementedError
 
 
 class DiffConfig(dict, abc.ABC):
@@ -85,13 +98,11 @@ class L1DiffConfig(DiffConfig):
 
 class RelDiffScore(Score):
 
-    @property
-    def config(self) -> Dict[float, str]:
-        return RelDiffConfig()
+    def __init__(self, value: Optional[float] = None) -> None:
+        super().__init__(value=value, config=RelDiffConfig())
 
 
 class L1DiffScore(Score):
 
-    @property
-    def config(self) -> Dict[float, str]:
-        return L1DiffConfig()
+    def __init__(self, value: Optional[float] = None) -> None:
+        super().__init__(value=value, config=L1DiffConfig())

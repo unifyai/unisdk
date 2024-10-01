@@ -140,10 +140,10 @@ class Evaluator(abc.ABC):
             del kwargs["agent"]
         # score upcasting
         if isinstance(score, dict):
-            score = Scores({k: cast(v, self.scorer).value for k, v in score.items()})
+            score = Scores({k: cast(v, self.scorer) for k, v in score.items()})
             rationale = Rationales(rationale)
         else:
-            score = cast(score, self.scorer).value
+            score = cast(score, self.scorer)
         # return evaluation
         return Evaluation(
             prompt=prompt,
