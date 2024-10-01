@@ -81,21 +81,21 @@ class EvaluationSet(Dataset):
         # evaluator
         if all(e.evaluator == evaluations[0].evaluator for e in evaluations):
             val = evaluations[0].evaluator
+            self._evaluator = val
             if isinstance(val, BaseModel):
                 val = val.model_dump()
             shared_data["evaluator"] = val
             shared_evaluator = True
-            self._evaluator = val
         else:
             shared_evaluator = False
             self._evaluator = [e.evaluator for e in evaluations]
         # prompt
         if all(e.prompt == evaluations[0].prompt for e in evaluations):
             val = evaluations[0].prompt
+            self._prompt = val
             if isinstance(val, BaseModel):
                 val = val.model_dump()
             shared_data["prompt"] = val
-            self._prompt = val
         elif shared_evaluator:
             self._prompt = [e.prompt for e in evaluations]
         else:
@@ -103,10 +103,10 @@ class EvaluationSet(Dataset):
         # response
         if all(e.response == evaluations[0].response for e in evaluations):
             val = evaluations[0].response
+            self._response = val
             if isinstance(val, BaseModel):
                 val = val.model_dump()
             shared_data["response"] = val
-            self._response = val
         elif shared_evaluator:
             self._response = [e.response for e in evaluations]
         else:
