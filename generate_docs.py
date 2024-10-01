@@ -29,10 +29,7 @@ class Visitor(ast.NodeVisitor):
 
     def visit_ClassDef(self, node):
         self.class_stack.append(node.name)
-        self.classes.append({
-            "name": node.name,
-            "lineno": node.lineno
-        })
+        self.classes.append({"name": node.name, "lineno": node.lineno})
         self.generic_visit(node)
         self.class_stack.pop()
 
@@ -40,10 +37,7 @@ class Visitor(ast.NodeVisitor):
         if self.function_stack or self.class_stack:
             return
         self.function_stack.append(node.name)
-        self.functions.append({
-            "name": node.name,
-            "lineno": node.lineno
-        })
+        self.functions.append({"name": node.name, "lineno": node.lineno})
         self.generic_visit(node)
         self.function_stack.pop()
 
@@ -97,16 +91,20 @@ def filter_and_import(details):
         # import the functions and classes
         functions = {
             function_name["name"]: {
-                "obj": importlib.import_module(module_name).__dict__[function_name["name"]],
-                "lineno": function_name["lineno"]
+                "obj": importlib.import_module(module_name).__dict__[
+                    function_name["name"]
+                ],
+                "lineno": function_name["lineno"],
             }
             for function_name in function_names
             if not function_name["name"].startswith("_")
         }
         classes = {
             class_name["name"]: {
-                "obj": importlib.import_module(module_name).__dict__[class_name["name"]],
-                "lineno": class_name["lineno"]
+                "obj": importlib.import_module(module_name).__dict__[
+                    class_name["name"]
+                ],
+                "lineno": class_name["lineno"],
             }
             for class_name in class_names
             if not class_name["name"].startswith("_")
@@ -226,10 +224,7 @@ def write_function_and_class_jsons(details, private_modules):
             # get function details
             lineno = functions[function_name]["lineno"]
             function = functions[function_name]["obj"]
-            functions[function_name] = {
-                "lineno": lineno,
-                "module_path": module_path
-            }
+            functions[function_name] = {"lineno": lineno, "module_path": module_path}
 
             # get the signature of the function
             source_code = inspect.getsource(function)
@@ -261,10 +256,7 @@ def write_function_and_class_jsons(details, private_modules):
                 ) and (member[0].startswith("__") or not member[0].startswith("_")):
                     if isinstance(member[1], property):
                         module = member[1].fget.__module__
-                    members[member[0]] = {
-                        "obj": member[1],
-                        "module": module
-                    }
+                    members[member[0]] = {"obj": member[1], "module": module}
 
             # get the source code for all members
             for member in members:
@@ -278,7 +270,7 @@ def write_function_and_class_jsons(details, private_modules):
                     "obj": obj,
                     "source_code": "".join(source_lines),
                     "lineno": lineno,
-                    "module_path": module.replace(".", "/") + ".py"
+                    "module_path": module.replace(".", "/") + ".py",
                 }
 
             # get the method signature and docstring for all the methods
@@ -304,7 +296,7 @@ def write_function_and_class_jsons(details, private_modules):
                     "signature": signature,
                     "docstring": formatted_docstring,
                     "lineno": lineno,
-                    "module_path": module_path
+                    "module_path": module_path,
                 }
 
             # separate the members into properties, setters,
@@ -329,7 +321,7 @@ def write_function_and_class_jsons(details, private_modules):
                 "methods": methods,
                 "docstring": class_docstring,
                 "lineno": lineno,
-                "module_path": module_path
+                "module_path": module_path,
             }
 
         # write all the functions to separate files
@@ -382,7 +374,7 @@ def write_docs(latest_hash: str):
                 new_line(f)
                 f.write(f"```python\n" f"class {name}\n" "```")
                 new_line(f)
-                f.write(f"<p align=\"right\">[source code]({github_path})</p>")
+                f.write(f'<p align="right">[source code]({github_path})</p>')
                 new_line(f)
 
                 # add docstring for python class
@@ -418,7 +410,7 @@ def write_docs(latest_hash: str):
                         new_line(f)
                         f.write(f"### {escaped_member_name}")
                         new_line(f)
-                        f.write(f"<p align=\"right\">[source code]({github_path})</p>")
+                        f.write(f'<p align="right">[source code]({github_path})</p>')
                         new_line(f)
                         f.write("```python\n" f"{signature}\n" "```")
                         new_line(f)
@@ -434,7 +426,7 @@ def write_docs(latest_hash: str):
                 new_line(f)
                 f.write("```python\n" f"{signature}\n" "```")
                 new_line(f)
-                f.write(f"<p align=\"right\">[source code]({github_path})</p>")
+                f.write(f'<p align="right">[source code]({github_path})</p>')
                 new_line(f)
                 f.write(docstring)
 
