@@ -278,7 +278,28 @@ def write_function_and_class_jsons(details, private_modules):
                     "docstring": formatted_docstring,
                 }
 
-            classes[class_name] = {"members": members, "docstring": class_docstring}
+            # separate the members into properties, setters,
+            # dunders and methods
+            properties, setters, dunders, methods = dict(), dict(), dict(), dict()
+            member_names = list(members.keys())
+            for member_name in member_names:
+                if members[member_name]["source_code"].strip().startswith("@property"):
+                    properties[member_name] = members[member_name]
+                if member_name.startswith("set_"):
+                    setters[member_name] = members[member_name]
+                elif member_name.startswith("__"):
+                    dunders[member_name] = members[member_name]
+                else:
+                    methods[member_name] = members[member_name]
+
+            # store the results
+            classes[class_name] = {
+                "properties": properties,
+                "setters": setters,
+                "dunder_methods": dunders,
+                "methods": methods,
+                "docstring": class_docstring
+            }
 
         # write all the functions to separate files
         for function_name in functions:
@@ -320,7 +341,11 @@ def write_docs():
             f.write("---\n" f"title: '{name}'\n" "---")
 
             # if the module is a class
-            if "members" in module_data:
+            sections = ["properties", "setters", "methods", "dunder_methods"]
+            if any(
+                member in module_data
+                for member in sections
+            ):
                 # add class def python block
                 new_line(f)
                 f.write(f"```python\n" f"class {name}\n" "```")
@@ -331,25 +356,31 @@ def write_docs():
                     f.write(module_data.get("docstring"))
 
                 # add details for each instance method/property
-                for member_name in module_data["members"]:
-                    member = module_data["members"][member_name]
-                    escaped_member_name = member_name.replace("_", "\_")
-                    signature = member["signature"]
-                    docstring = member["docstring"]
+                for section in sections:
+                    # add section header
+                    new_line(f)
+                    f.write(f"## {section}")
 
-                    # add escape characters to the docstring
-                    for key, value in replace.items():
-                        docstring = docstring.replace(key, value)
+                    for member_name in module_data[section]:
+                        # get member details
+                        member = module_data[section][member_name]
+                        escaped_member_name = member_name.replace("_", "\_")
+                        signature = member["signature"]
+                        docstring = member["docstring"]
 
-                    # add method info
-                    new_line(f)
-                    f.write("---")
-                    new_line(f)
-                    f.write(f"### {escaped_member_name}")
-                    new_line(f)
-                    f.write("```python\n" f"{signature}\n" "```")
-                    new_line(f)
-                    f.write(docstring)
+                        # add escape characters to the docstring
+                        for key, value in replace.items():
+                            docstring = docstring.replace(key, value)
+
+                        # add method info
+                        new_line(f)
+                        f.write("---")
+                        new_line(f)
+                        f.write(f"### {escaped_member_name}")
+                        new_line(f)
+                        f.write("```python\n" f"{signature}\n" "```")
+                        new_line(f)
+                        f.write(docstring)
 
             # if the module is a function
             else:
