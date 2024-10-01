@@ -121,8 +121,10 @@ def _cast_from_selection(
     cast_fns = _CAST_DICT[input_type]
     targets = [target for target in targets if target in cast_fns]
     assert len(targets) == 1, "There must be exactly one valid casting target."
-    target = targets[0]
-    return cast_fns[target](inp, target)
+    to_type = targets[0]
+    if issubclass(to_type, Score):
+        return cast_fns[to_type](inp, to_type)
+    return cast_fns[to_type](inp)
 
 
 # Public function
