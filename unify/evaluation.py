@@ -10,43 +10,6 @@ from unify.types import (_Formatted, Prompt, Score, RelDiffScore, L1DiffScore, D
                          ChatCompletion)
 
 
-class ScoreSet(Dataset):
-
-    def __init__(
-            self,
-            scores: Union[Score, List[Score]],
-            *,
-            scorer: Type[Score],
-            name: str = None,
-            auto_sync: Union[bool, str] = False,
-            api_key: Optional[str] = None
-    ) -> None:
-        if not isinstance(scores, list):
-            scores = [scores]
-        assert all(type(s) is type(scores[0]) for s in scores), \
-            "All scores passed to a ScoreSet must be of the same type."
-        self._score_count = {
-            val: (desc, len([s for s in scores if s.value == val]))
-            for val, desc in scores[0].config.items()
-        }
-        self._scorer_name = scorer.__name__
-        super().__init__(
-            data=scores,
-            name=name,
-            auto_sync=auto_sync,
-            api_key=api_key
-        )
-
-    def __rich_repr__(self) -> Dict:
-        """
-        Used by the rich package for representing and print the instance.
-        """
-        yield {
-            "scorer": self._scorer_name,
-            "counts": self._score_count
-        }
-
-
 class Scores(dict, _Formatted):
 
     def __init__(
