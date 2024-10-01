@@ -41,7 +41,7 @@ class L1DiffConfig(dict):
     def _check_bounds(key: float):
         assert isinstance(key, float), (
             "Expected a float, but found {} of type {}".format(key, type(key)))
-        assert 0. <= key <= 1., (
+        assert -1. <= key <= 1., (
             "Expected value between 0. and 1., but found {}".format(key))
 
     def __setitem__(self, key: float, value: str):
