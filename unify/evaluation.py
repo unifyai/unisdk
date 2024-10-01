@@ -3,7 +3,7 @@ from typing import Union, Optional, List, Dict, Type
 
 from unify.agent import Agent
 from unify.dataset import Dataset
-from unify.chat.clients import _Client, _UniLLMClient
+from unify.chat.clients import _Client
 from unify.types import Prompt, Score, Datum, ChatCompletion
 
 
@@ -75,15 +75,41 @@ class EvaluationSet(Dataset):
         scorer = type(evaluations[0].score)
         self._class_config = evaluations[0].score.config
 
-        # extract the shared data
+        # prompt
         shared_data = dict()
-        for field in Evaluation.model_fields:
-            if all(getattr(e, field) == getattr(evaluations[0], field)
-                   for e in evaluations):
-                val = getattr(evaluations[0], field)
-                if isinstance(val, BaseModel):
-                    val = val.model_dump()
-                shared_data[field] = val
+        if all(e.prompt == evaluations[0].prompt for e in evaluations):
+            val = evaluations[0].prompt
+            if isinstance(val, BaseModel):
+                val = val.model_dump()
+            shared_data["prompt"] = val
+            self._prompt = val
+        else:
+            self._prompt = {e.evaluator: e.prompt for e in evaluations}
+        # response
+        if all(e.response == evaluations[0].response for e in evaluations):
+            val = evaluations[0].response
+            if isinstance(val, BaseModel):
+                val = val.model_dump()
+            shared_data["response"] = val
+            self._response = val
+        else:
+            self._response = {e.evaluator: e.response for e in evaluations}
+        # evaluator
+        if all(e.evaluator == evaluations[0].evaluator for e in evaluations):
+            val = evaluations[0].evaluator
+            if isinstance(val, BaseModel):
+                val = val.model_dump()
+            shared_data["evaluator"] = val
+            self._evaluator = val
+        else:
+            self._evaluator = [e.evaluator for e in evaluations]
+        # score and rationale
+        if "evaluator" in shared_data:
+            self._score = [e.score for e in evaluations]
+            self._rationale = [e.rationale for e in evaluations]
+        else:
+            self._score = {e.evaluator: e.score for e in evaluations}
+            self._rationale = {e.evaluator: e.rationale for e in evaluations}
 
         valid_scores = [e.score.value for e in evaluations if e.score.value is not None]
         self._mean_score = sum(valid_scores) / len(valid_scores)
@@ -100,8 +126,28 @@ class EvaluationSet(Dataset):
     # Properties
 
     @property
+    def prompt(self) -> Union[Prompt, Dict[str, Prompt]]:
+        return self._prompt
+
+    @property
+    def response(self) -> Union[ChatCompletion, Dict[str, ChatCompletion]]:
+        return self._response
+
+    @property
     def agent(self) -> Union[str, _Client, Agent]:
         return self._agent
+
+    @property
+    def score(self) -> Union[List[Score], Dict[str, Score]]:
+        return self._score
+
+    @property
+    def evaluator(self) -> Union[str, List[str]]:
+        return self._evaluator
+
+    @property
+    def rationale(self) -> Union[List[str], Dict[str, str]]:
+        return self._rationale
 
     @property
     def class_config(self) -> Dict[float, str]:
@@ -111,7 +157,6 @@ class EvaluationSet(Dataset):
     def mean_score(self) -> float:
         return self._mean_score
 
-    # noinspection PyTypeChecker
     @property
     def score_set(self) -> ScoreSet:
         return self._score_set
