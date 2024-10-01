@@ -6,7 +6,7 @@ from typing import Union, Optional, List, Dict, Type
 from unify.agent import Agent
 from unify.dataset import Dataset
 from unify.chat.clients import _Client
-from unify.types import Prompt, Score, Datum, ChatCompletion, _Formatted
+from unify.types import _Formatted, Prompt, Score, L1DiffScore, Datum, ChatCompletion
 
 
 class ScoreSet(Dataset):
@@ -209,13 +209,16 @@ class EvaluationSet(Dataset):
             shared_data["response"] = val
         else:
             self._response = [e.response for e in evaluations]
-        # score and rationale
+        # score
         if isinstance(evaluations[0].score, dict):
             self._score = [Scores({k: self._scorer(v) for k, v in e.score.items()})
                            for e in evaluations]
-            self._rationale = [Rationales(e.rationale) for e in evaluations]
         else:
             self._score = [self._scorer(e.score) for e in evaluations]
+        # rationale
+        if isinstance(evaluations[0].rationale, dict):
+            self._rationale = [Rationales(e.rationale) for e in evaluations]
+        else:
             self._rationale = [e.rationale for e in evaluations]
 
         super().__init__(
@@ -310,7 +313,8 @@ class EvaluationSet(Dataset):
         scores = [s.score - o.score for s, o in zip(self._data, other._data)]
         data = [copy.copy(d) for d in self._data]
         for d, s in zip(data, scores):
-            d._score = s
+            d.score = s
+            d.scorer = L1DiffScore
         return EvaluationSet(
             data,
             name=self._name,
