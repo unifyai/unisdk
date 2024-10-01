@@ -706,12 +706,22 @@ class TestLLMJuryEvaluator(unittest.TestCase):
         unify.set_repr_mode("concise")
         for datum in self._dataset:
             response = self._client.generate(**datum.prompt.model_dump())
-            class_config = self._evaluator.class_config
             evaluation = self._evaluator.evaluate(
                 response=response,
                 agent=self._client,
                 **datum.model_extra
             )
-            score = evaluation[0].score.value
-            self.assertIn(score, class_config)
-            self.assertEqual(evaluation[0].score.description, class_config[score])
+            assert isinstance(evaluation.prompt, Prompt)
+            assert isinstance(evaluation.response, unify.ChatCompletion)
+            assert isinstance(evaluation.agent, unify.Unify)
+            assert isinstance(evaluation.score, dict)
+            for key, val in evaluation.score.items():
+                assert isinstance(key, str)
+                assert isinstance(val, unify.DefaultJudgeScore)
+            assert isinstance(evaluation.evaluator, list)
+            for evaluator in evaluation.evaluator:
+                assert isinstance(evaluator, str)
+            assert isinstance(evaluation.rationale, dict)
+            for key, val in evaluation.rationale.items():
+                assert isinstance(key, str)
+                assert isinstance(val, str)
