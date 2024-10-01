@@ -75,14 +75,29 @@ class EvaluationSet(Dataset):
         scorer = type(evaluations[0].score)
         self._class_config = evaluations[0].score.config
 
-        # prompt
+        # shared data
         shared_data = dict()
+
+        # evaluator
+        if all(e.evaluator == evaluations[0].evaluator for e in evaluations):
+            val = evaluations[0].evaluator
+            if isinstance(val, BaseModel):
+                val = val.model_dump()
+            shared_data["evaluator"] = val
+            shared_evaluator = True
+            self._evaluator = val
+        else:
+            shared_evaluator = False
+            self._evaluator = [e.evaluator for e in evaluations]
+        # prompt
         if all(e.prompt == evaluations[0].prompt for e in evaluations):
             val = evaluations[0].prompt
             if isinstance(val, BaseModel):
                 val = val.model_dump()
             shared_data["prompt"] = val
             self._prompt = val
+        elif shared_evaluator:
+            self._prompt = [e.prompt for e in evaluations]
         else:
             self._prompt = {e.evaluator: e.prompt for e in evaluations}
         # response
@@ -92,23 +107,19 @@ class EvaluationSet(Dataset):
                 val = val.model_dump()
             shared_data["response"] = val
             self._response = val
+        elif shared_evaluator:
+            self._response = [e.response for e in evaluations]
         else:
             self._response = {e.evaluator: e.response for e in evaluations}
-        # evaluator
-        if all(e.evaluator == evaluations[0].evaluator for e in evaluations):
-            val = evaluations[0].evaluator
-            if isinstance(val, BaseModel):
-                val = val.model_dump()
-            shared_data["evaluator"] = val
-            self._evaluator = val
-        else:
-            self._evaluator = [e.evaluator for e in evaluations]
-        # score and rationale
-        if "evaluator" in shared_data:
+        # score
+        if shared_evaluator:
             self._score = [e.score for e in evaluations]
-            self._rationale = [e.rationale for e in evaluations]
         else:
             self._score = {e.evaluator: e.score for e in evaluations}
+        # rationale
+        if shared_evaluator:
+            self._rationale = [e.rationale for e in evaluations]
+        else:
             self._rationale = {e.evaluator: e.rationale for e in evaluations}
 
         valid_scores = [e.score.value for e in evaluations if e.score.value is not None]
