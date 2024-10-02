@@ -14,6 +14,7 @@ from unify.evaluation import Evaluation, EvaluationSet, Scores, Rationales
 from unify.chat.clients import _Client, Unify, AsyncUnify
 from unify.casting import cast
 from .utils.helpers import _validate_api_key
+from .utils.evaluators import create_evaluator
 from unify.types import Score, Prompt, ChatCompletion
 
 
@@ -105,8 +106,14 @@ class Evaluator(abc.ABC):
     # Public #
     # -------#
 
-    def upload(self, overwrite: bool = False) -> Self:
-        raise NotImplementedError
+    def upload(self) -> Self:
+        self._assert_name_exists()
+        evaluator_config = dict(
+            name=self._name,
+            client_side=True
+        )
+        create_evaluator(evaluator_config=evaluator_config, api_key=self._api_key)
+        return self
 
     @staticmethod
     def from_upstream() -> Evaluator:
