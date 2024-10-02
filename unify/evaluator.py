@@ -222,7 +222,7 @@ class LLMJudge(Evaluator, abc.ABC):
     def __init__(
             self,
             client: Union[Unify, AsyncUnify],
-            judge_prompt: Union[str, Prompt],
+            prompt: Union[str, Prompt],
             name: Optional[str] = None,
             prompt_parser: Optional[Dict[str, List[Union[str, int]]]] = None,
             response_parser: Optional[Dict[str, List[Union[str, int]]]] = None,
@@ -235,7 +235,7 @@ class LLMJudge(Evaluator, abc.ABC):
         Args:
             client: The client to use as the LLM Judge.
 
-            judge_prompt: The prompt for the judge to use when performing evaluations.
+            prompt: The prompt for the judge to use when performing evaluations.
 
             name: The name to give to this LLM Judge evaluator, optional.
 
@@ -253,7 +253,7 @@ class LLMJudge(Evaluator, abc.ABC):
             the evaluation response. Default is False.
         """
         self._client = client
-        self._prompt = cast(judge_prompt, Prompt)
+        self._prompt = cast(prompt, Prompt)
         assert self._prompt.messages is not None, \
             "Judge prompt must have at least one message"
         self._prompt.messages[0]["content"] += self._create_judge_rubric()
