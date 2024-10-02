@@ -128,6 +128,8 @@ class Evaluator(abc.ABC):
             description = self.__doc__
         evaluator_config = dict(
             name=self._name,
+            class_config=[{"label": label, "score": score, "description": ""}
+                          for score, label in self.class_config.items()],
             # description=description,  # ToDo: uncomment once orchestra DB is updated
             client_side=True
         )
