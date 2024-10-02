@@ -29,11 +29,14 @@ class EvaluatorUploadTesting:
 
 class EvaluatorDownloadTesting:
 
-    def __enter__(self, evaluator: unify.Evaluator):
+    def __init__(self, evaluator: unify.Evaluator):
+        self._evaluator = evaluator
+
+    def __enter__(self):
         if "test_evaluator" in unify.list_evaluators():
             unify.delete_evaluator("test_evaluator")
-        evaluator.set_name("test_evaluator")
-        evaluator.upload()
+        self._evaluator.set_name("test_evaluator")
+        self._evaluator.upload()
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         if "test_evaluator" in unify.list_evaluators():
@@ -742,6 +745,26 @@ class TestToolAgentAndLLMJudgeEvaluations(unittest.TestCase):
             )
             self.assertEqual(
                 llm_judge_config["judge_models"], [self._llm_judge.client.endpoint]
+            )
+
+    def test_download_llm_judge(self) -> None:
+        with EvaluatorDownloadTesting(self._llm_judge):
+            self.assertIn(self._llm_judge.name, unify.list_evaluators())
+            judge = unify.LLMJudge.from_upstream("test_evaluator")
+            self.assertEqual(
+                judge.prompt.model_dump(), self._llm_judge.prompt.model_dump()
+            )
+            self.assertEqual(
+                judge.prompt_parser, self._llm_judge.prompt_parser
+            )
+            self.assertEqual(
+                judge.response_parser, self._llm_judge.response_parser
+            )
+            self.assertEqual(
+                judge.class_config, self._llm_judge.class_config
+            )
+            self.assertEqual(
+                judge.client.endpoint, [self._llm_judge.client.endpoint]
             )
 
 
