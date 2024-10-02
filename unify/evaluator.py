@@ -9,6 +9,7 @@ from abc import abstractmethod
 from typing_extensions import Self
 from typing import Type, Union, Optional, Tuple, Dict, List
 
+import unify
 from unify.agent import Agent
 from unify.evaluation import Evaluation, EvaluationSet, Scores, Rationales
 from unify.chat.clients import _Client, Unify, AsyncUnify
@@ -425,6 +426,31 @@ class LLMJudge(Evaluator, abc.ABC):
 
     # Public #
     # -------#
+
+    @staticmethod
+    def from_upstream(name: str) -> LLMJudge:
+        """
+        Return an LLMJudge instance, initialized from the upstream LLMJudge
+        configuration.
+
+        Args:
+            name:
+            The name of the upstream LLM Judge to create a local instance for.
+
+        Returns:
+            The LLMJudge instance.
+        """
+        judge_config = unify.get_evaluator(name)
+        assert len(judge_config["judge_models"]) == 1, \
+            "Only one judge is permitted when initializing an LLMJudge instance."
+        return LLMJudge(
+            client=unify.Unify(judge_config["judge_models"]),
+            prompt=judge_config["judge_prompt"],
+            name=name,
+            prompt_parser=judge_config["prompt_parser"],
+            response_parser=judge_config["response_parser"],
+            extra_parser=judge_config["extra_parser"],
+        )
 
     def upload(self, description: Optional[str] = None, overwrite: bool = False) \
             -> Self:
