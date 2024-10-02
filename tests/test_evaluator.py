@@ -16,6 +16,30 @@ import unify
 from unify import Prompt
 
 
+class EvaluatorUploadTesting:
+
+    def __enter__(self):
+        if "test_evaluator" in unify.list_evaluators():
+            unify.delete_evaluator("test_evaluator")
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if "test_evaluator" in unify.list_evaluators():
+            unify.delete_evaluator("test_evaluator")
+
+
+class EvaluatorDownloadTesting:
+
+    def __enter__(self, evaluator: unify.Evaluator):
+        if "test_evaluator" in unify.list_evaluators():
+            unify.delete_evaluator("test_evaluator")
+        evaluator.set_name("test_evaluator")
+        evaluator.upload()
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if "test_evaluator" in unify.list_evaluators():
+            unify.delete_evaluator("test_evaluator")
+
+
 class TestMathsEvaluator(unittest.TestCase):
 
     def setUp(self) -> None:
@@ -49,7 +73,7 @@ class TestMathsEvaluator(unittest.TestCase):
                 except ValueError:
                     return False
 
-        self._evaluator = MathsEvaluator()
+        self._evaluator = MathsEvaluator(name="test_evaluator")
         self._client = unify.Unify("gpt-4o@openai", cache=True)
 
     def test_evals(self) -> None:
@@ -62,6 +86,12 @@ class TestMathsEvaluator(unittest.TestCase):
                 )
                 self.assertEqual(evaluation.score.value, 1.)
                 self.assertEqual(evaluation.score.description, "correct.")
+
+    def test_upload_evaluator(self):
+        with EvaluatorUploadTesting():
+            self.assertNotIn(self._evaluator.name, unify.list_evaluators())
+            self._evaluator.upload()
+            self.assertIn(self._evaluator.name, unify.list_evaluators())
 
 
 class SimulateFloatInput:

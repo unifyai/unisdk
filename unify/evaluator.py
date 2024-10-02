@@ -1,3 +1,4 @@
+from __future__ import annotations
 import re
 import abc
 import copy
@@ -5,12 +6,14 @@ import json
 import inspect
 from pydantic import BaseModel
 from abc import abstractmethod
+from typing_extensions import Self
 from typing import Type, Union, Optional, Tuple, Dict, List
 
 from unify.agent import Agent
 from unify.evaluation import Evaluation, EvaluationSet, Scores, Rationales
 from unify.chat.clients import _Client, Unify, AsyncUnify
 from unify.casting import cast
+from .utils.helpers import _validate_api_key
 from unify.types import Score, Prompt, ChatCompletion
 
 
@@ -18,15 +21,24 @@ class Evaluator(abc.ABC):
 
     def __init__(
             self,
-            name: Optional[str] = None
+            name: Optional[str] = None,
+            api_key: Optional[str] = None,
     ):
         """
         Create an Evaluator.
 
         Args:
             name: The name for this evaluator.
+
+            api_key: API key for accessing the Unify API. If None, it attempts to
+            retrieve the API key from the environment variable UNIFY_KEY. Defaults to
+            None.
+
+        Raises:
+            UnifyError: If the API key is missing.
         """
         self._name = name
+        self._api_key = _validate_api_key(api_key)
 
     # Properties #
     # -----------#
@@ -78,6 +90,27 @@ class Evaluator(abc.ABC):
             The score, either as a boolean, a float, or the full Score instance.
         """
         raise NotImplemented
+
+    # Private #
+    # --------#
+
+    def _assert_name_exists(self) -> None:
+        assert self._name is not None, (
+            "Evaluator name must be specified in order to upload or download "
+            "to or from a corresponding Evaluator in your upstream account. "
+            "You can simply use .set_name() and set it to the same name as your "
+            "upstream evaluator, or create a new name if it doesn't yet exist upstream."
+        )
+
+    # Public #
+    # -------#
+
+    def upload(self, overwrite: bool = False) -> Self:
+        raise NotImplementedError
+
+    @staticmethod
+    def from_upstream() -> Evaluator:
+        raise NotImplementedError
 
     def evaluate(
             self,

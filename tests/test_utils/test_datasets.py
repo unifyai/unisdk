@@ -103,4 +103,3 @@ class TestDatasets(unittest.TestCase):
         unify.datasets.rename_dataset("TestAtomic", "RenamedTestAtomic")
         self.assertIn("RenamedTestAtomic", unify.datasets.list_datasets())
         unify.delete_dataset("RenamedTestAtomic")
-
