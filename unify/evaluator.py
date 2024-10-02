@@ -441,10 +441,8 @@ class LLMJudge(Evaluator, abc.ABC):
         evaluator_config = dict(
             name=self._name,
             judge_prompt=self._prompt.model_dump(),
-            prompt_parser={k: str(v).replace(", ", "][")
-                           for k, v in self._prompt_parser.items()},
-            response_parser={k: str(v).replace(", ", "][")
-                             for k, v in self._response_parser.items()},
+            prompt_parser=self._prompt_parser,
+            response_parser=self._response_parser,
             class_config=[{"label": label, "score": score, "description": ""}
                           for score, label in self.class_config.items()],
             # description=description,  # ToDo: uncomment once orchestra DB is updated

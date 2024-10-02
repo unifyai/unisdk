@@ -65,16 +65,8 @@ def get_evaluator(name: str, api_key: Optional[str] = None) -> Dict[str, Any]:
     response = response.json()
 
     response["judge_prompt"] = json.loads(response["judge_prompt"])
-    response["prompt_parser"] = {
-        k: [int(item) if item.lstrip("-").isdigit() else item[1:-1]
-            for item in v[1:-1].split("][")]
-        for k, v in json.loads(response["prompt_parser"]).items()
-    }
-    response["response_parser"] = {
-        k: [int(item) if item.lstrip("-").isdigit() else item[1:-1]
-            for item in v[1:-1].split("][")]
-        for k, v in json.loads(response["response_parser"]).items()
-    }
+    response["prompt_parser"] = json.loads(response["prompt_parser"])
+    response["response_parser"] = json.loads(response["response_parser"])
     response["class_config"] = {
         dct["score"]: dct["label"] for dct in json.loads(response["class_config"])
     }
