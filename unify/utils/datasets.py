@@ -3,7 +3,7 @@ import requests
 from typing import List, Dict, Optional, Union
 
 from unify import BASE_URL
-from unify.types import Datum
+from unify.types import Prompt, Datum
 from .helpers import _validate_api_key, _res_to_list
 
 
@@ -108,7 +108,8 @@ def download_dataset(
     if raw_return:
         return ret
     return [Datum(
-        **{k: v for k, v in item.items() if k not in ("id", "num_tokens", "timestamp")}
+        **{k: Prompt(v) if k == "prompt" else v
+           for k, v in item.items() if k not in ("id", "num_tokens", "timestamp")}
     ) for item in ret]
 
 
