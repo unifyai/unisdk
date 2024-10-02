@@ -87,7 +87,7 @@ class TestMathsEvaluator(unittest.TestCase):
                 self.assertEqual(evaluation.score.value, 1.)
                 self.assertEqual(evaluation.score.description, "correct.")
 
-    def test_upload_evaluator(self):
+    def test_upload_client_side_evaluator(self):
         with EvaluatorUploadTesting():
             self.assertNotIn(self._evaluator.name, unify.list_evaluators())
             self._evaluator.upload()
@@ -709,6 +709,12 @@ class TestToolAgentAndLLMJudgeEvaluations(unittest.TestCase):
         for k, v in judge_perf_eval_set.score_freq.items():
             self.assertIsInstance(k, float)
             self.assertIsInstance(v, int)
+
+    def test_upload_llm_judge(self) -> None:
+        with EvaluatorUploadTesting():
+            self.assertNotIn(self._llm_judge.name, unify.list_evaluators())
+            self._llm_judge.upload()
+            self.assertIn(self._llm_judge.name, unify.list_evaluators())
 
 
 class TestLLMJuryEvaluator(unittest.TestCase):

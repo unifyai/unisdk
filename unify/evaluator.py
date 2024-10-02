@@ -138,7 +138,6 @@ class Evaluator(abc.ABC):
         create_evaluator(evaluator_config=evaluator_config, api_key=self._api_key)
         return self
 
-
     def evaluate(
             self,
             prompt: Union[str, Prompt],
