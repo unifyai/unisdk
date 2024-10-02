@@ -200,6 +200,7 @@ class Dataset(_Formatted):
             raise Exception("upload not permitted when local mirrors upstream")
         self._assert_name_exists()
         dataset_exists_upstream = self._name in unify.list_datasets(self._api_key)
+        raw_data = [d.model_dump() for d in self._data]
         if overwrite:
             if dataset_exists_upstream:
                 upstream_dataset = unify.download_dataset(
@@ -208,23 +209,14 @@ class Dataset(_Formatted):
                 unique_upstream = [item.model_dump() for item in upstream_dataset
                                    if item not in self._data]
                 unify.delete_data(self._name, unique_upstream)
-                unique_local = [item.model_dump() for item in self._data
-                                if item not in upstream_dataset]
-                unify.add_data(self._name, unique_local)
+                unify.add_data(self._name, raw_data)
             else:
-                data = [datum.model_dump() for datum in self._data]
-                unify.upload_dataset_from_dictionary(self._name, data)
+                unify.upload_dataset_from_dictionary(self._name, raw_data)
         else:
             if dataset_exists_upstream:
-                upstream_dataset = unify.download_dataset(
-                    self._name, api_key=self._api_key
-                )
-                unique_local = [item.model_dump() for item in self._data
-                                if item not in upstream_dataset]
-                unify.add_data(self._name, unique_local)
+                unify.add_data(self._name, raw_data)
             else:
-                unique_local = [entry.model_dump() for entry in self._data]
-                unify.upload_dataset_from_dictionary(self._name, unique_local)
+                unify.upload_dataset_from_dictionary(self._name, raw_data)
         if self._auto_sync_flag in (True, "both", "download", "local_mirrors_upstream"):
             auto_sync_flag = self._auto_sync_flag
             self._auto_sync_flag = False
