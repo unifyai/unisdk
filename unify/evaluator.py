@@ -295,6 +295,10 @@ class LLMJudge(Evaluator, abc.ABC):
     def response_parser(self) -> Dict[str, List[Union[str, int]]]:
         return self._response_parser
 
+    @property
+    def extra_parser(self) -> Dict[str, List[Union[str, int]]]:
+        return self._extra_parser
+
     # Setters
 
     def set_include_rationale(self, value: bool) -> Self:
@@ -315,6 +319,10 @@ class LLMJudge(Evaluator, abc.ABC):
 
     def set_response_parser(self, value: Dict[str, List[Union[str, int]]]) -> Self:
         self._response_parser = value
+        return self
+
+    def set_extra_parser(self, value: Dict[str, List[Union[str, int]]]) -> Self:
+        self._extra_parser = value
         return self
 
     @staticmethod
@@ -443,6 +451,7 @@ class LLMJudge(Evaluator, abc.ABC):
             judge_prompt=self._prompt.model_dump(),
             prompt_parser=self._prompt_parser,
             response_parser=self._response_parser,
+            extra_parser=self._extra_parser,
             class_config=[{"label": label, "score": score}
                           for score, label in self.class_config.items()],
             # description=description,  # ToDo: uncomment once orchestra DB is updated

@@ -740,6 +740,9 @@ class TestToolAgentAndLLMJudgeEvaluations(unittest.TestCase):
             self.assertEqual(
                 llm_judge_config["response_parser"], self._llm_judge.response_parser
             )
+            # self.assertEqual(
+            #     llm_judge_config["extra_parser"], self._llm_judge.extra_parser
+            # )
             self.assertEqual(
                 llm_judge_config["class_config"], self._llm_judge.class_config
             )
