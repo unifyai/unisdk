@@ -415,6 +415,47 @@ class LLMJudge(Evaluator, abc.ABC):
             return score, judge_message
         return score
 
+    # Public #
+    # -------#
+
+    def upload(self, description: Optional[str] = None, overwrite: bool = False) \
+            -> Self:
+        """
+        Register the Evaluator to your account upstream.
+
+        Args:
+
+            description:
+            Optional description of the evaluator, to be registered upstream.
+
+            overwrite:
+            Whether to overwrite the entry for an existing evaluator with the
+            same name if it already exists.
+
+        Returns:
+            This Evaluator after the upload, useful for chaining methods.
+        """
+        self._assert_name_exists()
+        if description is None and self.__doc__ is not None:
+            description = self.__doc__
+        evaluator_config = dict(
+            name=self._name,
+            judge_prompt=self._prompt.model_dump(),
+            prompt_parser={k: str(v).replace(", ", "][")
+                           for k, v in self._prompt_parser.items()},
+            response_parser={k: str(v).replace(", ", "][")
+                             for k, v in self._response_parser.items()},
+            class_config=[{"label": label, "score": score, "description": ""}
+                          for score, label in self.class_config.items()],
+            # description=description,  # ToDo: uncomment once orchestra DB is updated
+            judge_models=self.client.endpoint,
+            client_side=False
+        )
+        if overwrite and self._name in list_evaluators():
+            delete_evaluator(self._name)
+        create_evaluator(evaluator_config=evaluator_config, api_key=self._api_key)
+        return self
+
 
 class DefaultJudgeScore(Score):
 
