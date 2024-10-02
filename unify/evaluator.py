@@ -14,7 +14,7 @@ from unify.evaluation import Evaluation, EvaluationSet, Scores, Rationales
 from unify.chat.clients import _Client, Unify, AsyncUnify
 from unify.casting import cast
 from .utils.helpers import _validate_api_key
-from .utils.evaluators import create_evaluator
+from .utils.evaluators import create_evaluator, list_evaluators, delete_evaluator
 from unify.types import Score, Prompt, ChatCompletion
 
 
@@ -106,12 +106,33 @@ class Evaluator(abc.ABC):
     # Public #
     # -------#
 
-    def upload(self) -> Self:
+    def upload(self, description: Optional[str] = None, overwrite: bool = False) \
+            -> Self:
+        """
+        Register the Evaluator to your account upstream.
+
+        Args:
+
+            description:
+            Optional description of the evaluator, to be registered upstream.
+
+            overwrite:
+            Whether to overwrite the entry for an existing evaluator with the
+            same name if it already exists.
+
+        Returns:
+            This Evaluator after the upload, useful for chaining methods.
+        """
         self._assert_name_exists()
+        if description is None and self.__doc__ is not None:
+            description = self.__doc__
         evaluator_config = dict(
             name=self._name,
+            # description=description,  # ToDo: uncomment once orchestra DB is updated
             client_side=True
         )
+        if overwrite and self._name in list_evaluators():
+            delete_evaluator(self._name)
         create_evaluator(evaluator_config=evaluator_config, api_key=self._api_key)
         return self
 
