@@ -729,7 +729,7 @@ class TestToolAgentAndLLMJudgeEvaluations(unittest.TestCase):
             self.assertIn(self._llm_judge.name, unify.list_evaluators())
             llm_judge_config = unify.get_evaluator("test_evaluator")
             self.assertEqual(
-                llm_judge_config["judge_prompt"], self._llm_judge.prompt
+                llm_judge_config["judge_prompt"], self._llm_judge.prompt.model_dump()
             )
             self.assertEqual(
                 llm_judge_config["prompt_parser"], self._llm_judge.prompt_parser
@@ -741,7 +741,7 @@ class TestToolAgentAndLLMJudgeEvaluations(unittest.TestCase):
                 llm_judge_config["class_config"], self._llm_judge.class_config
             )
             self.assertEqual(
-                llm_judge_config["judge_models"], self._llm_judge.client.endpoint
+                llm_judge_config["judge_models"], [self._llm_judge.client.endpoint]
             )
 
 
