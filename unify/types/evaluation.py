@@ -52,20 +52,20 @@ class Score(Datum):
     def __sub__(self, other: Union[Dict, Score, unify.Scores, float, int]):
         if isinstance(other, Score):
             other = other.value
-        elif not isinstance(other, unify.Scores):
-            assert isinstance(other, float) or isinstance(other, int), \
-                "other must either be numeric"
-            return RelDiffScore(self.value - other)
-        return self.value - other
+        elif isinstance(other, unify.Scores):
+            return self.value - other
+        assert isinstance(other, float) or isinstance(other, int), \
+            "other must either be numeric"
+        return RelDiffScore(self.value - other)
 
     def __add__(self, other: Union[Dict, Score, unify.Scores, float, int]):
         if isinstance(other, Score):
             other = other.value
-        elif not isinstance(other, unify.Scores):
-            assert isinstance(other, float) or isinstance(other, int), \
-                "other must either be numeric"
-            return RelDiffScore(self.value + other)
-        return self.value + other
+        elif isinstance(other, unify.Scores):
+            return self.value + other
+        assert isinstance(other, float) or isinstance(other, int), \
+            "other must either be numeric"
+        return RelDiffScore(self.value + other)
 
     def __rsub__(self, other: Union[Dict, float, int]):
         return self.__neg__().__add__(other)
