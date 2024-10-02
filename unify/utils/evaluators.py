@@ -1,3 +1,4 @@
+import json
 import requests
 from typing import Optional, List, Any, Dict
 
@@ -61,7 +62,13 @@ def get_evaluator(name: str, api_key: Optional[str] = None) -> Dict[str, Any]:
     response = requests.get(url, headers=headers, params=params)
     response.raise_for_status()
 
-    return response.json()
+    response = response.json()
+
+    response["class_config"] = {
+        dct["score"]: dct["label"] for dct in json.loads(response["class_config"])
+    }
+
+    return response
 
 
 def delete_evaluator(name: str, api_key: Optional[str] = None) -> Dict[str, str]:

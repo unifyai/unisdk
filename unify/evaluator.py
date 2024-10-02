@@ -138,9 +138,6 @@ class Evaluator(abc.ABC):
         create_evaluator(evaluator_config=evaluator_config, api_key=self._api_key)
         return self
 
-    @staticmethod
-    def from_upstream() -> Evaluator:
-        raise NotImplementedError
 
     def evaluate(
             self,

@@ -93,6 +93,28 @@ class TestMathsEvaluator(unittest.TestCase):
             self._evaluator.upload()
             self.assertIn(self._evaluator.name, unify.list_evaluators())
 
+            class NewBinary(unify.Score):
+
+                def __init__(self, value: Optional[float] = None) -> None:
+                    super().__init__(value=value, config={
+                        0.: "incorrect answer.", 1.: "correct answer."
+                    })
+
+            class NewMathsEvaluator(self._evaluator.__class__):
+
+                @property
+                def scorer(self) -> Type[unify.Score]:
+                    return NewBinary
+
+            new_evaluator = NewMathsEvaluator("test_evaluator")
+            with self.assertRaises(Exception):
+                new_evaluator.upload()
+            downloaded = unify.get_evaluator("test_evaluator")
+            self.assertEqual(downloaded["class_config"], self._evaluator.class_config)
+            new_evaluator.upload(overwrite=True)
+            downloaded = unify.get_evaluator("test_evaluator")
+            self.assertEqual(downloaded["class_config"], new_evaluator.class_config)
+
 
 class SimulateFloatInput:
 
