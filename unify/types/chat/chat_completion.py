@@ -21,8 +21,8 @@ class Choice(_FormattedBaseModel, _Choice):
 class CompletionUsage(_FormattedBaseModel, _CompletionUsage):
     model_config = ConfigDict(extra="forbid")
     # cost is an extra field we've added, not in the OpenAI standard
-    cost: float
-    prompt_tokens_details: Optional[Dict[str, int]] = None
+    # for local models, cost is None
+    cost: Optional[float] = None
 
 
 class ChatCompletion(_FormattedBaseModel, _ChatCompletion):

@@ -15,7 +15,7 @@ from typing import AsyncGenerator, Dict, Generator, List, Optional, Union, Itera
 
 # local
 import unify
-from unify import BASE_URL
+from unify import BASE_URL, LOCAL_MODELS
 from unify.chat.clients.base import _Client
 from unify.types import Prompt, ChatCompletion
 from unify._caching import _get_cache, _write_to_cache
@@ -310,7 +310,10 @@ class _UniLLMClient(_Client, abc.ABC):
             This client, useful for chaining inplace calls.
         """
         valid_endpoints = unify.list_endpoints(api_key=self._api_key)
-        if value not in valid_endpoints and "@custom" not in value:
+        if value not in valid_endpoints and (
+            "@custom" not in value
+            and "@local" not in value
+        ):
             raise Exception(
                 "The specified endpoint {} is not one of the endpoints supported by "
                 "Unify: {}".format(value, valid_endpoints)
@@ -330,7 +333,10 @@ class _UniLLMClient(_Client, abc.ABC):
             This client, useful for chaining inplace calls.
         """
         valid_models = unify.list_models(self._provider, api_key=self._api_key)
-        if value not in valid_models and "@custom" not in self._provider:
+        if value not in valid_models and (
+            "custom" not in self._provider
+            and self._provider != "local"
+        ):
             if self._provider:
                 raise Exception(
                     "Current provider {} does not support the specified model {},"
@@ -360,7 +366,10 @@ class _UniLLMClient(_Client, abc.ABC):
             This client, useful for chaining inplace calls.
         """
         valid_providers = unify.list_providers(self._model, api_key=self._api_key)
-        if value not in valid_providers and "custom" not in self._provider:
+        if value not in valid_providers and (
+            "custom" not in self._provider
+            and self._provider != "local"
+        ):
             if self._model:
                 raise Exception(
                     "Current model {} does not support the specified provider {},"
@@ -474,7 +483,13 @@ class Unify(_UniLLMClient):
             log_response_body=log_response_body
         )
         try:
-            chat_completion = self._client.chat.completions.create(**kw)
+            if endpoint in LOCAL_MODELS:
+                kw.pop("extra_body")
+                kw.pop("model")
+                kw.pop("max_completion_tokens")
+                chat_completion = LOCAL_MODELS[endpoint](**kw)
+            else:
+                chat_completion = self._client.chat.completions.create(**kw)
             for chunk in chat_completion:
                 if return_full_completion:
                     content = ChatCompletion(**chunk.model_dump())
@@ -518,9 +533,14 @@ class Unify(_UniLLMClient):
             chat_completion = _get_cache(kw)
         if chat_completion is None:
             try:
-                chat_completion = ChatCompletion(
-                    **self._client.chat.completions.create(**kw).model_dump()
-                )
+                if endpoint in LOCAL_MODELS:
+                    kw.pop("extra_body")
+                    kw.pop("model")
+                    kw.pop("max_completion_tokens")
+                    chat_completion = LOCAL_MODELS[endpoint](**kw)
+                else:
+                    chat_completion = self._client.chat.completions.create(**kw)
+                chat_completion = ChatCompletion(**chat_completion.model_dump())
             except openai.APIStatusError as e:
                 raise Exception(e.message)
             if cache:
@@ -690,7 +710,13 @@ class AsyncUnify(_UniLLMClient):
             log_response_body=log_response_body
         )
         try:
-            async_stream = await self._client.chat.completions.create(**kw)
+            if endpoint in LOCAL_MODELS:
+                kw.pop("extra_body")
+                kw.pop("model")
+                kw.pop("max_completion_tokens")
+                async_stream = await LOCAL_MODELS[endpoint](**kw)
+            else:
+                async_stream = await self._client.chat.completions.create(**kw)
             async for chunk in async_stream:  # type: ignore[union-attr]
                 self.set_provider(chunk.model.split("@")[-1])
                 if return_full_completion:
@@ -732,7 +758,13 @@ class AsyncUnify(_UniLLMClient):
             chat_completion = _get_cache(kw)
         if chat_completion is None:
             try:
-                async_response = await self._client.chat.completions.create(**kw)
+                if endpoint in LOCAL_MODELS:
+                    kw.pop("extra_body")
+                    kw.pop("model")
+                    kw.pop("max_completion_tokens")
+                    async_response = await LOCAL_MODELS[endpoint](**kw)
+                else:
+                    async_response = await self._client.chat.completions.create(**kw)
                 async_response = ChatCompletion(**async_response.model_dump())
             except openai.APIStatusError as e:
                 raise Exception(e.message)

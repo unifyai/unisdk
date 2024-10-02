@@ -1,10 +1,22 @@
 """Unify python module."""
 import os
+from typing import Callable
+
 
 if "UNIFY_BASE_URL" in os.environ.keys():
     BASE_URL = os.environ["UNIFY_BASE_URL"]
 else:
     BASE_URL = "https://api.unify.ai/v0"
+
+
+LOCAL_MODELS = dict()
+
+
+def register_local_model(model_name: str, fn: Callable):
+    if "@local" not in model_name:
+        model_name += "@local"
+    LOCAL_MODELS[model_name] = fn
+
 
 from .utils import (
     credits,
