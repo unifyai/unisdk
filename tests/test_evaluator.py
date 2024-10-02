@@ -613,6 +613,8 @@ class TestToolAgentAndLLMJudgeEvaluations(unittest.TestCase):
 
     def test_agentic_evals_w_llm_judge(self) -> None:
         unify.set_repr_mode("concise")
+        judge_evaluations = list()
+        human_evaluations = list()
         for datum in self._dataset:
             response = self._agent(datum.prompt)
             class_config = self._llm_judge.class_config
@@ -624,6 +626,37 @@ class TestToolAgentAndLLMJudgeEvaluations(unittest.TestCase):
             score = evaluation.score.value
             self.assertIn(score, class_config)
             self.assertEqual(evaluation.score.description, class_config[score])
+
+            judge_evaluations.append(evaluation)
+            human_evaluation = copy.copy(evaluation)
+            score_val = random.choice(list(evaluation.scorer().config.keys()))
+            human_evaluation.score = evaluation.scorer(score_val)
+            human_evaluation.rationale = "It felt right."
+            human_evaluations.append(human_evaluation)
+
+        judge_eval_set = sum(judge_evaluations)
+        human_eval_set = sum(human_evaluations)
+        judge_perf_eval_set = (
+            human_eval_set.score_diff(judge_eval_set, self._llm_judge, mode="l1")
+        )
+
+        # test EvaluationSet property types
+        assert isinstance(judge_perf_eval_set.prompt, list)
+        assert isinstance(judge_perf_eval_set.response, list)
+        assert isinstance(judge_perf_eval_set.score, list)
+        assert isinstance(judge_perf_eval_set.rationale, list)
+
+        # test EvaluationSet shared property types
+        assert isinstance(judge_perf_eval_set.agent, unify.Evaluator)
+        assert issubclass(judge_perf_eval_set.scorer, unify.Score)
+        assert judge_perf_eval_set.evaluator == self._llm_judge.name
+
+        # test EvaluationSet reduction property types
+        assert isinstance(judge_perf_eval_set.mean_score, float)
+        assert isinstance(judge_perf_eval_set.score_freq, dict)
+        for k, v in judge_perf_eval_set.score_freq.items():
+            assert isinstance(k, float)
+            assert isinstance(v, int)
 
 
 class TestLLMJuryEvaluator(unittest.TestCase):
