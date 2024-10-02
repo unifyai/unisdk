@@ -641,22 +641,22 @@ class TestToolAgentAndLLMJudgeEvaluations(unittest.TestCase):
         )
 
         # test EvaluationSet property types
-        assert isinstance(judge_perf_eval_set.prompt, list)
-        assert isinstance(judge_perf_eval_set.response, list)
-        assert isinstance(judge_perf_eval_set.score, list)
-        assert isinstance(judge_perf_eval_set.rationale, list)
+        self.assertIsInstance(judge_perf_eval_set.prompt, list)
+        self.assertIsInstance(judge_perf_eval_set.response, list)
+        self.assertIsInstance(judge_perf_eval_set.score, list)
+        self.assertIsInstance(judge_perf_eval_set.rationale, list)
 
         # test EvaluationSet shared property types
-        assert isinstance(judge_perf_eval_set.agent, unify.Evaluator)
-        assert issubclass(judge_perf_eval_set.scorer, unify.Score)
-        assert judge_perf_eval_set.evaluator == self._llm_judge.name
+        self.assertIsInstance(judge_perf_eval_set.agent, unify.Evaluator)
+        self.assertTrue(issubclass(judge_perf_eval_set.scorer, unify.Score))
+        self.assertEqual(judge_perf_eval_set.evaluator, self._llm_judge.name)
 
         # test EvaluationSet reduction property types
-        assert isinstance(judge_perf_eval_set.mean_score, float)
-        assert isinstance(judge_perf_eval_set.score_freq, dict)
+        self.assertIsInstance(judge_perf_eval_set.mean_score, float)
+        self.assertIsInstance(judge_perf_eval_set.score_freq, dict)
         for k, v in judge_perf_eval_set.score_freq.items():
-            assert isinstance(k, float)
-            assert isinstance(v, int)
+            self.assertIsInstance(k, float)
+            self.assertIsInstance(v, int)
 
 
 class TestLLMJuryEvaluator(unittest.TestCase):
@@ -732,19 +732,19 @@ class TestLLMJuryEvaluator(unittest.TestCase):
                 agent=self._client,
                 **datum.model_extra
             )
-            assert isinstance(evaluation.prompt, Prompt)
-            assert isinstance(evaluation.response, unify.ChatCompletion)
-            assert isinstance(evaluation.agent, unify.Unify)
-            assert isinstance(evaluation.score, dict)
+            self.assertIsInstance(evaluation.prompt, Prompt)
+            self.assertIsInstance(evaluation.response, unify.ChatCompletion)
+            self.assertIsInstance(evaluation.agent, unify.Unify)
+            self.assertIsInstance(evaluation.score, dict)
             for key, val in evaluation.score.items():
-                assert isinstance(key, str)
-                assert isinstance(val, unify.Score)
-            assert issubclass(evaluation.scorer, unify.Score)
-            assert evaluation.evaluator is None
-            assert isinstance(evaluation.rationale, dict)
+                self.assertIsInstance(key, str)
+                self.assertIsInstance(val, unify.Score)
+            self.assertTrue(issubclass(evaluation.scorer, unify.Score))
+            self.assertIs(evaluation.evaluator, None)
+            self.assertIsInstance(evaluation.rationale, dict)
             for key, val in evaluation.rationale.items():
-                assert isinstance(key, str)
-                assert isinstance(val, str)
+                self.assertIsInstance(key, str)
+                self.assertIsInstance(val, str)
             jury_evaluations.append(evaluation)
             human_evaluation = copy.copy(evaluation)
             score_val = random.choice(list(evaluation.scorer().config.keys()))
@@ -758,19 +758,19 @@ class TestLLMJuryEvaluator(unittest.TestCase):
         )
 
         # test EvaluationSet property types
-        assert isinstance(jury_perf_eval_set.prompt, list)
-        assert isinstance(jury_perf_eval_set.response, list)
-        assert isinstance(jury_perf_eval_set.score, list)
-        assert isinstance(jury_perf_eval_set.rationale, list)
+        self.assertIsInstance(jury_perf_eval_set.prompt, list)
+        self.assertIsInstance(jury_perf_eval_set.response, list)
+        self.assertIsInstance(jury_perf_eval_set.score, list)
+        self.assertIsInstance(jury_perf_eval_set.rationale, list)
 
         # test EvaluationSet shared property types
-        assert isinstance(jury_perf_eval_set.agent, unify.Evaluator)
-        assert issubclass(jury_perf_eval_set.scorer, unify.Score)
-        assert jury_perf_eval_set.evaluator is None
+        self.assertIsInstance(jury_perf_eval_set.agent, unify.Evaluator)
+        self.assertTrue(issubclass(jury_perf_eval_set.scorer, unify.Score))
+        self.assertIs(jury_perf_eval_set.evaluator, None)
 
         # test EvaluationSet reduction property types
-        assert isinstance(jury_perf_eval_set.mean_score, float)
-        assert isinstance(jury_perf_eval_set.score_freq, dict)
+        self.assertIsInstance(jury_perf_eval_set.mean_score, float)
+        self.assertIsInstance(jury_perf_eval_set.score_freq, dict)
         for k, v in jury_perf_eval_set.score_freq.items():
-            assert isinstance(k, float)
-            assert isinstance(v, int)
+            self.assertIsInstance(k, float)
+            self.assertIsInstance(v, int)
