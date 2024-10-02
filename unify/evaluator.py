@@ -253,10 +253,10 @@ class LLMJudge(Evaluator, abc.ABC):
             the evaluation response. Default is False.
         """
         self._client = client
-        self._judge_prompt = cast(judge_prompt, Prompt)
-        assert self._judge_prompt.messages is not None, \
+        self._prompt = cast(judge_prompt, Prompt)
+        assert self._prompt.messages is not None, \
             "Judge prompt must have at least one message"
-        self._judge_prompt.messages[0]["content"] += self._create_judge_rubric()
+        self._prompt.messages[0]["content"] += self._create_judge_rubric()
         if prompt_parser is None:
             self._prompt_parser = {"user_message": ["messages", -1, "content"]}
         else:
@@ -283,13 +283,39 @@ class LLMJudge(Evaluator, abc.ABC):
     def client(self) -> Union[Unify, AsyncUnify]:
         return self._client
 
+    @property
+    def prompt(self) -> Prompt:
+        return self._prompt
+
+    @property
+    def prompt_parser(self) -> Dict[str, List[Union[str, int]]]:
+        return self._prompt_parser
+
+    @property
+    def response_parser(self) -> Dict[str, List[Union[str, int]]]:
+        return self._response_parser
+
     # Setters
 
-    def set_include_rationale(self, value: bool) -> None:
+    def set_include_rationale(self, value: bool) -> Self:
         self._include_rationale = value
+        return self
 
-    def set_client(self, value: Union[Unify, AsyncUnify]) -> None:
+    def set_client(self, value: Union[Unify, AsyncUnify]) -> Self:
         self._client = value
+        return self
+
+    def set_prompt(self, value: Union[str, Prompt]) -> Self:
+        self._prompt = value
+        return self
+
+    def set_prompt_parser(self, value: Dict[str, List[Union[str, int]]]) -> Self:
+        self._prompt_parser = value
+        return self
+
+    def set_response_parser(self, value: Dict[str, List[Union[str, int]]]) -> Self:
+        self._response_parser = value
+        return self
 
     @staticmethod
     def _extract_json_from_llm_response(response) -> str:
@@ -366,7 +392,7 @@ class LLMJudge(Evaluator, abc.ABC):
             response: ChatCompletion,
             **kwargs
     ) -> Union[Tuple[float, str], float]:
-        messages = copy.deepcopy(self._judge_prompt.messages)
+        messages = copy.deepcopy(self._prompt.messages)
         for i, (item, parser) in enumerate(zip(
                 (prompt, response, kwargs, self.class_config),
                 (self._prompt_parser, self._response_parser, self._extra_parser,
@@ -377,7 +403,7 @@ class LLMJudge(Evaluator, abc.ABC):
                 parser,
                 messages
             )
-        kw = self._judge_prompt.model_dump()
+        kw = self._prompt.model_dump()
         kw["messages"] = messages
         judge_response = self._client.generate(**kw)
         if self._client.return_full_completion:
