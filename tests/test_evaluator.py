@@ -630,6 +630,7 @@ class TestToolAgentAndLLMJudgeEvaluations(unittest.TestCase):
         self._llm_judge = CorrectAnswerEvaluator(
             self._client,
             usr_msg,
+            name="test_evaluator",
             extra_parser={"example_answer": ["example_answer"]}
         )
 
@@ -715,6 +716,22 @@ class TestToolAgentAndLLMJudgeEvaluations(unittest.TestCase):
             self.assertNotIn(self._llm_judge.name, unify.list_evaluators())
             self._llm_judge.upload()
             self.assertIn(self._llm_judge.name, unify.list_evaluators())
+            llm_judge_config = unify.get_evaluator("test_evaluator")
+            self.assertEqual(
+                llm_judge_config["judge_prompt"], self._llm_judge.prompt
+            )
+            self.assertEqual(
+                llm_judge_config["prompt_parser"], self._llm_judge.prompt_parser
+            )
+            self.assertEqual(
+                llm_judge_config["response_parser"], self._llm_judge.response_parser
+            )
+            self.assertEqual(
+                llm_judge_config["class_config"], self._llm_judge.class_config
+            )
+            self.assertEqual(
+                llm_judge_config["judge_models"], self._llm_judge.client.endpoint
+            )
 
 
 class TestLLMJuryEvaluator(unittest.TestCase):
