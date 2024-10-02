@@ -443,7 +443,7 @@ class LLMJudge(Evaluator, abc.ABC):
             judge_prompt=self._prompt.model_dump(),
             prompt_parser=self._prompt_parser,
             response_parser=self._response_parser,
-            class_config=[{"label": label, "score": score, "description": ""}
+            class_config=[{"label": label, "score": score}
                           for score, label in self.class_config.items()],
             # description=description,  # ToDo: uncomment once orchestra DB is updated
             judge_models=self.client.endpoint,
