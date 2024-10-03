@@ -372,7 +372,7 @@ class _UniLLMClient(_Client, abc.ABC):
         ):
             if self._model:
                 raise Exception(
-                    "Current model {} does not support the specified provider {},"
+                    "Current model {} does not support the specified provider {}, "
                     "please select one of: {}".format(
                         self._model, value, valid_providers
                     )
