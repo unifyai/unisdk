@@ -489,9 +489,10 @@ class LLMJudge(Evaluator):
         assert len(judge_config["judge_models"]) == 1, \
             "Only one judge is permitted when initializing an LLMJudge instance."
         return LLMJudge(
+            score_config=judge_config["score_config"],
+            name=name,
             client=unify.Unify(judge_config["judge_models"][0]),
             prompt=judge_config["judge_prompt"],
-            name=name,
             prompt_parser=judge_config["prompt_parser"],
             response_parser=judge_config["response_parser"],
             # extra_parser=judge_config["extra_parser"],
@@ -522,10 +523,13 @@ class LLMJudge(Evaluator):
             judge_prompt=self._prompt.model_dump(),
             prompt_parser=self._prompt_parser,
             response_parser=self._response_parser,
-            extra_parser=self._extra_parser,
-            score_config=[{"label": label, "score": score}
+            # extra_parser=self._extra_parser,  # ToDo: uncomment once orchestra updated
+            class_config=[{"label": label, "score": score}
                           for score, label in self.score_config.items()],
-            # description=description,  # ToDo: uncomment once orchestra DB is updated
+            # score_config=[{"label": label, "score": score}
+            #               for score, label in self.score_config.items()],
+            # ToDo: uncomment once orchestra updated
+            # description=description,  # ToDo: uncomment once orchestra DB updated
             judge_models=self.client.endpoint,
             client_side=False
         )

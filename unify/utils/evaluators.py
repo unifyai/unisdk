@@ -3,6 +3,7 @@ import requests
 from typing import Optional, List, Any, Dict
 
 from unify import BASE_URL
+from ..types.chat import Prompt
 from .helpers import _validate_api_key
 
 
@@ -64,7 +65,7 @@ def get_evaluator(name: str, api_key: Optional[str] = None) -> Dict[str, Any]:
 
     response = response.json()
 
-    response["judge_prompt"] = json.loads(response["judge_prompt"])
+    response["judge_prompt"] = Prompt(**json.loads(response["judge_prompt"]))
     response["prompt_parser"] = json.loads(response["prompt_parser"])
     response["response_parser"] = json.loads(response["response_parser"])
     response["score_config"] = {
