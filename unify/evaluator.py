@@ -666,6 +666,38 @@ class LLMJury(Evaluator, abc.ABC):
         # assert all(j.extra_parser == self._judges[0].extra_parser
         #            for j in self._judges), error_msg
 
+    @staticmethod
+    def from_upstream(name: str) -> LLMJury:
+        """
+        Return an LLMJury instance, initialized from the upstream LLMJury configuration.
+
+        Args:
+            name:
+            The name of the upstream LLM Jury to create a local instance for.
+
+        Returns:
+            The LLMJury instance.
+        """
+        judge_config = unify.get_evaluator(name)
+        assert len(judge_config["judge_models"]) > 1, \
+            "More than one judge is required to initialize an LLMJury instance."
+        judges = [
+            LLMJudge(
+                score_config=judge_config["score_config"],
+                name=endpoint,
+                client=unify.Unify(endpoint),
+                prompt=judge_config["judge_prompt"],
+                prompt_parser=judge_config["prompt_parser"],
+                response_parser=judge_config["response_parser"],
+                # extra_parser=judge_config["extra_parser"],
+            ) for endpoint in judge_config["judge_models"]
+        ]
+        return LLMJury(
+            score_config=judge_config["score_config"],
+            judges=judges,
+            name=name
+        )
+
     def upload(
             self,
             description: Optional[str] = None,

@@ -925,4 +925,26 @@ class TestLLMJuryEvaluator(unittest.TestCase):
             )
 
     def test_download_llm_jury(self):
-        pass
+        with EvaluatorDownloadTesting(self._llm_jury):
+            self.assertIn(self._llm_jury.name, unify.list_evaluators())
+            new_jury = unify.LLMJury.from_upstream("test_evaluator")
+            for new_judge, orig_judge in zip(new_jury.judges, self._llm_jury.judges):
+                # self.assertEqual(
+                #     new_judge.prompt.model_dump(), orig_judge.prompt.model_dump()
+                # )
+                self.assertEqual(
+                    new_judge.prompt_parser, orig_judge.prompt_parser
+                )
+                self.assertEqual(
+                    new_judge.response_parser, orig_judge.response_parser
+                )
+                # self.assertEqual(
+                #     new_judge.extra_parser, orig_judge.extra_parser
+                # )
+                self.assertEqual(
+                    new_judge.score_config, orig_judge.score_config
+                )
+            self.assertEqual(
+                [j.client.endpoint for j in new_jury.judges],
+                [j.client.endpoint for j in self._llm_jury.judges]
+            )
