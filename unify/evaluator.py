@@ -23,6 +23,7 @@ class Evaluator(abc.ABC):
 
     def __init__(
             self,
+            score_config: Optional[Union[Score, Type[Score], Dict[float, str]]] = None,
             name: Optional[str] = None,
             api_key: Optional[str] = None,
     ):
@@ -32,6 +33,10 @@ class Evaluator(abc.ABC):
         Args:
             name: The name for this evaluator.
 
+            score_config: Either a derived Score subclass, or the configuration for the
+            scores provided by this evaluator with the score floating values as keys and
+            the  descriptions for these scores as the values.
+
             api_key: API key for accessing the Unify API. If None, it attempts to
             retrieve the API key from the environment variable UNIFY_KEY. Defaults to
             None.
@@ -40,6 +45,18 @@ class Evaluator(abc.ABC):
             UnifyError: If the API key is missing.
         """
         self._name = name
+        if isinstance(score_config, dict):
+            self._score_config = score_config
+            self._score_class = unify.Score(config=score_config)
+        elif isinstance(score_config, type) and issubclass(score_config, Score):
+            score_config = score_config()
+            self._score_config = score_config.config
+            self._score_class = score_config
+        elif isinstance(score_config, Score):
+            self._score_config = score_config.config
+            self._score_class = score_config
+        else:
+            raise Exception("score_config must either be a Score subclass or a dict.")
         self._api_key = _validate_api_key(api_key)
 
     # Properties #
@@ -49,6 +66,14 @@ class Evaluator(abc.ABC):
     def name(self) -> Optional[str]:
         return self._name
 
+    @property
+    def score_config(self) -> Dict[float, str]:
+        return self._score_config
+
+    @property
+    def score_class(self) -> Score:
+        return self._score_class
+
     # Setters #
     # --------#
 
@@ -57,15 +82,6 @@ class Evaluator(abc.ABC):
 
     # Abstract #
     # ---------#
-
-    @property
-    def class_config(self) -> Dict[float, str]:
-        return self.scorer().config
-
-    @property
-    @abstractmethod
-    def scorer(self) -> Type[Score]:
-        raise NotImplemented
 
     @abstractmethod
     def _evaluate(
@@ -130,7 +146,7 @@ class Evaluator(abc.ABC):
         evaluator_config = dict(
             name=self._name,
             class_config=[{"label": label, "score": score, "description": ""}
-                          for score, label in self.class_config.items()],
+                          for score, label in self._score_config.items()],
             # description=description,  # ToDo: uncomment once orchestra DB is updated
             client_side=True
         )
@@ -174,12 +190,24 @@ class Evaluator(abc.ABC):
         if "agent" in params:
             kwargs["agent"] = agent
         # upcast or downcast prompt to the expected type
-        expected_prompt_type = params["prompt"].annotation if "prompt" in params \
-            else Prompt
+        if "prompt" in params:
+            annotation = params["prompt"].annotation
+            if isinstance(annotation, str):
+                expected_prompt_type = eval(annotation)
+            else:
+                expected_prompt_type = annotation
+        else:
+            expected_prompt_type = Prompt
         prompt = cast(prompt, expected_prompt_type)
         # upcast or downcast response to the expected type
-        expected_response_type = params["response"].annotation if "response" in params \
-            else ChatCompletion
+        if "response" in params:
+            annotation = params["response"].annotation
+            if isinstance(annotation, str):
+                expected_response_type = eval(annotation)
+            else:
+                expected_response_type = annotation
+        else:
+            expected_response_type = ChatCompletion
         response = cast(response, expected_response_type)
 
         # perform the evaluation
@@ -200,9 +228,9 @@ class Evaluator(abc.ABC):
             del kwargs["agent"]
         # score upcasting
         if isinstance(score, dict):
-            score = Scores({k: cast(v, self.scorer) for k, v in score.items()})
+            score = Scores({k: self._score_class(v) for k, v in score.items()})
         elif score is not None:
-            score = cast(score, self.scorer)
+            score = self._score_class(score)
         if isinstance(rationale, dict):
             rationale = Rationales(rationale)
         # return evaluation
@@ -211,34 +239,39 @@ class Evaluator(abc.ABC):
             response=response,
             agent=agent,
             score=score,
-            scorer=self.scorer,
             evaluator=self.name,
             rationale=rationale,
             **kwargs
-        )
+            )
 
 
-class LLMJudge(Evaluator, abc.ABC):
+class LLMJudge(Evaluator):
 
     def __init__(
             self,
-            client: Union[Unify, AsyncUnify],
-            prompt: Union[str, Prompt],
+            score_config: Optional[Union[Score, Type[Score], Dict[float, str]]] = None,
             name: Optional[str] = None,
+            client: Union[Unify, AsyncUnify] = None,
+            prompt: Union[str, Prompt] = None,
             prompt_parser: Optional[Dict[str, List[Union[str, int]]]] = None,
             response_parser: Optional[Dict[str, List[Union[str, int]]]] = None,
             extra_parser: Optional[Dict[str, List[Union[str, int]]]] = None,
             include_rationale: bool = False,
+            api_key: Optional[str] = None,
     ):
         """
         Creates an LLM as a Judge Evaluator.
 
         Args:
+            score_config: Either a derived Score subclass, or the configuration for the
+            scores provided by this evaluator with the score floating values as keys and
+            the  descriptions for these scores as the values.
+
+            name: The name to give to this LLM Judge evaluator, optional.
+
             client: The client to use as the LLM Judge.
 
             prompt: The prompt for the judge to use when performing evaluations.
-
-            name: The name to give to this LLM Judge evaluator, optional.
 
             prompt_parser: Function to parse the prompt and update corresponding
             placeholders in the judge user message and system message, optional.
@@ -252,8 +285,22 @@ class LLMJudge(Evaluator, abc.ABC):
 
             include_rationale: Whether to include the LLM's rationale as part of
             the evaluation response. Default is False.
+
+            api_key: API key for accessing the Unify API. If None, it attempts to
+            retrieve the API key from the environment variable UNIFY_KEY. Defaults to
+            None.
+
+        Raises:
+            UnifyError: If the API key is missing.
         """
         self._client = client
+
+        super().__init__(
+            score_config=score_config,
+            name=name if name is not None else self._client.endpoint,
+            api_key=api_key
+        )
+
         self._prompt = cast(prompt, Prompt)
         assert self._prompt.messages is not None, \
             "Judge prompt must have at least one message"
@@ -270,9 +317,7 @@ class LLMJudge(Evaluator, abc.ABC):
             self._response_parser = response_parser
         self._extra_parser = extra_parser
         self._include_rationale = include_rationale
-        self._class_config_parser = {"class_config": None}
-        name = name if name is not None else self._client.endpoint
-        super().__init__(name)
+        self._score_config_parser = {"score_config": None}
 
     # Properties
 
@@ -349,7 +394,7 @@ class LLMJudge(Evaluator, abc.ABC):
         prompt = ("First provide your explanation, "
                   "then write down your final rating according to the "
                   "following guidelines:")
-        for score_val, description in self.class_config.items():
+        for score_val, description in self.score_config.items():
             head_str = f"""\n\t - "{score_val}" """
             head_str += f""": {description}"""
             prompt += head_str
@@ -403,9 +448,9 @@ class LLMJudge(Evaluator, abc.ABC):
     ) -> Union[Tuple[float, str], float]:
         messages = copy.deepcopy(self._prompt.messages)
         for i, (item, parser) in enumerate(zip(
-                (prompt, response, kwargs, self.class_config),
+                (prompt, response, kwargs, self.score_config),
                 (self._prompt_parser, self._response_parser, self._extra_parser,
-                 self._class_config_parser)
+                 self._score_config_parser)
         )):
             messages = self._update_judge_messages(
                 copy.deepcopy(item),
@@ -444,12 +489,12 @@ class LLMJudge(Evaluator, abc.ABC):
         assert len(judge_config["judge_models"]) == 1, \
             "Only one judge is permitted when initializing an LLMJudge instance."
         return LLMJudge(
-            client=unify.Unify(judge_config["judge_models"]),
+            client=unify.Unify(judge_config["judge_models"][0]),
             prompt=judge_config["judge_prompt"],
             name=name,
             prompt_parser=judge_config["prompt_parser"],
             response_parser=judge_config["response_parser"],
-            extra_parser=judge_config["extra_parser"],
+            # extra_parser=judge_config["extra_parser"],
         )
 
     def upload(self, description: Optional[str] = None, overwrite: bool = False) \
@@ -478,8 +523,8 @@ class LLMJudge(Evaluator, abc.ABC):
             prompt_parser=self._prompt_parser,
             response_parser=self._response_parser,
             extra_parser=self._extra_parser,
-            class_config=[{"label": label, "score": score}
-                          for score, label in self.class_config.items()],
+            score_config=[{"label": label, "score": score}
+                          for score, label in self.score_config.items()],
             # description=description,  # ToDo: uncomment once orchestra DB is updated
             judge_models=self.client.endpoint,
             client_side=False
@@ -524,7 +569,7 @@ class DefaultLLMJudge(LLMJudge):
         "Identify any mistakes. "
         "Be as objective as possible."
         template_no_ref = """
-        {class_config}
+        {score_config}
 
         [start of user message]
         {user_message}
@@ -533,7 +578,7 @@ class DefaultLLMJudge(LLMJudge):
         [start of assistant response]
         {assistant_response}
         [end of assistant response]"""
-        judge_prompt = Prompt(
+        prompt = Prompt(
             messages=[
                 {
                     "role": "system",
@@ -546,21 +591,19 @@ class DefaultLLMJudge(LLMJudge):
             ],
         )
         super().__init__(
+            DefaultJudgeScore,
             client=client,
-            judge_prompt=judge_prompt,
+            prompt=prompt,
             name="default_llm_judge<{}>".format(client.endpoint)
         )
-
-    @property
-    def scorer(self) -> Type[DefaultJudgeScore]:
-        return DefaultJudgeScore
 
 
 class LLMJury(Evaluator, abc.ABC):
 
     def __init__(
             self,
-            judges: List[LLMJudge],
+            score_config: Optional[Union[Score, Type[Score], Dict[float, str]]] = None,
+            judges: List[LLMJudge] = None,
             name: Optional[str] = None,
             include_rationale: bool = False,
     ):
@@ -568,6 +611,10 @@ class LLMJury(Evaluator, abc.ABC):
         Creates an LLM as a Judge Evaluator.
 
         Args:
+            score_config: Either a derived Score subclass, or the configuration for the
+            scores provided by this evaluator with the score floating values as keys and
+            the  descriptions for these scores as the values.
+
             judges: The client to use as the LLM Judge.
 
             name: The name to give to this LLM Judge evaluator, optional.
@@ -582,7 +629,7 @@ class LLMJury(Evaluator, abc.ABC):
         self._judges = judges
         self._include_rationale = include_rationale
         self._num_judges = len(judges)
-        super().__init__(name)
+        super().__init__(score_config, name)
 
     # noinspection PyMethodOverriding
     def _evaluate(

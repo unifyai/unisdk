@@ -39,15 +39,26 @@ class Score(Datum):
         global DEFAULT_CONFIG
         if config is None:
             config = DEFAULT_CONFIG
+        if isinstance(value, Score):
+            super().__init__(
+                value=value.value,
+                description=value.description,
+                config=value.config
+            )
+            return
         assert value is None or value in config, \
             "value {} passed is not a valid value, " \
             "based on the config for this Score class {}".format(value, config)
         super().__init__(
             value=value,
-            description="Failed to parse judge response" if value is None
-            else config[value],
+            description="" if value is None else config[value],
             config=config
         )
+
+    def __call__(self, value: float) -> Score:
+        if "config" in self.__class__.__init__.__annotations__:
+            return self.__class__(value, self.config)
+        return self.__class__(value)
 
     def __sub__(self, other: Union[Dict, Score, unify.Scores, float, int]):
         if isinstance(other, Score):

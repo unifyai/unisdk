@@ -97,7 +97,6 @@ class Evaluation(Datum, extra=Extra.allow, arbitrary_types_allowed=True):
     # ToDo work out why above fails the pydantic_validator when passing Scores,
     #  but the below line does not.
     score: Optional[Union[Scores, Score]]
-    scorer: Type[Score]
     evaluator: Optional[str] = None
     # rationale: Optional[Union[str, Rationales]] = None
     # ToDo work out why above fails the pydantic_validator when passing Rationales,
@@ -144,10 +143,10 @@ class EvaluationSet(Dataset):
         assert all(e.agent == evaluations[0].agent for e in evaluations), (
             consistency_msg.format("agent"))
         self._agent = evaluations[0].agent
-        # scorer
-        assert all(e.scorer is evaluations[0].scorer for e in evaluations), (
-            consistency_msg.format("scorer"))
-        self._scorer = evaluations[0].scorer
+        # score config
+        assert all(e.score.config == evaluations[0].score.config
+                   for e in evaluations), consistency_msg.format("score_config")
+        self._score_config = evaluations[0].score.config
         # evaluator
         assert all(e.evaluator == evaluations[0].evaluator for e in evaluations), (
             consistency_msg.format("evaluator"))
@@ -156,7 +155,7 @@ class EvaluationSet(Dataset):
         # shared data
         shared_data = {
             "agent": self._agent,
-            "scorer": self._scorer,
+            "score_config": self._score_config,
             "evaluator": self._evaluator
         }
 
@@ -235,8 +234,8 @@ class EvaluationSet(Dataset):
         return self._rationale
 
     @property
-    def scorer(self) -> Type[Score]:
-        return self._scorer
+    def score_config(self) -> Type[Score]:
+        return self._score_config
 
     @property
     def mean_score(self) -> float:
@@ -310,10 +309,10 @@ class EvaluationSet(Dataset):
         data = [copy.copy(d) for d in self._data]
         for d, s in zip(data, scores):
             d.score = s
-            d.scorer = {
+            d.score_config = {
                 "relative": RelDiffScore,
                 "l1": L1DiffScore
-            }[mode]
+            }[mode]().config
             d.agent = agent
         return EvaluationSet(
             data,

@@ -67,9 +67,10 @@ def get_evaluator(name: str, api_key: Optional[str] = None) -> Dict[str, Any]:
     response["judge_prompt"] = json.loads(response["judge_prompt"])
     response["prompt_parser"] = json.loads(response["prompt_parser"])
     response["response_parser"] = json.loads(response["response_parser"])
-    response["class_config"] = {
+    response["score_config"] = {
         dct["score"]: dct["label"] for dct in json.loads(response["class_config"])
     }
+    del response["class_config"]
     response["judge_models"] = json.loads(response["judge_models"])
 
     return response
