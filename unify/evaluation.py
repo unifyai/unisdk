@@ -138,15 +138,11 @@ class EvaluationSet(Dataset):
         if isinstance(evaluations, Evaluation):
             evaluations = [evaluations]
         consistency_msg = \
-            "All evaluations passed to an EvaluationSet must shared the same {}."
+            "All evaluations passed to an EvaluationSet must share the same {}."
         # agent
         assert all(e.agent == evaluations[0].agent for e in evaluations), (
             consistency_msg.format("agent"))
         self._agent = evaluations[0].agent
-        # score config
-        assert all(e.score.config == evaluations[0].score.config
-                   for e in evaluations), consistency_msg.format("score_config")
-        self._score_config = evaluations[0].score.config
         # evaluator
         assert all(e.evaluator == evaluations[0].evaluator for e in evaluations), (
             consistency_msg.format("evaluator"))
@@ -155,7 +151,6 @@ class EvaluationSet(Dataset):
         # shared data
         shared_data = {
             "agent": self._agent,
-            "score_config": self._score_config,
             "evaluator": self._evaluator
         }
 
@@ -232,10 +227,6 @@ class EvaluationSet(Dataset):
     @property
     def rationale(self) -> List[str]:
         return self._rationale
-
-    @property
-    def score_config(self) -> Type[Score]:
-        return self._score_config
 
     @property
     def mean_score(self) -> float:
