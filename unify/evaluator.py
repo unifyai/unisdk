@@ -650,3 +650,72 @@ class LLMJury(Evaluator, abc.ABC):
             scores[judge.name] = evaluation.score
             rationales[judge.name] = evaluation.rationale
         return scores, rationales
+
+    def _assert_identical_judge_configs(self):
+        # ToDo: remove these checks once we support evaluators in orchestra as a
+        #  collection of independent (separately uploaded) judges.
+        error_msg = ("All Judges must have identical configurations in order to upload "
+                     "to your user account for deployment on the server side. If you "
+                     "would like to register this as a client side evaluator, "
+                     "then set client_side=True when calling upload")
+        assert all(j.prompt == self._judges[0].prompt for j in self._judges), error_msg
+        assert all(j.prompt_parser == self._judges[0].prompt_parser
+                   for j in self._judges), error_msg
+        assert all(j.response_parser == self._judges[0].response_parser
+                   for j in self._judges), error_msg
+        # assert all(j.extra_parser == self._judges[0].extra_parser
+        #            for j in self._judges), error_msg
+
+    def upload(
+            self,
+            description: Optional[str] = None,
+            overwrite: bool = False,
+            client_side: bool = False
+    ) -> Self:
+        """
+        Register the Evaluator to your account upstream.
+
+        Args:
+
+            description:
+            Optional description of the evaluator, to be registered upstream.
+
+            overwrite:
+            Whether to overwrite the entry for an existing evaluator with the
+            same name if it already exists.
+
+            client_side:
+            Whether to register this as a client-side evaluator. If the judges each have
+            unique configurations, then this is required.
+
+        Returns:
+            This Evaluator after the upload, useful for chaining methods.
+        """
+        self._assert_name_exists()
+        self._assert_identical_judge_configs()
+        if description is None and self.__doc__ is not None:
+            description = self.__doc__
+        evaluator_config = dict(
+            name=self._name,
+            judge_prompt=self._judges[0].prompt.model_dump(),
+            prompt_parser=self._judges[0].prompt_parser,
+            response_parser=self._judges[0].response_parser,
+            # extra_parser=self._judges[0].extra_parser,
+            # ToDo: uncomment once orchestra updated
+            class_config=[{"label": label, "score": score}
+                          for score, label in self.score_config.items()],
+            # score_config=[{"label": label, "score": score}
+            #               for score, label in self.score_config.items()],
+            # ToDo: uncomment once orchestra updated
+            # description=description,  # ToDo: uncomment once orchestra DB updated
+            judge_models=[j.client.endpoint for j in self._judges],
+            client_side=client_side
+        )
+        if overwrite and self._name in list_evaluators():
+            delete_evaluator(self._name)
+        create_evaluator(evaluator_config=evaluator_config, api_key=self._api_key)
+        return self
+
+    @property
+    def judges(self) -> List[LLMJudge]:
+        return self._judges

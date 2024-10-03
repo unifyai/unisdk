@@ -751,9 +751,9 @@ class TestToolAgentAndLLMJudgeEvaluations(unittest.TestCase):
         with EvaluatorDownloadTesting(self._llm_judge):
             self.assertIn(self._llm_judge.name, unify.list_evaluators())
             judge = unify.LLMJudge.from_upstream("test_evaluator")
-            # self.assertEqual(
-            #     judge.prompt.model_dump(), self._llm_judge.prompt.model_dump()
-            # )
+            self.assertEqual(
+                judge.prompt.model_dump(), self._llm_judge.prompt.model_dump()
+            )
             self.assertEqual(
                 judge.prompt_parser, self._llm_judge.prompt_parser
             )
@@ -837,7 +837,11 @@ class TestLLMJuryEvaluator(unittest.TestCase):
         ]
         _judges = [unify.DefaultLLMJudge(unify.Unify(ep, cache=True))
                    for ep in endpoints]
-        self._evaluator = SummaryEvaluator(_judges, include_rationale=True)
+        self._llm_jury = SummaryEvaluator(
+            _judges,
+            "test_evaluator",
+            include_rationale=True
+        )
 
     def test_evals(self) -> None:
         unify.set_repr_mode("concise")
@@ -845,7 +849,7 @@ class TestLLMJuryEvaluator(unittest.TestCase):
         human_evaluations = list()
         for datum in self._dataset:
             response = self._client.generate(**datum.prompt.model_dump())
-            evaluation = self._evaluator.evaluate(
+            evaluation = self._llm_jury.evaluate(
                 response=response,
                 agent=self._client,
                 **datum.model_extra
@@ -872,7 +876,7 @@ class TestLLMJuryEvaluator(unittest.TestCase):
         jury_eval_set = sum(jury_evaluations)
         human_eval_set = sum(human_evaluations)
         jury_perf_eval_set = (
-            human_eval_set.score_diff(jury_eval_set, self._evaluator, mode="l1")
+            human_eval_set.score_diff(jury_eval_set, self._llm_jury, mode="l1")
         )
 
         # test EvaluationSet property types
@@ -892,3 +896,33 @@ class TestLLMJuryEvaluator(unittest.TestCase):
         for k, v in jury_perf_eval_set.score_freq.items():
             self.assertIsInstance(k, float)
             self.assertIsInstance(v, int)
+
+    def test_upload_llm_jury(self):
+        with EvaluatorUploadTesting():
+            self.assertNotIn(self._llm_jury.name, unify.list_evaluators())
+            self._llm_jury.upload()
+            self.assertIn(self._llm_jury.name, unify.list_evaluators())
+            llm_judge_config = unify.get_evaluator("test_evaluator")
+            for judge in self._llm_jury.judges:
+                self.assertEqual(
+                    llm_judge_config["judge_prompt"], judge.prompt.model_dump()
+                )
+                self.assertEqual(
+                    llm_judge_config["prompt_parser"], judge.prompt_parser
+                )
+                self.assertEqual(
+                    llm_judge_config["response_parser"], judge.response_parser
+                )
+                # self.assertEqual(
+                #     llm_judge_config["extra_parser"], self._llm_judge.extra_parser
+                # )
+                self.assertEqual(
+                    llm_judge_config["score_config"], judge.score_config
+                )
+            self.assertEqual(
+                llm_judge_config["judge_models"],
+                [j.client.endpoint for j in self._llm_jury.judges]
+            )
+
+    def test_download_llm_jury(self):
+        pass
