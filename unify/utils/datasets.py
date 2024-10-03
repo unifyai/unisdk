@@ -4,6 +4,7 @@ from typing import List, Dict, Optional, Union
 
 from unify import BASE_URL
 from unify.types import Prompt, Datum
+from unify.types.dataset import Dataset
 from .helpers import _validate_api_key, _res_to_list
 
 
@@ -74,7 +75,7 @@ def download_dataset(
     path: Optional[str] = None,
     raw_return: bool = False,
     api_key: Optional[str] = None,
-) -> Union[List[Datum], None]:
+) -> Union[Dataset, None]:
     """
     Downloads a dataset from the platform.
 
@@ -107,10 +108,15 @@ def download_dataset(
     ret = json.loads(response.text)
     if raw_return:
         return ret
-    return [Datum(
-        **{k: Prompt(**v) if k == "prompt" else v
-           for k, v in item.items() if k not in ("id", "num_tokens", "timestamp")}
-    ) for item in ret]
+    return Dataset(
+        prompts= [
+            Datum(
+                **{k: Prompt(**v) if k == "prompt" else v
+                for k, v in item.items() if k not in ("id", "num_tokens", "timestamp")}
+            )
+            for item in ret
+        ]
+    )
 
 
 def delete_dataset(name: str, api_key: Optional[str] = None) -> str:

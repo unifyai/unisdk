@@ -1,7 +1,5 @@
 import abc
 import inspect
-import rich.repr
-from io import StringIO
 from rich.console import Console
 from pydantic import BaseModel
 from pydantic import create_model
@@ -9,34 +7,16 @@ from pydantic._internal._model_construction import ModelMetaclass
 
 import unify
 
-RICH_CONSOLE = Console(file=StringIO())
-
 
 class _Formatted(abc.ABC):
 
-    @staticmethod
-    def _indent_text(to_print):
-        chunks = to_print.split("\n")
-        num_chunks = len(chunks)
-        detected = False
-        prev_chunk = chunks[0]
-        for i, chunk in enumerate(chunks[:-1]):
-            if i in (0, num_chunks-2) or chunk.startswith(" "):
-                detected = False
-                continue
-            if not detected:
-                prev_chunk = chunks[i-1]
-            detected = True
-            leading_spaces = len(prev_chunk) - len(prev_chunk.lstrip())
-            chunks[i] = " " * (leading_spaces + 11) + chunk
-        return "\n".join(chunks)
-
-    def _repr(self, to_print):
-        # ToDO find more elegant way to do this
-        global RICH_CONSOLE
-        with RICH_CONSOLE.capture() as capture:
-            RICH_CONSOLE.print(to_print)
-        return self._indent_text(capture.get())
+    def _repr(self, item) -> str:
+        class_ = item.__class__
+        item = class_(**self._truncate_model(item))
+        console = Console()
+        with console.capture() as capture:
+            console.print(item)
+        return capture.get().strip("\n")
 
     def __repr__(self) -> str:
         return self._repr(self)
@@ -135,13 +115,29 @@ class _Formatted(abc.ABC):
             )
         return model(**dct)
 
+    def _truncate_model(self, item, cutoff=5):
+        if isinstance(item, list):
+            new_items = [
+                self._truncate_model(it) for it in item[:cutoff]
+            ]
+            if len(item) > cutoff:
+                new_items.append("...")
+            return new_items
+        if isinstance(item, BaseModel):
+            item = item.model_dump()
+        if isinstance(item, dict):
+            return {
+                key: self._truncate_model(value)
+                for key, value in item.items()
+            }
+        return item
+
     def _prune(self, item):
         prune_policy = unify.key_repr(item)
         dct = self._prune_dict(item.model_dump(), prune_policy)
         return self._create_pydantic_model(item, dct)
 
 
-@rich.repr.auto
 class _FormattedBaseModel(_Formatted, BaseModel):
 
     def __repr__(self) -> str:
@@ -149,15 +145,6 @@ class _FormattedBaseModel(_Formatted, BaseModel):
 
     def __str__(self) -> str:
         return self._repr(self._prune(self) if unify.repr_mode() == "concise" else self)
-
-    def __rich_repr__(self):
-        rep = self._prune(self) if unify.repr_mode() == "concise" else self
-        for k in rep.model_fields:
-            yield k, rep.__dict__[k]
-        if rep.model_extra is None:
-            return
-        for k, v in rep.model_extra.items():
-            yield k, v
 
     def full_repr(self):
         """
