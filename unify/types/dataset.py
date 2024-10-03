@@ -46,3 +46,10 @@ class Datum(_FormattedBaseModel, extra=Extra.allow):
 
     def __hash__(self):
         return hash(str(self))
+
+
+class Dataset(_FormattedBaseModel, extra=Extra.allow):
+    prompts: List[Union[Datum, Literal["..."]]] # type: ignore
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
