@@ -700,27 +700,27 @@ class TestToolAgentAndLLMJudgeEvaluations(unittest.TestCase):
 
         judge_eval_set = sum(judge_evaluations)
         human_eval_set = sum(human_evaluations)
-        # judge_perf_eval_set = (
-        #     human_eval_set.score_diff(judge_eval_set, self._llm_judge, mode="l1")
-        # )
-        #
-        # # test EvaluationSet property types
-        # self.assertIsInstance(judge_perf_eval_set.prompt, list)
-        # self.assertIsInstance(judge_perf_eval_set.response, list)
-        # self.assertIsInstance(judge_perf_eval_set.score, list)
-        # self.assertIsInstance(judge_perf_eval_set.rationale, list)
-        #
-        # # test EvaluationSet shared property types
-        # self.assertIsInstance(judge_perf_eval_set.agent, unify.Evaluator)
-        # self.assertTrue(issubclass(judge_perf_eval_set.scorer, unify.Score))
-        # self.assertEqual(judge_perf_eval_set.evaluator, self._llm_judge.name)
-        #
-        # # test EvaluationSet reduction property types
-        # self.assertIsInstance(judge_perf_eval_set.mean_score, float)
-        # self.assertIsInstance(judge_perf_eval_set.score_freq, dict)
-        # for k, v in judge_perf_eval_set.score_freq.items():
-        #     self.assertIsInstance(k, float)
-        #     self.assertIsInstance(v, int)
+        judge_perf_eval_set = (
+            human_eval_set.score_diff(judge_eval_set, self._llm_judge, mode="l1")
+        )
+
+        # test EvaluationSet property types
+        self.assertIsInstance(judge_perf_eval_set.prompt, list)
+        self.assertIsInstance(judge_perf_eval_set.response, list)
+        self.assertIsInstance(judge_perf_eval_set.score, list)
+        self.assertIsInstance(judge_perf_eval_set.rationale, list)
+
+        # test EvaluationSet shared property types
+        self.assertIsInstance(judge_perf_eval_set.agent, unify.Evaluator)
+        self.assertTrue(isinstance(judge_perf_eval_set.score[0], unify.Score))
+        self.assertEqual(judge_perf_eval_set.evaluator, self._llm_judge.name)
+
+        # test EvaluationSet reduction property types
+        self.assertIsInstance(judge_perf_eval_set.mean_score, float)
+        self.assertIsInstance(judge_perf_eval_set.score_freq, dict)
+        for k, v in judge_perf_eval_set.score_freq.items():
+            self.assertIsInstance(k, float)
+            self.assertIsInstance(v, int)
 
     def test_upload_llm_judge(self) -> None:
         with EvaluatorUploadTesting():
