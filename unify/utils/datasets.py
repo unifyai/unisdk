@@ -108,7 +108,7 @@ def download_dataset(
     if raw_return:
         return ret
     return [Datum(
-        **{k: Prompt(**v) if k == "prompt" else v
+        **{k: Prompt(**v, _id=item["id"]) if k == "prompt" else v
            for k, v in item.items() if k not in ("id", "num_tokens", "timestamp")}
     ) for item in ret]
 

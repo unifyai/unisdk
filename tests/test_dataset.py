@@ -315,8 +315,7 @@ class DownloadTesting:
     def __enter__(self):
         if "test_dataset" in unify.list_datasets():
             unify.delete_dataset("test_dataset")
-        dataset = unify.Dataset(["a", "b", "c"], name="test_dataset")
-        dataset.upload()
+        unify.Dataset(["a", "b", "c"], name="test_dataset").upload()
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         if "test_dataset" in unify.list_datasets():
@@ -365,6 +364,15 @@ class TestDatasetDownloading(unittest.TestCase):
             self.assertTrue(hasattr(dataset[i], extra_name))
             self.assertEqual(getattr(dataset[i], extra_name), ans)
         unify.delete_dataset("test_dataset")
+
+    def test_dataset_downloading_prompt_ids(self) -> None:
+        with DownloadTesting():
+            dataset = unify.Dataset.from_upstream("test_dataset")
+            id_collection = list()
+            for datum in dataset:
+                self.assertIsInstance(datum.prompt._id, int)
+                self.assertNotIn(datum.prompt._id, id_collection)
+                id_collection.append(datum.prompt._id)
 
 
 class TestDatasetSync(unittest.TestCase):
