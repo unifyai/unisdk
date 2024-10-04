@@ -26,6 +26,17 @@ class EvaluatorUploadTesting:
             unify.delete_evaluator("test_evaluator")
 
 
+class EvalsUploadTesting:
+
+    def __enter__(self):
+        if unify.get_evaluations("test_dataset"):
+            unify.delete_dataset("test_dataset")
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if unify.get_evaluations("test_dataset") is not None:
+            unify.delete_dataset("test_dataset")
+
+
 class EvaluatorDownloadTesting:
 
     def __init__(self, evaluator: unify.Evaluator):
@@ -49,7 +60,8 @@ class TestMathsEvaluator(unittest.TestCase):
                       "returning only the numeric answer, and nothing else.")
         self._dataset = unify.Dataset(
             [unify.Prompt(q, system_message=system_msg) for q in
-             ["1 + 3", "4 + 7", "6 + 5"]]
+             ["1 + 3", "4 + 7", "6 + 5"]],
+            name="test_dataset"
         )
 
         class MathsEvaluator(unify.Evaluator):
@@ -69,6 +81,13 @@ class TestMathsEvaluator(unittest.TestCase):
 
         self._evaluator = MathsEvaluator(name="test_evaluator")
         self._client = unify.Unify("gpt-4o@openai", cache=True)
+        self._evals = unify.EvaluationSet([
+            self._evaluator.evaluate(
+                prompt=d.prompt,
+                response=self._client.generate(**d.prompt.model_dump()),
+                agent=self._client
+            ) for d in self._dataset
+        ])
 
     def test_evaluator_upcasting(self) -> None:
         for prompt in (unify.Datum("1 + 3"), unify.Prompt("1 + 3"), "1 + 3"):
@@ -124,6 +143,17 @@ class TestMathsEvaluator(unittest.TestCase):
             self.assertNotEqual(downloaded["score_config"],
                                 self._evaluator.score_config)
             self.assertEqual(downloaded["score_config"], new_evaluator.score_config)
+
+    def test_upload_evals(self):
+        with EvalsUploadTesting():
+            self.assertNotIn(self._dataset.name, unify.list_datasets())
+            self.assertNotIn(self._evals.name, unify.get_evaluations(self._dataset.name))
+            self._evals.upload("test_dataset", self._evaluator)
+            self.assertIn(self._dataset.name, unify.list_datasets())
+            self.assertIn(self._evaluator.name, unify.list_evaluators())
+
+    def test_download_evals(self):
+        pass
 
 
 class SimulateFloatInput:

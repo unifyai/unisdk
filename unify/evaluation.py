@@ -1,8 +1,10 @@
 from __future__ import annotations
 import copy
 from pydantic import Extra, BaseModel
-from typing import Union, Optional, List, Dict, Type
+from typing_extensions import Self
+from typing import Union, Optional, List, Dict, Any
 
+import unify
 from unify.agent import Agent
 from unify.dataset import Dataset
 from unify.chat.clients import _Client
@@ -97,7 +99,7 @@ class Evaluation(Datum, extra=Extra.allow, arbitrary_types_allowed=True):
     # ToDo work out why above fails the pydantic_validator when passing Scores,
     #  but the below line does not.
     score: Optional[Union[Scores, Score]]
-    evaluator: Optional[str] = None
+    evaluator: Optional[Any] = None  # << ToDo fix this circular import error
     # rationale: Optional[Union[str, Rationales]] = None
     # ToDo work out why above fails the pydantic_validator when passing Rationales,
     #  but the below line does not.
@@ -131,6 +133,7 @@ class EvaluationSet(Dataset):
             self,
             evaluations: Union[Evaluation, List[Evaluation]],
             *,
+            evaluator: Optional[str, unify.Evaluator] = None,
             name: str = None,
             auto_sync: Union[bool, str] = False,
             api_key: Optional[str] = None
@@ -146,7 +149,10 @@ class EvaluationSet(Dataset):
         # evaluator
         assert all(e.evaluator == evaluations[0].evaluator for e in evaluations), (
             consistency_msg.format("evaluator"))
-        self._evaluator = evaluations[0].evaluator
+        if evaluator is not None:
+            self._evaluator = evaluator
+        else:
+            self._evaluator = evaluations[0].evaluator
 
         # shared data
         shared_data = {
@@ -236,6 +242,14 @@ class EvaluationSet(Dataset):
     def score_freq(self) -> Dict[float, int]:
         return self._score_freq
 
+    # Setters
+
+    def set_evaluator(self, evaluator: unify.Evaluator) -> Self:
+        self._evaluator = evaluator
+        return self
+
+    # Dunders
+
     def __add__(self, other):
         if other == 0:
             return self
@@ -311,3 +325,46 @@ class EvaluationSet(Dataset):
             auto_sync=self._auto_sync_flag,
             api_key=self._api_key
         )
+
+    def _upload_dataset(self, dataset_name: Optional[str]):
+        dataset_name = "" if dataset_name is None else dataset_name
+        if dataset_name not in unify.list_datasets():
+            unify.upload_dataset_from_dictionary(
+                dataset_name, [unify.Datum(p).model_dump() for p in self.prompt]
+            )
+        else:
+            prompts_to_upload = list()
+            for prompt in self.prompt:
+                if prompt._id is None:
+                    prompts_to_upload.append(unify.Datum(prompt).model_dump())
+            unify.add_data(dataset_name, prompts_to_upload)
+
+    @staticmethod
+    def _upload_evaluator(evaluator: Optional[unify.Evaluator]):
+        if evaluator is None or not isinstance(evaluator, unify.Evaluator):
+            raise Exception(
+                "Evaluator must be set in order to upload evaluations. You should call "
+                ".set_evaluator() and pass the evaluator used to generate the "
+                "evaluation.")
+        if evaluator.name not in unify.list_evaluators():
+            evaluator.upload()
+        assert evaluator.name in unify.list_evaluators()
+
+    def upload(
+            self,
+            dataset_name: Optional[str] = None,
+            evaluator: Optional[unify.Evaluator] = None
+    ) -> Self:
+        """
+        Uploads the evaluation set to the console.
+
+        Args:
+            dataset_name: Optional name of the dataset to save (or synchronize) the
+            collection of prompts with upstream.
+
+            evaluator: Optional evaluator to associate with this evaluation.
+            If not passed, then the evaluator property is used. If this is unset, you
+            should set it using set_evaluator().
+        """
+        self._upload_dataset(dataset_name)
+        self._upload_evaluator(evaluator)

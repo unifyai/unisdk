@@ -239,7 +239,7 @@ class Evaluator(abc.ABC):
             response=response,
             agent=agent,
             score=score,
-            evaluator=self.name,
+            evaluator=self,
             rationale=rationale,
             **kwargs
             )
