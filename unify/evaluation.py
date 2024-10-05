@@ -135,7 +135,6 @@ class EvaluationSet(Dataset):
             *,
             evaluator: Optional[str, unify.Evaluator] = None,
             name: str = None,
-            auto_sync: Union[bool, str] = False,
             api_key: Optional[str] = None
     ) -> None:
         if isinstance(evaluations, Evaluation):
@@ -203,7 +202,6 @@ class EvaluationSet(Dataset):
         super().__init__(
             data=evaluations,
             name=name,
-            auto_sync=auto_sync,
             shared_data=shared_data,
             api_key=api_key
         )
@@ -259,7 +257,6 @@ class EvaluationSet(Dataset):
         return EvaluationSet(
             dataset._data,
             name=self._name,
-            auto_sync=self._auto_sync_flag,
             api_key=self._api_key
         )
 
@@ -272,7 +269,6 @@ class EvaluationSet(Dataset):
         return EvaluationSet(
             dataset._data,
             name=self._name,
-            auto_sync=self._auto_sync_flag,
             api_key=self._api_key
         )
 
@@ -285,7 +281,6 @@ class EvaluationSet(Dataset):
         return EvaluationSet(
             dataset._data,
             name=self._name,
-            auto_sync=self._auto_sync_flag,
             api_key=self._api_key
         )
 
@@ -296,7 +291,6 @@ class EvaluationSet(Dataset):
         return EvaluationSet(
             dataset._data,
             name=self._name,
-            auto_sync=self._auto_sync_flag,
             api_key=self._api_key
         )
 
@@ -322,7 +316,6 @@ class EvaluationSet(Dataset):
         return EvaluationSet(
             data,
             name=self._name,
-            auto_sync=self._auto_sync_flag,
             api_key=self._api_key
         )
 
