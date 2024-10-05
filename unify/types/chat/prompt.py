@@ -38,7 +38,6 @@ class Prompt(_FormattedBaseModel):
             self,
             user_message: Optional[str] = None,
             system_message: Optional[str] = None,
-            _id: Optional[int] = None,
             **kwargs
     ):
         """
@@ -48,8 +47,6 @@ class Prompt(_FormattedBaseModel):
             user_message: The user message, optional.
 
             system_message: The system message, optional.
-
-            _id: The unique id of the prompt in the upstream account.
 
             kwargs: All fields expressed in the pydantic type.
 
@@ -67,7 +64,6 @@ class Prompt(_FormattedBaseModel):
         if not kwargs["messages"]:
             kwargs["messages"] = None
         super().__init__(**kwargs)
-        self._id = _id
 
     def __add__(self, other):
         if other == 0:

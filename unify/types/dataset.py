@@ -7,13 +7,21 @@ from .base import _FormattedBaseModel
 
 class Datum(_FormattedBaseModel, extra=Extra.allow):
 
-    def __init__(self, prompt: Optional[str] = None, /, **kwargs):
+    def __init__(
+            self,
+            prompt: Optional[str] = None,
+            /,
+            _id: Optional[int] = None,
+            **kwargs
+    ):
         """
         Create Datum instance.
 
         Args:
             prompt: Optional positional-only prompt,
             very common to store thus special treatment.
+
+            _id: The unique id of the datum in the upstream account.
 
             kwargs: All the data fields to pass.
 
@@ -23,6 +31,7 @@ class Datum(_FormattedBaseModel, extra=Extra.allow):
         if prompt is not None:
             kwargs["prompt"] = unify.cast(prompt, unify.Prompt)
         super().__init__(**kwargs)
+        self._id = _id
 
     def __add__(self, other):
         if other == 0:

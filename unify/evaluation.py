@@ -8,8 +8,8 @@ import unify
 from unify.agent import Agent
 from unify.dataset import Dataset
 from unify.chat.clients import _Client
-from unify.types import (_Formatted, Prompt, Score, RelDiffScore, L1DiffScore, Datum,
-                         ChatCompletion)
+from unify.types import _Formatted, Score, RelDiffScore, L1DiffScore, Datum, \
+    ChatCompletion
 
 
 class Scores(dict, _Formatted):
@@ -92,7 +92,7 @@ class Rationales(dict, _Formatted):
 
 
 class Evaluation(Datum, extra=Extra.allow, arbitrary_types_allowed=True):
-    prompt: Prompt
+    datum: Datum
     response: ChatCompletion
     agent: Union[str, _Client, Agent]
     # score: Union[Score, Scores]
@@ -160,15 +160,15 @@ class EvaluationSet(Dataset):
             "evaluator": self._evaluator
         }
 
-        # prompt
-        if all(e.prompt == evaluations[0].prompt for e in evaluations):
-            val = evaluations[0].prompt
-            self._prompt = val
+        # datum
+        if all(e.datum == evaluations[0].datum for e in evaluations):
+            val = evaluations[0].datum
+            self._datum = val
             if isinstance(val, BaseModel):
                 val = val.model_dump()
-            shared_data["prompt"] = val
+            shared_data["datum"] = val
         else:
-            self._prompt = [e.prompt for e in evaluations]
+            self._datum = [e.datum for e in evaluations]
         # response
         if all(e.response == evaluations[0].response for e in evaluations):
             val = evaluations[0].response
@@ -211,8 +211,8 @@ class EvaluationSet(Dataset):
     # Properties
 
     @property
-    def prompt(self) -> Union[Prompt, List[Prompt]]:
-        return self._prompt
+    def datum(self) -> Union[Datum, List[Datum]]:
+        return self._datum
 
     @property
     def response(self) -> Union[ChatCompletion, List[ChatCompletion]]:
@@ -328,16 +328,16 @@ class EvaluationSet(Dataset):
 
     def _upload_dataset(self, dataset_name: Optional[str]):
         dataset_name = "" if dataset_name is None else dataset_name
-        if dataset_name not in unify.list_datasets():
+        if dataset_name not in unify.list_datasets() and dataset_name != "":
             unify.upload_dataset_from_dictionary(
-                dataset_name, [unify.Datum(p).model_dump() for p in self.prompt]
+                dataset_name, [unify.Datum(p).model_dump() for p in self.datum]
             )
         else:
-            prompts_to_upload = list()
-            for prompt in self.prompt:
-                if prompt._id is None:
-                    prompts_to_upload.append(unify.Datum(prompt).model_dump())
-            unify.add_data(dataset_name, prompts_to_upload)
+            data_to_upload = list()
+            for datum in self.datum:
+                if datum._id is None:
+                    data_to_upload.append(datum.model_dump())
+            unify.add_data(dataset_name, data_to_upload)
 
     @staticmethod
     def _upload_evaluator(evaluator: Optional[unify.Evaluator]):
