@@ -19,7 +19,6 @@ class Dataset(_Formatted):
                     List[Union[str, Dict, Prompt, Datum]]],
         *,
         name: str = None,
-        auto_sync: Union[bool, str] = False,
         shared_data: Dict = None,
         api_key: Optional[str] = None,
     ) -> None:
@@ -33,18 +32,6 @@ class Dataset(_Formatted):
             above will also be converted to lists and processed automatically.
 
             name: The name of the dataset.
-
-            auto_sync: Whether to automatically keep this dataset fully synchronized
-            with the upstream variant at all times. If `True` or "both" then the sync
-            will be bidirectional, if "upload" then all local changes will be
-            uploaded to the upstream account without any downloads, if "download"
-            then all upstream changes will be downloaded locally without any uploads.
-            If "upstream_mirrors_local" then the upstream dataset will be anchored to
-            the local version at all times, and any other uploads outside the local
-            dataset will be overwritten. If "local_mirrors_upstream" then the local
-            version will be anchored to the upstream version at all times, and any local
-            changes will be overwritten. If `False` or "neither" then no synchronization
-            will be done automatically.
 
             shared_data: Data which is shared across all items in the dataset, with a
             nested structure following the nested structure of each `Datum` in the
@@ -77,9 +64,7 @@ class Dataset(_Formatted):
             raise Exception("input {} with entries of type {} does not align with "
                             "expected input types.".format(data, type(data[0])))
         self._api_key = _validate_api_key(api_key)
-        self._auto_sync_flag = auto_sync
         self._shared_data = shared_data
-        self._auto_sync()
         super().__init__()
 
     @property
@@ -87,27 +72,7 @@ class Dataset(_Formatted):
         """
         Name of the dataset.
         """
-        self._auto_sync()
         return self._name
-
-    @property
-    def auto_sync(self) -> Union[bool, str]:
-        """
-        The auto-sync mode currently selected.
-        This dictates whether to automatically keep this dataset fully synchronized
-        with the upstream variant at all times. If `True` or "both" then the sync
-        will be bidirectional, if "upload" then all local changes will be
-        uploaded to the upstream account without any downloads, if "download"
-        then all upstream changes will be downloaded locally without any uploads.
-        If "upstream_mirrors_local" then the upstream dataset will be anchored to the
-        local version at all times, and any other uploads outside the local dataset
-        will be overwritten. If "local_mirrors_upstream" then the local version will be
-        anchored to the upstream version at all times, and any local changes will be
-        overwritten. If `False` or "neither" then no synchronization will be done
-        automatically.
-        """
-        self._auto_sync()
-        return self._auto_sync_flag
 
     def set_name(self, name: str) -> Self:
         """
@@ -119,38 +84,12 @@ class Dataset(_Formatted):
         Returns:
             This dataset, useful for chaining methods.
         """
-        self._auto_sync()
         self._name = name
-        return self
-
-    def set_auto_sync(self, auto_sync: Union[bool, str]) -> Self:
-        """
-        Set the value of the auto-sync flag.
-
-        Args:
-            auto_sync: Whether to automatically keep this dataset fully synchronized
-            with the upstream variant at all times. If `True` or "both" then the sync
-            will be bidirectional, if "upload" then all local changes will be
-            uploaded to the upstream account without any downloads, if "download"
-            then all upstream changes will be downloaded locally without any uploads.
-            If "upstream_mirrors_local" then the upstream dataset will be anchored to
-            the local version at all times, and any other uploads outside the local
-            dataset will be overwritten. If "local_mirrors_upstream" then the local
-            version will be anchored to the upstream version at all times, and any local
-            changes will be overwritten. If `False` or "neither" then no synchronization
-            will be done automatically.
-
-        Returns:
-            This dataset, useful for chaining methods.
-        """
-        self._auto_sync()
-        self._auto_sync_flag = auto_sync
         return self
 
     @staticmethod
     def from_upstream(
         name: str,
-        auto_sync: Union[bool, str] = False,
         api_key: Optional[str] = None,
     ) -> Dataset:
         """
@@ -158,9 +97,6 @@ class Dataset(_Formatted):
 
         Args:
             name: The name of the dataset.
-
-            auto_sync: Whether to automatically keep this dataset fully synchronized
-            with the upstream variant at all times.
 
             api_key: API key for accessing the Unify API. If None, it attempts to
             retrieve the API key from the environment variable UNIFY_KEY. Defaults to
@@ -173,7 +109,7 @@ class Dataset(_Formatted):
             UnifyError: If the API key is missing.
         """
         data = unify.download_dataset(name, api_key=api_key)
-        return Dataset(data, name=name, auto_sync=auto_sync, api_key=api_key)
+        return Dataset(data, name=name, api_key=api_key)
 
     def _assert_name_exists(self) -> None:
         assert self._name is not None, (
@@ -196,8 +132,6 @@ class Dataset(_Formatted):
         Returns:
             This dataset, useful for chaining methods.
         """
-        if self._auto_sync_flag == "local_mirrors_upstream":
-            raise Exception("upload not permitted when local mirrors upstream")
         self._assert_name_exists()
         dataset_exists_upstream = self._name in unify.list_datasets(self._api_key)
         raw_data = [d.model_dump() for d in self._data]
@@ -217,12 +151,6 @@ class Dataset(_Formatted):
                 unify.add_data(self._name, raw_data)
             else:
                 unify.upload_dataset_from_dictionary(self._name, raw_data)
-        if self._auto_sync_flag in (True, "both", "download", "local_mirrors_upstream"):
-            auto_sync_flag = self._auto_sync_flag
-            self._auto_sync_flag = False
-            overwrite = True if auto_sync_flag == "local_mirrors_upstream" else False
-            self.download(overwrite=overwrite)
-            self._auto_sync_flag = auto_sync_flag
         return self
 
     def download(self, overwrite: bool = False) -> Self:
@@ -238,8 +166,6 @@ class Dataset(_Formatted):
         Returns:
             This dataset after the in-place download, useful for chaining methods.
         """
-        if self._auto_sync_flag == "upstream_mirrors_local":
-            raise Exception("download not permitted when upstream mirrors local")
         self._assert_name_exists()
         if overwrite:
             self._data = unify.download_dataset(self._name, api_key=self._api_key)
@@ -249,27 +175,7 @@ class Dataset(_Formatted):
             )
             unique_local = [item for item in self._data if item not in upstream_dataset]
             self._data = upstream_dataset + unique_local
-        if self._auto_sync_flag in (True, "both", "upload", "upstream_mirrors_local"):
-            auto_sync_flag = self._auto_sync_flag
-            self._auto_sync_flag = False
-            overwrite = True if auto_sync_flag == "upstream_mirrors_local" else False
-            self.upload(overwrite=overwrite)
-            self._auto_sync_flag = auto_sync_flag
         return self
-
-    def _auto_sync(self) -> None:
-        if self._auto_sync_flag in (True, "both", "download", "local_mirrors_upstream"):
-            auto_sync_flag = self._auto_sync_flag
-            self._auto_sync_flag = False
-            overwrite = True if auto_sync_flag == "local_mirrors_upstream" else False
-            self.download(overwrite=overwrite)
-            self._auto_sync_flag = auto_sync_flag
-        if self._auto_sync_flag in (True, "both", "upload", "upstream_mirrors_local"):
-            auto_sync_flag = self._auto_sync_flag
-            self._auto_sync_flag = False
-            overwrite = True if auto_sync_flag == "upstream_mirrors_local" else False
-            self.upload(overwrite=overwrite)
-            self._auto_sync_flag = auto_sync_flag
 
     def sync(self) -> Self:
         """
@@ -279,11 +185,8 @@ class Dataset(_Formatted):
         Returns:
             This dataset after the in-place sync, useful for chaining methods.
         """
-        auto_sync_flag = self._auto_sync_flag
-        self._auto_sync_flag = False
         self.download()
         self.upload()
-        self._auto_sync_flag = auto_sync_flag
         return self
 
     def upstream_diff(self) -> Self:
@@ -305,7 +208,6 @@ class Dataset(_Formatted):
             "The following {} queries are stored upstream but not locally\n: "
             "{}".format(len(unique_local), unique_local)
         )
-        self._auto_sync()
         return self
 
     def add(self, other: Union[Dataset, str, Dict, Prompt, Datum, int,
@@ -324,7 +226,7 @@ class Dataset(_Formatted):
             return self
         other = other if isinstance(other, Dataset) else Dataset(other)
         data = list(dict.fromkeys(self._data + other._data))
-        return Dataset(data=data, auto_sync=self._auto_sync_flag, api_key=self._api_key)
+        return Dataset(data=data, api_key=self._api_key)
 
     def sub(self, other: Union[Dataset, str, Dict, Prompt, Datum,
                                List[Union[str, Dict, Prompt, Datum]]]) -> Self:
@@ -344,7 +246,7 @@ class Dataset(_Formatted):
             "B are also present in dataset A"
         )
         data = [item for item in self._data if item not in other]
-        return Dataset(data=data, auto_sync=self._auto_sync_flag, api_key=self._api_key)
+        return Dataset(data=data, api_key=self._api_key)
 
     def inplace_add(
             self,
@@ -363,11 +265,8 @@ class Dataset(_Formatted):
         """
         if other == 0:
             return self
-        if self._auto_sync_flag == "local_mirrors_upstream":
-            raise TypeError("Adding entries not permitted when local mirrors upstream")
         other = other if isinstance(other, Dataset) else Dataset(other)
         self._data = list(dict.fromkeys(self._data + other._data))
-        self._auto_sync()
         return self
 
     def inplace_sub(
@@ -385,15 +284,12 @@ class Dataset(_Formatted):
         Returns:
             This dataset following the in-place subtraction.
         """
-        if self._auto_sync_flag == "local_mirrors_upstream":
-            raise TypeError("Adding entries not permitted when local mirrors upstream")
         other = other if isinstance(other, Dataset) else Dataset(other)
         assert other in self, (
             "cannot subtract dataset B from dataset A unless all queries of dataset "
             "B are also present in dataset A"
         )
         self._data = [item for item in self._data if item not in other]
-        self._auto_sync()
         return self
 
     def __add__(self, other: Union[Dataset, str, Dict, Prompt, Datum,
@@ -498,7 +394,6 @@ class Dataset(_Formatted):
         Returns:
             A Datum instance per iteration.
         """
-        self._auto_sync()
         for x in self._data:
             yield x
 
@@ -542,7 +437,6 @@ class Dataset(_Formatted):
         Returns:
             A Datum or Dataset instance, for int and slice queries respectively.
         """
-        self._auto_sync()
         if isinstance(item, int):
             return self._data[item]
         elif isinstance(item, slice):
@@ -616,7 +510,6 @@ class Dataset(_Formatted):
         """
         Used by the rich package for representing and print the instance.
         """
-        self._auto_sync()
         if self._shared_data is None:
             yield self._data
         else:
