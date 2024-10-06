@@ -9,24 +9,21 @@ from ..base import _FormattedBaseModel
 
 
 class ChatCompletionMessage(_FormattedBaseModel, _ChatCompletionMessage):
-    model_config = ConfigDict(extra="forbid")
+    pass
 
 
 class Choice(_FormattedBaseModel, _Choice):
-    model_config = ConfigDict(extra="forbid")
     # only override pydantic types  which require FormattedBaseModel
     message: ChatCompletionMessage
 
 
 class CompletionUsage(_FormattedBaseModel, _CompletionUsage):
-    model_config = ConfigDict(extra="forbid")
     # cost is an extra field we've added, not in the OpenAI standard
     # for local models, cost is None
     cost: Optional[float] = None
 
 
 class ChatCompletion(_FormattedBaseModel, _ChatCompletion):
-    model_config = ConfigDict(extra="forbid")
     # only override pydantic types  which require FormattedBaseModel
     choices: List[Choice]
     usage: Optional[CompletionUsage] = None
