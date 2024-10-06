@@ -100,8 +100,11 @@ class _Formatted(abc.ABC):
             dct = dct.model_dump()
         if not inspect.isclass(val) or not issubclass(val, BaseModel):
             return type(dct)
-        config = {k: (self._prune_pydantic(val.model_fields[k].annotation, v),
-                      None) for k, v in dct.items()}
+        fields = val.model_fields
+        if isinstance(val.model_extra, dict):
+            fields = {**fields, **val.model_extra}
+        config = {k: (self._prune_pydantic(fields[k].annotation, v),
+                      None) for k, v in dct.items() if k in fields}
         if isinstance(val, ModelMetaclass):
             name = val.__qualname__
         else:
