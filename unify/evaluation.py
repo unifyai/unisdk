@@ -225,7 +225,7 @@ class EvaluationSet(Dataset):
         return self._score
 
     @property
-    def evaluator(self) -> Union[str, List[str]]:
+    def evaluator(self) -> Union[Any, List[Any]]:  # << ToDo fix this circular import
         return self._evaluator
 
     @property

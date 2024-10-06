@@ -740,7 +740,7 @@ class TestToolAgentAndLLMJudgeEvaluations(unittest.TestCase):
         # test EvaluationSet shared property types
         self.assertIsInstance(judge_perf_eval_set.agent, unify.Evaluator)
         self.assertTrue(isinstance(judge_perf_eval_set.score[0], unify.Score))
-        self.assertEqual(judge_perf_eval_set.evaluator, self._llm_judge.name)
+        self.assertEqual(judge_perf_eval_set.evaluator.name, self._llm_judge.name)
 
         # test EvaluationSet reduction property types
         self.assertIsInstance(judge_perf_eval_set.mean_score, float)
@@ -888,7 +888,7 @@ class TestLLMJuryEvaluator(unittest.TestCase):
             for key, val in evaluation.score.items():
                 self.assertIsInstance(key, str)
                 self.assertIsInstance(val, unify.Score)
-            self.assertIs(evaluation.evaluator, None)
+            self.assertIs(evaluation.evaluator, self._llm_jury)
             self.assertIsInstance(evaluation.rationale, dict)
             for key, val in evaluation.rationale.items():
                 self.assertIsInstance(key, str)
@@ -915,7 +915,7 @@ class TestLLMJuryEvaluator(unittest.TestCase):
         # test EvaluationSet shared property types
         self.assertIsInstance(jury_perf_eval_set.agent, unify.Evaluator)
         self.assertTrue(isinstance(jury_perf_eval_set.score[0], unify.Scores))
-        self.assertIs(jury_perf_eval_set.evaluator, None)
+        self.assertIs(jury_perf_eval_set.evaluator, self._llm_jury)
 
         # test EvaluationSet reduction property types
         self.assertIsInstance(jury_perf_eval_set.mean_score, float)
