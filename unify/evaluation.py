@@ -345,19 +345,75 @@ class EvaluationSet(Dataset):
 
     def upload(
             self,
-            dataset_name: Optional[str] = None,
+            dataset_name: str = "",
             evaluator: Optional[unify.Evaluator] = None
     ) -> Self:
         """
         Uploads the evaluation set to the console.
 
         Args:
-            dataset_name: Optional name of the dataset to save (or synchronize) the
-            collection of prompts with upstream.
+            dataset_name: Optional name of the dataset to save (or synchronize) the data
+            with upstream.
 
             evaluator: Optional evaluator to associate with this evaluation.
             If not passed, then the evaluator property is used. If this is unset, you
             should set it using set_evaluator().
         """
         self._upload_dataset(dataset_name)
+        evaluator = evaluator if evaluator is not None else self._evaluator
         self._upload_evaluator(evaluator)
+        unify.upload_evaluations(
+            evaluator=evaluator,
+            dataset=self.datum,
+            agent=self.agent,
+            evaluations=self._data,
+        )
+        return self
+
+    def download(
+            self,
+            dataset_name: str = "",
+            evaluator: Optional[unify.Evaluator] = None,
+            overwrite: bool = False,
+    ) -> Self:
+        """
+        Downloads all evaluations for the specified evaluator, dataset and agent
+        locally.
+
+        Args:
+            dataset_name: Optional name of the dataset to save (or synchronize) the data
+            with upstream.
+
+            evaluator: Optional evaluator to associate with this evaluation.
+            If not passed, then the evaluator property is used. If this is unset, you
+            should set it using set_evaluator().
+
+            overwrite: Whether to overwrite the local evaluations for any duplicates.
+        """
+        self._upload_dataset(dataset_name)
+        evaluator = evaluator if evaluator is not None else self._evaluator
+        self._upload_evaluator(evaluator)
+        data = unify.get_evaluations(
+            dataset=self.datum,
+            agent=self.agent,
+            evaluator=evaluator
+        )
+        if overwrite:
+            unique_local = [item for item in self._data if item not in data]
+            self._data = data + unique_local
+        else:
+            unique_upstream = [item for item in data if item not in self._data]
+            self._data = self._data + unique_upstream
+        return self
+
+    def sync(self) -> Self:
+        """
+        Synchronize the dataset in both directions, downloading any values missing
+        locally, and uploading any values missing from upstream in the account.
+
+        Returns:
+            This evaluation set after the in-place sync, useful for chaining methods.
+        """
+        self.download()
+        self.upload()
+        return self
