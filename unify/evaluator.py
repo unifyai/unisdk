@@ -16,7 +16,7 @@ from unify.chat.clients import _Client, Unify, AsyncUnify
 from unify.casting import cast
 from .utils.helpers import _validate_api_key
 from .utils.evaluators import create_evaluator, list_evaluators, delete_evaluator
-from unify.types import Score, Prompt, ChatCompletion
+from unify.types import Score, Prompt, Datum, ChatCompletion
 
 
 class Evaluator(abc.ABC):
@@ -218,6 +218,8 @@ class Evaluator(abc.ABC):
 
         # prompt upcasting
         prompt = cast(prompt, Prompt)
+        # datum upcasting
+        datum = Datum(prompt=prompt, **kwargs)
         # response upcasting
         if isinstance(response, dict):
             response = {k: cast(v, ChatCompletion) for k, v in response.items()}
@@ -235,7 +237,7 @@ class Evaluator(abc.ABC):
             rationale = Rationales(rationale)
         # return evaluation
         return Evaluation(
-            prompt=prompt,
+            datum=datum,
             response=response,
             agent=agent,
             score=score,

@@ -12,7 +12,7 @@ from openai.types.chat.chat_completion_tool_message_param import (
 )
 
 import unify
-from unify import Prompt
+from unify import Prompt, Datum
 
 
 class EvaluatorUploadTesting:
@@ -735,7 +735,7 @@ class TestToolAgentAndLLMJudgeEvaluations(unittest.TestCase):
         )
 
         # test EvaluationSet property types
-        self.assertIsInstance(judge_perf_eval_set.prompt, list)
+        self.assertIsInstance(judge_perf_eval_set.datum, list)
         self.assertIsInstance(judge_perf_eval_set.response, list)
         self.assertIsInstance(judge_perf_eval_set.score, list)
         self.assertIsInstance(judge_perf_eval_set.rationale, list)
@@ -884,7 +884,7 @@ class TestLLMJuryEvaluator(unittest.TestCase):
                 agent=self._client,
                 **datum.model_extra
             )
-            self.assertIsInstance(evaluation.prompt, Prompt)
+            self.assertIsInstance(evaluation.datum, Datum)
             self.assertIsInstance(evaluation.response, unify.ChatCompletion)
             self.assertIsInstance(evaluation.agent, unify.Unify)
             self.assertIsInstance(evaluation.score, unify.Scores)
@@ -910,7 +910,7 @@ class TestLLMJuryEvaluator(unittest.TestCase):
         )
 
         # test EvaluationSet property types
-        self.assertIsInstance(jury_perf_eval_set.prompt, list)
+        self.assertIsInstance(jury_perf_eval_set.datum, list)
         self.assertIsInstance(jury_perf_eval_set.response, list)
         self.assertIsInstance(jury_perf_eval_set.score, list)
         self.assertIsInstance(jury_perf_eval_set.rationale, list)
