@@ -22,7 +22,7 @@ def _upload_dataset_from_str(
         BASE_URL + "/dataset", headers=headers, data=data, files=files
     )
     response.raise_for_status()
-    return json.loads(response.text)["info"]
+    return json.loads(response.text)
 
 
 def upload_dataset_from_file(
@@ -184,9 +184,21 @@ def add_data(
         name: str,
         data: Union[Dict, List[Dict]],
         api_key: Optional[str] = None
-):
+) -> List[int]:
     """
-    Adds data to a dataset.
+    Adds data to a dataset, and return a list of prompt ids for each submission request,
+    including the ids of prompts which were already present.
+
+    Args:
+        name: The name of the dataset to add the data to.
+
+        data: The data to add to the user account.
+
+        api_key: If specified, unify API key to be used. Defaults to the value in the
+        `UNIFY_KEY` environment variable.
+
+    Returns:
+        The integer ids for each prompt returned
     """
     api_key = _validate_api_key(api_key)
     headers = {
