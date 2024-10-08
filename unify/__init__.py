@@ -27,7 +27,7 @@ from .utils import (
     evaluations,
     evaluators,
     helpers,
-    logging,
+    queries,
     router_configurations,
     router_deployment,
     router_training,
@@ -41,7 +41,7 @@ from .utils.efficiency_benchmarks import *
 from .utils.evaluations import *
 from .utils.evaluators import *
 from .utils.helpers import *
-from .utils.logging import *
+from .utils.queries import *
 from .utils.router_configurations import *
 from .utils.router_deployment import *
 from .utils.router_training import *

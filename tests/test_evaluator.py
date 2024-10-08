@@ -29,11 +29,11 @@ class EvaluatorUploadTesting:
 class EvalsUploadTesting:
 
     def __enter__(self):
-        if unify.get_evaluations("test_dataset"):
+        if "test_dataset" in unify.list_datasets():
             unify.delete_dataset("test_dataset")
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        if unify.get_evaluations("test_dataset") is not None:
+        if "test_dataset" in unify.list_datasets():
             unify.delete_dataset("test_dataset")
 
 

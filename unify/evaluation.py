@@ -330,7 +330,7 @@ class EvaluationSet(Dataset):
             for datum in self.datum:
                 if datum._id is None:
                     data_to_upload.append(datum.model_dump())
-            unify.add_data(dataset_name, data_to_upload)
+            unify.add_data_by_value(dataset_name, data_to_upload)
 
     @staticmethod
     def _upload_evaluator(evaluator: Optional[unify.Evaluator]):

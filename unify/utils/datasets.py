@@ -1,6 +1,6 @@
 import json
 import requests
-from typing import List, Dict, Optional, Union
+from typing import List, Dict, Optional, Union, Any
 
 from unify import BASE_URL
 from unify.types import Prompt, Datum
@@ -180,14 +180,14 @@ def list_datasets(api_key: Optional[str] = None) -> List[str]:
     return _res_to_list(response)
 
 
-def add_data(
+def add_data_by_value(
         name: str,
-        data: Union[Dict, List[Dict]],
+        data: Union[Any, List[Any]],
         api_key: Optional[str] = None
-) -> List[int]:
+) -> Dict[str, Union[str, List[int]]]:
     """
-    Adds data to a dataset, and return a list of prompt ids for each submission request,
-    including the ids of prompts which were already present.
+    Adds data to a dataset by value, and returns a list of ids and values for each of
+    those, split by those which were already present and those which were newly added.
 
     Args:
         name: The name of the dataset to add the data to.
@@ -198,7 +198,8 @@ def add_data(
         `UNIFY_KEY` environment variable.
 
     Returns:
-        The integer ids for each prompt returned
+        A dict containing the info, and the ids for all entries added, split by those
+        which were added and those which were already present.
     """
     api_key = _validate_api_key(api_key)
     headers = {
@@ -207,19 +208,66 @@ def add_data(
     }
     body = {"name": name, "data": data}
     response = requests.post(
-        BASE_URL + "/dataset/data", headers=headers, json=body
+        BASE_URL + "/dataset/data/by_value", headers=headers, json=body
     )
     response.raise_for_status()
     return response.json()
 
 
-def delete_data(
+def add_data_by_id(
         name: str,
-        data: Union[int, List[int], Dict, List[Dict]],
+        data: Union[int, List[int]],
         api_key: Optional[str] = None
-):
+) -> Dict[str, Union[str, List[int]]]:
     """
-    Delete data from a dataset, either by id or by value
+    Adds data to a dataset by id, and returns a list of ids and values for each of
+    those, split by those which were already present and those which were newly added.
+
+    Args:
+        name: The name of the dataset to add the data to.
+
+        data: The data to add to the user account.
+
+        api_key: If specified, unify API key to be used. Defaults to the value in the
+        `UNIFY_KEY` environment variable.
+
+    Returns:
+        A dict containing the info, and the ids for all entries added, split by those
+        which were added and those which were already present.
+    """
+    api_key = _validate_api_key(api_key)
+    headers = {
+        "accept": "application/json",
+        "Authorization": f"Bearer {api_key}",
+    }
+    body = {"name": name, "data": data}
+    response = requests.post(
+        BASE_URL + "/dataset/data/by_id", headers=headers, json=body
+    )
+    response.raise_for_status()
+    return response.json()
+
+
+def delete_data_by_value(
+        name: str,
+        data: Union[Any, List[Any]],
+        api_key: Optional[str] = None
+) -> Dict[str, Union[str, List[int]]]:
+    """
+    Deletes data from a dataset by value, and returns a list of ids and values for each
+    of those, split by those which were deleted and those which were not present.
+
+    Args:
+        name: The name of the dataset to delete the data from.
+
+        data: The data to delete from the dataset.
+
+        api_key: If specified, unify API key to be used. Defaults to the value in the
+        `UNIFY_KEY` environment variable.
+
+    Returns:
+        A dict containing the info, and the ids for all entries deleted, split by those
+        which were deleted and those which were not present.
     """
     api_key = _validate_api_key(api_key)
     headers = {
@@ -228,23 +276,103 @@ def delete_data(
     }
     if isinstance(data, list) and not data:
         return {"info": "data argument was empty. Nothing to delete."}
-    if isinstance(data, dict) or (isinstance(data, list) and isinstance(data[0], dict)):
-        # ToDo: remove this logic once delete-by-value is implemented in the REST API
-        upstream_data = download_dataset(name, raw_return=True, api_key=api_key)
-        upstream_data_pruned = [
-            {k: v for k, v in item.items()
-             if k not in ("id", "num_tokens", "timestamp")}
-            for item in upstream_data
-        ]
-        data_ids = [
-            d["id"] for d, dp in zip(upstream_data, upstream_data_pruned) if dp in data
-        ]
-        # ToDo end
-    else:
-        data_ids = data
-    params = {"name": name, "data_ids": data_ids}
+    params = {"name": name, "data": data}
     response = requests.delete(
-        BASE_URL + "/dataset/data", headers=headers, params=params
+        BASE_URL + "/dataset/data/by_value", headers=headers, params=params
+    )
+    response.raise_for_status()
+    return response.json()
+
+
+def delete_data_by_id(
+        name: str,
+        data: Union[int, List[int]],
+        api_key: Optional[str] = None
+) -> Dict[str, Union[str, List[int]]]:
+    """
+    Deletes data from a dataset by id, and returns a list of ids and values for each
+    of those, split by those which were deleted and those which were not present.
+
+    Args:
+        name: The name of the dataset to delete the data from.
+
+        data: The data to delete from the dataset.
+
+        api_key: If specified, unify API key to be used. Defaults to the value in the
+        `UNIFY_KEY` environment variable.
+
+    Returns:
+        A dict containing the info, and the ids for all entries deleted, split by those
+        which were deleted and those which were not present.
+    """
+    api_key = _validate_api_key(api_key)
+    headers = {
+        "accept": "application/json",
+        "Authorization": f"Bearer {api_key}",
+    }
+    if isinstance(data, list) and not data:
+        return {"info": "data argument was empty. Nothing to delete."}
+    params = {"name": name, "data": data}
+    response = requests.delete(
+        BASE_URL + "/dataset/data/by_id", headers=headers, params=params
+    )
+    response.raise_for_status()
+    return response.json()
+
+
+def get_data_by_value(
+        data: Union[Any, List[Any]],
+        api_key: Optional[str] = None
+) -> List[Dict[str, Union[int, Any]]]:
+    """
+    Returns the data (id and values) by querying the data based on their unique ids.
+
+    Args:
+        data: The data to retrieve the contents for.
+
+        api_key: If specified, unify API key to be used. Defaults to the value in the
+        `UNIFY_KEY` environment variable.
+
+    Returns:
+        A list of dicts containing the id and the value.
+    """
+    api_key = _validate_api_key(api_key)
+    headers = {
+        "accept": "application/json",
+        "Authorization": f"Bearer {api_key}",
+    }
+    body = {"data": data}
+    response = requests.get(
+        BASE_URL + "/dataset/data/by_value", headers=headers, json=body
+    )
+    response.raise_for_status()
+    return response.json()
+
+
+def get_data_by_id(
+        data: Union[int, List[int]],
+        api_key: Optional[str] = None
+) -> List[Dict[str, Union[int, Any]]]:
+    """
+    Returns the data (id and values) by querying the data based on their values.
+
+    Args:
+        data: The data to retrieve the contents for.
+
+        api_key: If specified, unify API key to be used. Defaults to the value in the
+        `UNIFY_KEY` environment variable.
+
+    Returns:
+        A list of dicts containing the id and the value.
+    """
+    api_key = _validate_api_key(api_key)
+    headers = {
+        "accept": "application/json",
+        "Authorization": f"Bearer {api_key}",
+    }
+    body = {"data": data}
+    response = requests.get(
+        BASE_URL + "/dataset/data/by_id", headers=headers, json=body
     )
     response.raise_for_status()
     return response.json()

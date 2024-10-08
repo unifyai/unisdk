@@ -143,12 +143,12 @@ class Dataset(_Formatted):
                 unique_upstream = [item.model_dump() for item in upstream_dataset
                                    if item not in self._data]
                 unify.delete_data(self._name, unique_upstream)
-                unify.add_data(self._name, raw_data)
+                unify.add_data_by_value(self._name, raw_data)
             else:
                 unify.upload_dataset_from_dictionary(self._name, raw_data)
         else:
             if dataset_exists_upstream:
-                unify.add_data(self._name, raw_data)
+                unify.add_data_by_value(self._name, raw_data)
             else:
                 unify.upload_dataset_from_dictionary(self._name, raw_data)
         return self

@@ -57,4 +57,4 @@ class Datum(_FormattedBaseModel, extra=Extra.allow):
         return hash(str(self))
 
     def sync(self):
-        self._id = unify.add_data("", self.model_dump())
+        self._id = unify.add_data_by_value("", self.model_dump())

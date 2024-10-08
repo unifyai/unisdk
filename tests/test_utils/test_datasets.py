@@ -91,7 +91,7 @@ class TestDatasets(unittest.TestCase):
                 ]
             }
         }
-        unify.datasets.add_data(dataset_name, new_prompt_data)
+        unify.datasets.add_data_by_value(dataset_name, new_prompt_data)
         data = unify.datasets.download_dataset(dataset_name)
         self.assertTrue(len(data)==4)
 
