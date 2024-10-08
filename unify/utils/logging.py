@@ -29,9 +29,9 @@ def create_project(
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    params = {"name": name}
+    body = {"name": name}
     response = requests.post(
-        BASE_URL + "/log/project", headers=headers, params=params
+        BASE_URL + "/log/project", headers=headers, json=body
     )
     response.raise_for_status()
     return response.json()
@@ -62,7 +62,7 @@ def rename_project(
         "Authorization": f"Bearer {api_key}",
     }
     params = {"name": name, "new_name": new_name}
-    response = requests.post(
+    response = requests.put(
         BASE_URL + "/log/project/rename", headers=headers, params=params
     )
     response.raise_for_status()
