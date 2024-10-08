@@ -1,12 +1,11 @@
 from __future__ import annotations
 from typing_extensions import Self
 from pydantic import BaseModel
-from typing import List, Dict, Union, Optional
+from typing import List, Dict, Union, Optional, Any
 
 import unify
-from unify.casting import cast
 from unify.types import _Formatted
-from unify.types import Prompt, Datum
+from unify.types import Prompt
 # noinspection PyProtectedMember
 from .utils.helpers import _validate_api_key, _dict_aligns_with_pydantic
 
@@ -15,8 +14,8 @@ class Dataset(_Formatted):
 
     def __init__(
         self,
-        data: Union[str, Dict, Prompt, Datum,
-                    List[Union[str, Dict, Prompt, Datum]]],
+        data: Union[str, Dict, Prompt,
+                    List[Union[str, Dict, Prompt]]],
         *,
         name: str = None,
         shared_data: Dict = None,
@@ -34,8 +33,8 @@ class Dataset(_Formatted):
             name: The name of the dataset.
 
             shared_data: Data which is shared across all items in the dataset, with a
-            nested structure following the nested structure of each `Datum` in the
-            dataset, but in dictionary format rather than Pydantic instances.
+            nested structure following the nested structure of each dataset entry,
+            in dictionary format.
 
             api_key: API key for accessing the Unify API. If None, it attempts to
             retrieve the API key from the environment variable UNIFY_KEY. Defaults to
@@ -197,8 +196,8 @@ class Dataset(_Formatted):
         )
         return self
 
-    def add(self, other: Union[Dataset, str, Dict, Prompt, Datum, int,
-                               List[Union[str, Dict, Prompt, Datum]]]) -> Self:
+    def add(self, other: Union[Dataset, str, Dict, Prompt, int,
+                               List[Union[str, Dict, Prompt]]]) -> Self:
         """
         Adds another dataset to this one, return a new Dataset instance, with this
         new dataset receiving all unique queries from the other added dataset.
@@ -215,8 +214,8 @@ class Dataset(_Formatted):
         data = list(dict.fromkeys(self._data + other._data))
         return Dataset(data=data, api_key=self._api_key)
 
-    def sub(self, other: Union[Dataset, str, Dict, Prompt, Datum,
-                               List[Union[str, Dict, Prompt, Datum]]]) -> Self:
+    def sub(self, other: Union[Dataset, str, Dict, Prompt,
+                               List[Union[str, Dict, Prompt]]]) -> Self:
         """
         Subtracts another dataset from this one, return a new Dataset instance, with
         this new dataset losing all queries from the other subtracted dataset.
@@ -237,8 +236,8 @@ class Dataset(_Formatted):
 
     def inplace_add(
             self,
-            other: Union[Dataset, str, Dict, Prompt, Datum, int,
-                         List[Union[str, Dict, Prompt, Datum]]]
+            other: Union[Dataset, str, Dict, Prompt, int,
+                         List[Union[str, Dict, Prompt]]]
     ) -> Self:
         """
         Adds another dataset to this one, with this dataset receiving all unique queries
@@ -258,8 +257,8 @@ class Dataset(_Formatted):
 
     def inplace_sub(
             self,
-            other: Union[Dataset, str, Dict, Prompt, Datum,
-                         List[Union[str, Dict, Prompt, Datum]]]
+            other: Union[Dataset, str, Dict, Prompt,
+                         List[Union[str, Dict, Prompt]]]
     ) -> Self:
         """
         Subtracts another dataset from this one, with this dataset losing all queries
@@ -279,8 +278,8 @@ class Dataset(_Formatted):
         self._data = [item for item in self._data if item not in other]
         return self
 
-    def __add__(self, other: Union[Dataset, str, Dict, Prompt, Datum,
-                                   List[Union[str, Dict, Prompt, Datum]]]) -> Self:
+    def __add__(self, other: Union[Dataset, str, Dict, Prompt,
+                                   List[Union[str, Dict, Prompt]]]) -> Self:
         """
         Adds another dataset to this one via the + operator, return a new Dataset
         instance, with this new dataset receiving all unique queries from the other
@@ -294,8 +293,8 @@ class Dataset(_Formatted):
         """
         return self.add(other)
 
-    def __radd__(self, other: Union[Dataset, str, Dict, Prompt, Datum, int,
-                                    List[Union[str, Dict, Prompt, Datum]]]) -> Self:
+    def __radd__(self, other: Union[Dataset, str, Dict, Prompt, int,
+                                    List[Union[str, Dict, Prompt]]]) -> Self:
         """
         Adds another dataset to this one via the + operator, this is used if the
         other item does not have a valid __add__ method for these two types. Return a
@@ -312,8 +311,8 @@ class Dataset(_Formatted):
             return self
         return Dataset(other).add(self)
 
-    def __iadd__(self, other: Union[Dataset, str, Dict, Prompt, Datum,
-                                    List[Union[str, Dict, Prompt, Datum]]]) -> Self:
+    def __iadd__(self, other: Union[Dataset, str, Dict, Prompt,
+                                    List[Union[str, Dict, Prompt]]]) -> Self:
         """
         Adds another dataset to this one, with this dataset receiving all unique queries
         from the other added dataset.
@@ -326,8 +325,8 @@ class Dataset(_Formatted):
         """
         return self.inplace_add(other)
 
-    def __sub__(self, other: Union[Dataset, str, Dict, Prompt, Datum,
-                                   List[Union[str, Dict, Prompt, Datum]]]) -> Self:
+    def __sub__(self, other: Union[Dataset, str, Dict, Prompt,
+                                   List[Union[str, Dict, Prompt]]]) -> Self:
         """
         Subtracts another dataset from this one via the - operator, return a new Dataset
         instance, with this new dataset losing all queries from the other subtracted
@@ -341,8 +340,8 @@ class Dataset(_Formatted):
         """
         return self.sub(other)
 
-    def __rsub__(self, other: Union[Dataset, str, Dict, Prompt, Datum,
-                                    List[Union[str, Dict, Prompt, Datum]]]) -> Self:
+    def __rsub__(self, other: Union[Dataset, str, Dict, Prompt,
+                                    List[Union[str, Dict, Prompt]]]) -> Self:
         """
         Subtracts another dataset from this one via the - operator, this is used if the
         other item does not have a valid __sub__ method for these two types. Return a
@@ -359,8 +358,8 @@ class Dataset(_Formatted):
 
     def __isub__(
             self,
-            other: Union[Dataset, str, Dict, Prompt, Datum,
-                         List[Union[str, Dict, Prompt, Datum]]]
+            other: Union[Dataset, str, Dict, Prompt,
+                         List[Union[str, Dict, Prompt]]]
     ) -> Self:
         """
         Subtracts another dataset from this one, with this dataset losing all queries
@@ -374,18 +373,18 @@ class Dataset(_Formatted):
         """
         return self.inplace_sub(other)
 
-    def __iter__(self) -> Datum:
+    def __iter__(self) -> Any:
         """
-        Iterates through the dataset, return one Datum instance at a time.
+        Iterates through the dataset, return one instance at a time.
 
         Returns:
-            A Datum instance per iteration.
+            The next instance in the dataset.
         """
         for x in self._data:
             yield x
 
-    def __contains__(self, item: Union[Dataset, str, Dict, Prompt, Datum,
-                                       List[Union[str, Dict, Prompt, Datum]]]) -> bool:
+    def __contains__(self, item: Union[Dataset, str, Dict, Prompt,
+                                       List[Union[str, Dict, Prompt]]]) -> bool:
         """
         Determine whether the item is contained within the dataset. The item is cast to
         a Dataset instance, and can therefore take on many different types. Only returns
@@ -412,7 +411,7 @@ class Dataset(_Formatted):
         """
         return len(self._data)
 
-    def __getitem__(self, item: Union[int, slice]) -> Union[Datum, Dataset]:
+    def __getitem__(self, item: Union[int, slice]) -> Union[Any, Dataset]:
         """
         Gets an item from the dataset, either via an int or slice. In the case of an
         int, then a data instance is returned, and for a slice a Dataset instance is
@@ -422,7 +421,7 @@ class Dataset(_Formatted):
             item: integer or slice for extraction.
 
         Returns:
-            A Datum or Dataset instance, for int and slice queries respectively.
+            An individual item or Dataset slice, for int and slice queries respectively.
         """
         if isinstance(item, int):
             return self._data[item]
@@ -493,7 +492,7 @@ class Dataset(_Formatted):
         else:
             return item
 
-    def __rich_repr__(self) -> List[Datum]:
+    def __rich_repr__(self) -> List[Any]:
         """
         Used by the rich package for representing and print the instance.
         """

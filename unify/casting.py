@@ -1,19 +1,11 @@
 from typing import Union, Type, List
-from unify.types import Prompt, Datum, ChatCompletion, Score
+from unify.types import Prompt, ChatCompletion, Score
 
 
 # Upcasting
 
 def _usr_msg_to_prompt(user_message: str) -> Prompt:
     return Prompt(user_message)
-
-
-def _prompt_to_datum(prompt: Prompt) -> Datum:
-    return Datum(prompt=prompt)
-
-
-def _usr_msg_to_datum(user_message: str) -> Datum:
-    return _prompt_to_datum(_usr_msg_to_prompt(user_message))
 
 
 def _assis_msg_to_chat_completion(assistant_message: str) -> ChatCompletion:
@@ -38,14 +30,6 @@ def _prompt_to_usr_msg(prompt: Prompt) -> str:
     return prompt.messages[-1]["content"]
 
 
-def _datum_to_prompt(datum: Datum) -> Prompt:
-    return datum.prompt
-
-
-def _datum_to_usr_msg(datum: Datum) -> str:
-    return _prompt_to_usr_msg(_datum_to_prompt(datum))
-
-
 def _chat_completion_to_assis_msg(chat_completion: ChatCompletion) -> str:
     return chat_completion.choices[0].message.content
 
@@ -67,16 +51,10 @@ def _score_to_bool(score: Score) -> bool:
 _CAST_DICT = {
     str: {
         Prompt: _usr_msg_to_prompt,
-        Datum: _usr_msg_to_datum,
         ChatCompletion: _assis_msg_to_chat_completion
     },
     Prompt: {
         str: _prompt_to_usr_msg,
-        Datum: _prompt_to_datum
-    },
-    Datum: {
-        str: _datum_to_usr_msg,
-        Prompt: _datum_to_prompt
     },
     ChatCompletion: {
         str: _chat_completion_to_assis_msg
@@ -100,9 +78,9 @@ _CAST_DICT = {
 
 
 def _cast_from_selection(
-        inp: Union[str, bool, float, Score, Prompt, Datum, ChatCompletion],
-        targets: List[Union[float, Score, Prompt, Datum, ChatCompletion]]
-) -> Union[str, bool, float, Score, Prompt, Datum, ChatCompletion]:
+        inp: Union[str, bool, float, Score, Prompt, ChatCompletion],
+        targets: List[Union[float, Score, Prompt, ChatCompletion]]
+) -> Union[str, bool, float, Score, Prompt, ChatCompletion]:
     """
     Upcasts the input if possible, based on the permitted upcasting targets provided.
 
@@ -130,12 +108,12 @@ def _cast_from_selection(
 # Public function
 
 def cast(
-        inp: Union[str, bool, float, Score, Prompt, Datum, ChatCompletion],
+        inp: Union[str, bool, float, Score, Prompt, ChatCompletion],
         to_type: Union[
-            Type[Union[str, bool, float, Score, Prompt, Datum, ChatCompletion]],
-            List[Type[Union[str, bool, float, Score, Prompt, Datum, ChatCompletion]]]
+            Type[Union[str, bool, float, Score, Prompt, ChatCompletion]],
+            List[Type[Union[str, bool, float, Score, Prompt, ChatCompletion]]]
         ],
-) -> Union[str, bool, float, Score, Prompt, Datum, ChatCompletion]:
+) -> Union[str, bool, float, Score, Prompt, ChatCompletion]:
     """
     Cast the input to the specified type.
 
@@ -158,12 +136,12 @@ def cast(
 
 
 def try_cast(
-        inp: Union[str, bool, float, Score, Prompt, Datum, ChatCompletion],
+        inp: Union[str, bool, float, Score, Prompt, ChatCompletion],
         to_type: Union[
-            Type[Union[str, bool, float, Score, Prompt, Datum, ChatCompletion]],
-            List[Type[Union[str, bool, float, Score, Prompt, Datum, ChatCompletion]]]
+            Type[Union[str, bool, float, Score, Prompt, ChatCompletion]],
+            List[Type[Union[str, bool, float, Score, Prompt, ChatCompletion]]]
         ],
-) -> Union[str, bool, float, Score, Prompt, Datum, ChatCompletion]:
+) -> Union[str, bool, float, Score, Prompt, ChatCompletion]:
     # noinspection PyBroadException
     try:
         return cast(inp, to_type)
