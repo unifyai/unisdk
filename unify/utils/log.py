@@ -5,6 +5,132 @@ from unify import BASE_URL
 from .helpers import _validate_api_key
 
 
+# Projects #
+# ---------#
+
+def create_project(
+        name: str,
+        api_key: Optional[str] = None
+) -> Dict[str, str]:
+    """
+    Create a new project with the given name.
+
+    Args:
+        name: The name of the new project.
+
+        api_key: If specified, unify API key to be used. Defaults to the value in the
+        `UNIFY_KEY` environment variable.
+
+    Returns:
+        A message indicating whether the project was created successfully.
+    """
+    api_key = _validate_api_key(api_key)
+    headers = {
+        "accept": "application/json",
+        "Authorization": f"Bearer {api_key}",
+    }
+    params = {"name": name}
+    response = requests.post(
+        BASE_URL + "/log/project", headers=headers, params=params
+    )
+    response.raise_for_status()
+    return response.json()
+
+
+def rename_project(
+        name: str,
+        new_name: str,
+        api_key: Optional[str] = None
+) -> Dict[str, str]:
+    """
+    Create a new project with the given name.
+
+    Args:
+        name: The old name of the project, to be changed.
+
+        new_name: The new name for the project.
+
+        api_key: If specified, unify API key to be used. Defaults to the value in the
+        `UNIFY_KEY` environment variable.
+
+    Returns:
+        A message indicating whether the project was successfully renamed.
+    """
+    api_key = _validate_api_key(api_key)
+    headers = {
+        "accept": "application/json",
+        "Authorization": f"Bearer {api_key}",
+    }
+    params = {"name": name, "new_name": new_name}
+    response = requests.post(
+        BASE_URL + "/log/project/rename", headers=headers, params=params
+    )
+    response.raise_for_status()
+    return response.json()
+
+
+def delete_project(
+        name: str,
+        api_key: Optional[str] = None
+) -> str:
+    """
+    Deletes the specified project.
+
+    Args:
+        name: Name of the project to delete.
+
+        api_key: If specified, unify API key to be used. Defaults to the value in the
+        `UNIFY_KEY` environment variable.
+
+    Returns:
+        Whether the project was successfully deleted.
+    """
+    api_key = _validate_api_key(api_key)
+    headers = {
+        "accept": "application/json",
+        "Authorization": f"Bearer {api_key}",
+    }
+    params = {"name": name}
+    response = requests.delete(
+        BASE_URL + "/log/project", headers=headers, params=params
+    )
+    response.raise_for_status()
+    return response.json()
+
+
+def list_projects(
+        api_key: Optional[str] = None
+) -> List[str]:
+    """
+    Fetches a list of all project names.
+
+    Args:
+        api_key: If specified, unify API key to be used. Defaults to the value in the
+        `UNIFY_KEY` environment variable.
+
+    Returns:
+        List of all project names.
+    """
+    api_key = _validate_api_key(api_key)
+    headers = {
+        "accept": "application/json",
+        "Authorization": f"Bearer {api_key}",
+    }
+    response = requests.get(
+        BASE_URL + "/log/project/list", headers=headers
+    )
+    response.raise_for_status()
+    return response.json()
+
+
+# Artifacts #
+# ----------#
+
+# ToDo: implement
+
+# Logs #
+# -----#
+
 def log(
         data: Dict[str, Any],
         project: str,
