@@ -286,7 +286,7 @@ def get_logs_by_id(
 
 
 def get_logs_by_project(
-        project_id: int,
+        project: str,
         filter: Optional[str] = None,
         api_key: Optional[str] = None
 ) -> List[Dict[str, Any]]:
@@ -294,7 +294,7 @@ def get_logs_by_project(
     Retrieve a set of logs based on the ids of the logs.
 
     Args:
-        project_id: The id of the project to retrieve the logs for.
+        project: The name of the project to retrieve the logs for.
 
         filter: The filtering to apply to the various log values, expressed as a string,
         for example:
@@ -311,7 +311,7 @@ def get_logs_by_project(
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    body = {"project_id": project_id, "filter": filter}
+    body = {"project": project, "filter": filter}
     response = requests.get(
         BASE_URL + "/log/by-project", headers=headers, json=body
     )
@@ -320,7 +320,7 @@ def get_logs_by_project(
 
 
 def group_logs(
-        project_id: int,
+        project: str,
         group_by: str,
         api_key: Optional[str] = None
 ) -> Dict[str, List[Dict[str, Any]]]:
@@ -328,7 +328,7 @@ def group_logs(
     Group logs based on equality of a specific key.
 
     Args:
-        project_id: The id of the project to group the logs for.
+        project: The id of the project to group the logs for.
 
         group_by: The key along which to perform the equality grouping.
 
@@ -344,7 +344,7 @@ def group_logs(
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    body = {"project_id": project_id, "group_by": group_by}
+    body = {"project": project, "group_by": group_by}
     response = requests.get(
         BASE_URL + "/log/group", headers=headers, json=body
     )
@@ -353,7 +353,7 @@ def group_logs(
 
 
 def get_log_metrics(
-        project_id: int,
+        project: str,
         metrics: Tuple[str],
         filter: Optional[str] = None,
         api_key: Optional[str] = None
@@ -362,7 +362,7 @@ def get_log_metrics(
     Retrieve a set of log metrics across a project, after applying the filtering.
 
     Args:
-        project_id: The id of the project to retrieve the logs for.
+        project: The id of the project to retrieve the logs for.
 
         metrics: The reduction metrics to retrieve for the logs.
 
@@ -382,7 +382,7 @@ def get_log_metrics(
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    body = {"project_id": project_id, "metrics": metrics, "filter": filter}
+    body = {"project": project, "metrics": metrics, "filter": filter}
     response = requests.get(
         BASE_URL + "/log/by-project/metrics", headers=headers, json=body
     )
