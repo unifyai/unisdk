@@ -49,20 +49,7 @@ class Dataset(_Formatted):
             data = list(data)
         elif not isinstance(data, list):
             data = [data]
-        if isinstance(data[0], str):
-            self._data = [cast(usr_msg, Datum) for usr_msg in data]
-        elif isinstance(data[0], Prompt):
-            self._data = [cast(prompt, Datum) for prompt in data]
-        elif isinstance(data[0], dict) and _dict_aligns_with_pydantic(data[0], Prompt):
-            self._data = [cast(Prompt(**dct), Datum) for dct in data]
-        elif isinstance(data[0], Datum):
-            self._data = data
-        elif isinstance(data[0], dict) and \
-                _dict_aligns_with_pydantic(data[0], Datum):
-            self._data = self._data = [Datum(**dct) for dct in data]
-        else:
-            raise Exception("input {} with entries of type {} does not align with "
-                            "expected input types.".format(data, type(data[0])))
+        self._data = data
         self._api_key = _validate_api_key(api_key)
         self._shared_data = shared_data
         super().__init__()

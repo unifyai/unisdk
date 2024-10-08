@@ -11,33 +11,33 @@ dir_path = os.path.dirname(os.path.realpath(__file__))
 
 class TestDatasetConstruction(unittest.TestCase):
 
-    def test_create_dataset_from_user_message(self) -> None:
+    def test_create_dataset_from_str(self) -> None:
         dataset = unify.Dataset("a")
-        self.assertIsInstance(dataset[0], Datum)
+        self.assertIsInstance(dataset[0], str)
 
-    def test_create_dataset_from_list_of_user_messages(self) -> None:
+    def test_create_dataset_from_list_of_str(self) -> None:
         dataset = unify.Dataset(["a", "b", "c"])
-        self.assertIsInstance(dataset[0], Datum)
+        self.assertIsInstance(dataset[0], str)
 
     def test_create_dataset_from_prompt(self) -> None:
         dataset = unify.Dataset(Prompt(messages=[{"role": "user", "content": "a"}]))
-        self.assertIsInstance(dataset[0], Datum)
+        self.assertIsInstance(dataset[0], Prompt)
 
     def test_create_dataset_from_list_of_prompts(self) -> None:
         dataset = unify.Dataset([Prompt(
             messages=[{"role": "user", "content": usr_msg}]
         ) for usr_msg in ["a", "b", "c"]])
-        self.assertIsInstance(dataset[0], Datum)
+        self.assertIsInstance(dataset[0], Prompt)
 
-    def test_create_dataset_from_prompt_dict(self) -> None:
+    def test_create_dataset_from_dict(self) -> None:
         dataset = unify.Dataset(dict(messages=[{"role": "user", "content": "a"}]))
-        self.assertIsInstance(dataset[0], Datum)
+        self.assertIsInstance(dataset[0], dict)
 
-    def test_create_dataset_from_list_of_prompt_dicts(self) -> None:
+    def test_create_dataset_from_list_of_dicts(self) -> None:
         dataset = unify.Dataset([dict(
             messages=[{"role": "user", "content": usr_msg}]
         ) for usr_msg in ["a", "b", "c"]])
-        self.assertIsInstance(dataset[0], Datum)
+        self.assertIsInstance(dataset[0], dict)
 
     def test_create_dataset_from_datum(self) -> None:
         dataset = unify.Dataset(Datum(
@@ -55,21 +55,21 @@ class TestDatasetConstruction(unittest.TestCase):
         ) for usr_msg in ["a", "b", "c"]])
         self.assertIsInstance(dataset[0], Datum)
 
-    def test_create_dataset_from_datum_dict(self) -> None:
+    def test_create_dataset_from_dict_w_prompt(self) -> None:
         dataset = unify.Dataset(dict(
             prompt=Prompt(
                 messages=[{"role": "user", "content": "a"}]
             )
         ))
-        self.assertIsInstance(dataset[0], Datum)
+        self.assertIsInstance(dataset[0], dict)
 
-    def test_create_dataset_from_list_of_datum_dicts(self) -> None:
+    def test_create_dataset_from_list_of_prompt_dicts(self) -> None:
         dataset = unify.Dataset([dict(
             prompt=Prompt(
                 messages=[{"role": "user", "content": usr_msg}]
             )
         ) for usr_msg in ["a", "b", "c"]])
-        self.assertIsInstance(dataset[0], Datum)
+        self.assertIsInstance(dataset[0], dict)
 
     def test_create_dataset_from_upstream(self) -> None:
         if "TestCreateDatasetFromStr" in unify.list_datasets():
