@@ -106,7 +106,7 @@ class TestDatasetManipulation(unittest.TestCase):
         dataset2 = unify.Dataset(["a", "b"])
         self.assertIn(dataset2, dataset1)
         self.assertIn("a", dataset1)
-        self.assertIn(unify.Prompt("b"), dataset1)
+        self.assertIn("b", dataset1)
         self.assertIn(["b", "c"], dataset1)
         self.assertNotIn("d", dataset1)
         dataset3 = unify.Dataset(["c", "d"])
@@ -116,7 +116,7 @@ class TestDatasetManipulation(unittest.TestCase):
         dataset = ("a" + unify.Prompt("b")).add("c").set_name("my_dataset")
         self.assertEqual(dataset.name, "my_dataset")
         self.assertIn("a", dataset)
-        self.assertIn("b", dataset)
+        self.assertIn(unify.Prompt("b"), dataset)
         self.assertIn("c", dataset)
 
 
@@ -129,7 +129,7 @@ class TestDatasetCombining(unittest.TestCase):
         dataset = dataset1 + dataset2
         self.assertEqual(len(dataset), len(msgs))
         for item, msg in zip(dataset, msgs):
-            self.assertEqual(item.prompt.messages[0]["content"], msg)
+            self.assertEqual(item, msg)
 
     def test_sum_datasets(self) -> None:
         msgs = ["a", "b", "c", "d"]
@@ -138,14 +138,14 @@ class TestDatasetCombining(unittest.TestCase):
         dataset = sum([dataset1, dataset2])
         self.assertEqual(len(dataset), len(msgs))
         for item, msg in zip(dataset, msgs):
-            self.assertEqual(item.prompt.messages[0]["content"], msg)
+            self.assertEqual(item, msg)
 
     def test_sum_variety(self) -> None:
         msgs = [unify.Prompt("a"), "b", unify.Prompt("c"), "d"]
         dataset = sum(msgs)
         self.assertEqual(len(dataset), len(msgs))
         for item, msg in zip(dataset, msgs):
-            self.assertEqual(item.prompt.messages[0]["content"], unify.cast(msg, str))
+            self.assertEqual(unify.cast(item, str), unify.cast(msg, str))
 
     def test_add_datasets_w_duplicates(self) -> None:
         msgs1 = ["a", "b"]
@@ -155,7 +155,7 @@ class TestDatasetCombining(unittest.TestCase):
         dataset = dataset1 + dataset2
         self.assertEqual(len(dataset), 3)
         for item, msg in zip(dataset, ("a", "b", "c")):
-            self.assertEqual(item.prompt.messages[0]["content"], msg)
+            self.assertEqual(item, msg)
 
     def test_dataset_inplace_addition(self) -> None:
         msgs = ["a", "b", "c", "d"]
@@ -166,32 +166,32 @@ class TestDatasetCombining(unittest.TestCase):
         self.assertEqual(did, id(dataset))
         self.assertEqual(len(dataset), len(msgs))
         for item, msg in zip(dataset, msgs):
-            self.assertEqual(item.prompt.messages[0]["content"], msg)
+            self.assertEqual(item, msg)
 
     def test_dataset_single_item_addition(self) -> None:
         dataset = unify.Dataset("a") + "b"
         self.assertEqual(len(dataset), 2)
-        self.assertEqual(dataset[0].prompt.messages[0]["content"], "a")
-        self.assertEqual(dataset[1].prompt.messages[0]["content"], "b")
+        self.assertEqual(dataset[0], "a")
+        self.assertEqual(dataset[1], "b")
 
     def test_dataset_reverse_addition(self) -> None:
         dataset = "a" + unify.Dataset("b")
         self.assertEqual(len(dataset), 2)
-        self.assertEqual(dataset[0].prompt.messages[0]["content"], "a")
-        self.assertEqual(dataset[1].prompt.messages[0]["content"], "b")
+        self.assertEqual(dataset[0], "a")
+        self.assertEqual(dataset[1], "b")
 
     def test_dataset_from_prompt_addition(self) -> None:
         dataset = unify.Prompt("a") + unify.Prompt("b")
         self.assertEqual(len(dataset), 2)
-        self.assertEqual(dataset[0].prompt.messages[0]["content"], "a")
-        self.assertEqual(dataset[1].prompt.messages[0]["content"], "b")
+        self.assertEqual(dataset[0], unify.Prompt("a"))
+        self.assertEqual(dataset[1], unify.Prompt("b"))
 
     def test_dataset_from_multi_item_addition(self) -> None:
         dataset = "a" + unify.Prompt("b") + "c"
         self.assertEqual(len(dataset), 3)
-        self.assertEqual(dataset[0].prompt.messages[0]["content"], "a")
-        self.assertEqual(dataset[1].prompt.messages[0]["content"], "b")
-        self.assertEqual(dataset[2].prompt.messages[0]["content"], "c")
+        self.assertEqual(dataset[0], "a")
+        self.assertEqual(dataset[1], unify.Prompt("b"))
+        self.assertEqual(dataset[2], "c")
 
 
 class TestDatasetTrimming(unittest.TestCase):
@@ -203,7 +203,7 @@ class TestDatasetTrimming(unittest.TestCase):
         dataset = dataset1 - dataset2
         self.assertEqual(len(dataset), 2)
         for item, msg in zip(dataset, msgs[0:2]):
-            self.assertEqual(item.prompt.messages[0]["content"], msg)
+            self.assertEqual(item, msg)
 
     def test_sub_datasets_w_non_overlap(self) -> None:
         msgs1 = ["a", "b"]
@@ -222,22 +222,22 @@ class TestDatasetTrimming(unittest.TestCase):
         self.assertEqual(did, id(dataset))
         self.assertEqual(len(dataset), 2)
         for item, msg in zip(dataset, msgs[0:2]):
-            self.assertEqual(item.prompt.messages[0]["content"], msg)
+            self.assertEqual(item, msg)
 
     def test_dataset_single_item_subtraction(self) -> None:
         dataset = unify.Dataset(["a", "b"]) - "b"
         self.assertEqual(len(dataset), 1)
-        self.assertEqual(dataset[0].prompt.messages[0]["content"], "a")
+        self.assertEqual(dataset[0], "a")
 
     def test_dataset_reverse_subtraction(self) -> None:
         dataset = ["a", "b"] - unify.Dataset("b")
         self.assertEqual(len(dataset), 1)
-        self.assertEqual(dataset[0].prompt.messages[0]["content"], "a")
+        self.assertEqual(dataset[0], "a")
 
     def test_dataset_from_prompt_subtraction(self) -> None:
         dataset = unify.Prompt("b") + unify.Prompt("a") - unify.Prompt("b")
         self.assertEqual(len(dataset), 1)
-        self.assertEqual(dataset[0].prompt.messages[0]["content"], "a")
+        self.assertEqual(dataset[0], unify.Prompt("a"))
 
 
 class UploadTesting:
@@ -304,16 +304,16 @@ class TestDatasetDownloading(unittest.TestCase):
             dataset = unify.Dataset.from_upstream("test_dataset")
             # noinspection DuplicatedCode
             self.assertEqual(len(dataset), 3)
-            self.assertEqual(dataset[0].prompt.messages[0]["content"], "a")
-            self.assertEqual(dataset[1].prompt.messages[0]["content"], "b")
-            self.assertEqual(dataset[2].prompt.messages[0]["content"], "c")
+            self.assertEqual(dataset[0], "a")
+            self.assertEqual(dataset[1], "b")
+            self.assertEqual(dataset[2], "c")
 
     def test_dataset_download_w_overwrite(self) -> None:
         with DownloadTesting():
             self.assertIn("test_dataset", unify.list_datasets())
             dataset = unify.Dataset(["a", "b", "c", "d"], name="test_dataset")
             self.assertEqual(len(dataset), 4)
-            self.assertEqual(dataset[3].prompt.messages[0]["content"], "d")
+            self.assertEqual(dataset[3], "d")
             dataset.download(overwrite=True)
             self.assertEqual(len(dataset), 3)
             with self.assertRaises(IndexError):
@@ -357,10 +357,10 @@ class TestDatasetSync(unittest.TestCase):
             dataset.sync()
             dataset.download()
             self.assertEqual(len(dataset), 4)
-            self.assertEqual(dataset[0].prompt.messages[0]["content"], "a")
-            self.assertEqual(dataset[1].prompt.messages[0]["content"], "b")
-            self.assertEqual(dataset[2].prompt.messages[0]["content"], "c")
-            self.assertEqual(dataset[3].prompt.messages[0]["content"], "d")
+            self.assertEqual(dataset[0], "a")
+            self.assertEqual(dataset[1], "b")
+            self.assertEqual(dataset[2], "c")
+            self.assertEqual(dataset[3], "d")
 
     def test_sync_downloads(self) -> None:
         with DownloadTesting():
@@ -369,9 +369,9 @@ class TestDatasetSync(unittest.TestCase):
             dataset.sync()
             dataset.download()
             self.assertEqual(len(dataset), 3)
-            self.assertEqual(dataset[0].prompt.messages[0]["content"], "a")
-            self.assertEqual(dataset[1].prompt.messages[0]["content"], "b")
-            self.assertEqual(dataset[2].prompt.messages[0]["content"], "c")
+            self.assertEqual(dataset[0], "a")
+            self.assertEqual(dataset[1], "b")
+            self.assertEqual(dataset[2], "c")
 
     def test_sync_achieves_superset(self) -> None:
         with DownloadTesting():
@@ -379,7 +379,7 @@ class TestDatasetSync(unittest.TestCase):
             dataset = unify.Dataset(["a", "b", "d"], name="test_dataset")
             dataset.sync()
             self.assertEqual(len(dataset), 4)
-            self.assertEqual(dataset[0].prompt.messages[0]["content"], "a")
-            self.assertEqual(dataset[1].prompt.messages[0]["content"], "b")
-            self.assertEqual(dataset[2].prompt.messages[0]["content"], "c")
-            self.assertEqual(dataset[3].prompt.messages[0]["content"], "d")
+            self.assertEqual(dataset[0], "a")
+            self.assertEqual(dataset[1], "b")
+            self.assertEqual(dataset[2], "c")
+            self.assertEqual(dataset[3], "d")
