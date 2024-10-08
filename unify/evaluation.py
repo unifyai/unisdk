@@ -363,10 +363,15 @@ class EvaluationSet(Dataset):
         evaluator = evaluator if evaluator is not None else self._evaluator
         self._upload_evaluator(evaluator)
         unify.upload_evaluations(
-            evaluator=evaluator,
-            dataset=self.datum,
+            evaluator=evaluator.name,
             agent=self.agent,
-            evaluations=self._data,
+            evaluations=[
+                {
+                    k: d.datum._id if k=="datum" else v
+                    for k, v in d.model_dump().items()
+                 }
+                for d in self._data
+            ],
         )
         return self
 
