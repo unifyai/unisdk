@@ -24,8 +24,6 @@ from .utils import (
     custom_endpoints,
     datasets,
     efficiency_benchmarks,
-    evaluations,
-    evaluators,
     helpers,
     queries,
     router_configurations,
@@ -38,8 +36,6 @@ from .utils.custom_api_keys import *
 from .utils.custom_endpoints import *
 from .utils.datasets import *
 from .utils.efficiency_benchmarks import *
-from .utils.evaluations import *
-from .utils.evaluators import *
 from .utils.helpers import *
 from .utils.queries import *
 from .utils.router_configurations import *
@@ -57,8 +53,6 @@ from . import (
     agent,
     casting,
     dataset,
-    evaluation,
-    evaluator,
     logging,
     repr,
     types
@@ -66,8 +60,6 @@ from . import (
 from .agent import *
 from .casting import *
 from .dataset import *
-from .evaluation import *
-from .evaluator import *
 from .logging import *
 from .repr import *
 from .types import *
