@@ -126,7 +126,98 @@ def list_projects(
 # Artifacts #
 # ----------#
 
-# ToDo: implement
+def create_artifacts(
+        project: str,
+        artifacts: Dict[str, str],
+        api_key: Optional[str] = None
+) -> Dict[str, str]:
+    """
+    Create a new set of artifacts for the project.
+
+    Args:
+        project: The name of the project to create the artifacts for.
+
+        artifacts: The artifacts to add to the project.
+
+        api_key: If specified, unify API key to be used. Defaults to the value in the
+        `UNIFY_KEY` environment variable.
+
+    Returns:
+        A message indicating whether the artifacts were successfully added.
+    """
+    api_key = _validate_api_key(api_key)
+    headers = {
+        "accept": "application/json",
+        "Authorization": f"Bearer {api_key}",
+    }
+    body = {"project": project, "artifacts": artifacts}
+    response = requests.post(
+        BASE_URL + "/log/artifact", headers=headers, json=body
+    )
+    response.raise_for_status()
+    return response.json()
+
+
+def delete_artifacts(
+        project: str,
+        artifacts: Union[str, List[str]],
+        api_key: Optional[str] = None
+) -> str:
+    """
+    Deletes the specified project.
+
+    Args:
+        project: The name of the project to delete artifacts from.
+
+        artifacts: The artifact names to delete from the project.
+
+        api_key: If specified, unify API key to be used. Defaults to the value in the
+        `UNIFY_KEY` environment variable.
+
+    Returns:
+        Whether the artifacts were successfully deleted.
+    """
+    api_key = _validate_api_key(api_key)
+    headers = {
+        "accept": "application/json",
+        "Authorization": f"Bearer {api_key}",
+    }
+    params = {"project": project, "artifacts": artifacts}
+    response = requests.delete(
+        BASE_URL + "/log/artifact", headers=headers, params=params
+    )
+    response.raise_for_status()
+    return response.json()
+
+
+def list_artifacts(
+        project: str,
+        api_key: Optional[str] = None
+) -> List[str]:
+    """
+    Fetches a list of all artifacts for the given project.
+
+    Args:
+        project: The name of the project to delete artifacts from.
+
+        api_key: If specified, unify API key to be used. Defaults to the value in the
+        `UNIFY_KEY` environment variable.
+
+    Returns:
+        List of all artifacts associated with the project.
+    """
+    api_key = _validate_api_key(api_key)
+    headers = {
+        "accept": "application/json",
+        "Authorization": f"Bearer {api_key}",
+    }
+    params = {"project": project}
+    response = requests.get(
+        BASE_URL + "/log/artifact/list", headers=headers, params=params,
+    )
+    response.raise_for_status()
+    return response.json()
+
 
 # Logs #
 # -----#
