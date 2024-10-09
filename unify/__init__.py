@@ -25,6 +25,7 @@ from .utils import (
     datasets,
     efficiency_benchmarks,
     helpers,
+    evaluations,
     queries,
     router_configurations,
     router_deployment,
@@ -37,13 +38,14 @@ from .utils.custom_endpoints import *
 from .utils.datasets import *
 from .utils.efficiency_benchmarks import *
 from .utils.helpers import *
+from .utils.evaluations import *
 from .utils.queries import *
 from .utils.router_configurations import *
 from .utils.router_deployment import *
 from .utils.router_training import *
 from .utils.supported_endpoints import *
 
-from .chat import chatbot, clients
+from .chat import chatbot, clients, logging
 from .chat.clients import multi_llm
 from .chat.chatbot import *
 from unify.chat.clients.uni_llm import *
@@ -53,13 +55,49 @@ from . import (
     agent,
     casting,
     dataset,
-    logging,
     repr,
     types
 )
 from .agent import *
 from .casting import *
 from .dataset import *
-from .logging import *
+from .chat.logging import *
 from .repr import *
 from .types import *
+
+
+# Project #
+# --------#
+
+PROJECT: Optional[str] = None
+
+
+# noinspection PyShadowingNames
+def activate(project: str) -> None:
+    global PROJECT
+    PROJECT = project
+
+
+def deactivate() -> None:
+    global PROJECT
+    PROJECT = None
+
+
+def __getattr__(name):
+    if name == 'active_project':
+        global PROJECT
+        return PROJECT
+    raise AttributeError(f"module '{__name__}' has no attribute '{name}'")
+
+
+class Project:
+
+    # noinspection PyShadowingNames
+    def __init__(self, project: str) -> None:
+        self._project = project
+
+    def __enter__(self):
+        activate(self._project)
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        deactivate()

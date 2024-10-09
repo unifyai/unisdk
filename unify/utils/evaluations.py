@@ -1,6 +1,7 @@
 import requests
 from typing import Dict, Optional, Any, Union, List, Tuple
 
+import unify
 from unify import BASE_URL
 from .helpers import _validate_api_key
 
@@ -223,20 +224,21 @@ def list_artifacts(
 # -----#
 
 def log(
-        data: Dict[str, Any],
-        project: str,
-        api_key: Optional[str] = None
+        project: Optional[str] = None,
+        api_key: Optional[str] = None,
+        **kwargs
 ) -> int:
     """
     Returns the data (id and values) by querying the data based on their values.
 
     Args:
-        data: The data to log into the console.
-
-        project: The name of the project to log the data for.
+        project: The name of the project to log the data for. Inferred from globally set
+        project if not specified.
 
         api_key: If specified, unify API key to be used. Defaults to the value in the
         `UNIFY_KEY` environment variable.
+
+        kwargs: The key value pairs to log into the console as part of this log event.
 
     Returns:
         The unique id of newly created log entry.
@@ -246,7 +248,14 @@ def log(
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    body = {"data": data, "project": project}
+    if project is None:
+        project = unify.active_project
+        if project is None:
+            raise Exception(
+                "No project specified in the arguments, and no globally set project "
+                "either. A project must be passed in the argument, or set globally via "
+                "unify.activate('project_name')")
+    body = {"data": kwargs, "project": project}
     response = requests.post(
         BASE_URL + "/log", headers=headers, json=body
     )

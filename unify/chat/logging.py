@@ -2,7 +2,7 @@ import datetime
 from typing import Optional, List, Dict
 
 import unify
-from .utils.helpers import _validate_api_key
+from ..utils.helpers import _validate_api_key
 
 
 def with_logging(
