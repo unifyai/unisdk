@@ -421,7 +421,7 @@ def delete_log_entry(
     return response.json()
 
 
-def get_log_by_id(
+def get_log(
         id: int,
         api_key: Optional[str] = None
 ) -> List[Dict[str, Any]]:
@@ -449,7 +449,7 @@ def get_log_by_id(
     return response.json()
 
 
-def get_logs_by_project(
+def get_logs(
         project: Optional[str] = None,
         filter: Optional[str] = None,
         api_key: Optional[str] = None
