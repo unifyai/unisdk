@@ -397,3 +397,44 @@ class DefaultLLMJudge(LLMJudge):
             include_rationale=include_rationale,
             api_key=api_key
         )
+
+
+class LLMJury(Evaluator):
+
+    def __init__(
+            self,
+            judges: List[LLMJudge],
+            name: Optional[str] = None,
+            api_key: Optional[str] = None,
+    ):
+        """
+        Creates an LLM Jury Evaluator.
+
+        Args:
+            judges: The list of judges to use in the Jury.
+
+            name: The name to give to this LLM Jury evaluator, optional.
+
+            api_key: API key for accessing the Unify API. If None, it attempts to
+            retrieve the API key from the environment variable UNIFY_KEY. Defaults to
+            None.
+        """
+        self._judges = judges
+        assert all(j.score_config == judges[0].score_config for j in judges), \
+            "All judges in a Jury must have the same score configuration."
+        super().__init__(judges[0].score_config, name, api_key)
+
+    # noinspection PyMethodOverriding
+    def evaluate(
+            self,
+            input: Any,
+            response: Any,
+    ) -> Dict[str, Union[float, Tuple[float, Union[str, ChatCompletion]]]]:
+        evaluations = dict()
+        for judge in self._judges:
+            evaluations[judge.name] = judge.evaluate(input, response)
+        return evaluations
+
+    @property
+    def judges(self) -> List[LLMJudge]:
+        return self._judges
