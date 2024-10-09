@@ -32,7 +32,7 @@ def create_project(
     }
     body = {"name": name}
     response = requests.post(
-        BASE_URL + "/log/project", headers=headers, json=body
+        BASE_URL + "/project", headers=headers, json=body
     )
     response.raise_for_status()
     return response.json()
@@ -62,9 +62,9 @@ def rename_project(
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    params = {"name": name, "new_name": new_name}
-    response = requests.put(
-        BASE_URL + "/log/project/rename", headers=headers, params=params
+    params = {"name": name}
+    response = requests.patch(
+        BASE_URL + "/project/{}".format(new_name), headers=headers, params=params
     )
     response.raise_for_status()
     return response.json()
@@ -91,9 +91,8 @@ def delete_project(
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    params = {"name": name}
     response = requests.delete(
-        BASE_URL + "/log/project", headers=headers, params=params
+        BASE_URL + "/project/{}".format(name), headers=headers
     )
     response.raise_for_status()
     return response.json()
@@ -118,7 +117,7 @@ def list_projects(
         "Authorization": f"Bearer {api_key}",
     }
     response = requests.get(
-        BASE_URL + "/log/project/list", headers=headers
+        BASE_URL + "/projects", headers=headers
     )
     response.raise_for_status()
     return response.json()
@@ -257,7 +256,7 @@ def log(
                 "unify.activate('project_name')")
         if project not in list_projects(api_key):
             create_project(project, api_key)
-    body = {"data": kwargs, "project": project}
+    body = {"project": project, "logs": kwargs}
     response = requests.post(
         BASE_URL + "/log", headers=headers, json=body
     )
