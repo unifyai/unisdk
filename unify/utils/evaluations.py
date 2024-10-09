@@ -243,6 +243,9 @@ def list_artifacts(
     return response.json()
 
 
+# Logs #
+# -----#
+
 class Log:
 
     def __init__(
@@ -269,7 +272,7 @@ class Log:
         )
         response.raise_for_status()
         self._id = response.json()
-        
+
     # Properties
 
     @property
@@ -294,9 +297,6 @@ class Log:
     def delete(self) -> None:
         delete_log(self._id, self._api_key)
 
-
-# Logs #
-# -----#
 
 def log(
         project: Optional[str] = None,
