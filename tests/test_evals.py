@@ -644,58 +644,24 @@ class TestLLMJuryEvaluator(unittest.TestCase):
             "llama-3.2-3b-chat@fireworks-ai"
         ]
         _judges = [
-            unify.DefaultLLMJudge(unify.Unify(ep, cache=True), include_rationale=True)
+            unify.DefaultLLMJudge(
+                unify.Unify(ep, cache=True),
+                include_rationale=True,
+                input_parser={"user_message": ["passage"]}
+            )
             for ep in endpoints
         ]
         self._llm_jury = unify.LLMJury(_judges,"test_evaluator")
 
     def test_evals(self) -> None:
-        jury_evaluations = list()
         for data in self._dataset:
             response = self._client.generate(*data.values())
-            evaluation = self._llm_jury.evaluate(
+            evals = self._llm_jury.evaluate(
                 input=data,
                 response=response
             )
-            self.assertIsInstance(evaluation.datum, Datum)
-            self.assertIsInstance(evaluation.response, unify.ChatCompletion)
-            self.assertIsInstance(evaluation.agent, unify.Unify)
-            self.assertIsInstance(evaluation.score, unify.Scores)
-            for key, val in evaluation.score.items():
-                self.assertIsInstance(key, str)
-                self.assertIsInstance(val, unify.Score)
-            self.assertIs(evaluation.evaluator, self._llm_jury)
-            self.assertIsInstance(evaluation.rationale, dict)
-            for key, val in evaluation.rationale.items():
-                self.assertIsInstance(key, str)
-                self.assertIsInstance(val, str)
-            jury_evaluations.append(evaluation)
-            human_evaluation = copy.copy(evaluation)
-            score = next(iter(evaluation.score.values()))
-            score_val = random.choice(list(score.config.keys()))
-            human_evaluation.score = score(score_val)
-            human_evaluation.rationale = "It felt right."
-            human_evaluations.append(human_evaluation)
-        jury_eval_set = sum(jury_evaluations)
-        human_eval_set = sum(human_evaluations)
-        jury_perf_eval_set = (
-            human_eval_set.score_diff(jury_eval_set, self._llm_jury, mode="l1")
-        )
-
-        # test EvaluationSet property types
-        self.assertIsInstance(jury_perf_eval_set.datum, list)
-        self.assertIsInstance(jury_perf_eval_set.response, list)
-        self.assertIsInstance(jury_perf_eval_set.score, list)
-        self.assertIsInstance(jury_perf_eval_set.rationale, list)
-
-        # test EvaluationSet shared property types
-        self.assertIsInstance(jury_perf_eval_set.agent, unify.Evaluator)
-        self.assertTrue(isinstance(jury_perf_eval_set.score[0], unify.Scores))
-        self.assertIs(jury_perf_eval_set.evaluator, self._llm_jury)
-
-        # test EvaluationSet reduction property types
-        self.assertIsInstance(jury_perf_eval_set.mean_score, float)
-        self.assertIsInstance(jury_perf_eval_set.score_freq, dict)
-        for k, v in jury_perf_eval_set.score_freq.items():
-            self.assertIsInstance(k, float)
-            self.assertIsInstance(v, int)
+            self.assertIsInstance(evals, dict)
+            for judge_name, (score, rationale) in evals.items():
+                self.assertIsInstance(judge_name, str)
+                self.assertIsInstance(score, float)
+                self.assertIsInstance(rationale, str)
