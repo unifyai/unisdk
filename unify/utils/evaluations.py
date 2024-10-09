@@ -147,7 +147,7 @@ def list_projects(
 # Artifacts #
 # ----------#
 
-def create_artifacts(
+def add_artifacts(
         project: Optional[str] = None,
         api_key: Optional[str] = None,
         **kwargs
@@ -214,10 +214,10 @@ def delete_artifact(
     return response.json()
 
 
-def list_artifacts(
+def get_artifacts(
         project: Optional[str] = None,
         api_key: Optional[str] = None
-) -> List[str]:
+) -> Dict[str, Any]:
     """
     Returns the key-value pairs of all artifacts in a project.
 
