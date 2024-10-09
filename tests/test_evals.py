@@ -665,3 +665,23 @@ class TestLLMJuryEvaluator(unittest.TestCase):
                 self.assertIsInstance(judge_name, str)
                 self.assertIsInstance(score, float)
                 self.assertIsInstance(rationale, str)
+
+    def test_evals_w_logging(self) -> None:
+        with ProjectHandling():
+            with unify.Project("test_project"):
+                for data in self._dataset:
+                    response = self._client.generate(*data.values())
+                    evals = self._llm_jury.evaluate(
+                        input=data,
+                        response=response
+                    )
+                    self.assertIsInstance(evals, dict)
+                    for judge_name, (score, rationale) in evals.items():
+                        self.assertIsInstance(judge_name, str)
+                        self.assertIsInstance(score, float)
+                        self.assertIsInstance(rationale, str)
+                    unify.log(
+                        **data,
+                        response=response,
+                        judge_scores=evals
+                    )
