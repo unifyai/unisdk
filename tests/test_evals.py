@@ -1,4 +1,3 @@
-import copy
 import json
 import random
 import os.path
@@ -13,6 +12,44 @@ from openai.types.chat.chat_completion_tool_message_param import (
 
 import unify
 
+
+# Helpers #
+# --------#
+
+# noinspection PyUnresolvedReferences
+class SimulateFloatInput:
+
+    def __init__(self, score_config: Dict[float, str]):
+        self._score_config = score_config
+
+    def _new_input(self, _):
+        return str(random.choice(list(self._score_config.keys())))
+
+    def __enter__(self):
+        self._true_input = builtins.__dict__["input"]
+        builtins.__dict__["input"] = self._new_input
+
+    def __exit__(self, exc_type, exc_value, tb):
+        builtins.__dict__["input"] = self._true_input
+        if exc_type is not None:
+            traceback.print_exception(exc_type, exc_value, tb)
+            return False
+        return True
+
+
+class ProjectHandling:
+
+    def __enter__(self):
+        if "test_project" in unify.list_projects():
+            unify.delete_project("test_project")
+
+    def __exit__(self, exc_type, exc_value, tb):
+        if "test_project" in unify.list_projects():
+            unify.delete_project("test_project")
+
+
+# Tests #
+# ------#
 
 class TestMathsEvaluator(unittest.TestCase):
 
@@ -46,38 +83,18 @@ class TestMathsEvaluator(unittest.TestCase):
             self.assertTrue(self._evaluate(data["question"], response))
 
     def test_evals_w_logging(self) -> None:
-        with unify.Project("test_project"):
-            for data in self._dataset:
-                question = data["question"]
-                response = self._client.generate(question)
-                correct = self._evaluate(data["question"], response)
-                self.assertTrue(correct)
-                unify.log(
-                    question=question,
-                    response=response,
-                    score=correct
-                )
-
-
-# noinspection PyUnresolvedReferences
-class SimulateFloatInput:
-
-    def __init__(self, score_config: Dict[float, str]):
-        self._score_config = score_config
-
-    def _new_input(self, _):
-        return str(random.choice(list(self._score_config.keys())))
-
-    def __enter__(self):
-        self._true_input = builtins.__dict__["input"]
-        builtins.__dict__["input"] = self._new_input
-
-    def __exit__(self, exc_type, exc_value, tb):
-        builtins.__dict__["input"] = self._true_input
-        if exc_type is not None:
-            traceback.print_exception(exc_type, exc_value, tb)
-            return False
-        return True
+        with ProjectHandling():
+            with unify.Project("test_project"):
+                for data in self._dataset:
+                    question = data["question"]
+                    response = self._client.generate(question)
+                    correct = self._evaluate(data["question"], response)
+                    self.assertTrue(correct)
+                    unify.log(
+                        question=question,
+                        response=response,
+                        score=correct
+                    )
 
 
 class TestHumanEvaluator(unittest.TestCase):
@@ -151,24 +168,25 @@ class TestHumanEvaluator(unittest.TestCase):
                     self.assertIn(score_val, score_config)
 
     def test_evals_w_logging(self) -> None:
-        with unify.Project("test_project"):
-            for data in self._dataset:
-                response = self._client.generate(data["question"],
-                                                 data["system_prompt"])
-                log_dict = dict(
-                    question=data["question"],
-                    response=response,
-                )
-                for score_name, score_config in self._score_configs.items():
-                    with SimulateFloatInput(score_config):
-                        score_val = self._evaluate(
-                            question=data["question"],
-                            response=response,
-                            score_config=score_config
-                        )
-                        self.assertIn(score_val, score_config)
-                        log_dict[score_name] = score_val
-                unify.log(**log_dict)
+        with ProjectHandling():
+            with unify.Project("test_project"):
+                for data in self._dataset:
+                    response = self._client.generate(data["question"],
+                                                     data["system_prompt"])
+                    log_dict = dict(
+                        question=data["question"],
+                        response=response,
+                    )
+                    for score_name, score_config in self._score_configs.items():
+                        with SimulateFloatInput(score_config):
+                            score_val = self._evaluate(
+                                question=data["question"],
+                                response=response,
+                                score_config=score_config
+                            )
+                            self.assertIn(score_val, score_config)
+                            log_dict[score_name] = score_val
+                    unify.log(**log_dict)
 
 
 class TestCodeEvaluator(unittest.TestCase):
@@ -274,19 +292,20 @@ class TestCodeEvaluator(unittest.TestCase):
             self.assertIn(correct, self._score_configs["correct"])
 
     def test_evals_w_logging(self) -> None:
-        with unify.Project("test_project"):
-            for data in self._dataset:
-                response = self._client.generate(*data["prompt"].values())
-                runs = self._runs(response, data["inputs"])
-                self.assertIn(runs, self._score_configs["runs"])
-                correct = self._is_correct(response, data["inputs"], data["answers"])
-                self.assertIn(correct, self._score_configs["correct"])
-                unify.log(
-                    **data,
-                    response=response,
-                    runs=runs,
-                    correct=correct
-                )
+        with ProjectHandling():
+            with unify.Project("test_project"):
+                for data in self._dataset:
+                    response = self._client.generate(*data["prompt"].values())
+                    runs = self._runs(response, data["inputs"])
+                    self.assertIn(runs, self._score_configs["runs"])
+                    correct = self._is_correct(response, data["inputs"], data["answers"])
+                    self.assertIn(correct, self._score_configs["correct"])
+                    unify.log(
+                        **data,
+                        response=response,
+                        runs=runs,
+                        correct=correct
+                    )
 
 
 class TestToolAgentAndLLMJudgeEvaluations(unittest.TestCase):
@@ -511,19 +530,20 @@ class TestToolAgentAndLLMJudgeEvaluations(unittest.TestCase):
             self.assertEqual(correct_tool_use, 1.)
 
     def test_evaluate_tool_use_w_logging(self) -> None:
-        with unify.Project("test_project"):
-            for data in self._dataset:
-                response = self._client.generate(**data["prompt"])
-                correct_tool_use = self._correct_tool_use(
-                    response, data["correct_tool_use"]
-                )
-                self.assertIn(correct_tool_use, self._score_configs["correct_tool_use"])
-                self.assertEqual(correct_tool_use, 1.)
-                unify.log(
-                    **data,
-                    response=response.model_dump(),
-                    ctu_score=correct_tool_use,
-                )
+        with ProjectHandling():
+            with unify.Project("test_project"):
+                for data in self._dataset:
+                    response = self._client.generate(**data["prompt"])
+                    correct_tool_use = self._correct_tool_use(
+                        response, data["correct_tool_use"]
+                    )
+                    self.assertIn(correct_tool_use, self._score_configs["correct_tool_use"])
+                    self.assertEqual(correct_tool_use, 1.)
+                    unify.log(
+                        **data,
+                        response=response.model_dump(),
+                        ctu_score=correct_tool_use,
+                    )
 
     def test_agentic_evals_contains_and_omits(self) -> None:
         for data in self._dataset:
@@ -534,19 +554,20 @@ class TestToolAgentAndLLMJudgeEvaluations(unittest.TestCase):
             self.assertIn(omits, self._score_configs["omits"])
 
     def test_agentic_evals_contains_and_omits_w_logging(self) -> None:
-        with unify.Project("test_project"):
-            for data in self._dataset:
-                response = self._agent(**data["prompt"])
-                contains = self._contains(response, data["content_check"])
-                self.assertIn(contains, self._score_configs["contains"])
-                omits = self._omits(response, data["content_check"])
-                self.assertIn(omits, self._score_configs["omits"])
-                unify.log(
-                    **data,
-                    response=response,
-                    contains=contains,
-                    omits=omits
-                )
+        with ProjectHandling():
+            with unify.Project("test_project"):
+                for data in self._dataset:
+                    response = self._agent(**data["prompt"])
+                    contains = self._contains(response, data["content_check"])
+                    self.assertIn(contains, self._score_configs["contains"])
+                    omits = self._omits(response, data["content_check"])
+                    self.assertIn(omits, self._score_configs["omits"])
+                    unify.log(
+                        **data,
+                        response=response,
+                        contains=contains,
+                        omits=omits
+                    )
 
     def test_agentic_evals_w_llm_judge(self) -> None:
         for data in self._dataset:
@@ -558,16 +579,17 @@ class TestToolAgentAndLLMJudgeEvaluations(unittest.TestCase):
             self.assertIn(score, self._llm_judge.score_config)
 
     def test_agentic_evals_w_llm_judge_w_logging(self) -> None:
-        with unify.Project("test_project"):
-            for data in self._dataset:
-                response = self._agent(**data["prompt"])
-                score = self._llm_judge.evaluate(
-                    input=data,
-                    response=response,
-                )
-                self.assertIn(score, self._llm_judge.score_config)
-                unify.log(
-                    **data,
-                    response=response,
-                    score=score
-                )
+        with ProjectHandling():
+            with unify.Project("test_project"):
+                for data in self._dataset:
+                    response = self._agent(**data["prompt"])
+                    score = self._llm_judge.evaluate(
+                        input=data,
+                        response=response,
+                    )
+                    self.assertIn(score, self._llm_judge.score_config)
+                    unify.log(
+                        **data,
+                        response=response,
+                        score=score
+                    )
