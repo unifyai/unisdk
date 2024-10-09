@@ -156,7 +156,7 @@ class TestHumanEvaluator(unittest.TestCase):
 class TestCodeEvaluator(unittest.TestCase):
 
     def setUp(self) -> None:
-        system_msg = \
+        system_prompt = \
             ("You are an expert software engineer, write the code asked of you to the "
              "highest quality. Give good variable names, ensure the code compiles and "
              "is robust to edge cases, and always gives the correct result. "
@@ -185,105 +185,75 @@ class TestCodeEvaluator(unittest.TestCase):
         ]
         _answers = [[fn(*i) for i in ins]
                     for ins, fn in zip(_inputs, _reference_functions)]
-        _prompts = [unify.Prompt(q, system_message=system_msg)
+        _prompts = [dict(question=q, system_prompt=system_prompt)
                     for q in _questions]
-        _data = [unify.Datum(prompt=p, inputs=i, answers=a)
-                 for p, i, a in zip(_prompts, _inputs, _answers)]
-        self._dataset = unify.Dataset(_data)
-
-        class Runs(unify.Score):
-
-            def __init__(self, value: Optional[float] = None) -> None:
-                super().__init__(value=value, config={
-                    0.: "An error is raised when the code is run.",
-                    1.: "Code runs without error."
-                })
-
-        class Correct(unify.Score):
-
-            def __init__(self, value: Optional[float] = None) -> None:
-                super().__init__(value=value, config={
-                    0.: "The answer was incorrect.",
-                    1.: "The answer was correct."
-                })
-
-        class RunsEvaluator(unify.Evaluator):
-
-            def __init__(self, *args, **kwargs):
-                unify.Evaluator.__init__(self, Runs, *args, **kwargs)
-
-            # noinspection PyMethodOverriding
-            @staticmethod
-            def _load_function(response: str) -> Union[callable, bool]:
-                # noinspection PyBroadException
-                try:
-                    code = response.split("```")[1]
-                    with open("new_module.py", "w+") as file:
-                        file.write(code)
-                    module = importlib.import_module("new_module")
-                    fn_name = code.split("def ")[1].split("(")[0]
-                    fn = getattr(module, fn_name)
-                    return fn
-                except:
-                    return False
-
-            def _evaluate(self, prompt: str, response: str, inputs: List[Any]) -> bool:
-                fn = self._load_function(response)
-                if fn is False:
-                    return False
-                for inp in inputs:
-                    # noinspection PyBroadException
-                    try:
-                        fn(*inp)
-                    except:
-                        return False
-                return True
-
-        class CorrectEvaluator(RunsEvaluator):
-
-            def __init__(self, *args, **kwargs):
-                unify.Evaluator.__init__(self, Correct, *args, **kwargs)
-
-            # noinspection PyMethodOverriding
-            def _evaluate(self, prompt: str, response: str, inputs: List[Any],
-                          answers: List[Any]) -> bool:
-                fn = self._load_function(response)
-                if fn is False:
-                    return False
-                for inp, ans in zip(inputs, answers):
-                    # noinspection PyBroadException
-                    try:
-                        response = fn(*inp)
-                        if response != ans:
-                            return False
-                    except:
-                        return False
-                return True
-
+        self._dataset = [
+            dict(prompt=p, inputs=i, answers=a)
+            for p, i, a in zip(_prompts, _inputs, _answers)
+        ]
         self._client = unify.Unify("gpt-4o@openai", cache=True)
-        self._evaluators = {
-            "runs": RunsEvaluator(),
-            "correct": CorrectEvaluator()
+        self._score_configs = {
+            "runs": {
+                0.: "An error is raised when the code is run.",
+                1.: "Code runs without error."
+            },
+            "correct": {
+                0.: "The answer was incorrect.",
+                1.: "The answer was correct."
+            }
         }
+
+    @staticmethod
+    def _load_function(response: str) -> Union[callable, bool]:
+        # noinspection PyBroadException
+        try:
+            code = response.split("```")[1]
+            with open("new_module.py", "w+") as file:
+                file.write(code)
+            module = importlib.import_module("new_module")
+            fn_name = code.split("def ")[1].split("(")[0]
+            fn = getattr(module, fn_name)
+            return fn
+        except:
+            return False
+
+    def _runs(self, response: str, inputs: List[Any]) -> bool:
+        fn = self._load_function(response)
+        if fn is False:
+            return False
+        for inp in inputs:
+            # noinspection PyBroadException
+            try:
+                fn(*inp)
+            except:
+                return False
+        return True
+
+    def _is_correct(self, response: str, inputs: List[Any], answers: List[Any]) -> bool:
+        fn = self._load_function(response)
+        if fn is False:
+            return False
+        for inp, ans in zip(inputs, answers):
+            # noinspection PyBroadException
+            try:
+                response = fn(*inp)
+                if response != ans:
+                    return False
+            except:
+                return False
+        return True
 
     def tearDown(self) -> None:
         if os.path.exists("new_module.py"):
             os.remove("new_module.py")
 
     def test_evals(self) -> None:
-        unify.set_repr_mode("concise")
-        for datum in self._dataset:
-            response = self._client.generate(**datum.prompt.model_dump())
-            for evaluator in self._evaluators.values():
-                score_config = evaluator.score_config
-                evaluation = evaluator.evaluate(
-                    response=response,
-                    agent=self._client,
-                    **datum.model_extra
-                )
-                score = evaluation.score.value
-                self.assertIn(score, score_config)
-                self.assertEqual(evaluation.score.description, score_config[score])
+        for data in self._dataset:
+            response = self._client.generate(*data["prompt"].values())
+            runs = self._runs(response, data["inputs"])
+            self.assertIn(runs, self._score_configs["runs"])
+            correct = self._is_correct(response, data["inputs"], data["answers"])
+            self.assertIn(correct, self._score_configs["correct"])
 
 
 class TestToolAgentAndLLMJudgeEvaluations(unittest.TestCase):
