@@ -606,6 +606,28 @@ class TestToolAgentAndLLMJudgeEvaluations(unittest.TestCase):
             l1_diff = abs(true_score - score)
             self.assertIsInstance(l1_diff, float)
 
+    def test_agentic_evals_w_test_set_w_logging(self) -> None:
+        with ProjectHandling():
+            with unify.Project("test_project"):
+                for data in self._dataset:
+                    response = self._agent(**data["prompt"])
+                    judge_score = self._llm_judge.evaluate(
+                        input=data,
+                        response=response,
+                    )
+                    self.assertIn(judge_score, self._llm_judge.score_config)
+                    true_score = random.choice(list(self._llm_judge.score_config.keys()))
+                    self.assertIn(true_score, self._llm_judge.score_config)
+                    l1_diff = abs(true_score - judge_score)
+                    self.assertIsInstance(l1_diff, float)
+                    unify.log(
+                        **data,
+                        response=response,
+                        judge_score=judge_score,
+                        true_score=true_score,
+                        l1_diff=l1_diff
+                    )
+
 
 class TestLLMJuryEvaluator(unittest.TestCase):
 
@@ -717,3 +739,31 @@ class TestLLMJuryEvaluator(unittest.TestCase):
                 l1_diff = abs(true_score - score)
                 self.assertIsInstance(l1_diff, float)
                 l1_diffs[judge_name] = l1_diff
+
+    def test_evals_w_test_set_w_logging(self) -> None:
+        with ProjectHandling():
+            with unify.Project("test_project"):
+                for data in self._dataset:
+                    response = self._client.generate(*data.values())
+                    evals = self._llm_jury.evaluate(
+                        input=data,
+                        response=response
+                    )
+                    self.assertIsInstance(evals, dict)
+                    l1_diffs = dict()
+                    true_score = random.choice(list(self._llm_jury.score_config.keys()))
+                    self.assertIn(true_score, self._llm_jury.score_config)
+                    for judge_name, (score, rationale) in evals.items():
+                        self.assertIsInstance(judge_name, str)
+                        self.assertIsInstance(score, float)
+                        self.assertIsInstance(rationale, str)
+                        l1_diff = abs(true_score - score)
+                        self.assertIsInstance(l1_diff, float)
+                        l1_diffs[judge_name] = l1_diff
+                unify.log(
+                    **data,
+                    response=response,
+                    judge_scores=evals,
+                    true_score=true_score,
+                    l1_diffs=l1_diffs
+                )
