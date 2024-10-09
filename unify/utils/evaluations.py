@@ -255,6 +255,8 @@ def log(
                 "No project specified in the arguments, and no globally set project "
                 "either. A project must be passed in the argument, or set globally via "
                 "unify.activate('project_name')")
+        if project not in list_projects(api_key):
+            create_project(project, api_key)
     body = {"data": kwargs, "project": project}
     response = requests.post(
         BASE_URL + "/log", headers=headers, json=body
