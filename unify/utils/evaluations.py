@@ -14,10 +14,11 @@ def create_project(
         api_key: Optional[str] = None
 ) -> Dict[str, str]:
     """
-    Create a new project with the given name.
+    Creates a logging project and adds this to your account. This project will have
+    a set of logs associated with it.
 
     Args:
-        name: The name of the new project.
+        name: A unique, user-defined name used when referencing the project.
 
         api_key: If specified, unify API key to be used. Defaults to the value in the
         `UNIFY_KEY` environment variable.
@@ -44,12 +45,12 @@ def rename_project(
         api_key: Optional[str] = None
 ) -> Dict[str, str]:
     """
-    Create a new project with the given name.
+    Renames a project from `name` to `new_name` in your account.
 
     Args:
-        name: The old name of the project, to be changed.
+        name: Name of the project to rename.
 
-        new_name: The new name for the project.
+        new_name: A unique, user-defined name used when referencing the project.
 
         api_key: If specified, unify API key to be used. Defaults to the value in the
         `UNIFY_KEY` environment variable.
@@ -62,9 +63,9 @@ def rename_project(
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    params = {"name": name}
+    body = {"name": new_name}
     response = requests.patch(
-        BASE_URL + "/project/{}".format(new_name), headers=headers, params=params
+        BASE_URL + f"/project/{name}", headers=headers, json=body
     )
     response.raise_for_status()
     return response.json()
@@ -75,7 +76,7 @@ def delete_project(
         api_key: Optional[str] = None
 ) -> str:
     """
-    Deletes the specified project.
+    Deletes a project from your account.
 
     Args:
         name: Name of the project to delete.
@@ -92,7 +93,7 @@ def delete_project(
         "Authorization": f"Bearer {api_key}",
     }
     response = requests.delete(
-        BASE_URL + "/project/{}".format(name), headers=headers
+        BASE_URL + f"/project/{name}", headers=headers
     )
     response.raise_for_status()
     return response.json()
@@ -102,7 +103,7 @@ def list_projects(
         api_key: Optional[str] = None
 ) -> List[str]:
     """
-    Fetches a list of all project names.
+    Returns the names of all projects stored in your account.
 
     Args:
         api_key: If specified, unify API key to be used. Defaults to the value in the
@@ -132,12 +133,14 @@ def create_artifacts(
         api_key: Optional[str] = None
 ) -> Dict[str, str]:
     """
-    Create a new set of artifacts for the project.
+    Creates one or more artifacts associated to a project. Artifacts are project-level
+    metadata that don’t depend on other variables.
 
     Args:
-        project: The name of the project to create the artifacts for.
+        project: Name of the project the artifacts belong to.
 
-        artifacts: The artifacts to add to the project.
+        artifacts: Dictionary containing one or more key:value pairs that will be stored
+        as artifacts.
 
         api_key: If specified, unify API key to be used. Defaults to the value in the
         `UNIFY_KEY` environment variable.
@@ -150,9 +153,9 @@ def create_artifacts(
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    body = {"project": project, "artifacts": artifacts}
+    body = {"artifacts": artifacts}
     response = requests.post(
-        BASE_URL + "/log/artifact", headers=headers, json=body
+        BASE_URL + f"/project/{project}/artifacts", headers=headers, json=body
     )
     response.raise_for_status()
     return response.json()
@@ -160,16 +163,16 @@ def create_artifacts(
 
 def delete_artifacts(
         project: str,
-        artifacts: Union[str, List[str]],
+        key: str,
         api_key: Optional[str] = None
 ) -> str:
     """
-    Deletes the specified project.
+    Deletes an artifact from a project.
 
     Args:
-        project: The name of the project to delete artifacts from.
+        project: Name of the project to delete an artifact from.
 
-        artifacts: The artifact names to delete from the project.
+        key: Key of the artifact to delete.
 
         api_key: If specified, unify API key to be used. Defaults to the value in the
         `UNIFY_KEY` environment variable.
@@ -182,9 +185,8 @@ def delete_artifacts(
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    params = {"project": project, "artifacts": artifacts}
     response = requests.delete(
-        BASE_URL + "/log/artifact", headers=headers, params=params
+        BASE_URL + f"/project/{project}/artifacts/{key}", headers=headers
     )
     response.raise_for_status()
     return response.json()
@@ -195,10 +197,10 @@ def list_artifacts(
         api_key: Optional[str] = None
 ) -> List[str]:
     """
-    Fetches a list of all artifacts for the given project.
+    Returns the key-value pairs of all artifacts in a project.
 
     Args:
-        project: The name of the project to delete artifacts from.
+        project: Name of the project to delete an artifact from.
 
         api_key: If specified, unify API key to be used. Defaults to the value in the
         `UNIFY_KEY` environment variable.
@@ -211,9 +213,8 @@ def list_artifacts(
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    params = {"project": project}
     response = requests.get(
-        BASE_URL + "/log/artifact/list", headers=headers, params=params,
+        BASE_URL + f"/project/{project}/artifacts", headers=headers
     )
     response.raise_for_status()
     return response.json()
@@ -224,20 +225,24 @@ def list_artifacts(
 
 def log(
         project: Optional[str] = None,
+        logs: Optional[Dict[str, Any]] = None,
         api_key: Optional[str] = None,
-        **kwargs
 ) -> int:
     """
-    Returns the data (id and values) by querying the data based on their values.
+    Creates one or more logs associated to a project. Logs are LLM-call-level data
+    that might depend on other variables. This method returns the id of the new
+    stored log.
 
     Args:
-        project: The name of the project to log the data for. Inferred from globally set
-        project if not specified.
+        project: Name of the project the stored logs will be associated to.
+
+        logs: Dictionary containing one or more key:value pairs that will be logged
+        into the platform. Keys can have an optional version defined after a forward
+        slash. E.g. `system_msg/v1`. If defined, these versions will be used when
+        grouping results on a per-key basis. Values must be JSON serializable.
 
         api_key: If specified, unify API key to be used. Defaults to the value in the
         `UNIFY_KEY` environment variable.
-
-        kwargs: The key value pairs to log into the console as part of this log event.
 
     Returns:
         The unique id of newly created log entry.
@@ -256,7 +261,7 @@ def log(
                 "unify.activate('project_name')")
         if project not in list_projects(api_key):
             create_project(project, api_key)
-    body = {"project": project, "logs": kwargs}
+    body = {"project": project, "logs": logs}
     response = requests.post(
         BASE_URL + "/log", headers=headers, json=body
     )
@@ -264,6 +269,7 @@ def log(
     return response.json()
 
 
+# ToDo: endpoint not available yet
 def update_log(
         data: Dict[str, Any],
         id: int,
@@ -296,15 +302,16 @@ def update_log(
     return response.json()
 
 
+# ToDo: endpoint doesn't work with list of ids yet
 def delete_logs(
         id: Union[int, List[int]],
         api_key: Optional[str] = None
 ) -> Dict[str, str]:
     """
-    The logs to delete.
+    Deletes logs from a project.
 
     Args:
-        id: The ids of the logs to delete.
+        id: IDs of the log to delete from a project.
 
         api_key: If specified, unify API key to be used. Defaults to the value in the
         `UNIFY_KEY` environment variable.
@@ -317,26 +324,26 @@ def delete_logs(
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    body = {"id": id}
     response = requests.delete(
-        BASE_URL + "/log", headers=headers, json=body
+        BASE_URL + f"/log/{id}", headers=headers
     )
     response.raise_for_status()
     return response.json()
 
 
+# ToDo: endpoint doesn't work with multiple keys yet
 def delete_log_entries(
-        keys: Union[str, List[str]],
+        entry: Union[str, List[str]],
         id: str,
         api_key: Optional[str] = None
 ) -> Dict[str, str]:
     """
-    Delete log entries based on their keys.
+    Deletes entries from a log.
 
     Args:
-        keys: The entry keys to delete from the specified log.
+        entry: Name of the entries to delete from a given log.
 
-        id: The id of the log to delete entries from.
+        id: ID of the log to delete an entry from.
 
         api_key: If specified, unify API key to be used. Defaults to the value in the
         `UNIFY_KEY` environment variable.
@@ -349,23 +356,23 @@ def delete_log_entries(
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    body = {"keys": keys, "id": id}
     response = requests.delete(
-        BASE_URL + "/log/entry", headers=headers, json=body
+        BASE_URL + f"/log/{id}/entry/{entry}", headers=headers
     )
     response.raise_for_status()
     return response.json()
 
 
+# ToDo: endpoint doesn't work for multiple ids yet
 def get_logs_by_id(
         id: Union[int, List[int]],
         api_key: Optional[str] = None
 ) -> List[Dict[str, Any]]:
     """
-    Retrieve a set of logs based on the ids of the logs.
+    Returns the log associated with a given id or set of ids.
 
     Args:
-        id: The ids of the logs to retrieve the data for.
+        id: IDs of the logs to fetch.
 
         api_key: If specified, unify API key to be used. Defaults to the value in the
         `UNIFY_KEY` environment variable.
@@ -378,9 +385,8 @@ def get_logs_by_id(
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    body = {"id": id}
     response = requests.get(
-        BASE_URL + "/log/by-id", headers=headers, json=body
+        BASE_URL + f"/log/{id}", headers=headers
     )
     response.raise_for_status()
     return response.json()
@@ -392,13 +398,12 @@ def get_logs_by_project(
         api_key: Optional[str] = None
 ) -> List[Dict[str, Any]]:
     """
-    Retrieve a set of logs based on the ids of the logs.
+    Returns a list of filtered logs from a project.
 
     Args:
-        project: The name of the project to retrieve the logs for.
+        project: Name of the project to get logs from.
 
-        filter: The filtering to apply to the various log values, expressed as a string,
-        for example:
+        filter: Boolean string to filter logs, for example:
         "(temperature > 0.5 and (len(system_msg) < 100 or 'no' in usr_response))"
 
         api_key: If specified, unify API key to be used. Defaults to the value in the
@@ -412,9 +417,9 @@ def get_logs_by_project(
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    body = {"project": project, "filter": filter}
+    params = {"project": project, "filter": filter}
     response = requests.get(
-        BASE_URL + "/log/by-project", headers=headers, json=body
+        BASE_URL + "/logs", headers=headers, params=params
     )
     response.raise_for_status()
     return response.json()
@@ -422,16 +427,17 @@ def get_logs_by_project(
 
 def group_logs(
         project: str,
-        group_by: str,
+        key: str,
         api_key: Optional[str] = None
 ) -> Dict[str, List[Dict[str, Any]]]:
     """
-    Group logs based on equality of a specific key.
+    Returns a list of the different version/values of one entry within a given project
+    based on its key.
 
     Args:
-        project: The id of the project to group the logs for.
+        project: Name of the project to get logs from.
 
-        group_by: The key along which to perform the equality grouping.
+        key: Name of the log entry to get distinct values from.
 
         api_key: If specified, unify API key to be used. Defaults to the value in the
         `UNIFY_KEY` environment variable.
@@ -445,14 +451,15 @@ def group_logs(
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    body = {"project": project, "group_by": group_by}
+    params = {"project": project, "key": key}
     response = requests.get(
-        BASE_URL + "/log/group", headers=headers, json=body
+        BASE_URL + "/logs/groups", headers=headers, params=params
     )
     response.raise_for_status()
     return response.json()
 
 
+# ToDo: endpoint not available yet
 def get_log_metrics(
         project: str,
         metrics: Tuple[str],
