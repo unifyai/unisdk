@@ -95,11 +95,30 @@ def __getattr__(name):
 class Project:
 
     # noinspection PyShadowingNames
-    def __init__(self, project: str) -> None:
+    def __init__(self, project: str, api_key: Optional[str] = None) -> None:
         self._project = project
+        # noinspection PyProtectedMember
+        self._api_key = helpers._validate_api_key(api_key)
+        self._entered = False
+
+    def create(self):
+        create_project(self._project, self._api_key)
+
+    def delete(self):
+        delete_project(self._project, self._api_key)
+
+    def rename(self, new_name: str):
+        rename_project(self._project, new_name, self._api_key)
+        self._project = new_name
+        if self._entered:
+            activate(self._project)
 
     def __enter__(self):
         activate(self._project)
+        if self._project not in list_projects(self._api_key):
+            self.create()
+        self._entered = True
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         deactivate()
+        self._entered = False
