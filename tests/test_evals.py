@@ -1,4 +1,3 @@
-import copy
 import json
 import random
 import os.path
@@ -12,7 +11,6 @@ from openai.types.chat.chat_completion_tool_message_param import (
 )
 
 import unify
-from unify import Prompt
 
 
 class TestMathsEvaluator(unittest.TestCase):
@@ -140,7 +138,6 @@ class TestHumanEvaluator(unittest.TestCase):
         return float(response)
 
     def test_evals(self) -> None:
-        unify.set_repr_mode("concise")
         for data in self._dataset:
             response = self._client.generate(data["question"], data["system_prompt"])
             for score_name, score_config in self._score_configs.items():
@@ -151,6 +148,26 @@ class TestHumanEvaluator(unittest.TestCase):
                         score_config=score_config
                     )
                     self.assertIn(score_val, score_config)
+
+    def test_evals_w_logging(self) -> None:
+        with unify.Project("test_project"):
+            for data in self._dataset:
+                response = self._client.generate(data["question"],
+                                                 data["system_prompt"])
+                log_dict = dict(
+                    question=data["question"],
+                    response=response,
+                )
+                for score_name, score_config in self._score_configs.items():
+                    with SimulateFloatInput(score_config):
+                        score_val = self._evaluate(
+                            question=data["question"],
+                            response=response,
+                            score_config=score_config
+                        )
+                        self.assertIn(score_val, score_config)
+                        log_dict[score_name] = score_val
+                unify.log(**log_dict)
 
 
 class TestCodeEvaluator(unittest.TestCase):
