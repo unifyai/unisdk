@@ -225,8 +225,8 @@ def list_artifacts(
 
 def log(
         project: Optional[str] = None,
-        logs: Optional[Dict[str, Any]] = None,
         api_key: Optional[str] = None,
+        **kwargs
 ) -> int:
     """
     Creates one or more logs associated to a project. Logs are LLM-call-level data
@@ -236,13 +236,11 @@ def log(
     Args:
         project: Name of the project the stored logs will be associated to.
 
-        logs: Dictionary containing one or more key:value pairs that will be logged
-        into the platform. Keys can have an optional version defined after a forward
-        slash. E.g. `system_msg/v1`. If defined, these versions will be used when
-        grouping results on a per-key basis. Values must be JSON serializable.
-
         api_key: If specified, unify API key to be used. Defaults to the value in the
         `UNIFY_KEY` environment variable.
+
+        kwargs: Dictionary containing one or more key:value pairs that will be logged
+        into the platform.
 
     Returns:
         The unique id of newly created log entry.
@@ -261,7 +259,7 @@ def log(
                 "unify.activate('project_name')")
         if project not in list_projects(api_key):
             create_project(project, api_key)
-    body = {"project": project, "logs": logs}
+    body = {"project": project, "logs": kwargs}
     response = requests.post(
         BASE_URL + "/log", headers=headers, json=body
     )
