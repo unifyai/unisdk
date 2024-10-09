@@ -253,28 +253,46 @@ class Log:
             **kwargs
     ):
         self._api_key = _validate_api_key(api_key)
-        self._headers = {
+        headers = {
             "accept": "application/json",
             "Authorization": f"Bearer {self._api_key}",
         }
-        self._project = _get_and_maybe_create_project(project)
+        project = _get_and_maybe_create_project(project)
         if version:
             kwargs = {
                 k + "/" + version[k] if k in version else k: v for k, v in
                 kwargs.items()
             }
-        body = {"project": self._project, "logs": kwargs}
+        body = {"project": project, "logs": kwargs}
         response = requests.post(
-            BASE_URL + "/log", headers=self._headers, json=body
+            BASE_URL + "/log", headers=headers, json=body
         )
         response.raise_for_status()
         self._id = response.json()
+        
+    # Properties
 
-    def update(
+    @property
+    def id(self) -> int:
+        return self._id
+
+    # Public methods
+
+    def add_entries(
             self,
             **kwargs
     ) -> None:
-        update_log(self._id, self._api_key, **kwargs)
+        add_log_entries(self._id, self._api_key, **kwargs)
+
+    def delete_entries(
+            self,
+            keys_to_delete: List[str],
+    ) -> None:
+        for key in keys_to_delete:
+            delete_log_entry(key, self._id, self._api_key)
+
+    def delete(self) -> None:
+        delete_log(self._id, self._api_key)
 
 
 # Logs #
@@ -311,7 +329,7 @@ def log(
 
 
 # ToDo: endpoint not available yet
-def update_log(
+def add_log_entries(
         id: int,
         api_key: Optional[str] = None,
         **kwargs
@@ -402,7 +420,7 @@ def delete_log_entry(
     return response.json()
 
 
-def get_logs_by_id(
+def get_log_by_id(
         id: int,
         api_key: Optional[str] = None
 ) -> List[Dict[str, Any]]:
