@@ -259,7 +259,7 @@ class TestCodeEvaluator(unittest.TestCase):
 class TestToolAgentAndLLMJudgeEvaluations(unittest.TestCase):
 
     def setUp(self) -> None:
-        system_msg = \
+        system_prompt = \
             ("You are a travel assistant, helping people choose which bus or tube "
              "train to catch for their journey. People often want to see which buses "
              "and trains are currently running, and this information changes "
@@ -294,8 +294,11 @@ class TestToolAgentAndLLMJudgeEvaluations(unittest.TestCase):
         ]
 
         _prompts = [
-            unify.Prompt(
-                q, system_message=system_msg, tools=_tools, tool_choice="auto"
+            dict(
+                user_message=q,
+                system_message=system_prompt,
+                tools=_tools,
+                tool_choice="auto"
             ) for q in _questions
         ]
 
@@ -328,94 +331,39 @@ class TestToolAgentAndLLMJudgeEvaluations(unittest.TestCase):
             "No I do not know how long it will take, I don't have enough information."
         ]
 
-        self._dataset = unify.Dataset(
-            [
-                unify.Datum(
-                    prompt=p,
-                    correct_tool_use=ctu,
-                    content_check=cc,
-                    example_answer=ea
-                )
-                for p, ctu, cc, ea in zip(
-                    _prompts, _correct_tool_use, _content_check, _example_answers
-                )
-            ]
-        )
+        self._dataset = [
+            dict(
+                prompt=p,
+                correct_tool_use=ctu,
+                content_check=cc,
+                example_answer=ea
+            )
+            for p, ctu, cc, ea in zip(
+                _prompts, _correct_tool_use, _content_check, _example_answers
+            )
+        ]
 
-        class CorrectToolUse(unify.Score):
-
-            def __init__(self, value: Optional[float] = None) -> None:
-                super().__init__(value=value, config={
-                    0.: "The tool was not used appropriately, "
-                        "either being used when not needed or not used when needed.",
-                    1.: "Tool use was appropriate, "
-                        "being used if needed or ignored if not needed."
-                })
-
-        class Contains(unify.Score):
-
-            def __init__(self, value: Optional[float] = None) -> None:
-                super().__init__(value=value, config={
-                    0.: "The response contains all of the keywords expected.",
-                    1.: "The response does not contain all of the keywords expected."
-                })
-
-        class Omits(unify.Score):
-
-            def __init__(self, value: Optional[float] = None) -> None:
-                super().__init__(value=value, config={
-                    0.: "The response omits all of the keywords expected.",
-                    1.: "The response does not omit all of the keywords expected."
-                })
-
-        class CorrectAnswer(unify.Score):
-
-            def __init__(self, value: Optional[float] = None) -> None:
-                super().__init__(value=value, config={
-                    0.: "The response is totally incorrect.",
-                    0.5: "The response is partially correct.",
-                    1.: "The response is totally correct."
-                })
-
-        class CorrectToolUseEvaluator(unify.Evaluator):
-
-            def __init__(self, name: Optional[str] = None) -> None:
-                super().__init__(CorrectToolUse, name)
-
-            def _evaluate(self, prompt: str, response: unify.ChatCompletion,
-                          correct_tool_use: Optional[str]) -> bool:
-                tool_calls = response.choices[0].message.tool_calls
-                if correct_tool_use is None:
-                    return tool_calls is None
-                return tool_calls[0].function.name == correct_tool_use
-
-        class ContainsEvaluator(unify.Evaluator):
-
-            def __init__(self, name: Optional[str] = None) -> None:
-                super().__init__(Contains, name)
-
-            def _evaluate(self, prompt: str, response: str,
-                          content_check: Optional[Dict[str, List[str]]]) -> bool:
-                if content_check is None:
-                    return True
-                for item in content_check["should_contain"]:
-                    if item not in response:
-                        return False
-                return True
-
-        class OmitsEvaluator(unify.Evaluator):
-
-            def __init__(self, name: Optional[str] = None) -> None:
-                super().__init__(Omits, name)
-
-            def _evaluate(self, prompt: str, response: str,
-                          content_check: Optional[Dict[str, List[str]]]) -> bool:
-                if content_check is None:
-                    return True
-                for item in content_check["should_omit"]:
-                    if item in response:
-                        return False
-                return True
+        self._score_configs = {
+            "correct_tool_use": {
+                0.: "The tool was not used appropriately, "
+                    "either being used when not needed or not used when needed.",
+                1.: "Tool use was appropriate, "
+                    "being used if needed or ignored if not needed."
+            },
+            "contains": {
+                0.: "The response contains all of the keywords expected.",
+                1.: "The response does not contain all of the keywords expected."
+            },
+            "omits": {
+                0.: "The response omits all of the keywords expected.",
+                1.: "The response does not omit all of the keywords expected."
+            },
+            "correct_answer": {
+                0.: "The response is totally incorrect.",
+                0.5: "The response is partially correct.",
+                1.: "The response is totally correct."
+            },
+        }
 
         class TravelAssistantAgent(unify.Agent):
 
@@ -424,8 +372,8 @@ class TestToolAgentAndLLMJudgeEvaluations(unittest.TestCase):
                 self._tools = tools
                 super().__init__()
 
-            def __call__(self, prompt: Union[str, Prompt]):
-                prompt = copy.deepcopy(prompt)
+            def __call__(self, **kwargs):
+                prompt = unify.Prompt(**kwargs)
                 for i in range(3):
                     response = self._client.generate(**prompt.model_dump())
                     choice = response.choices[0]
@@ -455,9 +403,6 @@ class TestToolAgentAndLLMJudgeEvaluations(unittest.TestCase):
             {"get_running_buses": get_running_buses,
              "get_running_tube_lines": get_running_tube_lines}
         )
-        self._tool_use_evaluator = CorrectToolUseEvaluator()
-        self._contains_evaluator = ContainsEvaluator()
-        self._omits_evaluator = OmitsEvaluator()
         usr_msg = ("Given the following user request:"
                    "\n<begin user request>"
                    "\n{user_message}\n"
@@ -477,329 +422,53 @@ class TestToolAgentAndLLMJudgeEvaluations(unittest.TestCase):
                    "is phrased in one of many equally correct ways, but the contents "
                    "of the response is correct.")
 
-        class CorrectAnswerEvaluator(unify.LLMJudge):
+    @staticmethod
+    def _correct_tool_use(
+            response: unify.ChatCompletion,
+            correct_tool_use: Optional[str]
+    ) -> bool:
+        tool_calls = response.choices[0].message.tool_calls
+        if correct_tool_use is None:
+            return tool_calls is None
+        return tool_calls[0].function.name == correct_tool_use
 
-            def __init__(self,
-                         client: Union[unify.Unify, unify.AsyncUnify],
-                         prompt: Union[str, Prompt],
-                         name: Optional[str] = None,
-                         extra_parser: Optional[Dict[str, List[Union[str, int]]]] = None
-                         ) -> None:
-                super().__init__(
-                    score_config=CorrectAnswer,
-                    name=name,
-                    client=client,
-                    prompt=prompt,
-                    extra_parser=extra_parser
-                )
+    @staticmethod
+    def _contains(
+            response: str,
+            content_check: Optional[Dict[str, List[str]]]
+    ) -> bool:
+        if content_check is None:
+            return True
+        for item in content_check["should_contain"]:
+            if item not in response:
+                return False
+        return True
 
-        self._llm_judge = CorrectAnswerEvaluator(
-            self._client,
-            usr_msg,
-            name="test_evaluator",
-            extra_parser={"example_answer": ["example_answer"]}
-        )
+    @staticmethod
+    def _omits(
+            response: str,
+            content_check: Optional[Dict[str, List[str]]]
+    ) -> bool:
+        if content_check is None:
+            return True
+        for item in content_check["should_omit"]:
+            if item in response:
+                return False
+        return True
 
-    def test_evals(self) -> None:
-        unify.set_repr_mode("concise")
-        for datum in self._dataset:
-            response = self._client.generate(**datum.prompt.model_dump())
-            score_config = self._tool_use_evaluator.score_config
-            evaluation = self._tool_use_evaluator.evaluate(
-                response=response,
-                agent=self._client,
-                **datum.model_extra
+    def test_evaluate_tool_use(self) -> None:
+        for data in self._dataset:
+            response = self._client.generate(**data["prompt"])
+            correct_tool_use = self._correct_tool_use(
+                response, data["correct_tool_use"]
             )
-            score = evaluation.score.value
-            self.assertIn(score, score_config)
-            self.assertEqual(score, 1.)
-            self.assertEqual(evaluation.score.description, score_config[score])
+            self.assertIn(correct_tool_use, self._score_configs["correct_tool_use"])
+            self.assertEqual(correct_tool_use, 1.)
 
-    def test_agentic_evals_inclusion_n_omission(self) -> None:
-        unify.set_repr_mode("concise")
-        for datum in self._dataset:
-            response = self._agent(datum.prompt)
-            for evaluator in (self._contains_evaluator, self._omits_evaluator):
-                score_config = evaluator.score_config
-                evaluation = evaluator.evaluate(
-                    response=response,
-                    agent=self._agent,
-                    **datum.model_extra
-                )
-                score = evaluation.score.value
-                self.assertIn(score, score_config)
-                self.assertEqual(evaluation.score.description, score_config[score])
-
-    def test_agentic_evals_w_llm_judge(self) -> None:
-        unify.set_repr_mode("concise")
-        judge_evaluations = list()
-        human_evaluations = list()
-        for datum in self._dataset:
-            response = self._agent(datum.prompt)
-            score_config = self._llm_judge.score_config
-            evaluation = self._llm_judge.evaluate(
-                response=response,
-                agent=self._agent,
-                **datum.model_extra
-            )
-            score = evaluation.score.value
-            self.assertIn(score, score_config)
-            self.assertEqual(evaluation.score.description, score_config[score])
-
-            judge_evaluations.append(evaluation)
-            human_evaluation = copy.copy(evaluation)
-            score_val = random.choice(list(evaluation.score.config.keys()))
-            human_evaluation.score = evaluation.score(score_val)
-            human_evaluation.rationale = "It felt right."
-            human_evaluations.append(human_evaluation)
-
-        judge_eval_set = sum(judge_evaluations)
-        human_eval_set = sum(human_evaluations)
-        judge_perf_eval_set = (
-            human_eval_set.score_diff(judge_eval_set, self._llm_judge, mode="l1")
-        )
-
-        # test EvaluationSet property types
-        self.assertIsInstance(judge_perf_eval_set.datum, list)
-        self.assertIsInstance(judge_perf_eval_set.response, list)
-        self.assertIsInstance(judge_perf_eval_set.score, list)
-        self.assertIsInstance(judge_perf_eval_set.rationale, list)
-
-        # test EvaluationSet shared property types
-        self.assertIsInstance(judge_perf_eval_set.agent, unify.Evaluator)
-        self.assertTrue(isinstance(judge_perf_eval_set.score[0], unify.Score))
-        self.assertEqual(judge_perf_eval_set.evaluator.name, self._llm_judge.name)
-
-        # test EvaluationSet reduction property types
-        self.assertIsInstance(judge_perf_eval_set.mean_score, float)
-        self.assertIsInstance(judge_perf_eval_set.score_freq, dict)
-        for k, v in judge_perf_eval_set.score_freq.items():
-            self.assertIsInstance(k, float)
-            self.assertIsInstance(v, int)
-
-    def test_upload_llm_judge(self) -> None:
-        with EvaluatorUploadTesting():
-            self.assertNotIn(self._llm_judge.name, unify.list_evaluators())
-            self._llm_judge.upload()
-            self.assertIn(self._llm_judge.name, unify.list_evaluators())
-            llm_judge_config = unify.get_evaluator("test_evaluator")
-            # self.assertEqual(
-            #     llm_judge_config["judge_prompt"], self._llm_judge.question.model_dump()
-            # )
-            self.assertEqual(
-                llm_judge_config["prompt_parser"], self._llm_judge.prompt_parser
-            )
-            self.assertEqual(
-                llm_judge_config["response_parser"], self._llm_judge.response_parser
-            )
-            # self.assertEqual(
-            #     llm_judge_config["extra_parser"], self._llm_judge.extra_parser
-            # )
-            self.assertEqual(
-                llm_judge_config["score_config"], self._llm_judge.score_config
-            )
-            self.assertEqual(
-                llm_judge_config["judge_models"], [self._llm_judge.client.endpoint]
-            )
-
-    def test_download_llm_judge(self) -> None:
-        with EvaluatorDownloadTesting(self._llm_judge):
-            self.assertIn(self._llm_judge.name, unify.list_evaluators())
-            judge = unify.LLMJudge.from_upstream("test_evaluator")
-            # self.assertEqual(
-            #     judge.question.model_dump(), self._llm_judge.question.model_dump()
-            # )
-            self.assertEqual(
-                judge.prompt_parser, self._llm_judge.prompt_parser
-            )
-            self.assertEqual(
-                judge.response_parser, self._llm_judge.response_parser
-            )
-            self.assertEqual(
-                judge.score_config, self._llm_judge.score_config
-            )
-            self.assertEqual(
-                judge.client.endpoint, self._llm_judge.client.endpoint
-            )
-
-
-class TestLLMJuryEvaluator(unittest.TestCase):
-
-    def setUp(self) -> None:
-        system_msg = \
-            ("Your task is to take long complex passages of text provided by the user, "
-             "and to summarize the text for them, only explaining the most important "
-             "aspects in simple terms.")
-        _passages = [
-            "A nuclear reactor is a device used to initiate and control a fission "
-            "nuclear chain reaction. Nuclear reactors are used at nuclear power "
-            "plants for electricity generation and in nuclear marine propulsion. When "
-            "a fissile nucleus like uranium-235 or plutonium-239 absorbs a neutron, "
-            "it splits into lighter nuclei, releasing energy, gamma radiation, "
-            "and free neutrons, which can induce further fission in a self-sustaining "
-            "chain reaction. The process is carefully controlled using control rods "
-            "and neutron moderators to regulate the number of neutrons that continue "
-            "the reaction, ensuring the reactor operates safely. The efficiency of "
-            "energy conversion in nuclear reactors is significantly higher compared "
-            "to conventional fossil fuel plants; a kilo of uranium-235 can release "
-            "millions of times more energy than a kilo of coal.",
-
-            "Atoms are the basic particles of the chemical elements. An atom consists "
-            "of a nucleus of protons and generally neutrons, surrounded by an "
-            "electromagnetically bound swarm of electrons. The chemical elements are "
-            "distinguished from each other by the number of protons that are in their "
-            "atoms. For example, any atom that contains 11 protons is sodium, "
-            "and any atom that contains 29 protons is copper. Atoms with the same "
-            "number of protons but a different number of neutrons are called isotopes "
-            "of the same element.",
-
-            "Apartheid was a system of institutionalised racial segregation that "
-            "existed in South Africa and South West Africa (now Namibia) from 1948 "
-            "to the early 1990s. It was characterised by an authoritarian "
-            "political culture based on baasskap, "
-            "which ensured that South Africa was dominated politically, socially, "
-            "and economically by the nation's minority white population. In this "
-            "minoritarian system, there was social stratification and campaigns of "
-            "marginalization such that white citizens had the highest status, "
-            "with them being followed by Indians as well as Coloureds and then Black "
-            "Africans. The economic legacy and social effects of apartheid "
-            "continue to the present day, particularly inequality."
-        ]
-        _prompts = [unify.Prompt(p, system_message=system_msg) for p in _passages]
-
-        self._dataset = unify.Dataset(_prompts)
-
-        class SummaryEvaluator(unify.LLMJury):
-
-            def __init__(
-                    self,
-                    judges: List[unify.LLMJudge],
-                    name: Optional[str] = None,
-                    include_rationale: bool = True
-            ) -> None:
-                super().__init__(
-                    unify.DefaultJudgeScore,
-                    judges=judges,
-                    name=name,
-                    include_rationale=include_rationale
-                )
-
-        self._client = unify.Unify("gpt-4o@openai", cache=True)
-        endpoints = [
-            "gpt-4o@openai",
-            "claude-3.5-sonnet@anthropic",
-            "llama-3.2-3b-chat@fireworks-ai"
-        ]
-        _judges = [unify.DefaultLLMJudge(unify.Unify(ep, cache=True))
-                   for ep in endpoints]
-        self._llm_jury = SummaryEvaluator(
-            _judges,
-            "test_evaluator",
-            include_rationale=True
-        )
-
-    def test_evals(self) -> None:
-        unify.set_repr_mode("concise")
-        jury_evaluations = list()
-        human_evaluations = list()
-        for datum in self._dataset:
-            response = self._client.generate(**datum.prompt.model_dump())
-            evaluation = self._llm_jury.evaluate(
-                response=response,
-                agent=self._client,
-                **datum.model_extra
-            )
-            self.assertIsInstance(evaluation.datum, Datum)
-            self.assertIsInstance(evaluation.response, unify.ChatCompletion)
-            self.assertIsInstance(evaluation.agent, unify.Unify)
-            self.assertIsInstance(evaluation.score, unify.Scores)
-            for key, val in evaluation.score.items():
-                self.assertIsInstance(key, str)
-                self.assertIsInstance(val, unify.Score)
-            self.assertIs(evaluation.evaluator, self._llm_jury)
-            self.assertIsInstance(evaluation.rationale, dict)
-            for key, val in evaluation.rationale.items():
-                self.assertIsInstance(key, str)
-                self.assertIsInstance(val, str)
-            jury_evaluations.append(evaluation)
-            human_evaluation = copy.copy(evaluation)
-            score = next(iter(evaluation.score.values()))
-            score_val = random.choice(list(score.config.keys()))
-            human_evaluation.score = score(score_val)
-            human_evaluation.rationale = "It felt right."
-            human_evaluations.append(human_evaluation)
-        jury_eval_set = sum(jury_evaluations)
-        human_eval_set = sum(human_evaluations)
-        jury_perf_eval_set = (
-            human_eval_set.score_diff(jury_eval_set, self._llm_jury, mode="l1")
-        )
-
-        # test EvaluationSet property types
-        self.assertIsInstance(jury_perf_eval_set.datum, list)
-        self.assertIsInstance(jury_perf_eval_set.response, list)
-        self.assertIsInstance(jury_perf_eval_set.score, list)
-        self.assertIsInstance(jury_perf_eval_set.rationale, list)
-
-        # test EvaluationSet shared property types
-        self.assertIsInstance(jury_perf_eval_set.agent, unify.Evaluator)
-        self.assertTrue(isinstance(jury_perf_eval_set.score[0], unify.Scores))
-        self.assertIs(jury_perf_eval_set.evaluator, self._llm_jury)
-
-        # test EvaluationSet reduction property types
-        self.assertIsInstance(jury_perf_eval_set.mean_score, float)
-        self.assertIsInstance(jury_perf_eval_set.score_freq, dict)
-        for k, v in jury_perf_eval_set.score_freq.items():
-            self.assertIsInstance(k, float)
-            self.assertIsInstance(v, int)
-
-    def test_upload_llm_jury(self):
-        with EvaluatorUploadTesting():
-            self.assertNotIn(self._llm_jury.name, unify.list_evaluators())
-            self._llm_jury.upload()
-            self.assertIn(self._llm_jury.name, unify.list_evaluators())
-            llm_judge_config = unify.get_evaluator("test_evaluator")
-            for judge in self._llm_jury.judges:
-                # self.assertEqual(
-                #     llm_judge_config["judge_prompt"], judge.question.model_dump()
-                # )
-                self.assertEqual(
-                    llm_judge_config["prompt_parser"], judge.prompt_parser
-                )
-                self.assertEqual(
-                    llm_judge_config["response_parser"], judge.response_parser
-                )
-                # self.assertEqual(
-                #     llm_judge_config["extra_parser"], self._llm_judge.extra_parser
-                # )
-                self.assertEqual(
-                    llm_judge_config["score_config"], judge.score_config
-                )
-            self.assertEqual(
-                llm_judge_config["judge_models"],
-                [j.client.endpoint for j in self._llm_jury.judges]
-            )
-
-    def test_download_llm_jury(self):
-        with EvaluatorDownloadTesting(self._llm_jury):
-            self.assertIn(self._llm_jury.name, unify.list_evaluators())
-            new_jury = unify.LLMJury.from_upstream("test_evaluator")
-            for new_judge, orig_judge in zip(new_jury.judges, self._llm_jury.judges):
-                # self.assertEqual(
-                #     new_judge.question.model_dump(), orig_judge.question.model_dump()
-                # )
-                self.assertEqual(
-                    new_judge.prompt_parser, orig_judge.prompt_parser
-                )
-                self.assertEqual(
-                    new_judge.response_parser, orig_judge.response_parser
-                )
-                # self.assertEqual(
-                #     new_judge.extra_parser, orig_judge.extra_parser
-                # )
-                self.assertEqual(
-                    new_judge.score_config, orig_judge.score_config
-                )
-            self.assertEqual(
-                [j.client.endpoint for j in new_jury.judges],
-                [j.client.endpoint for j in self._llm_jury.judges]
-            )
+    def test_agentic_evals_contains_and_omits(self) -> None:
+        for data in self._dataset:
+            response = self._agent(**data["prompt"])
+            contains = self._contains(response, data["content_check"])
+            self.assertIn(contains, self._score_configs["contains"])
+            omits = self._omits(response, data["content_check"])
+            self.assertIn(omits, self._score_configs["omits"])
