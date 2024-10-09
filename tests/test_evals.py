@@ -556,3 +556,18 @@ class TestToolAgentAndLLMJudgeEvaluations(unittest.TestCase):
                 response=response,
             )
             self.assertIn(score, self._llm_judge.score_config)
+
+    def test_agentic_evals_w_llm_judge_w_logging(self) -> None:
+        with unify.Project("test_project"):
+            for data in self._dataset:
+                response = self._agent(**data["prompt"])
+                score = self._llm_judge.evaluate(
+                    input=data,
+                    response=response,
+                )
+                self.assertIn(score, self._llm_judge.score_config)
+                unify.log(
+                    **data,
+                    response=response,
+                    score=score
+                )
