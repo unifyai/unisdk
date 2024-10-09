@@ -146,12 +146,12 @@ class LLMJudge(Evaluator):
             "Judge prompt must have at least one message"
         self._prompt.messages[0]["content"] += self._create_judge_rubric()
         if input_parser is None:
-            self._input_parser = {"user_message": ["messages", -1, "content"]}
+            self._input_parser = {"user_message": None}
         else:
             self._input_parser = input_parser
         if response_parser is None:
             self._response_parser = {
-                "assistant_response": ["choices", 0, "message", "content"]
+                "assistant_response": None
             }
         else:
             self._response_parser = response_parser

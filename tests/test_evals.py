@@ -482,8 +482,7 @@ class TestToolAgentAndLLMJudgeEvaluations(unittest.TestCase):
             self._score_configs["correct_answer"],
             name="test_evaluator",
             input_parser={"user_message": ["prompt", "user_message"],
-                          "example_answer": ["example_answer"]},
-            response_parser={"assistant_response": None}
+                          "example_answer": ["example_answer"]}
         )
 
     @staticmethod
