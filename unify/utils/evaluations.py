@@ -6,6 +6,26 @@ from unify import BASE_URL
 from .helpers import _validate_api_key
 
 
+# Helpers #
+# --------#
+
+def _get_and_maybe_create_project(
+        project: str,
+        api_key: Optional[str] = None
+) -> str:
+    api_key = _validate_api_key(api_key)
+    if project is None:
+        project = unify.active_project
+        if project is None:
+            raise Exception(
+                "No project specified in the arguments, and no globally set project "
+                "either. A project must be passed in the argument, or set globally via "
+                "unify.activate('project_name')")
+        if project not in list_projects(api_key):
+            create_project(project, api_key)
+    return project
+
+
 # Projects #
 # ---------#
 
@@ -255,15 +275,7 @@ def log(
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    if project is None:
-        project = unify.active_project
-        if project is None:
-            raise Exception(
-                "No project specified in the arguments, and no globally set project "
-                "either. A project must be passed in the argument, or set globally via "
-                "unify.activate('project_name')")
-        if project not in list_projects(api_key):
-            create_project(project, api_key)
+    project = _get_and_maybe_create_project(project)
     if version:
         kwargs = {
             k + "/" + version[k] if k in version else k: v for k, v in kwargs.items()
