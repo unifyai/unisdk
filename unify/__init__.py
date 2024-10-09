@@ -55,12 +55,14 @@ from . import (
     agent,
     casting,
     dataset,
+    evaluator,
     repr,
     types
 )
 from .agent import *
 from .casting import *
 from .dataset import *
+from .evaluator import *
 from .chat.logging import *
 from .repr import *
 from .types import *

@@ -94,10 +94,10 @@ class LLMJudge(Evaluator):
 
     def __init__(
             self,
-            score_config: Optional[Dict[float, str]] = None,
+            client: Union[Unify, AsyncUnify],
+            prompt: Union[str, Prompt],
+            score_config: Optional[Dict[float, str]],
             name: Optional[str] = None,
-            client: Union[Unify, AsyncUnify] = None,
-            prompt: Union[str, Prompt] = None,
             input_parser: Optional[Dict[str, List[Union[str, int]]]] = None,
             response_parser: Optional[Dict[str, List[Union[str, int]]]] = None,
             include_rationale: bool = False,
@@ -107,15 +107,15 @@ class LLMJudge(Evaluator):
         Creates an LLM as a Judge Evaluator.
 
         Args:
+            client: The client to use as the LLM Judge.
+
+            prompt: The prompt for the judge to use when performing evaluations.
+
             score_config: Either a derived Score subclass, or the configuration for the
             scores provided by this evaluator with the score floating values as keys and
             the  descriptions for these scores as the values.
 
             name: The name to give to this LLM Judge evaluator, optional.
-
-            client: The client to use as the LLM Judge.
-
-            prompt: The prompt for the judge to use when performing evaluations.
 
             input_parser: Function to parse the input and update corresponding
             placeholders in the judge user message and system message, optional.
@@ -289,9 +289,9 @@ class LLMJudge(Evaluator):
         kw["messages"] = messages
         judge_response = self._client.generate(**kw)
         if self._client.return_full_completion:
-            judge_response = judge_response
-        else:
             judge_response = judge_response.choices[0].message.content
+        else:
+            judge_response = judge_response
         score = self._parse_score_from_llm_response(judge_response)
         if self._include_rationale:
             return score, judge_response
@@ -302,16 +302,56 @@ class DefaultLLMJudge(LLMJudge):
 
     def __init__(
             self,
-            client: Union[Unify, AsyncUnify]
+            client: Union[Unify, AsyncUnify],
+            prompt: Optional[Union[str, Prompt]] = None,
+            score_config: Optional[Dict[float, str]] = None,
+            name: Optional[str] = None,
+            input_parser: Optional[
+                Dict[str,Union[List[Union[str, int]], None]]
+            ] = None,
+            response_parser: Optional[
+                Dict[str, Union[List[Union[str, int]], None]]
+            ] = None,
+            include_rationale: bool = False,
+            api_key: Optional[str] = None,
     ):
         """
-        Create a default Judge, which uses a standard task-agnostic score and a generic
-        system prompt. This should judge work okay on a range of tasks, but the best
-        performance will be achieved by subclassing LLMJudge and creating your own.
+        Creates an LLM as a Judge Evaluator.
 
         Args:
-            client: The client which holds the LLM used under the hood for judging.
+            client: The client to use as the LLM Judge.
+
+            prompt: The prompt for the judge to use when performing evaluations.
+
+            score_config: Either a derived Score subclass, or the configuration for the
+            scores provided by this evaluator with the score floating values as keys and
+            the  descriptions for these scores as the values.
+
+            name: The name to give to this LLM Judge evaluator, optional.
+
+            input_parser: Function to parse the input and update corresponding
+            placeholders in the judge user message and system message, optional.
+
+            response_parser: Function to parse the response and update corresponding
+            placeholders in the judge user message and system message, optional.
+
+            include_rationale: Whether to include the LLM's rationale as part of
+            the evaluation response. Default is False.
+
+            api_key: API key for accessing the Unify API. If None, it attempts to
+            retrieve the API key from the environment variable UNIFY_KEY. Defaults to
+            None.
+
+        Raises:
+            UnifyError: If the API key is missing.
         """
+        if score_config is None:
+            score_config = {
+                0.0: "bad",
+                0.5: "good",
+                0.8: "very good",
+                1.0: "excellent"
+            }
         sys = "[System]\n"
         "Please act as an impartial judge and evaluate the quality of the response "
         "provided by an assistant to the user message displayed below. "
@@ -329,26 +369,31 @@ class DefaultLLMJudge(LLMJudge):
         [start of assistant response]
         {assistant_response}
         [end of assistant response]"""
-        prompt = Prompt(
-            messages=[
-                {
-                    "role": "system",
-                    "content": sys,
-                },
-                {
-                    "role": "user",
-                    "content": template_no_ref,
-                },
-            ],
-        )
+        if prompt is None:
+            prompt = Prompt(
+                messages=[
+                    {
+                        "role": "system",
+                        "content": sys,
+                    },
+                    {
+                        "role": "user",
+                        "content": template_no_ref,
+                    },
+                ],
+            )
+        elif isinstance(prompt, str):
+            prompt = cast(prompt, Prompt)
+
+        if name is None:
+            name = "default_llm_judge<{}>".format(client.endpoint)
         super().__init__(
-            {
-                0.0: "bad",
-                0.5: "good",
-                0.8: "very good",
-                1.0: "excellent"
-            },
-            client=client,
+            score_config=score_config,
             prompt=prompt,
-            name="default_llm_judge<{}>".format(client.endpoint)
+            name=name,
+            client=client,
+            input_parser=input_parser,
+            response_parser=response_parser,
+            include_rationale=include_rationale,
+            api_key=api_key
         )
