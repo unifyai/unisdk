@@ -243,6 +243,40 @@ def list_artifacts(
     return response.json()
 
 
+class Log:
+
+    def __init__(
+            self,
+            project: Optional[str] = None,
+            version: Optional[Dict[str, str]] = None,
+            api_key: Optional[str] = None,
+            **kwargs
+    ):
+        self._api_key = _validate_api_key(api_key)
+        self._headers = {
+            "accept": "application/json",
+            "Authorization": f"Bearer {self._api_key}",
+        }
+        self._project = _get_and_maybe_create_project(project)
+        if version:
+            kwargs = {
+                k + "/" + version[k] if k in version else k: v for k, v in
+                kwargs.items()
+            }
+        body = {"project": self._project, "logs": kwargs}
+        response = requests.post(
+            BASE_URL + "/log", headers=self._headers, json=body
+        )
+        response.raise_for_status()
+        self._id = response.json()
+
+    def update(
+            self,
+            **kwargs
+    ) -> None:
+        update_log(self._id, self._api_key, **kwargs)
+
+
 # Logs #
 # -----#
 
@@ -251,7 +285,7 @@ def log(
         version: Optional[Dict[str, str]] = None,
         api_key: Optional[str] = None,
         **kwargs
-) -> int:
+) -> Log:
     """
     Creates one or more logs associated to a project. Logs are LLM-call-level data
     that might depend on other variables. This method returns the id of the new
@@ -273,22 +307,7 @@ def log(
     Returns:
         The unique id of newly created log entry.
     """
-    api_key = _validate_api_key(api_key)
-    headers = {
-        "accept": "application/json",
-        "Authorization": f"Bearer {api_key}",
-    }
-    project = _get_and_maybe_create_project(project)
-    if version:
-        kwargs = {
-            k + "/" + version[k] if k in version else k: v for k, v in kwargs.items()
-        }
-    body = {"project": project, "logs": kwargs}
-    response = requests.post(
-        BASE_URL + "/log", headers=headers, json=body
-    )
-    response.raise_for_status()
-    return response.json()
+    return Log(project, version, api_key, **kwargs)
 
 
 # ToDo: endpoint not available yet
