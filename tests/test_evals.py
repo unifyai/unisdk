@@ -1,3 +1,4 @@
+import copy
 import json
 import random
 import os.path
@@ -435,24 +436,36 @@ class TestToolAgentAndLLMJudgeEvaluations(unittest.TestCase):
             {"get_running_buses": get_running_buses,
              "get_running_tube_lines": get_running_tube_lines}
         )
-        usr_msg = ("Given the following user request:"
-                   "\n<begin user request>"
-                   "\n{user_message}\n"
-                   "<end user request>\n\n"
-                   "this response from an assistant:"
-                   "\n<begin assistant response>"
-                   "\n{assistant_response}\n"
-                   "<end assistant response>\n\n"
-                   "and this known example of a correct answer:"
-                   "\n<begin example correct answer>"
-                   "\n{example_answer}\n"
-                   "<end example correct answer>\n\n"
-                   "How would you grade the assistant's response? "
-                   "Remember that the assistant response does not need to match the "
-                   "example answer word-for-word. The assistant might phrase an "
-                   "equally correct answer differently. The correct answer provided is "
-                   "is phrased in one of many equally correct ways, but the contents "
-                   "of the response is correct.")
+        judge_prompt = (
+            "Given the following user request:"
+            "\n<begin user request>"
+            "\n{user_message}\n"
+            "<end user request>\n\n"
+            "this response from an assistant:"
+            "\n<begin assistant response>"
+            "\n{assistant_response}\n"
+            "<end assistant response>\n\n"
+            "and this known example of a correct answer:"
+            "\n<begin example correct answer>"
+            "\n{example_answer}\n"
+            "<end example correct answer>\n\n"
+            "How would you grade the assistant's response? "
+            "Remember that the assistant response does not need to match the "
+            "example answer word-for-word. The assistant might phrase an "
+            "equally correct answer differently. The correct answer provided is "
+            "is phrased in one of many equally correct ways, but the contents "
+            "of the response is correct."
+        )
+
+        self._llm_judge = unify.DefaultLLMJudge(
+            self._client,
+            judge_prompt,
+            self._score_configs["correct_answer"],
+            name="test_evaluator",
+            input_parser={"user_message": ["prompt", "user_message"],
+                          "example_answer": ["example_answer"]},
+            response_parser={"assistant_response": None}
+        )
 
     @staticmethod
     def _correct_tool_use(
@@ -534,3 +547,12 @@ class TestToolAgentAndLLMJudgeEvaluations(unittest.TestCase):
                     contains=contains,
                     omits=omits
                 )
+
+    def test_agentic_evals_w_llm_judge(self) -> None:
+        for data in self._dataset:
+            response = self._agent(**data["prompt"])
+            score = self._llm_judge.evaluate(
+                input=data,
+                response=response,
+            )
+            self.assertIn(score, self._llm_judge.score_config)
