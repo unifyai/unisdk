@@ -592,3 +592,110 @@ class TestToolAgentAndLLMJudgeEvaluations(unittest.TestCase):
                         response=response,
                         score=score
                     )
+
+
+class TestLLMJuryEvaluator(unittest.TestCase):
+
+    def setUp(self) -> None:
+        system_prompt = \
+            ("Your task is to take long complex passages of text provided by the user, "
+             "and to summarize the text for them, only explaining the most important "
+             "aspects in simple terms.")
+        _passages = [
+            "A nuclear reactor is a device used to initiate and control a fission "
+            "nuclear chain reaction. Nuclear reactors are used at nuclear power "
+            "plants for electricity generation and in nuclear marine propulsion. When "
+            "a fissile nucleus like uranium-235 or plutonium-239 absorbs a neutron, "
+            "it splits into lighter nuclei, releasing energy, gamma radiation, "
+            "and free neutrons, which can induce further fission in a self-sustaining "
+            "chain reaction. The process is carefully controlled using control rods "
+            "and neutron moderators to regulate the number of neutrons that continue "
+            "the reaction, ensuring the reactor operates safely. The efficiency of "
+            "energy conversion in nuclear reactors is significantly higher compared "
+            "to conventional fossil fuel plants; a kilo of uranium-235 can release "
+            "millions of times more energy than a kilo of coal.",
+
+            "Atoms are the basic particles of the chemical elements. An atom consists "
+            "of a nucleus of protons and generally neutrons, surrounded by an "
+            "electromagnetically bound swarm of electrons. The chemical elements are "
+            "distinguished from each other by the number of protons that are in their "
+            "atoms. For example, any atom that contains 11 protons is sodium, "
+            "and any atom that contains 29 protons is copper. Atoms with the same "
+            "number of protons but a different number of neutrons are called isotopes "
+            "of the same element.",
+
+            "Apartheid was a system of institutionalised racial segregation that "
+            "existed in South Africa and South West Africa (now Namibia) from 1948 "
+            "to the early 1990s. It was characterised by an authoritarian "
+            "political culture based on baasskap, "
+            "which ensured that South Africa was dominated politically, socially, "
+            "and economically by the nation's minority white population. In this "
+            "minoritarian system, there was social stratification and campaigns of "
+            "marginalization such that white citizens had the highest status, "
+            "with them being followed by Indians as well as Coloureds and then Black "
+            "Africans. The economic legacy and social effects of apartheid "
+            "continue to the present day, particularly inequality."
+        ]
+        self._dataset = [dict(passage=p, system_prompt=system_prompt) for p in _passages]
+        self._client = unify.Unify("gpt-4o@openai", cache=True)
+        endpoints = [
+            "gpt-4o@openai",
+            "claude-3.5-sonnet@anthropic",
+            "llama-3.2-3b-chat@fireworks-ai"
+        ]
+        _judges = [
+            unify.DefaultLLMJudge(unify.Unify(ep, cache=True), include_rationale=True)
+            for ep in endpoints
+        ]
+        self._llm_jury = unify.LLMJury(_judges,"test_evaluator")
+
+    def test_evals(self) -> None:
+        jury_evaluations = list()
+        for data in self._dataset:
+            response = self._client.generate(*data.values())
+            evaluation = self._llm_jury.evaluate(
+                input=data,
+                response=response
+            )
+            self.assertIsInstance(evaluation.datum, Datum)
+            self.assertIsInstance(evaluation.response, unify.ChatCompletion)
+            self.assertIsInstance(evaluation.agent, unify.Unify)
+            self.assertIsInstance(evaluation.score, unify.Scores)
+            for key, val in evaluation.score.items():
+                self.assertIsInstance(key, str)
+                self.assertIsInstance(val, unify.Score)
+            self.assertIs(evaluation.evaluator, self._llm_jury)
+            self.assertIsInstance(evaluation.rationale, dict)
+            for key, val in evaluation.rationale.items():
+                self.assertIsInstance(key, str)
+                self.assertIsInstance(val, str)
+            jury_evaluations.append(evaluation)
+            human_evaluation = copy.copy(evaluation)
+            score = next(iter(evaluation.score.values()))
+            score_val = random.choice(list(score.config.keys()))
+            human_evaluation.score = score(score_val)
+            human_evaluation.rationale = "It felt right."
+            human_evaluations.append(human_evaluation)
+        jury_eval_set = sum(jury_evaluations)
+        human_eval_set = sum(human_evaluations)
+        jury_perf_eval_set = (
+            human_eval_set.score_diff(jury_eval_set, self._llm_jury, mode="l1")
+        )
+
+        # test EvaluationSet property types
+        self.assertIsInstance(jury_perf_eval_set.datum, list)
+        self.assertIsInstance(jury_perf_eval_set.response, list)
+        self.assertIsInstance(jury_perf_eval_set.score, list)
+        self.assertIsInstance(jury_perf_eval_set.rationale, list)
+
+        # test EvaluationSet shared property types
+        self.assertIsInstance(jury_perf_eval_set.agent, unify.Evaluator)
+        self.assertTrue(isinstance(jury_perf_eval_set.score[0], unify.Scores))
+        self.assertIs(jury_perf_eval_set.evaluator, self._llm_jury)
+
+        # test EvaluationSet reduction property types
+        self.assertIsInstance(jury_perf_eval_set.mean_score, float)
+        self.assertIsInstance(jury_perf_eval_set.score_freq, dict)
+        for k, v in jury_perf_eval_set.score_freq.items():
+            self.assertIsInstance(k, float)
+            self.assertIsInstance(v, int)
