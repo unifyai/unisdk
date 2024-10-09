@@ -184,13 +184,13 @@ class TestCodeEvaluator(unittest.TestCase):
              "```")
         _questions = [
             "Write a python function to sort and merge two lists.",
-            "Write a python function to find the nth largest number in a set.",
+            "Write a python function to find the nth largest number in a list.",
             "Write a python function to remove all None values from a dictionary."
         ]
         _inputs = [
             [([random.random() for _ in range(10)],
               [random.random() for _ in range(10)]) for _ in range(3)],
-            [(set([random.random() for _ in range(10)]), random.randint(0, 9))
+            [([random.random() for _ in range(10)], random.randint(0, 9))
              for _ in range(3)],
             [({"a": 1., "b": None, "c": 3.},), ({"a": 1., "b": 2., "c": 3.},),
              ({"a": None, "b": 2.},)],
@@ -271,6 +271,21 @@ class TestCodeEvaluator(unittest.TestCase):
             self.assertIn(runs, self._score_configs["runs"])
             correct = self._is_correct(response, data["inputs"], data["answers"])
             self.assertIn(correct, self._score_configs["correct"])
+
+    def test_evals_w_logging(self) -> None:
+        with unify.Project("test_project"):
+            for data in self._dataset:
+                response = self._client.generate(*data["prompt"].values())
+                runs = self._runs(response, data["inputs"])
+                self.assertIn(runs, self._score_configs["runs"])
+                correct = self._is_correct(response, data["inputs"], data["answers"])
+                self.assertIn(correct, self._score_configs["correct"])
+                unify.log(
+                    **data,
+                    response=response,
+                    runs=runs,
+                    correct=correct
+                )
 
 
 class TestToolAgentAndLLMJudgeEvaluations(unittest.TestCase):
