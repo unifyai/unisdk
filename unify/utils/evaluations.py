@@ -415,7 +415,7 @@ def get_logs_by_id(
 
 
 def get_logs_by_project(
-        project: str,
+        project: Optional[str] = None,
         filter: Optional[str] = None,
         api_key: Optional[str] = None
 ) -> List[Dict[str, Any]]:
@@ -439,6 +439,7 @@ def get_logs_by_project(
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
+    project = _get_and_maybe_create_project(project, api_key)
     params = {"project": project, "filter": filter}
     response = requests.get(
         BASE_URL + "/logs", headers=headers, params=params
@@ -448,8 +449,8 @@ def get_logs_by_project(
 
 
 def group_logs(
-        project: str,
         key: str,
+        project: Optional[str] = None,
         api_key: Optional[str] = None
 ) -> Dict[str, List[Dict[str, Any]]]:
     """
@@ -457,9 +458,9 @@ def group_logs(
     based on its key.
 
     Args:
-        project: Name of the project to get logs from.
-
         key: Name of the log entry to get distinct values from.
+
+        project: Name of the project to get logs from.
 
         api_key: If specified, unify API key to be used. Defaults to the value in the
         `UNIFY_KEY` environment variable.
@@ -473,6 +474,7 @@ def group_logs(
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
+    project = _get_and_maybe_create_project(project, api_key)
     params = {"project": project, "key": key}
     response = requests.get(
         BASE_URL + "/logs/groups", headers=headers, params=params
@@ -483,8 +485,8 @@ def group_logs(
 
 # ToDo: endpoint not available yet
 def get_log_metrics(
-        project: str,
         metrics: Tuple[str],
+        project: Optional[str] = None,
         filter: Optional[str] = None,
         api_key: Optional[str] = None
 ) -> Dict[str, Any]:
@@ -492,9 +494,9 @@ def get_log_metrics(
     Retrieve a set of log metrics across a project, after applying the filtering.
 
     Args:
-        project: The id of the project to retrieve the logs for.
-
         metrics: The reduction metrics to retrieve for the logs.
+
+        project: The id of the project to retrieve the logs for.
 
         filter: The filtering to apply to the various log values, expressed as a string,
         for example:
@@ -512,6 +514,7 @@ def get_log_metrics(
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
+    project = _get_and_maybe_create_project(project, api_key)
     body = {"project": project, "metrics": metrics, "filter": filter}
     response = requests.get(
         BASE_URL + "/log/by-project/metrics", headers=headers, json=body
