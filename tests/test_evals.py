@@ -497,6 +497,21 @@ class TestToolAgentAndLLMJudgeEvaluations(unittest.TestCase):
             self.assertIn(correct_tool_use, self._score_configs["correct_tool_use"])
             self.assertEqual(correct_tool_use, 1.)
 
+    def test_evaluate_tool_use_w_logging(self) -> None:
+        with unify.Project("test_project"):
+            for data in self._dataset:
+                response = self._client.generate(**data["prompt"])
+                correct_tool_use = self._correct_tool_use(
+                    response, data["correct_tool_use"]
+                )
+                self.assertIn(correct_tool_use, self._score_configs["correct_tool_use"])
+                self.assertEqual(correct_tool_use, 1.)
+                unify.log(
+                    **data,
+                    response=response.model_dump(),
+                    ctu_score=correct_tool_use,
+                )
+
     def test_agentic_evals_contains_and_omits(self) -> None:
         for data in self._dataset:
             response = self._agent(**data["prompt"])
@@ -504,3 +519,18 @@ class TestToolAgentAndLLMJudgeEvaluations(unittest.TestCase):
             self.assertIn(contains, self._score_configs["contains"])
             omits = self._omits(response, data["content_check"])
             self.assertIn(omits, self._score_configs["omits"])
+
+    def test_agentic_evals_contains_and_omits_w_logging(self) -> None:
+        with unify.Project("test_project"):
+            for data in self._dataset:
+                response = self._agent(**data["prompt"])
+                contains = self._contains(response, data["content_check"])
+                self.assertIn(contains, self._score_configs["contains"])
+                omits = self._omits(response, data["content_check"])
+                self.assertIn(omits, self._score_configs["omits"])
+                unify.log(
+                    **data,
+                    response=response,
+                    contains=contains,
+                    omits=omits
+                )
