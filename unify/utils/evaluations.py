@@ -228,7 +228,8 @@ def get_artifacts(
         `UNIFY_KEY` environment variable.
 
     Returns:
-        List of all artifacts associated with the project.
+        A dictionary of all artifacts associated with the project, with keys for
+        artifact names and values for the artifacts themselves.
     """
     api_key = _validate_api_key(api_key)
     headers = {
