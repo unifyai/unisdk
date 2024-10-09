@@ -593,6 +593,19 @@ class TestToolAgentAndLLMJudgeEvaluations(unittest.TestCase):
                         score=score
                     )
 
+    def test_agentic_evals_w_test_set(self) -> None:
+        for data in self._dataset:
+            response = self._agent(**data["prompt"])
+            score = self._llm_judge.evaluate(
+                input=data,
+                response=response,
+            )
+            self.assertIn(score, self._llm_judge.score_config)
+            true_score = random.choice(list(self._llm_judge.score_config.keys()))
+            self.assertIn(true_score, self._llm_judge.score_config)
+            l1_diff = abs(true_score - score)
+            self.assertIsInstance(l1_diff, float)
+
 
 class TestLLMJuryEvaluator(unittest.TestCase):
 
@@ -685,3 +698,22 @@ class TestLLMJuryEvaluator(unittest.TestCase):
                         response=response,
                         judge_scores=evals
                     )
+
+    def test_evals_w_test_set(self) -> None:
+        for data in self._dataset:
+            response = self._client.generate(*data.values())
+            evals = self._llm_jury.evaluate(
+                input=data,
+                response=response
+            )
+            self.assertIsInstance(evals, dict)
+            l1_diffs = dict()
+            for judge_name, (score, rationale) in evals.items():
+                self.assertIsInstance(judge_name, str)
+                self.assertIsInstance(score, float)
+                self.assertIsInstance(rationale, str)
+                true_score = random.choice(list(self._llm_jury.score_config.keys()))
+                self.assertIn(true_score, self._llm_jury.score_config)
+                l1_diff = abs(true_score - score)
+                self.assertIsInstance(l1_diff, float)
+                l1_diffs[judge_name] = l1_diff
