@@ -83,6 +83,32 @@ class TestMathsEvaluator(unittest.TestCase):
                     dataset=self._dataset,
                     client=str(self._client),
                 )
+                artifacts = unify.get_artifacts()
+                self.assertEqual(len(artifacts), 2)
+                self.assertEqual(
+                    artifacts,
+                    dict(
+                        dataset=self._dataset,
+                        client=str(self._client),
+                    )
+                )
+
+    def test_remove_artifacts(self) -> None:
+        with ProjectHandling():
+            with unify.Project("test_project"):
+                unify.add_artifacts(
+                    dataset=self._dataset,
+                    client=str(self._client),
+                )
+                unify.delete_artifact("client")
+                artifacts = unify.get_artifacts()
+                self.assertEqual(len(artifacts), 1)
+                self.assertEqual(
+                    artifacts,
+                    dict(
+                        dataset=self._dataset
+                    )
+                )
 
     def test_evals(self) -> None:
         for data in self._dataset:
