@@ -327,12 +327,12 @@ class TestDatasetDownloading(unittest.TestCase):
         extra_name = ''.join(random.choice(string.ascii_lowercase) for _ in range(4))
         data = [{"message": msg, extra_name: ans} for msg, ans in zip(msgs, extra)]
         dataset = unify.Dataset(data, name="test_dataset")
-        self.assertTrue(hasattr(dataset[0], "prompt"))
-        self.assertTrue(hasattr(dataset[0], extra_name))
+        self.assertIn("message", dataset[0])
+        self.assertIn(extra_name, dataset[0])
         dataset.upload()
         dataset = unify.Dataset.from_upstream("test_dataset")
         for i, (msg, ans) in enumerate(zip(msgs, extra)):
-            self.assertTrue(hasattr(dataset[i], "prompt"))
+            self.assertIn("message", dataset[i])
             self.assertEqual(dataset[i]["message"], msg)
             self.assertIn(extra_name, dataset[i])
             self.assertEqual(dataset[i][extra_name], ans)
