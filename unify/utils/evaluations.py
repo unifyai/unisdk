@@ -225,6 +225,7 @@ def list_artifacts(
 
 def log(
         project: Optional[str] = None,
+        version: Optional[Dict[str, str]] = None,
         api_key: Optional[str] = None,
         **kwargs
 ) -> int:
@@ -235,6 +236,10 @@ def log(
 
     Args:
         project: Name of the project the stored logs will be associated to.
+
+        version: Optional version parameters which are associated with each key being
+        logged, with the keys of this version dict being the keys being logged, and the
+        values being the name of this particular version.
 
         api_key: If specified, unify API key to be used. Defaults to the value in the
         `UNIFY_KEY` environment variable.
@@ -259,6 +264,10 @@ def log(
                 "unify.activate('project_name')")
         if project not in list_projects(api_key):
             create_project(project, api_key)
+    if version:
+        kwargs = {
+            k + "/" + version[k] if k in version else k: v for k, v in kwargs.items()
+        }
     body = {"project": project, "logs": kwargs}
     response = requests.post(
         BASE_URL + "/log", headers=headers, json=body
