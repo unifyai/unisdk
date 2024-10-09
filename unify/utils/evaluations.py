@@ -148,9 +148,9 @@ def list_projects(
 # ----------#
 
 def create_artifacts(
-        project: str,
-        artifacts: Dict[str, str],
-        api_key: Optional[str] = None
+        project: Optional[str] = None,
+        api_key: Optional[str] = None,
+        **kwargs
 ) -> Dict[str, str]:
     """
     Creates one or more artifacts associated to a project. Artifacts are project-level
@@ -159,11 +159,11 @@ def create_artifacts(
     Args:
         project: Name of the project the artifacts belong to.
 
-        artifacts: Dictionary containing one or more key:value pairs that will be stored
-        as artifacts.
-
         api_key: If specified, unify API key to be used. Defaults to the value in the
         `UNIFY_KEY` environment variable.
+
+        kwargs: Dictionary containing one or more key:value pairs that will be stored
+        as artifacts.
 
     Returns:
         A message indicating whether the artifacts were successfully added.
@@ -173,7 +173,8 @@ def create_artifacts(
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    body = {"artifacts": artifacts}
+    body = {"artifacts": kwargs}
+    project = _get_and_maybe_create_project(project, api_key)
     response = requests.post(
         BASE_URL + f"/project/{project}/artifacts", headers=headers, json=body
     )
@@ -181,9 +182,9 @@ def create_artifacts(
     return response.json()
 
 
-def delete_artifacts(
-        project: str,
+def delete_artifact(
         key: str,
+        project: Optional[str] = None,
         api_key: Optional[str] = None
 ) -> str:
     """
@@ -205,6 +206,7 @@ def delete_artifacts(
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
+    project = _get_and_maybe_create_project(project, api_key)
     response = requests.delete(
         BASE_URL + f"/project/{project}/artifacts/{key}", headers=headers
     )
@@ -213,7 +215,7 @@ def delete_artifacts(
 
 
 def list_artifacts(
-        project: str,
+        project: Optional[str] = None,
         api_key: Optional[str] = None
 ) -> List[str]:
     """
@@ -233,6 +235,7 @@ def list_artifacts(
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
+    project = _get_and_maybe_create_project(project, api_key)
     response = requests.get(
         BASE_URL + f"/project/{project}/artifacts", headers=headers
     )
