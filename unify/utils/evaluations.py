@@ -293,20 +293,20 @@ def log(
 
 # ToDo: endpoint not available yet
 def update_log(
-        data: Dict[str, Any],
         id: int,
-        api_key: Optional[str] = None
+        api_key: Optional[str] = None,
+        **kwargs
 ) -> Dict[str, str]:
     """
     Returns the data (id and values) by querying the data based on their values.
 
     Args:
-        data: The data to log into the console.
-
         id: The log id to update with extra data.
 
         api_key: If specified, unify API key to be used. Defaults to the value in the
         `UNIFY_KEY` environment variable.
+
+        kwargs: The data to log into the console.
 
     Returns:
         A message indicating whether the log was successfully updated.
@@ -316,7 +316,7 @@ def update_log(
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    body = {"data": data, "id": id}
+    body = {"data": kwargs, "id": id}
     response = requests.put(
         BASE_URL + "/log", headers=headers, json=body
     )
@@ -324,8 +324,7 @@ def update_log(
     return response.json()
 
 
-# ToDo: endpoint doesn't work with list of ids yet
-def delete_logs(
+def delete_log(
         id: Union[int, List[int]],
         api_key: Optional[str] = None
 ) -> Dict[str, str]:
@@ -353,14 +352,13 @@ def delete_logs(
     return response.json()
 
 
-# ToDo: endpoint doesn't work with multiple keys yet
-def delete_log_entries(
-        entry: Union[str, List[str]],
+def delete_log_entry(
+        entry: str,
         id: str,
         api_key: Optional[str] = None
 ) -> Dict[str, str]:
     """
-    Deletes entries from a log.
+    Deletes an entry from a log.
 
     Args:
         entry: Name of the entries to delete from a given log.
@@ -385,13 +383,12 @@ def delete_log_entries(
     return response.json()
 
 
-# ToDo: endpoint doesn't work for multiple ids yet
 def get_logs_by_id(
-        id: Union[int, List[int]],
+        id: int,
         api_key: Optional[str] = None
 ) -> List[Dict[str, Any]]:
     """
-    Returns the log associated with a given id or set of ids.
+    Returns the log associated with a given id.
 
     Args:
         id: IDs of the logs to fetch.
