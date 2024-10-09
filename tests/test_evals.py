@@ -76,6 +76,14 @@ class TestMathsEvaluator(unittest.TestCase):
         except ValueError:
             return False
 
+    def test_add_artifacts(self) -> None:
+        with ProjectHandling():
+            with unify.Project("test_project"):
+                unify.add_artifacts(
+                    dataset=self._dataset,
+                    client=str(self._client),
+                )
+
     def test_evals(self) -> None:
         for data in self._dataset:
             question = data["question"]
