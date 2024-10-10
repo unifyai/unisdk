@@ -56,6 +56,11 @@ class TestMathsEvaluator(unittest.TestCase):
     def setUp(self) -> None:
         system_prompt = ("Answer the following maths question, "
                          "returning only the numeric answer, and nothing else.")
+        self._system_prompt_versions = {
+            "simple": system_prompt,
+            "role_play": "You are an expert mathematician. " + system_prompt,
+            "with_example": system_prompt + " For example: 4",
+        }
         self._dataset = [
             {
                 "question": q, "system_prompt": system_prompt
@@ -128,6 +133,26 @@ class TestMathsEvaluator(unittest.TestCase):
                         question=question,
                         response=response,
                         score=correct
+                    )
+
+    def test_system_prompt_opt(self) -> None:
+        with ProjectHandling():
+            with unify.Project("test_project"):
+                system_prompt_perf = dict()
+                for name, system_prompt in self._system_prompt_versions.items():
+                    for data in self._dataset:
+                        question = data["question"]
+                        response = self._client.generate(question, system_prompt)
+                        correct = self._evaluate(data["question"], response)
+                        self.assertTrue(correct)
+                        unify.log(
+                            question=question,
+                            system_prompt=system_prompt,
+                            response=response,
+                            score=correct,
+                        )
+                    system_prompt_perf[name] = unify.get_logs_metric(
+                        "mean", "score", f"system_prompt == {system_prompt}"
                     )
 
 
