@@ -1,5 +1,5 @@
 import requests
-from typing import Dict, Optional, Any, Union, List, Tuple
+from typing import Dict, Optional, Any, Union, List
 
 import unify
 from unify import BASE_URL
@@ -244,7 +244,7 @@ class Log:
                 k + "/" + version[k] if k in version else k: v
                 for k, v in kwargs.items()
             }
-        body = {"project": project, "logs": kwargs}
+        body = {"project": project, "entries": kwargs}
         response = requests.post(BASE_URL + "/log", headers=headers, json=body)
         response.raise_for_status()
         self._id = response.json()
