@@ -483,7 +483,7 @@ def get_logs(
     return response.json()
 
 
-def group_logs(
+def get_groups(
         key: str,
         project: Optional[str] = None,
         api_key: Optional[str] = None
@@ -493,7 +493,7 @@ def group_logs(
     based on its key.
 
     Args:
-        key: Name of the log entry to get distinct values from.
+        key: Name of the log entry to do equality matching for.
 
         project: Name of the project to get logs from.
 
@@ -502,7 +502,7 @@ def group_logs(
 
     Returns:
         A dict containing the grouped logs, with each key of the dict representing the
-        version of the log key with equal values.
+        version of the log key with equal values, and the value being the equal value.
     """
     api_key = _validate_api_key(api_key)
     headers = {
@@ -516,6 +516,36 @@ def group_logs(
     )
     response.raise_for_status()
     return response.json()
+
+
+def group_logs(
+        key: str,
+        project: Optional[str] = None,
+        api_key: Optional[str] = None
+):
+    """
+    Groups logs based on equality '==' of the values for the specified key, returning a
+    dict with group indices as the keys and the list of logs as the values. If the keys
+    are not versioned, then the indices are simply incrementing integers.
+
+    Args:
+        key: Name of the log entry to do equality matching for.
+
+        project: Name of the project to get logs from.
+
+        api_key: If specified, unify API key to be used. Defaults to the value in the
+        `UNIFY_KEY` environment variable.
+
+    Returns:
+        A dict containing the grouped logs, with each key of the dict representing the
+        version of the log key with equal values, and the value being a list of logs.
+    """
+    api_key = _validate_api_key(api_key)
+    project = _get_and_maybe_create_project(project, api_key)
+    return {
+        k: get_logs(project, "{} == {}".format(key, v), api_key)
+        for k, v in get_groups(key, project, api_key).items()
+    }
 
 
 # ToDo: endpoint not available yet
