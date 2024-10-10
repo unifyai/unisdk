@@ -101,7 +101,7 @@ class TestEvaluations(unittest.TestCase):
         unify.log(project, version2, **log3)
         grouped_logs = unify.group_logs("system_prompt", project)
         assert len(grouped_logs) == 2
-        assert [log["version"] for log in grouped_logs] == ["v1", "v2"]
+        assert [version for version in grouped_logs].sort() == ["v1", "v2"]
         
         metrics = ("mean", "std")
         filter = "'hello' in user_prompt"
