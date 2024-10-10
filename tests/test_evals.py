@@ -6,6 +6,7 @@ import builtins
 import importlib
 import traceback
 from typing import Dict, List, Any, Union, Optional
+
 from openai.types.chat.chat_completion_tool_message_param import (
     ChatCompletionToolMessageParam,
 )
@@ -800,3 +801,273 @@ class TestLLMJuryEvaluator(unittest.TestCase):
                     true_score=true_score,
                     l1_diffs=l1_diffs,
                 )
+
+
+class TestCRMEvaluator(unittest.TestCase):
+
+    def setUp(self) -> None:
+
+        self._questions = [
+            "Is the company interested in purchasing our new product line?",
+            "Did the company express concerns about pricing?",
+            "Is the company satisfied with our customer service?",
+            "Is the company considering switching to a competitor?",
+            "Is the company interested in scheduling a follow-up meeting?"
+        ]
+
+        self._sales_call_transcripts = {
+            "Quantum Widgets Ltd.": [
+                """Sales Rep: Good afternoon, this is Alex from TechCorp Solutions. May I speak with Mr. Johnson?
+
+        Mr. Johnson: Speaking.
+
+        Sales Rep: Hi Mr. Johnson, I'm calling to follow up on the demo of our new AI-powered widget optimizer. Did you have any thoughts or questions?
+
+        Mr. Johnson: Yes, actually, the team was quite impressed. We're considering integrating it into our production line next quarter.
+
+        Sales Rep: That's great to hear! Is there anything holding you back from making a decision sooner?
+
+        Mr. Johnson: Well, the pricing is a bit steep for us at the moment.
+
+        Sales Rep: I understand. Perhaps we can discuss flexible payment options.
+
+        Mr. Johnson: That might help. Let's set up a meeting next week to go over the details.
+
+        Sales Rep: Sounds good! I'll send over a calendar invite shortly.
+
+        Mr. Johnson: Perfect. Talk to you then.""",
+
+                """Customer Support: Hello, this is Jamie from TechCorp customer support. I understand you're having issues with our current widget optimizer?
+
+        Ms. Lee: Yes, it's been glitching and causing delays in our production.
+
+        Customer Support: I'm sorry to hear that. We'll get that sorted out immediately.
+
+        Ms. Lee: Thank you. Also, I heard you have a new version coming out?
+
+        Customer Support: Yes, we do. It addresses many of the issues found in the current version.
+
+        Ms. Lee: Great. Maybe upgrading would solve our problems.
+
+        Customer Support: I can have someone from sales reach out to discuss that.
+
+        Ms. Lee: Please do."""
+            ],
+
+            "Cosmic Pizza": [
+                """Sales Rep: Hello, is this Ms. Martinez from Cosmic Pizza?
+
+        Ms. Martinez: Yes, who's calling?
+
+        Sales Rep: This is Sam from TechCorp Solutions. We wanted to check in and see how your experience has been with our online ordering platform.
+
+        Ms. Martinez: It's been working fine, no complaints.
+
+        Sales Rep: Glad to hear that. We're launching a new product line that could help improve your delivery logistics.
+
+        Ms. Martinez: Thanks, but we're not looking to make any changes right now.
+
+        Sales Rep: Understood. If anything changes, feel free to reach out.
+
+        Ms. Martinez: Will do. Thanks for checking in."""
+            ],
+
+            "Nimbus Cloud Solutions": [
+                """Sales Rep: Hi, I'm calling from TechCorp Solutions regarding our new cloud security service.
+
+        Mr. Kim: Oh, hi. We're actually in the market for enhanced security.
+
+        Sales Rep: Excellent! Our new service offers state-of-the-art protection against cyber threats.
+
+        Mr. Kim: That sounds promising. Could you send over some more information?
+
+        Sales Rep: Absolutely. I'll email you the details right after this call.
+
+        Mr. Kim: Great, thank you.""",
+
+                """Customer Support: Hello, this is Riley from TechCorp customer support.
+
+        Ms. Patel: Hi Riley, we're experiencing some downtime with your cloud services.
+
+        Customer Support: I'm sorry for the inconvenience. We're working to resolve it as quickly as possible.
+
+        Ms. Patel: This is the third time this month. We're starting to consider other providers.
+
+        Customer Support: I understand your frustration. Let me escalate this issue to our technical team.
+
+        Ms. Patel: Please do. We can't afford this kind of unreliability.""",
+
+                """Sales Rep: Good morning, just following up on the information I sent over about our cloud security service.
+
+        Mr. Kim: Yes, I received it. We're definitely interested.
+
+        Sales Rep: Fantastic! Would you like to schedule a demo?
+
+        Mr. Kim: Yes, let's do that.
+
+        Sales Rep: Great, how does Thursday at 10 AM sound?
+
+        Mr. Kim: That works for me.
+
+        Sales Rep: Perfect, I'll send over an invite.
+
+        Mr. Kim: Looking forward to it."""
+            ],
+        }
+
+        self._correct_answers = {
+            "Quantum Widgets Ltd.": {
+                "Is the company interested in purchasing our new product line?": True,
+                "Did the company express concerns about pricing?": True,
+                "Is the company satisfied with our customer service?": None,
+                "Is the company considering switching to a competitor?": False,
+                "Is the company interested in scheduling a follow-up meeting?": True,
+            },
+            "Cosmic Pizza": {
+                "Is the company interested in purchasing our new product line?": False,
+                "Did the company express concerns about pricing?": False,
+                "Is the company satisfied with our customer service?": True,
+                "Is the company considering switching to a competitor?": False,
+                "Is the company interested in scheduling a follow-up meeting?": False,
+            },
+            "Nimbus Cloud Solutions": {
+                "Is the company interested in purchasing our new product line?": True,
+                "Did the company express concerns about pricing?": False,
+                "Is the company satisfied with our customer service?": False,
+                "Is the company considering switching to a competitor?": True,
+                "Is the company interested in scheduling a follow-up meeting?": True,
+            }
+        }
+
+        # System prompt instructing the AI assistant on how to process the data
+        _system_prompt = (
+            "You are a customer relationship management AI assistant. "
+            "Your task is to analyze the following sales call transcripts with a company and answer the given question. "
+            "Provide a clear {Yes} or {No} answer if you can determine the information from the call, "
+            "and respond {None} if you cannot answer the question based on the call. "
+            "Support your conclusion with specific quotes from the transcripts. "
+            "Ensure that your reasoning is based solely on the information provided in the transcripts. "
+            "The very final part of your response should be either {Yes}, {No} or {None}, "
+            "inside the curly brackets and on a new line."
+        )
+
+        # Variations of the system prompt for testing different scenarios
+        self._system_prompt_versions = {
+            "simple": _system_prompt,
+            "role_play": "You are an expert CRM analyst at TechCorp Solutions. " + _system_prompt,
+            "with_example": (
+                    _system_prompt + "\n\nFor example:\n"
+                                    "Question: Is the company interested in purchasing our new product line?\n"
+                                    "Answer: Yes.\n"
+                                    "Reasoning: The client said, 'We're considering integrating it into our production line next quarter.'"
+            ),
+        }
+
+        self._dataset = []
+        for company_name in self._sales_call_transcripts.keys():
+            for question in self._questions:
+                self._dataset.append(
+                    {
+                        "company_name": company_name,
+                        "call_transcripts": self._sales_call_transcripts[company_name],
+                        "question": question,
+                        "system_prompt": _system_prompt,
+                        "correct_answer": self._correct_answers[company_name],
+                    }
+                )
+
+        # Initialize the client with caching enabled
+        self._client = unify.Unify("gpt-4o@openai", cache=True)
+
+    @staticmethod
+    def _evaluate(correct_answer: bool, response: str) -> bool:
+        formatted = response.split("{")[-1].split("}")[0].lower()
+        if correct_answer:
+            return ("yes" in formatted and
+                    "no" not in formatted and "none" not in formatted)
+        elif correct_answer is False:
+            return ("no" in formatted and
+                    "yes" not in formatted  and "none" not in formatted)
+        return "none" in formatted and "yes" not in formatted and "no" not in formatted
+
+    def test_add_artifacts(self) -> None:
+        with ProjectHandling():
+            with unify.Project("test_project"):
+                unify.add_artifacts(
+                    questions=self._questions,
+                    sales_call_transcripts=self._sales_call_transcripts,
+                    correct_answers=self._correct_answers,
+                    client=str(self._client)
+                )
+                artifacts = unify.get_artifacts()
+                self.assertEqual(len(artifacts), 2)
+                self.assertEqual(
+                    artifacts,
+                    dict(
+                        questions=self._questions,
+                        sales_call_transcripts=self._sales_call_transcripts,
+                        correct_answers=self._correct_answers,
+                        client=str(self._client)
+                    ),
+                )
+
+    def test_remove_artifacts(self) -> None:
+        with ProjectHandling():
+            with unify.Project("test_project"):
+                unify.add_artifacts(
+                    questions=self._questions,
+                    sales_call_transcripts=self._sales_call_transcripts,
+                    correct_answers=self._correct_answers,
+                    client=str(self._client)
+                )
+                unify.delete_artifact("sales_call_transcripts")
+                unify.delete_artifact("client")
+                artifacts = unify.get_artifacts()
+                self.assertEqual(len(artifacts), 2)
+                self.assertEqual(
+                    artifacts, dict(
+                        questions=self._questions,
+                        correct_answers=self._correct_answers
+                    )
+                )
+
+    def test_evals(self) -> None:
+        for data in self._dataset:
+            msg = (f"The call transcripts are as follows:\n{data['call_transcripts']}."
+                   f"\n\nThe question is as follows:\n{data['question']}")
+            response = self._client.generate(msg, data["system_prompt"])
+            self._evaluate(data["correct_answer"], response)
+
+    def test_evals_w_logging(self) -> None:
+        with ProjectHandling():
+            with unify.Project("test_project"):
+                for data in self._dataset:
+                    msg = (f"The call transcripts are as follows:\n{data['call_transcripts']}."
+                           f"\n\nThe question is as follows:\n{data['question']}")
+                    response = self._client.generate(msg, data["system_prompt"])
+                    score = self._evaluate(data["correct_answer"], response)
+                    unify.log(
+                        **data,
+                        response=response,
+                        score=score
+                    )
+
+    def test_system_prompt_opt(self) -> None:
+        with ProjectHandling():
+            with unify.Project("test_project"):
+                system_prompt_perf = dict()
+                for name, system_prompt in self._system_prompt_versions.items():
+                    for data in self._dataset:
+                        msg = (
+                            f"The call transcripts are as follows:\n{data['call_transcripts']}."
+                            f"\n\nThe question is as follows:\n{data['question']}")
+                        response = self._client.generate(msg, data["system_prompt"])
+                        score = self._evaluate(data["correct_answer"], response)
+                        unify.log(
+                            **data,
+                            response=response,
+                            score=score
+                        )
+                    system_prompt_perf[name] = unify.get_logs_metric(
+                        "mean", "score", f"system_prompt == {system_prompt}"
+                    )
