@@ -47,7 +47,9 @@ class TestChatBasics(unittest.TestCase):
 
     def test_default_params_handled_correctly(self) -> None:
         client = Unify(
-            api_key=self.valid_api_key, endpoint="gpt-4o@openai", n=2,
+            api_key=self.valid_api_key,
+            endpoint="gpt-4o@openai",
+            n=2,
             return_full_completion=True,
         )
         result = client.generate(user_message="hello")
@@ -55,8 +57,7 @@ class TestChatBasics(unittest.TestCase):
 
     def test_default_prompt_handled_correctly(self) -> None:
         client = Unify(
-            api_key=self.valid_api_key, endpoint="gpt-4o@openai", n=2,
-            temperature=0.5
+            api_key=self.valid_api_key, endpoint="gpt-4o@openai", n=2, temperature=0.5
         )
         self.assertEqual(client.default_prompt.temperature, 0.5)
         self.assertEqual(client.default_prompt.n, 2)
@@ -112,7 +113,9 @@ class TestAsyncUnifyBasics(unittest.IsolatedAsyncioTestCase):
 
     async def test_default_params_handled_correctly(self) -> None:
         async_client = AsyncUnify(
-            api_key=self.valid_api_key, endpoint="gpt-4o@openai", n=2,
+            api_key=self.valid_api_key,
+            endpoint="gpt-4o@openai",
+            n=2,
             return_full_completion=True,
         )
         result = await async_client.generate(user_message="hello")
@@ -120,8 +123,7 @@ class TestAsyncUnifyBasics(unittest.IsolatedAsyncioTestCase):
 
     async def test_default_prompt_handled_correctly(self) -> None:
         client = AsyncUnify(
-            api_key=self.valid_api_key, endpoint="gpt-4o@openai", n=2,
-            temperature=0.5
+            api_key=self.valid_api_key, endpoint="gpt-4o@openai", n=2, temperature=0.5
         )
         self.assertEqual(client.default_prompt.temperature, 0.5)
         self.assertEqual(client.default_prompt.n, 2)

@@ -16,10 +16,10 @@ from unify.types import Prompt, ChatCompletion
 class Evaluator(abc.ABC):
 
     def __init__(
-            self,
-            score_config: Optional[Dict[float, str]],
-            name: Optional[str] = None,
-            api_key: Optional[str] = None,
+        self,
+        score_config: Optional[Dict[float, str]],
+        name: Optional[str] = None,
+        api_key: Optional[str] = None,
     ):
         """
         Create an Evaluator.
@@ -68,11 +68,7 @@ class Evaluator(abc.ABC):
     # ---------#
 
     @abstractmethod
-    def evaluate(
-            self,
-            *args,
-            **kwargs
-    ) -> float:
+    def evaluate(self, *args, **kwargs) -> float:
         """
         Evaluate the given response for this input prompt, with optional extra data.
 
@@ -93,15 +89,15 @@ class Evaluator(abc.ABC):
 class LLMJudge(Evaluator):
 
     def __init__(
-            self,
-            client: Union[Unify, AsyncUnify],
-            prompt: Union[str, Prompt],
-            score_config: Optional[Dict[float, str]],
-            name: Optional[str] = None,
-            input_parser: Optional[Dict[str, List[Union[str, int]]]] = None,
-            response_parser: Optional[Dict[str, List[Union[str, int]]]] = None,
-            include_rationale: bool = False,
-            api_key: Optional[str] = None,
+        self,
+        client: Union[Unify, AsyncUnify],
+        prompt: Union[str, Prompt],
+        score_config: Optional[Dict[float, str]],
+        name: Optional[str] = None,
+        input_parser: Optional[Dict[str, List[Union[str, int]]]] = None,
+        response_parser: Optional[Dict[str, List[Union[str, int]]]] = None,
+        include_rationale: bool = False,
+        api_key: Optional[str] = None,
     ):
         """
         Creates an LLM as a Judge Evaluator.
@@ -138,21 +134,20 @@ class LLMJudge(Evaluator):
         super().__init__(
             score_config=score_config,
             name=name if name is not None else self._client.endpoint,
-            api_key=api_key
+            api_key=api_key,
         )
 
         self._prompt = cast(prompt, Prompt)
-        assert self._prompt.messages is not None, \
-            "Judge prompt must have at least one message"
+        assert (
+            self._prompt.messages is not None
+        ), "Judge prompt must have at least one message"
         self._prompt.messages[0]["content"] += self._create_judge_rubric()
         if input_parser is None:
             self._input_parser = {"user_message": None}
         else:
             self._input_parser = input_parser
         if response_parser is None:
-            self._response_parser = {
-                "assistant_response": None
-            }
+            self._response_parser = {"assistant_response": None}
         else:
             self._response_parser = response_parser
         self._include_rationale = include_rationale
@@ -205,7 +200,8 @@ class LLMJudge(Evaluator):
     def _extract_json_from_llm_response(response) -> str:
         return re.search(
             '\{[\n\r\s]*"assistant_rating":.*?}',
-            response, flags=re.DOTALL | re.MULTILINE
+            response,
+            flags=re.DOTALL | re.MULTILINE,
         ).group(0)
 
     def _parse_score_from_llm_response(self, response) -> Optional[float]:
@@ -221,9 +217,11 @@ class LLMJudge(Evaluator):
             return
 
     def _create_judge_rubric(self):
-        prompt = ("First provide your explanation, "
-                  "then write down your final rating according to the "
-                  "following guidelines:")
+        prompt = (
+            "First provide your explanation, "
+            "then write down your final rating according to the "
+            "following guidelines:"
+        )
         for score_val, description in self.score_config.items():
             head_str = f"""\n\t - "{score_val}" """
             head_str += f""": {description}"""
@@ -250,10 +248,10 @@ class LLMJudge(Evaluator):
         return json.dumps(item) if isinstance(item, dict) else str(item)
 
     def _update_judge_messages(
-            self,
-            item: Union[Prompt, ChatCompletion, Dict],
-            parser: Optional[Dict[str, List[Union[str, int]]]],
-            messages: List
+        self,
+        item: Union[Prompt, ChatCompletion, Dict],
+        parser: Optional[Dict[str, List[Union[str, int]]]],
+        messages: List,
     ):
         if parser is None or item in (None, {}):
             return messages
@@ -265,25 +263,25 @@ class LLMJudge(Evaluator):
                     item if isinstance(item, dict) else item.model_dump(), parse_rule
                 )
             messages = [
-                {k: (v.replace("{" + key + "}", content) if k == "content" else v)
-                 for k, v in msg.items()} for msg in messages
+                {
+                    k: (v.replace("{" + key + "}", content) if k == "content" else v)
+                    for k, v in msg.items()
+                }
+                for msg in messages
             ]
         return messages
 
     def evaluate(
-            self,
-            input: Any,
-            response: Any,
+        self,
+        input: Any,
+        response: Any,
     ) -> Union[float, Tuple[float, Union[str, ChatCompletion]]]:
         messages = copy.deepcopy(self._prompt.messages)
-        for i, (item, parser) in enumerate(zip(
-                (input, response),
-                (self._input_parser, self._response_parser)
-        )):
+        for i, (item, parser) in enumerate(
+            zip((input, response), (self._input_parser, self._response_parser))
+        ):
             messages = self._update_judge_messages(
-                copy.deepcopy(item),
-                parser,
-                messages
+                copy.deepcopy(item), parser, messages
             )
         kw = self._prompt.model_dump()
         kw["messages"] = messages
@@ -301,19 +299,15 @@ class LLMJudge(Evaluator):
 class DefaultLLMJudge(LLMJudge):
 
     def __init__(
-            self,
-            client: Union[Unify, AsyncUnify],
-            prompt: Optional[Union[str, Prompt]] = None,
-            score_config: Optional[Dict[float, str]] = None,
-            name: Optional[str] = None,
-            input_parser: Optional[
-                Dict[str,Union[List[Union[str, int]], None]]
-            ] = None,
-            response_parser: Optional[
-                Dict[str, Union[List[Union[str, int]], None]]
-            ] = None,
-            include_rationale: bool = False,
-            api_key: Optional[str] = None,
+        self,
+        client: Union[Unify, AsyncUnify],
+        prompt: Optional[Union[str, Prompt]] = None,
+        score_config: Optional[Dict[float, str]] = None,
+        name: Optional[str] = None,
+        input_parser: Optional[Dict[str, Union[List[Union[str, int]], None]]] = None,
+        response_parser: Optional[Dict[str, Union[List[Union[str, int]], None]]] = None,
+        include_rationale: bool = False,
+        api_key: Optional[str] = None,
     ):
         """
         Creates an LLM as a Judge Evaluator.
@@ -346,12 +340,7 @@ class DefaultLLMJudge(LLMJudge):
             UnifyError: If the API key is missing.
         """
         if score_config is None:
-            score_config = {
-                0.0: "bad",
-                0.5: "good",
-                0.8: "very good",
-                1.0: "excellent"
-            }
+            score_config = {0.0: "bad", 0.5: "good", 0.8: "very good", 1.0: "excellent"}
         sys = "[System]\n"
         "Please act as an impartial judge and evaluate the quality of the response "
         "provided by an assistant to the user message displayed below. "
@@ -395,17 +384,17 @@ class DefaultLLMJudge(LLMJudge):
             input_parser=input_parser,
             response_parser=response_parser,
             include_rationale=include_rationale,
-            api_key=api_key
+            api_key=api_key,
         )
 
 
 class LLMJury(Evaluator):
 
     def __init__(
-            self,
-            judges: List[LLMJudge],
-            name: Optional[str] = None,
-            api_key: Optional[str] = None,
+        self,
+        judges: List[LLMJudge],
+        name: Optional[str] = None,
+        api_key: Optional[str] = None,
     ):
         """
         Creates an LLM Jury Evaluator.
@@ -420,15 +409,16 @@ class LLMJury(Evaluator):
             None.
         """
         self._judges = judges
-        assert all(j.score_config == judges[0].score_config for j in judges), \
-            "All judges in a Jury must have the same score configuration."
+        assert all(
+            j.score_config == judges[0].score_config for j in judges
+        ), "All judges in a Jury must have the same score configuration."
         super().__init__(judges[0].score_config, name, api_key)
 
     # noinspection PyMethodOverriding
     def evaluate(
-            self,
-            input: Any,
-            response: Any,
+        self,
+        input: Any,
+        response: Any,
     ) -> Dict[str, Union[float, Tuple[float, Union[str, ChatCompletion]]]]:
         evaluations = dict()
         for judge in self._judges:

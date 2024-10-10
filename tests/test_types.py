@@ -23,23 +23,19 @@ class TestPrompt(unittest.TestCase):
         self._assert_prompt_msg(prompt, "Hello")
 
     def test_create_prompt_from_messages(self) -> None:
-        prompt = unify.Prompt(
-            messages=[{"role": "user", "content": "Hello"}]
-        )
+        prompt = unify.Prompt(messages=[{"role": "user", "content": "Hello"}])
         self._assert_prompt_msg(prompt, "Hello")
 
     def test_create_prompt_from_messages_n_params(self) -> None:
         prompt = unify.Prompt(
-            messages=[{"role": "user", "content": "Hello"}],
-            temperature=0.5
+            messages=[{"role": "user", "content": "Hello"}], temperature=0.5
         )
         self._assert_prompt_msg(prompt, "Hello")
         self._assert_prompt_param(prompt, "temperature", 0.5)
 
     def test_pass_prompts_to_client(self) -> None:
         prompt = unify.Prompt(
-            messages=[{"role": "user", "content": "Hello"}],
-            temperature=0.5
+            messages=[{"role": "user", "content": "Hello"}], temperature=0.5
         )
         client = unify.Unify(**prompt.model_dump())
         self.assertEqual(client.temperature, 0.5)

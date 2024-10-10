@@ -108,9 +108,7 @@ def download_dataset(
     if raw_return:
         return ret
     return [
-        {
-            k: v for k, v in item.items() if k not in ("id", "timestamp")
-        } for item in ret
+        {k: v for k, v in item.items() if k not in ("id", "timestamp")} for item in ret
     ]
 
 
@@ -182,9 +180,7 @@ def list_datasets(api_key: Optional[str] = None) -> List[str]:
 
 
 def add_data_by_value(
-        name: str,
-        data: Union[Any, List[Any]],
-        api_key: Optional[str] = None
+    name: str, data: Union[Any, List[Any]], api_key: Optional[str] = None
 ) -> Dict[str, Union[str, List[int]]]:
     """
     Adds data to a dataset by value, and returns a list of ids and values for each of
@@ -216,9 +212,7 @@ def add_data_by_value(
 
 
 def add_data_by_id(
-        name: str,
-        data: Union[int, List[int]],
-        api_key: Optional[str] = None
+    name: str, data: Union[int, List[int]], api_key: Optional[str] = None
 ) -> Dict[str, Union[str, List[int]]]:
     """
     Adds data to a dataset by id, and returns a list of ids and values for each of
@@ -250,9 +244,7 @@ def add_data_by_id(
 
 
 def delete_data_by_value(
-        name: str,
-        data: Union[Any, List[Any]],
-        api_key: Optional[str] = None
+    name: str, data: Union[Any, List[Any]], api_key: Optional[str] = None
 ) -> Dict[str, Union[str, List[int]]]:
     """
     Deletes data from a dataset by value, and returns a list of ids and values for each
@@ -286,9 +278,7 @@ def delete_data_by_value(
 
 
 def delete_data_by_id(
-        name: str,
-        data: Union[int, List[int]],
-        api_key: Optional[str] = None
+    name: str, data: Union[int, List[int]], api_key: Optional[str] = None
 ) -> Dict[str, Union[str, List[int]]]:
     """
     Deletes data from a dataset by id, and returns a list of ids and values for each
@@ -322,8 +312,7 @@ def delete_data_by_id(
 
 
 def get_data_by_value(
-        data: Union[Any, List[Any]],
-        api_key: Optional[str] = None
+    data: Union[Any, List[Any]], api_key: Optional[str] = None
 ) -> List[Dict[str, Union[int, Any]]]:
     """
     Returns the data (id and values) by querying the data based on their unique ids.
@@ -351,8 +340,7 @@ def get_data_by_value(
 
 
 def get_data_by_id(
-        data: Union[int, List[int]],
-        api_key: Optional[str] = None
+    data: Union[int, List[int]], api_key: Optional[str] = None
 ) -> List[Dict[str, Union[int, Any]]]:
     """
     Returns the data (id and values) by querying the data based on their values.

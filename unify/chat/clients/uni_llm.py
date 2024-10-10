@@ -1,6 +1,7 @@
 # global
 import abc
 import openai
+
 # noinspection PyProtectedMember
 from openai._types import Headers, Query
 from openai.types.chat import (
@@ -311,8 +312,7 @@ class _UniLLMClient(_Client, abc.ABC):
         """
         valid_endpoints = unify.list_endpoints(api_key=self._api_key)
         if value not in valid_endpoints and (
-            "@custom" not in value
-            and "@local" not in value
+            "@custom" not in value and "@local" not in value
         ):
             raise Exception(
                 "The specified endpoint {} is not one of the endpoints supported by "
@@ -334,8 +334,7 @@ class _UniLLMClient(_Client, abc.ABC):
         """
         valid_models = unify.list_models(self._provider, api_key=self._api_key)
         if value not in valid_models and (
-            "custom" not in self._provider
-            and self._provider != "local"
+            "custom" not in self._provider and self._provider != "local"
         ):
             if self._provider:
                 raise Exception(
@@ -346,9 +345,7 @@ class _UniLLMClient(_Client, abc.ABC):
                 )
             raise Exception(
                 "The specified model {} is not one of the models supported by Unify: "
-                "{}".format(
-                    value, valid_models
-                )
+                "{}".format(value, valid_models)
             )
         self._model = value
         if self._provider:
@@ -367,8 +364,7 @@ class _UniLLMClient(_Client, abc.ABC):
         """
         valid_providers = unify.list_providers(self._model, api_key=self._api_key)
         if value not in valid_providers and (
-            "custom" not in self._provider
-            and self._provider != "local"
+            "custom" not in self._provider and self._provider != "local"
         ):
             if self._model:
                 raise Exception(
@@ -388,16 +384,16 @@ class _UniLLMClient(_Client, abc.ABC):
 
     @staticmethod
     def _handle_kw(
-            prompt,
-            endpoint,
-            stream,
-            stream_options,
-            use_custom_keys,
-            tags,
-            drop_params,
-            region,
-            log_query_body,
-            log_response_body
+        prompt,
+        endpoint,
+        stream,
+        stream_options,
+        use_custom_keys,
+        tags,
+        drop_params,
+        region,
+        log_query_body,
+        log_response_body,
     ):
         prompt_dict = prompt.model_dump()
         if "extra_body" in prompt_dict:
@@ -480,7 +476,7 @@ class Unify(_UniLLMClient):
             drop_params=drop_params,
             region=region,
             log_query_body=log_query_body,
-            log_response_body=log_response_body
+            log_response_body=log_response_body,
         )
         try:
             if endpoint in LOCAL_MODELS:
@@ -526,7 +522,7 @@ class Unify(_UniLLMClient):
             drop_params=drop_params,
             region=region,
             log_query_body=log_query_body,
-            log_response_body=log_response_body
+            log_response_body=log_response_body,
         )
         chat_completion = None
         if cache:
@@ -707,7 +703,7 @@ class AsyncUnify(_UniLLMClient):
             drop_params=drop_params,
             region=region,
             log_query_body=log_query_body,
-            log_response_body=log_response_body
+            log_response_body=log_response_body,
         )
         try:
             if endpoint in LOCAL_MODELS:
@@ -751,7 +747,7 @@ class AsyncUnify(_UniLLMClient):
             drop_params=drop_params,
             region=region,
             log_query_body=log_query_body,
-            log_response_body=log_response_body
+            log_response_body=log_response_body,
         )
         chat_completion, async_response = None, None
         if cache:

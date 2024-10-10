@@ -12,7 +12,7 @@ class SimulateInput:
         self._messages = [
             "What is the capital of Spain? Be succinct.",
             "Who is their most famous sports player? Be succinct.",
-            "quit"
+            "quit",
         ]
         self._count = 0
         self._true_input = None
@@ -59,7 +59,9 @@ class TestChatbotUniLLM(unittest.TestCase):
 
     def test_simple_stream_chat_n_quit(self):
         client = Unify(
-            api_key=self.valid_api_key, endpoint="llama-3-8b-chat@together-ai", stream=True,
+            api_key=self.valid_api_key,
+            endpoint="llama-3-8b-chat@together-ai",
+            stream=True,
         )
         chatbot = ChatBot(client)
         with SimulateInput():
@@ -76,20 +78,14 @@ class TestChatbotMultiLLM(unittest.TestCase):
     def test_constructor(self) -> None:
         client = MultiLLM(
             api_key=self.valid_api_key,
-            endpoints=[
-                "llama-3-8b-chat@together-ai",
-                "gpt-4o@openai"
-            ]
+            endpoints=["llama-3-8b-chat@together-ai", "gpt-4o@openai"],
         )
         ChatBot(client)
 
     def test_simple_non_stream_chat_n_quit(self):
         client = MultiLLM(
             api_key=self.valid_api_key,
-            endpoints=[
-                "llama-3-8b-chat@together-ai",
-                "gpt-4o@openai"
-            ]
+            endpoints=["llama-3-8b-chat@together-ai", "gpt-4o@openai"],
         )
         chatbot = ChatBot(client)
         with SimulateInput():

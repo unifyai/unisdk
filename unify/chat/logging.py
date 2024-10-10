@@ -6,14 +6,14 @@ from ..utils.helpers import _validate_api_key
 
 
 def with_logging(
-        model_fn: Optional[callable] = None,
-        *,
-        endpoint: str,
-        tags: Optional[List[str]] = None,
-        timestamp: Optional[datetime.datetime] = None,
-        log_query_body: bool = True,
-        log_response_body: bool = True,
-        api_key: Optional[str] = None,
+    model_fn: Optional[callable] = None,
+    *,
+    endpoint: str,
+    tags: Optional[List[str]] = None,
+    timestamp: Optional[datetime.datetime] = None,
+    log_query_body: bool = True,
+    log_response_body: bool = True,
+    api_key: Optional[str] = None,
 ):
     """
     Wrap a local model callable with logging of the queries.
@@ -41,19 +41,21 @@ def with_logging(
 
     # noinspection PyShadowingNames
     def model_fn_w_logging(
-            *args,
-            tags: Optional[List[str]] = None,
-            timestamp: Optional[datetime.datetime] = None,
-            log_query_body: bool = True,
-            log_response_body: bool = True,
-            **kwargs
+        *args,
+        tags: Optional[List[str]] = None,
+        timestamp: Optional[datetime.datetime] = None,
+        log_query_body: bool = True,
+        log_response_body: bool = True,
+        **kwargs,
     ):
         if len(args) != 0:
-            raise Exception("When logging queries for a local model, all arguments to "
-                            "the model callable must be provided as keyword arguments. "
-                            "Positional arguments are not supported. This is so the "
-                            "query body dict can be fully populated with keys for each "
-                            "entry.")
+            raise Exception(
+                "When logging queries for a local model, all arguments to "
+                "the model callable must be provided as keyword arguments. "
+                "Positional arguments are not supported. This is so the "
+                "query body dict can be fully populated with keys for each "
+                "entry."
+            )
         query_body = kwargs
         response = model_fn(**query_body)
         if not isinstance(response, dict):
@@ -64,11 +66,12 @@ def with_logging(
             response_body=response,
             tags=tags,
             timestamp=timestamp,
-            api_key=api_key
+            api_key=api_key,
         )
         if log_query_body:
             if not log_response_body:
                 del kw["response_body"]
             unify.log_query(**kw)
         return response
+
     return model_fn_w_logging

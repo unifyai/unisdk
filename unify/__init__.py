@@ -1,4 +1,5 @@
 """Unify python module."""
+
 import os
 from typing import Callable
 
@@ -51,14 +52,7 @@ from .chat.chatbot import *
 from unify.chat.clients.uni_llm import *
 from unify.chat.clients.multi_llm import *
 
-from . import (
-    agent,
-    casting,
-    dataset,
-    evaluator,
-    repr,
-    types
-)
+from . import agent, casting, dataset, evaluator, repr, types
 from .agent import *
 from .casting import *
 from .dataset import *
@@ -86,7 +80,7 @@ def deactivate() -> None:
 
 
 def __getattr__(name):
-    if name == 'active_project':
+    if name == "active_project":
         global PROJECT
         return PROJECT
     raise AttributeError(f"module '{__name__}' has no attribute '{name}'")

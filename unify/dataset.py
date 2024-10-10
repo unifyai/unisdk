@@ -6,6 +6,7 @@ from typing import List, Dict, Union, Optional, Any
 import unify
 from unify.types import _Formatted
 from unify.types import Prompt
+
 # noinspection PyProtectedMember
 from .utils.helpers import _validate_api_key, _dict_aligns_with_pydantic
 
@@ -14,8 +15,7 @@ class Dataset(_Formatted):
 
     def __init__(
         self,
-        data: Union[str, Dict, Prompt,
-                    List[Union[str, Dict, Prompt]]],
+        data: Union[str, Dict, Prompt, List[Union[str, Dict, Prompt]]],
         *,
         name: str = None,
         shared_data: Dict = None,
@@ -126,8 +126,11 @@ class Dataset(_Formatted):
                 upstream_dataset = unify.download_dataset(
                     self._name, api_key=self._api_key
                 )
-                unique_upstream = [item.model_dump() for item in upstream_dataset
-                                   if item not in self._data]
+                unique_upstream = [
+                    item.model_dump()
+                    for item in upstream_dataset
+                    if item not in self._data
+                ]
                 unify.delete_data(self._name, unique_upstream)
                 unify.add_data_by_value(self._name, raw_data)
             else:
@@ -156,9 +159,7 @@ class Dataset(_Formatted):
         if overwrite:
             self._data = unify.download_dataset(self._name, api_key=self._api_key)
         else:
-            upstream_dataset = unify.download_dataset(
-                self._name, api_key=self._api_key
-            )
+            upstream_dataset = unify.download_dataset(self._name, api_key=self._api_key)
             unique_local = [item for item in self._data if item not in upstream_dataset]
             self._data = upstream_dataset + unique_local
         return self
@@ -196,8 +197,10 @@ class Dataset(_Formatted):
         )
         return self
 
-    def add(self, other: Union[Dataset, str, Dict, Prompt, int,
-                               List[Union[str, Dict, Prompt]]]) -> Self:
+    def add(
+        self,
+        other: Union[Dataset, str, Dict, Prompt, int, List[Union[str, Dict, Prompt]]],
+    ) -> Self:
         """
         Adds another dataset to this one, return a new Dataset instance, with this
         new dataset receiving all unique queries from the other added dataset.
@@ -214,8 +217,9 @@ class Dataset(_Formatted):
         data = list(dict.fromkeys(self._data + other._data))
         return Dataset(data=data, api_key=self._api_key)
 
-    def sub(self, other: Union[Dataset, str, Dict, Prompt,
-                               List[Union[str, Dict, Prompt]]]) -> Self:
+    def sub(
+        self, other: Union[Dataset, str, Dict, Prompt, List[Union[str, Dict, Prompt]]]
+    ) -> Self:
         """
         Subtracts another dataset from this one, return a new Dataset instance, with
         this new dataset losing all queries from the other subtracted dataset.
@@ -235,9 +239,8 @@ class Dataset(_Formatted):
         return Dataset(data=data, api_key=self._api_key)
 
     def inplace_add(
-            self,
-            other: Union[Dataset, str, Dict, Prompt, int,
-                         List[Union[str, Dict, Prompt]]]
+        self,
+        other: Union[Dataset, str, Dict, Prompt, int, List[Union[str, Dict, Prompt]]],
     ) -> Self:
         """
         Adds another dataset to this one, with this dataset receiving all unique queries
@@ -256,9 +259,7 @@ class Dataset(_Formatted):
         return self
 
     def inplace_sub(
-            self,
-            other: Union[Dataset, str, Dict, Prompt,
-                         List[Union[str, Dict, Prompt]]]
+        self, other: Union[Dataset, str, Dict, Prompt, List[Union[str, Dict, Prompt]]]
     ) -> Self:
         """
         Subtracts another dataset from this one, with this dataset losing all queries
@@ -278,8 +279,9 @@ class Dataset(_Formatted):
         self._data = [item for item in self._data if item not in other]
         return self
 
-    def __add__(self, other: Union[Dataset, str, Dict, Prompt,
-                                   List[Union[str, Dict, Prompt]]]) -> Self:
+    def __add__(
+        self, other: Union[Dataset, str, Dict, Prompt, List[Union[str, Dict, Prompt]]]
+    ) -> Self:
         """
         Adds another dataset to this one via the + operator, return a new Dataset
         instance, with this new dataset receiving all unique queries from the other
@@ -293,8 +295,10 @@ class Dataset(_Formatted):
         """
         return self.add(other)
 
-    def __radd__(self, other: Union[Dataset, str, Dict, Prompt, int,
-                                    List[Union[str, Dict, Prompt]]]) -> Self:
+    def __radd__(
+        self,
+        other: Union[Dataset, str, Dict, Prompt, int, List[Union[str, Dict, Prompt]]],
+    ) -> Self:
         """
         Adds another dataset to this one via the + operator, this is used if the
         other item does not have a valid __add__ method for these two types. Return a
@@ -311,8 +315,9 @@ class Dataset(_Formatted):
             return self
         return Dataset(other).add(self)
 
-    def __iadd__(self, other: Union[Dataset, str, Dict, Prompt,
-                                    List[Union[str, Dict, Prompt]]]) -> Self:
+    def __iadd__(
+        self, other: Union[Dataset, str, Dict, Prompt, List[Union[str, Dict, Prompt]]]
+    ) -> Self:
         """
         Adds another dataset to this one, with this dataset receiving all unique queries
         from the other added dataset.
@@ -325,8 +330,9 @@ class Dataset(_Formatted):
         """
         return self.inplace_add(other)
 
-    def __sub__(self, other: Union[Dataset, str, Dict, Prompt,
-                                   List[Union[str, Dict, Prompt]]]) -> Self:
+    def __sub__(
+        self, other: Union[Dataset, str, Dict, Prompt, List[Union[str, Dict, Prompt]]]
+    ) -> Self:
         """
         Subtracts another dataset from this one via the - operator, return a new Dataset
         instance, with this new dataset losing all queries from the other subtracted
@@ -340,8 +346,9 @@ class Dataset(_Formatted):
         """
         return self.sub(other)
 
-    def __rsub__(self, other: Union[Dataset, str, Dict, Prompt,
-                                    List[Union[str, Dict, Prompt]]]) -> Self:
+    def __rsub__(
+        self, other: Union[Dataset, str, Dict, Prompt, List[Union[str, Dict, Prompt]]]
+    ) -> Self:
         """
         Subtracts another dataset from this one via the - operator, this is used if the
         other item does not have a valid __sub__ method for these two types. Return a
@@ -357,9 +364,7 @@ class Dataset(_Formatted):
         return Dataset(other).sub(self)
 
     def __isub__(
-            self,
-            other: Union[Dataset, str, Dict, Prompt,
-                         List[Union[str, Dict, Prompt]]]
+        self, other: Union[Dataset, str, Dict, Prompt, List[Union[str, Dict, Prompt]]]
     ) -> Self:
         """
         Subtracts another dataset from this one, with this dataset losing all queries
@@ -383,8 +388,9 @@ class Dataset(_Formatted):
         for x in self._data:
             yield x
 
-    def __contains__(self, item: Union[Dataset, str, Dict, Prompt,
-                                       List[Union[str, Dict, Prompt]]]) -> bool:
+    def __contains__(
+        self, item: Union[Dataset, str, Dict, Prompt, List[Union[str, Dict, Prompt]]]
+    ) -> bool:
         """
         Determine whether the item is contained within the dataset. The item is cast to
         a Dataset instance, and can therefore take on many different types. Only returns
@@ -426,9 +432,11 @@ class Dataset(_Formatted):
         if isinstance(item, int):
             return self._data[item]
         elif isinstance(item, slice):
-            return Dataset(self._data[item.start:item.stop:item.step])
-        raise TypeError("expected item to be of type int or slice,"
-                        "but found {} of type {}".format(item, type(item)))
+            return Dataset(self._data[item.start : item.stop : item.step])
+        raise TypeError(
+            "expected item to be of type int or slice,"
+            "but found {} of type {}".format(item, type(item))
+        )
 
     # noinspection PyBroadException
     @staticmethod
@@ -451,7 +459,8 @@ class Dataset(_Formatted):
     def _shared_items_pruned(self, item, chain=""):
         if isinstance(item, list):
             ret = [
-                v for v in [
+                v
+                for v in [
                     self._shared_items_pruned(v, chain + "/" + str(i))
                     for i, v in enumerate(item)
                 ]
@@ -460,7 +469,8 @@ class Dataset(_Formatted):
             return ret if bool(ret) else None
         elif isinstance(item, tuple):
             ret = (
-                v for v in [
+                v
+                for v in [
                     self._shared_items_pruned(v, chain + "/" + str(i))
                     for i, v in enumerate(item)
                 ]
@@ -469,7 +479,8 @@ class Dataset(_Formatted):
             return ret if bool(ret) else None
         elif isinstance(item, dict):
             ret = {
-                k: v for k, v in {
+                k: v
+                for k, v in {
                     k: self._shared_items_pruned(v, chain + "/" + str(k))
                     for k, v in item.items()
                 }.items()
@@ -478,7 +489,8 @@ class Dataset(_Formatted):
             return ret if bool(ret) else None
         elif isinstance(item, BaseModel):
             dct = {
-                k: v for k, v in {
+                k: v
+                for k, v in {
                     k: self._shared_items_pruned(v, chain + "/" + str(k))
                     for k, v in item.model_dump().items()
                 }.items()
@@ -499,7 +511,7 @@ class Dataset(_Formatted):
         if self._shared_data is None:
             yield self._data
         else:
-            yield "shared", self._prune(self._create_pydantic_model(
-                self._data[0], self._shared_data
-            ))
+            yield "shared", self._prune(
+                self._create_pydantic_model(self._data[0], self._shared_data)
+            )
             yield [self._shared_items_pruned(d) for d in self._data]

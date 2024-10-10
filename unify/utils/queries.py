@@ -73,12 +73,12 @@ def get_queries(
 
 
 def log_query(
-        endpoint: str,
-        query_body: Dict,
-        response_body: Optional[Dict] = None,
-        tags: Optional[List[str]] = None,
-        timestamp: Optional[datetime.datetime] = None,
-        api_key: Optional[str] = None,
+    endpoint: str,
+    query_body: Dict,
+    response_body: Optional[Dict] = None,
+    tags: Optional[List[str]] = None,
+    timestamp: Optional[datetime.datetime] = None,
+    api_key: Optional[str] = None,
 ):
     """
     Log a query (and optionally response) for a locally deployed (non-Unify-registered)

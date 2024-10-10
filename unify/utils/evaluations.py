@@ -9,10 +9,8 @@ from .helpers import _validate_api_key
 # Helpers #
 # --------#
 
-def _get_and_maybe_create_project(
-        project: str,
-        api_key: Optional[str] = None
-) -> str:
+
+def _get_and_maybe_create_project(project: str, api_key: Optional[str] = None) -> str:
     api_key = _validate_api_key(api_key)
     if project is None:
         project = unify.active_project
@@ -20,7 +18,8 @@ def _get_and_maybe_create_project(
             raise Exception(
                 "No project specified in the arguments, and no globally set project "
                 "either. A project must be passed in the argument, or set globally via "
-                "unify.activate('project_name')")
+                "unify.activate('project_name')"
+            )
         if project not in list_projects(api_key):
             create_project(project, api_key)
     return project
@@ -29,10 +28,8 @@ def _get_and_maybe_create_project(
 # Projects #
 # ---------#
 
-def create_project(
-        name: str,
-        api_key: Optional[str] = None
-) -> Dict[str, str]:
+
+def create_project(name: str, api_key: Optional[str] = None) -> Dict[str, str]:
     """
     Creates a logging project and adds this to your account. This project will have
     a set of logs associated with it.
@@ -52,17 +49,13 @@ def create_project(
         "Authorization": f"Bearer {api_key}",
     }
     body = {"name": name}
-    response = requests.post(
-        BASE_URL + "/project", headers=headers, json=body
-    )
+    response = requests.post(BASE_URL + "/project", headers=headers, json=body)
     response.raise_for_status()
     return response.json()
 
 
 def rename_project(
-        name: str,
-        new_name: str,
-        api_key: Optional[str] = None
+    name: str, new_name: str, api_key: Optional[str] = None
 ) -> Dict[str, str]:
     """
     Renames a project from `name` to `new_name` in your account.
@@ -84,17 +77,12 @@ def rename_project(
         "Authorization": f"Bearer {api_key}",
     }
     body = {"name": new_name}
-    response = requests.patch(
-        BASE_URL + f"/project/{name}", headers=headers, json=body
-    )
+    response = requests.patch(BASE_URL + f"/project/{name}", headers=headers, json=body)
     response.raise_for_status()
     return response.json()
 
 
-def delete_project(
-        name: str,
-        api_key: Optional[str] = None
-) -> str:
+def delete_project(name: str, api_key: Optional[str] = None) -> str:
     """
     Deletes a project from your account.
 
@@ -112,16 +100,12 @@ def delete_project(
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    response = requests.delete(
-        BASE_URL + f"/project/{name}", headers=headers
-    )
+    response = requests.delete(BASE_URL + f"/project/{name}", headers=headers)
     response.raise_for_status()
     return response.json()
 
 
-def list_projects(
-        api_key: Optional[str] = None
-) -> List[str]:
+def list_projects(api_key: Optional[str] = None) -> List[str]:
     """
     Returns the names of all projects stored in your account.
 
@@ -137,9 +121,7 @@ def list_projects(
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    response = requests.get(
-        BASE_URL + "/projects", headers=headers
-    )
+    response = requests.get(BASE_URL + "/projects", headers=headers)
     response.raise_for_status()
     return response.json()
 
@@ -147,10 +129,9 @@ def list_projects(
 # Artifacts #
 # ----------#
 
+
 def add_artifacts(
-        project: Optional[str] = None,
-        api_key: Optional[str] = None,
-        **kwargs
+    project: Optional[str] = None, api_key: Optional[str] = None, **kwargs
 ) -> Dict[str, str]:
     """
     Creates one or more artifacts associated to a project. Artifacts are project-level
@@ -183,9 +164,7 @@ def add_artifacts(
 
 
 def delete_artifact(
-        key: str,
-        project: Optional[str] = None,
-        api_key: Optional[str] = None
+    key: str, project: Optional[str] = None, api_key: Optional[str] = None
 ) -> str:
     """
     Deletes an artifact from a project.
@@ -215,8 +194,7 @@ def delete_artifact(
 
 
 def get_artifacts(
-        project: Optional[str] = None,
-        api_key: Optional[str] = None
+    project: Optional[str] = None, api_key: Optional[str] = None
 ) -> Dict[str, Any]:
     """
     Returns the key-value pairs of all artifacts in a project.
@@ -237,9 +215,7 @@ def get_artifacts(
         "Authorization": f"Bearer {api_key}",
     }
     project = _get_and_maybe_create_project(project, api_key)
-    response = requests.get(
-        BASE_URL + f"/project/{project}/artifacts", headers=headers
-    )
+    response = requests.get(BASE_URL + f"/project/{project}/artifacts", headers=headers)
     response.raise_for_status()
     return response.json()
 
@@ -247,14 +223,15 @@ def get_artifacts(
 # Logs #
 # -----#
 
+
 class Log:
 
     def __init__(
-            self,
-            project: Optional[str] = None,
-            version: Optional[Dict[str, str]] = None,
-            api_key: Optional[str] = None,
-            **kwargs
+        self,
+        project: Optional[str] = None,
+        version: Optional[Dict[str, str]] = None,
+        api_key: Optional[str] = None,
+        **kwargs,
     ):
         self._api_key = _validate_api_key(api_key)
         headers = {
@@ -264,13 +241,11 @@ class Log:
         project = _get_and_maybe_create_project(project)
         if version:
             kwargs = {
-                k + "/" + version[k] if k in version else k: v for k, v in
-                kwargs.items()
+                k + "/" + version[k] if k in version else k: v
+                for k, v in kwargs.items()
             }
         body = {"project": project, "logs": kwargs}
-        response = requests.post(
-            BASE_URL + "/log", headers=headers, json=body
-        )
+        response = requests.post(BASE_URL + "/log", headers=headers, json=body)
         response.raise_for_status()
         self._id = response.json()
 
@@ -282,15 +257,12 @@ class Log:
 
     # Public methods
 
-    def add_entries(
-            self,
-            **kwargs
-    ) -> None:
+    def add_entries(self, **kwargs) -> None:
         add_log_entries(self._id, self._api_key, **kwargs)
 
     def delete_entries(
-            self,
-            keys_to_delete: List[str],
+        self,
+        keys_to_delete: List[str],
     ) -> None:
         for key in keys_to_delete:
             delete_log_entry(key, self._id, self._api_key)
@@ -300,10 +272,10 @@ class Log:
 
 
 def log(
-        project: Optional[str] = None,
-        version: Optional[Dict[str, str]] = None,
-        api_key: Optional[str] = None,
-        **kwargs
+    project: Optional[str] = None,
+    version: Optional[Dict[str, str]] = None,
+    api_key: Optional[str] = None,
+    **kwargs,
 ) -> Log:
     """
     Creates one or more logs associated to a project. Logs are LLM-call-level data
@@ -330,11 +302,7 @@ def log(
 
 
 # ToDo: endpoint not available yet
-def add_log_entries(
-        id: int,
-        api_key: Optional[str] = None,
-        **kwargs
-) -> Dict[str, str]:
+def add_log_entries(id: int, api_key: Optional[str] = None, **kwargs) -> Dict[str, str]:
     """
     Returns the data (id and values) by querying the data based on their values.
 
@@ -355,16 +323,13 @@ def add_log_entries(
         "Authorization": f"Bearer {api_key}",
     }
     body = {"data": kwargs, "id": id}
-    response = requests.put(
-        BASE_URL + "/log", headers=headers, json=body
-    )
+    response = requests.put(BASE_URL + "/log", headers=headers, json=body)
     response.raise_for_status()
     return response.json()
 
 
 def delete_log(
-        id: Union[int, List[int]],
-        api_key: Optional[str] = None
+    id: Union[int, List[int]], api_key: Optional[str] = None
 ) -> Dict[str, str]:
     """
     Deletes logs from a project.
@@ -383,17 +348,13 @@ def delete_log(
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    response = requests.delete(
-        BASE_URL + f"/log/{id}", headers=headers
-    )
+    response = requests.delete(BASE_URL + f"/log/{id}", headers=headers)
     response.raise_for_status()
     return response.json()
 
 
 def delete_log_entry(
-        entry: str,
-        id: str,
-        api_key: Optional[str] = None
+    entry: str, id: str, api_key: Optional[str] = None
 ) -> Dict[str, str]:
     """
     Deletes an entry from a log.
@@ -414,17 +375,12 @@ def delete_log_entry(
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    response = requests.delete(
-        BASE_URL + f"/log/{id}/entry/{entry}", headers=headers
-    )
+    response = requests.delete(BASE_URL + f"/log/{id}/entry/{entry}", headers=headers)
     response.raise_for_status()
     return response.json()
 
 
-def get_log(
-        id: int,
-        api_key: Optional[str] = None
-) -> List[Dict[str, Any]]:
+def get_log(id: int, api_key: Optional[str] = None) -> List[Dict[str, Any]]:
     """
     Returns the log associated with a given id.
 
@@ -442,17 +398,15 @@ def get_log(
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    response = requests.get(
-        BASE_URL + f"/log/{id}", headers=headers
-    )
+    response = requests.get(BASE_URL + f"/log/{id}", headers=headers)
     response.raise_for_status()
     return response.json()
 
 
 def get_logs(
-        project: Optional[str] = None,
-        filter: Optional[str] = None,
-        api_key: Optional[str] = None
+    project: Optional[str] = None,
+    filter: Optional[str] = None,
+    api_key: Optional[str] = None,
 ) -> List[Dict[str, Any]]:
     """
     Returns a list of filtered logs from a project.
@@ -476,17 +430,13 @@ def get_logs(
     }
     project = _get_and_maybe_create_project(project, api_key)
     params = {"project": project, "filter": filter}
-    response = requests.get(
-        BASE_URL + "/logs", headers=headers, params=params
-    )
+    response = requests.get(BASE_URL + "/logs", headers=headers, params=params)
     response.raise_for_status()
     return response.json()
 
 
 def get_groups(
-        key: str,
-        project: Optional[str] = None,
-        api_key: Optional[str] = None
+    key: str, project: Optional[str] = None, api_key: Optional[str] = None
 ) -> Dict[str, List[Dict[str, Any]]]:
     """
     Returns a list of the different version/values of one entry within a given project
@@ -511,18 +461,12 @@ def get_groups(
     }
     project = _get_and_maybe_create_project(project, api_key)
     params = {"project": project, "key": key}
-    response = requests.get(
-        BASE_URL + "/logs/groups", headers=headers, params=params
-    )
+    response = requests.get(BASE_URL + "/logs/groups", headers=headers, params=params)
     response.raise_for_status()
     return response.json()
 
 
-def group_logs(
-        key: str,
-        project: Optional[str] = None,
-        api_key: Optional[str] = None
-):
+def group_logs(key: str, project: Optional[str] = None, api_key: Optional[str] = None):
     """
     Groups logs based on equality '==' of the values for the specified key, returning a
     dict with group indices as the keys and the list of logs as the values. If the keys
@@ -549,11 +493,11 @@ def group_logs(
 
 
 def get_logs_metric(
-        metric: str,
-        key: str,
-        project: Optional[str] = None,
-        filter: Optional[str] = None,
-        api_key: Optional[str] = None
+    metric: str,
+    key: str,
+    filter: Optional[str] = None,
+    project: Optional[str] = None,
+    api_key: Optional[str] = None,
 ) -> Union[float, int, bool]:
     """
     Retrieve a set of log metrics across a project, after applying the filtering.
@@ -564,11 +508,11 @@ def get_logs_metric(
 
         key: The key to compute the reduction statistic for.
 
-        project: The id of the project to retrieve the logs for.
-
         filter: The filtering to apply to the various log values, expressed as a string,
         for example:
         "(temperature > 0.5 and (len(system_msg) < 100 or 'no' in usr_response))"
+
+        project: The id of the project to retrieve the logs for.
 
         api_key: If specified, unify API key to be used. Defaults to the value in the
         `UNIFY_KEY` environment variable.

@@ -21,15 +21,9 @@ class TestEvaluations(unittest.TestCase):
         if project in unify.list_projects():
             unify.delete_project(project)
         unify.create_project(project)
-        artifacts = {
-            "dataset": "my_dataset",
-            "description": "this is my dataset"
-        }
+        artifacts = {"dataset": "my_dataset", "description": "this is my dataset"}
         assert len(unify.get_artifacts(project)) == 0
-        unify.add_artifacts(
-            project=project,
-            **artifacts
-        )
+        unify.add_artifacts(project=project, **artifacts)
         assert "dataset" in unify.get_artifacts(project)
         unify.delete_artifact(
             "dataset",
@@ -48,7 +42,7 @@ class TestEvaluations(unittest.TestCase):
         }
         log = {
             "system_prompt": "You are a weather assistant",
-            "user_prompt": "hello world" 
+            "user_prompt": "hello world",
         }
         assert len(unify.get_logs(project)) == 0
         log_id = unify.log(project, version, **log).id
@@ -69,7 +63,7 @@ class TestEvaluations(unittest.TestCase):
             assert False
         except HTTPError as e:
             assert e.response.status_code == 404
-    
+
     def test_atomic_functions(self):
         project = "my_project"
         if project in unify.list_projects():
@@ -81,7 +75,7 @@ class TestEvaluations(unittest.TestCase):
         log1 = {
             "system_prompt": "You are a weather assistant",
             "user_prompt": "hello world",
-            "score": 0.2
+            "score": 0.2,
         }
         version2 = {
             "system_prompt": "v2",
@@ -89,12 +83,12 @@ class TestEvaluations(unittest.TestCase):
         log2 = {
             "system_prompt": "You are a new weather assistant",
             "user_prompt": "hello world",
-            "score": 0.3
+            "score": 0.3,
         }
         log3 = {
             "system_prompt": "You are a new weather assistant",
             "user_prompt": "nothing",
-            "score": 0.8
+            "score": 0.8,
         }
         unify.log(project, version1, **log1)
         unify.log(project, version2, **log2)
@@ -102,9 +96,8 @@ class TestEvaluations(unittest.TestCase):
         grouped_logs = unify.group_logs("system_prompt", project)
         assert len(grouped_logs) == 2
         assert [version for version in grouped_logs].sort() == ["v1", "v2"]
-        
-        metrics = ("mean", "std")
-        filter = "'hello' in user_prompt"
-        log_metrics = unify.get_log_metrics(metrics, project, filter)
-        # assertion for the log metrics
 
+        log_metrics = unify.get_logs_metric(
+            "mean", "user_prompt", filter="'hello' in user_prompt"
+        )
+        d = 0

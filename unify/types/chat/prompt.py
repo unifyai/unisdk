@@ -3,7 +3,7 @@ from typing import Optional, Union, List, Dict, Mapping
 from openai._types import Query, Body
 from openai.types.chat import (
     ChatCompletionToolParam,
-    ChatCompletionToolChoiceOptionParam
+    ChatCompletionToolChoiceOptionParam,
 )
 from openai.types.chat.completion_create_params import ResponseFormat
 
@@ -35,10 +35,10 @@ class Prompt(_FormattedBaseModel):
     extra_body: Optional[Body] = None
 
     def __init__(
-            self,
-            user_message: Optional[str] = None,
-            system_message: Optional[str] = None,
-            **kwargs
+        self,
+        user_message: Optional[str] = None,
+        system_message: Optional[str] = None,
+        **kwargs
     ):
         """
         Create Prompt instance.
@@ -56,9 +56,9 @@ class Prompt(_FormattedBaseModel):
         if "messages" not in kwargs:
             kwargs["messages"] = list()
         if system_message:
-            kwargs["messages"] = \
-                [{"content": system_message, "role": "system"}] + \
-                kwargs["messages"]
+            kwargs["messages"] = [
+                {"content": system_message, "role": "system"}
+            ] + kwargs["messages"]
         if user_message:
             kwargs["messages"] += [{"content": user_message, "role": "user"}]
         if not kwargs["messages"]:
@@ -68,22 +68,26 @@ class Prompt(_FormattedBaseModel):
     def __add__(self, other):
         if other == 0:
             return self
-        return (unify.Dataset(self) +
-                (other if isinstance(other, unify.Dataset) else unify.Dataset(other)))
+        return unify.Dataset(self) + (
+            other if isinstance(other, unify.Dataset) else unify.Dataset(other)
+        )
 
     def __sub__(self, other):
-        return unify.Dataset(self) -\
-               (other if isinstance(other, unify.Dataset) else unify.Dataset(other))
+        return unify.Dataset(self) - (
+            other if isinstance(other, unify.Dataset) else unify.Dataset(other)
+        )
 
     def __radd__(self, other):
         if other == 0:
             return self
-        return ((other if isinstance(other, unify.Dataset) else unify.Dataset(other)) +
-                unify.Dataset(self))
+        return (
+            other if isinstance(other, unify.Dataset) else unify.Dataset(other)
+        ) + unify.Dataset(self)
 
     def __rsub__(self, other):
-        return (other if isinstance(other, unify.Dataset) else unify.Dataset(other)) -\
-               unify.Dataset(self)
+        return (
+            other if isinstance(other, unify.Dataset) else unify.Dataset(other)
+        ) - unify.Dataset(self)
 
     def __hash__(self):
         return hash(str(self))

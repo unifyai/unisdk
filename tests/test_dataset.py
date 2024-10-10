@@ -24,9 +24,12 @@ class TestDatasetConstruction(unittest.TestCase):
         self.assertIsInstance(dataset[0], Prompt)
 
     def test_create_dataset_from_list_of_prompts(self) -> None:
-        dataset = unify.Dataset([Prompt(
-            messages=[{"role": "user", "content": usr_msg}]
-        ) for usr_msg in ["a", "b", "c"]])
+        dataset = unify.Dataset(
+            [
+                Prompt(messages=[{"role": "user", "content": usr_msg}])
+                for usr_msg in ["a", "b", "c"]
+            ]
+        )
         self.assertIsInstance(dataset[0], Prompt)
 
     def test_create_dataset_from_dict(self) -> None:
@@ -34,25 +37,27 @@ class TestDatasetConstruction(unittest.TestCase):
         self.assertIsInstance(dataset[0], dict)
 
     def test_create_dataset_from_list_of_dicts(self) -> None:
-        dataset = unify.Dataset([dict(
-            messages=[{"role": "user", "content": usr_msg}]
-        ) for usr_msg in ["a", "b", "c"]])
+        dataset = unify.Dataset(
+            [
+                dict(messages=[{"role": "user", "content": usr_msg}])
+                for usr_msg in ["a", "b", "c"]
+            ]
+        )
         self.assertIsInstance(dataset[0], dict)
 
     def test_create_dataset_from_dict_w_prompt(self) -> None:
-        dataset = unify.Dataset(dict(
-            prompt=Prompt(
-                messages=[{"role": "user", "content": "a"}]
-            )
-        ))
+        dataset = unify.Dataset(
+            dict(prompt=Prompt(messages=[{"role": "user", "content": "a"}]))
+        )
         self.assertIsInstance(dataset[0], dict)
 
     def test_create_dataset_from_list_of_prompt_dicts(self) -> None:
-        dataset = unify.Dataset([dict(
-            prompt=Prompt(
-                messages=[{"role": "user", "content": usr_msg}]
-            )
-        ) for usr_msg in ["a", "b", "c"]])
+        dataset = unify.Dataset(
+            [
+                dict(prompt=Prompt(messages=[{"role": "user", "content": usr_msg}]))
+                for usr_msg in ["a", "b", "c"]
+            ]
+        )
         self.assertIsInstance(dataset[0], dict)
 
     def test_create_dataset_from_upstream(self) -> None:
@@ -324,7 +329,7 @@ class TestDatasetDownloading(unittest.TestCase):
             unify.delete_dataset("test_dataset")
         msgs = ("a", "b", "c")
         extra = ("A", "B", "C")
-        extra_name = ''.join(random.choice(string.ascii_lowercase) for _ in range(4))
+        extra_name = "".join(random.choice(string.ascii_lowercase) for _ in range(4))
         data = [{"message": msg, extra_name: ans} for msg, ans in zip(msgs, extra)]
         dataset = unify.Dataset(data, name="test_dataset")
         self.assertIn("message", dataset[0])

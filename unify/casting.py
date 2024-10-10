@@ -4,6 +4,7 @@ from unify.types import Prompt, ChatCompletion
 
 # Upcasting
 
+
 def _usr_msg_to_prompt(user_message: str) -> Prompt:
     return Prompt(user_message)
 
@@ -17,6 +18,7 @@ def _bool_to_float(boolean: bool) -> float:
 
 
 # Downcasting
+
 
 def _prompt_to_usr_msg(prompt: Prompt) -> str:
     return prompt.messages[-1]["content"]
@@ -33,16 +35,11 @@ def _float_to_bool(float_in: float) -> bool:
 # Cast Dict
 
 _CAST_DICT = {
-    str: {
-        Prompt: _usr_msg_to_prompt,
-        ChatCompletion: _assis_msg_to_chat_completion
-    },
+    str: {Prompt: _usr_msg_to_prompt, ChatCompletion: _assis_msg_to_chat_completion},
     Prompt: {
         str: _prompt_to_usr_msg,
     },
-    ChatCompletion: {
-        str: _chat_completion_to_assis_msg
-    },
+    ChatCompletion: {str: _chat_completion_to_assis_msg},
     bool: {
         float: _bool_to_float,
     },
@@ -53,8 +50,8 @@ _CAST_DICT = {
 
 
 def _cast_from_selection(
-        inp: Union[str, bool, float, Prompt, ChatCompletion],
-        targets: List[Union[float, Prompt, ChatCompletion]]
+    inp: Union[str, bool, float, Prompt, ChatCompletion],
+    targets: List[Union[float, Prompt, ChatCompletion]],
 ) -> Union[str, bool, float, Prompt, ChatCompletion]:
     """
     Upcasts the input if possible, based on the permitted upcasting targets provided.
@@ -70,7 +67,8 @@ def _cast_from_selection(
     input_type = type(inp)
     assert input_type in _CAST_DICT, (
         "Cannot upcast input {} of type {}, because this type is not in the "
-        "_CAST_DICT, meaning there are no functions for casting this type.")
+        "_CAST_DICT, meaning there are no functions for casting this type."
+    )
     cast_fns = _CAST_DICT[input_type]
     targets = [target for target in targets if target in cast_fns]
     assert len(targets) == 1, "There must be exactly one valid casting target."
@@ -80,12 +78,13 @@ def _cast_from_selection(
 
 # Public function
 
+
 def cast(
-        inp: Union[str, bool, float, Prompt, ChatCompletion],
-        to_type: Union[
-            Type[Union[str, bool, float, Prompt, ChatCompletion]],
-            List[Type[Union[str, bool, float, Prompt, ChatCompletion]]]
-        ],
+    inp: Union[str, bool, float, Prompt, ChatCompletion],
+    to_type: Union[
+        Type[Union[str, bool, float, Prompt, ChatCompletion]],
+        List[Type[Union[str, bool, float, Prompt, ChatCompletion]]],
+    ],
 ) -> Union[str, bool, float, Prompt, ChatCompletion]:
     """
     Cast the input to the specified type.
@@ -107,11 +106,11 @@ def cast(
 
 
 def try_cast(
-        inp: Union[str, bool, float, Prompt, ChatCompletion],
-        to_type: Union[
-            Type[Union[str, bool, float, Prompt, ChatCompletion]],
-            List[Type[Union[str, bool, float, Prompt, ChatCompletion]]]
-        ],
+    inp: Union[str, bool, float, Prompt, ChatCompletion],
+    to_type: Union[
+        Type[Union[str, bool, float, Prompt, ChatCompletion]],
+        List[Type[Union[str, bool, float, Prompt, ChatCompletion]]],
+    ],
 ) -> Union[str, bool, float, Prompt, ChatCompletion]:
     # noinspection PyBroadException
     try:

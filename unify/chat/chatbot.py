@@ -20,9 +20,10 @@ class ChatBot:  # noqa: WPS338
             client: The Client instance to wrap the chatbot logic around.
         """
         self._paused = False
-        assert not client.return_full_completion,\
-            "ChatBot currently only supports clients which only generate the message " \
+        assert not client.return_full_completion, (
+            "ChatBot currently only supports clients which only generate the message "
             "content in the return"
+        )
         self._client = client
         self.clear_chat_history()
 
@@ -57,7 +58,9 @@ class ChatBot:  # noqa: WPS338
         """
         return self._client.get_credit_balance()
 
-    def _update_message_history(self, role: str, content: Union[str, Dict[str, str]]) -> None:
+    def _update_message_history(
+        self, role: str, content: Union[str, Dict[str, str]]
+    ) -> None:
         """
         Updates message history with user input.
 
@@ -66,29 +69,39 @@ class ChatBot:  # noqa: WPS338
             content: User input message.
         """
         if isinstance(self._client, _UniLLMClient):
-            self._client.messages.append({
-                "role": role,
-                "content": content,
-            })
+            self._client.messages.append(
+                {
+                    "role": role,
+                    "content": content,
+                }
+            )
         elif isinstance(self._client, _MultiLLMClient):
             if isinstance(content, str):
                 content = {endpoint: content for endpoint in self._client.endpoints}
             for endpoint, cont in content.items():
-                self._client.messages[endpoint].append({
-                    "role": role,
-                    "content": cont,
-                })
+                self._client.messages[endpoint].append(
+                    {
+                        "role": role,
+                        "content": cont,
+                    }
+                )
         else:
-            raise Exception("client must either be a UniLLMClient or MultiLLMClient instance.")
+            raise Exception(
+                "client must either be a UniLLMClient or MultiLLMClient instance."
+            )
 
     def clear_chat_history(self) -> None:
         """Clears the chat history."""
         if isinstance(self._client, _UniLLMClient):
             self._client.set_messages([])
         elif isinstance(self._client, _MultiLLMClient):
-            self._client.set_messages({endpoint: [] for endpoint in self._client.endpoints})
+            self._client.set_messages(
+                {endpoint: [] for endpoint in self._client.endpoints}
+            )
         else:
-            raise Exception("client must either be a UniLLMClient or MultiLLMClient instance.")
+            raise Exception(
+                "client must either be a UniLLMClient or MultiLLMClient instance."
+            )
 
     @staticmethod
     def _stream_response(response) -> str:
@@ -100,7 +113,9 @@ class ChatBot:  # noqa: WPS338
         sys.stdout.write("\n")
         return words
 
-    def _handle_uni_llm_response(self, response: str, endpoint: Union[bool, str]) -> str:
+    def _handle_uni_llm_response(
+        self, response: str, endpoint: Union[bool, str]
+    ) -> str:
         if endpoint:
             endpoint = self._client.endpoint if endpoint is True else endpoint
             sys.stdout.write(endpoint + ":\n")
@@ -117,13 +132,17 @@ class ChatBot:  # noqa: WPS338
             self._handle_uni_llm_response(resp, endpoint)
         return response
 
-    def _handle_response(self, response: Union[str, Dict[str, str]], show_endpoint: bool) -> None:
+    def _handle_response(
+        self, response: Union[str, Dict[str, str]], show_endpoint: bool
+    ) -> None:
         if isinstance(self._client, _UniLLMClient):
             response = self._handle_uni_llm_response(response, show_endpoint)
         elif isinstance(self._client, _MultiLLMClient):
             response = self._handle_multi_llm_response(response)
         else:
-            raise Exception("client must either be a UniLLMClient or MultiLLMClient instance.")
+            raise Exception(
+                "client must either be a UniLLMClient or MultiLLMClient instance."
+            )
         self._update_message_history(
             role="assistant",
             content=response,

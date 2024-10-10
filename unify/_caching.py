@@ -4,8 +4,9 @@ from typing import Dict, Union, Optional
 from unify.types import ChatCompletion
 
 _cache: Optional[Dict] = None
-_cache_dir = os.environ["UNIFY_CACHE_DIR"] if "UNIFY_CACHE_DIR" in os.environ \
-    else os.getcwd()
+_cache_dir = (
+    os.environ["UNIFY_CACHE_DIR"] if "UNIFY_CACHE_DIR" in os.environ else os.getcwd()
+)
 _cache_fpath: str = os.path.join(_cache_dir, ".cache.json")
 
 

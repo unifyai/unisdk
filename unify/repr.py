@@ -1,31 +1,26 @@
 import copy
 from typing import Union, List, Dict, Type
-from unify.types import _FormattedBaseModel, ChatCompletion, Choice,\
-    ChatCompletionMessage
+from unify.types import (
+    _FormattedBaseModel,
+    ChatCompletion,
+    Choice,
+    ChatCompletionMessage,
+)
 
 _REPR_MODE = None
 _KEYS_TO_SKIP: Dict[Type, Dict] = dict()
 _KEYS_TO_KEEP: Dict[Type, Dict] = dict()
 _KEYS_TO_KEEP_MODES: Dict[str, Dict[Type, Dict]] = {
-    "concise": {
-        ChatCompletion: {
-            "choices": None
-        }
-    },
-    "verbose": {}
+    "concise": {ChatCompletion: {"choices": None}},
+    "verbose": {},
 }
 _KEYS_TO_SKIP_MODES: Dict[str, Dict[Type, Dict]] = {
     "concise": {
-        Choice: {
-            "finish_reason": "stop",
-            "index": 0
-        },
-        ChatCompletionMessage: {
-            "role": "assistant"
-        },
-        "verbose": {}
+        Choice: {"finish_reason": "stop", "index": 0},
+        ChatCompletionMessage: {"role": "assistant"},
+        "verbose": {},
     },
-    "verbose": {}
+    "verbose": {},
 }
 
 
@@ -62,9 +57,10 @@ def key_repr(instance: _FormattedBaseModel) -> Union[Dict, List]:
     ins_type = type(instance)
     to_skip = ins_type in _KEYS_TO_SKIP
     to_keep = ins_type in _KEYS_TO_KEEP
-    assert not (to_skip and to_keep),\
-        "Cannot have specification for keys to skip AND to keep," \
+    assert not (to_skip and to_keep), (
+        "Cannot have specification for keys to skip AND to keep,"
         "please only set one of these."
+    )
     if to_skip:
         return {**ret, **{"skip": _KEYS_TO_SKIP[ins_type]}}
     elif to_keep:
@@ -156,9 +152,10 @@ class ReprMode(str):
 
     @staticmethod
     def _check_str(val: str):
-        assert val in ("verbose", "concise"),\
-            "Expected value to be either 'verbose' or 'concise', " \
+        assert val in ("verbose", "concise"), (
+            "Expected value to be either 'verbose' or 'concise', "
             "but found {}".format(val)
+        )
 
     def __enter__(self) -> None:
         set_repr_mode(self._val)
@@ -191,9 +188,10 @@ class KeepKeys:
 
     @staticmethod
     def _check_str(val: str):
-        assert val in ("verbose", "concise"),\
-            "Expected value to be either 'verbose' or 'concise', " \
+        assert val in ("verbose", "concise"), (
+            "Expected value to be either 'verbose' or 'concise', "
             "but found {}".format(val)
+        )
 
     def __enter__(self) -> None:
         set_keys_to_keep(self._val)
@@ -226,9 +224,10 @@ class SkipKeys:
 
     @staticmethod
     def _check_str(val: str):
-        assert val in ("verbose", "concise"), \
-            "Expected value to be either 'verbose' or 'concise', " \
+        assert val in ("verbose", "concise"), (
+            "Expected value to be either 'verbose' or 'concise', "
             "but found {}".format(val)
+        )
 
     def __enter__(self) -> None:
         set_keys_to_skip(self._val)

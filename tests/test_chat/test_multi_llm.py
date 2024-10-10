@@ -68,12 +68,13 @@ class TestMultiLLM(unittest.TestCase):
             self.assertGreater(len(response), 0)
 
     def test_default_prompt_handled_correctly(self):
-        endpoints = (
-            "gpt-4o@openai",
-            "gpt-4@openai"
+        endpoints = ("gpt-4o@openai", "gpt-4@openai")
+        client = MultiLLM(
+            api_key=self.valid_api_key,
+            endpoints=endpoints,
+            n=2,
+            return_full_completion=True,
         )
-        client = MultiLLM(api_key=self.valid_api_key, endpoints=endpoints, n=2,
-                          return_full_completion=True)
         responses = client.generate("Hello, how it is going?")
         for endpoint, (response_endpoint, response) in zip(
             endpoints,
@@ -83,26 +84,19 @@ class TestMultiLLM(unittest.TestCase):
             self.assertEqual(len(response.choices), 2)
 
     def test_multi_message_histories(self):
-        endpoints = (
-            "llama-3-8b-chat@together-ai",
-            "gpt-4o@openai"
-        )
+        endpoints = ("llama-3-8b-chat@together-ai", "gpt-4o@openai")
         messages = {
-            "llama-3-8b-chat@together-ai": [{
-                "role": "assistant",
-                "content": "Let's talk about cats"
-            }],
-            "gpt-4o@openai": [{
-                "role": "assistant",
-                "content": "Let's talk about dogs"
-            }]
+            "llama-3-8b-chat@together-ai": [
+                {"role": "assistant", "content": "Let's talk about cats"}
+            ],
+            "gpt-4o@openai": [
+                {"role": "assistant", "content": "Let's talk about dogs"}
+            ],
         }
-        animals = {
-            "llama-3-8b-chat@together-ai": "cat",
-            "gpt-4o@openai": "dog"
-        }
-        client = MultiLLM(api_key=self.valid_api_key, endpoints=endpoints,
-                          messages=messages)
+        animals = {"llama-3-8b-chat@together-ai": "cat", "gpt-4o@openai": "dog"}
+        client = MultiLLM(
+            api_key=self.valid_api_key, endpoints=endpoints, messages=messages
+        )
         responses = client.generate("What animal did you want to talk about?")
         for endpoint, (response_endpoint, response) in zip(
             endpoints,
@@ -117,19 +111,17 @@ class TestMultiLLM(unittest.TestCase):
         endpoints = (
             "llama-3-8b-chat@together-ai",
             "gpt-4o@openai",
-            "claude-3.5-sonnet@anthropic"
+            "claude-3.5-sonnet@anthropic",
         )
         client = MultiLLM(endpoints=endpoints)
-        client.add_endpoints(
-            ["gpt-4@openai", "gpt-4-turbo@openai"]
-        ).remove_endpoints(
+        client.add_endpoints(["gpt-4@openai", "gpt-4-turbo@openai"]).remove_endpoints(
             "claude-3.5-sonnet@anthropic"
         )
         assert set(client.endpoints) == {
             "llama-3-8b-chat@together-ai",
             "gpt-4o@openai",
             "gpt-4@openai",
-            "gpt-4-turbo@openai"
+            "gpt-4-turbo@openai",
         }
 
 
@@ -154,12 +146,13 @@ class TestAsyncMultiLLM(unittest.IsolatedAsyncioTestCase):
             self.assertGreater(len(response), 0)
 
     async def test_default_prompt_handled_correctly(self):
-        endpoints = (
-            "gpt-4o@openai",
-            "gpt-4@openai"
+        endpoints = ("gpt-4o@openai", "gpt-4@openai")
+        client = AsyncMultiLLM(
+            api_key=self.valid_api_key,
+            endpoints=endpoints,
+            n=2,
+            return_full_completion=True,
         )
-        client = AsyncMultiLLM(api_key=self.valid_api_key, endpoints=endpoints, n=2,
-                               return_full_completion=True)
         responses = await client.generate("Hello, how it is going?")
         for endpoint, (response_endpoint, response) in zip(
             endpoints,
