@@ -548,18 +548,21 @@ def group_logs(
     }
 
 
-# ToDo: endpoint not available yet
-def get_log_metrics(
-        metrics: Tuple[str],
+def get_logs_metric(
+        metric: str,
+        key: str,
         project: Optional[str] = None,
         filter: Optional[str] = None,
         api_key: Optional[str] = None
-) -> Dict[str, Any]:
+) -> Union[float, int, bool]:
     """
     Retrieve a set of log metrics across a project, after applying the filtering.
 
     Args:
-        metrics: The reduction metrics to retrieve for the logs.
+        metric: The reduction metric to compute for the specified key. Supported are:
+        sum, mean, var, std, min, max, median, mode.
+
+        key: The key to compute the reduction statistic for.
 
         project: The id of the project to retrieve the logs for.
 
@@ -580,9 +583,9 @@ def get_log_metrics(
         "Authorization": f"Bearer {api_key}",
     }
     project = _get_and_maybe_create_project(project, api_key)
-    body = {"project": project, "metrics": metrics, "filter": filter}
+    params = {"project": project, "filter": filter}
     response = requests.get(
-        BASE_URL + "/log/by-project/metrics", headers=headers, json=body
+        BASE_URL + f"/logs/metric/{metric}/{key}", headers=headers, params=params
     )
     response.raise_for_status()
     return response.json()
