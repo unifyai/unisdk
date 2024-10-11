@@ -1,25 +1,26 @@
 # global
 import abc
+from typing import AsyncGenerator, Dict, Generator, Iterable, List, Optional, Union
+
 import openai
+
+# local
+import unify
 
 # noinspection PyProtectedMember
 from openai._types import Headers, Query
 from openai.types.chat import (
-    ChatCompletionToolParam,
-    ChatCompletionToolChoiceOptionParam,
     ChatCompletionMessageParam,
     ChatCompletionStreamOptionsParam,
+    ChatCompletionToolChoiceOptionParam,
+    ChatCompletionToolParam,
 )
 from openai.types.chat.completion_create_params import ResponseFormat
 from typing_extensions import Self
-from typing import AsyncGenerator, Dict, Generator, List, Optional, Union, Iterable
-
-# local
-import unify
 from unify import BASE_URL, LOCAL_MODELS
-from unify.chat.clients.base import _Client
-from unify.types import Prompt, ChatCompletion
 from unify._caching import _get_cache, _write_to_cache
+from unify.chat.clients.base import _Client
+from unify.types import ChatCompletion, Prompt
 
 
 class _UniLLMClient(_Client, abc.ABC):
@@ -251,7 +252,7 @@ class _UniLLMClient(_Client, abc.ABC):
         if endpoint and (model or provider):
             raise Exception(
                 "if the model or provider are passed, then the endpoint must not be"
-                "passed."
+                "passed.",
             )
         self._client = self._get_client()
         self._endpoint = None
@@ -316,7 +317,7 @@ class _UniLLMClient(_Client, abc.ABC):
         ):
             raise Exception(
                 "The specified endpoint {} is not one of the endpoints supported by "
-                "Unify: {}".format(value, valid_endpoints)
+                "Unify: {}".format(value, valid_endpoints),
             )
         self._endpoint = value
         self._model, self._provider = value.split("@")  # noqa: WPS414
@@ -340,12 +341,14 @@ class _UniLLMClient(_Client, abc.ABC):
                 raise Exception(
                     "Current provider {} does not support the specified model {},"
                     "please select one of: {}".format(
-                        self._provider, value, valid_models
-                    )
+                        self._provider,
+                        value,
+                        valid_models,
+                    ),
                 )
             raise Exception(
                 "The specified model {} is not one of the models supported by Unify: "
-                "{}".format(value, valid_models)
+                "{}".format(value, valid_models),
             )
         self._model = value
         if self._provider:
@@ -370,12 +373,14 @@ class _UniLLMClient(_Client, abc.ABC):
                 raise Exception(
                     "Current model {} does not support the specified provider {}, "
                     "please select one of: {}".format(
-                        self._model, value, valid_providers
-                    )
+                        self._model,
+                        value,
+                        valid_providers,
+                    ),
                 )
             raise Exception(
                 "The specified provider {} is not one of the providers supported by "
-                "Unify: {}".format(value, valid_providers)
+                "Unify: {}".format(value, valid_providers),
             )
         self._provider = value
         if self._model:
@@ -545,7 +550,7 @@ class Unify(_UniLLMClient):
             self.set_provider(
                 chat_completion.model.split(  # type: ignore[union-attr]
                     "@",
-                )[-1]
+                )[-1],
             )
         if return_full_completion:
             return chat_completion
@@ -812,6 +817,7 @@ class AsyncUnify(_UniLLMClient):
         extra_query: Optional[Query],
         **kwargs,
     ) -> Union[AsyncGenerator[str, None], str]:  # noqa: DAR101, DAR201, DAR401
+        self._client = self._get_client()
         contents = []
         assert (
             messages or user_message
