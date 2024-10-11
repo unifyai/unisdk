@@ -67,8 +67,6 @@ class TestEvaluations(unittest.TestCase):
         except HTTPError as e:
             assert e.response.status_code == 404
 
-    # same problem as test_log
-    @unittest.skip("orchestra problem")
     def test_atomic_functions(self):
         project = "my_project"
         if project in unify.list_projects():
@@ -100,7 +98,7 @@ class TestEvaluations(unittest.TestCase):
         unify.log(project, version2, **log3)
         grouped_logs = unify.group_logs("system_prompt", project)
         assert len(grouped_logs) == 2
-        assert [version for version in grouped_logs].sort() == ["v1", "v2"]
+        assert sorted([version for version in grouped_logs]) == ["v1", "v2"]
 
         logs_metric = unify.get_logs_metric(
             "mean",
