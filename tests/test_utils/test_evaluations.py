@@ -34,6 +34,10 @@ class TestEvaluations(unittest.TestCase):
         assert "dataset" not in unify.get_artifacts(project)
         assert "description" in unify.get_artifacts(project)
 
+    # failing due to orchestra issue
+    # unify.list_projects() returns the project but says not
+    # found when trying to get the logs.
+    @unittest.skip("orchestra problem")
     def test_log(self):
         project = "my_project"
         if project in unify.list_projects():
