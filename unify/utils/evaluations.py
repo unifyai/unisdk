@@ -301,7 +301,6 @@ def log(
     return Log(project, version, api_key, **kwargs)
 
 
-# ToDo: endpoint not available yet
 def add_log_entries(id: int, api_key: Optional[str] = None, **kwargs) -> Dict[str, str]:
     """
     Returns the data (id and values) by querying the data based on their values.
@@ -322,8 +321,8 @@ def add_log_entries(id: int, api_key: Optional[str] = None, **kwargs) -> Dict[st
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    body = {"data": kwargs, "id": id}
-    response = requests.put(BASE_URL + "/log", headers=headers, json=body)
+    body = {"entries": kwargs}
+    response = requests.put(BASE_URL + f"/log/{id}", headers=headers, json=body)
     response.raise_for_status()
     return response.json()
 
