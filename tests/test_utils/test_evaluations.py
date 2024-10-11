@@ -1,6 +1,7 @@
-from requests import HTTPError
-import unify
 import unittest
+
+import unify
+from requests import HTTPError
 
 
 class TestEvaluations(unittest.TestCase):
@@ -109,6 +110,6 @@ class TestEvaluations(unittest.TestCase):
             "mean",
             "score",
             filter="'hello' in user_prompt",
-            project="my_project"
+            project="my_project",
         )
         assert logs_metric == 0.25

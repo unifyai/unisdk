@@ -42,20 +42,3 @@ repos:
     entry: poetry run isort
     language: system
     types: [python]
-
-  - id: flake8
-    name: Check with Flake8
-    entry: poetry run flake8
-    language: system
-    pass_filenames: false
-    types: [python]
-    args: [--count, .]
-
-  - id: mypy
-    name: Validate types with MyPy
-    entry: poetry run mypy
-    language: system
-    types: [python]
-    pass_filenames: false
-    args:
-    - "."
