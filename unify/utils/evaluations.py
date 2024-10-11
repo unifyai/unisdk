@@ -459,7 +459,7 @@ def get_logs(
         "Authorization": f"Bearer {api_key}",
     }
     project = _get_and_maybe_create_project(project, api_key)
-    params = {"project": project, "filter": filter}
+    params = {"project": project, "filter_expr": filter}
     response = requests.get(BASE_URL + "/logs", headers=headers, params=params)
     response.raise_for_status()
     return [Log(dct["id"], **dct["entries"]) for dct in response.json()]
@@ -557,7 +557,7 @@ def get_logs_metric(
         "Authorization": f"Bearer {api_key}",
     }
     project = _get_and_maybe_create_project(project, api_key)
-    params = {"project": project, "filter": filter}
+    params = {"project": project, "filter_expr": filter}
     response = requests.get(
         BASE_URL + f"/logs/metric/{metric}/{key}", headers=headers, params=params
     )
