@@ -517,7 +517,9 @@ def group_logs(key: str, project: Optional[str] = None, api_key: Optional[str] =
     api_key = _validate_api_key(api_key)
     project = _get_and_maybe_create_project(project, api_key)
     return {
-        k: get_logs(project, "{} == {}".format(key, v), api_key)
+        k: get_logs(project, "{} == {}".format(
+            key, '"' + v + '"' if isinstance(v, str) else v), api_key
+                    )
         for k, v in get_groups(key, project, api_key).items()
     }
 
