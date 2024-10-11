@@ -24,7 +24,7 @@ from .utils import (
     custom_api_keys,
     custom_endpoints,
     datasets,
-    efficiency_benchmarks,
+    endpoint_metrics,
     helpers,
     evaluations,
     queries,
@@ -37,7 +37,7 @@ from .utils.credits import *
 from .utils.custom_api_keys import *
 from .utils.custom_endpoints import *
 from .utils.datasets import *
-from .utils.efficiency_benchmarks import *
+from .utils.endpoint_metrics import *
 from .utils.helpers import *
 from .utils.evaluations import *
 from .utils.queries import *
