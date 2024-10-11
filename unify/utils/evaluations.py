@@ -1,12 +1,13 @@
 from __future__ import annotations
-import requests
-from typing import Dict, Optional, Any, Union, List
 
+from typing import Any, Dict, List, Optional, Union
+
+import requests
 import unify
 from unify import BASE_URL
+
 from ..types import _Formatted
 from .helpers import _validate_api_key
-
 
 # Helpers #
 # --------#
@@ -20,7 +21,7 @@ def _get_and_maybe_create_project(project: str, api_key: Optional[str] = None) -
             raise Exception(
                 "No project specified in the arguments, and no globally set project "
                 "either. A project must be passed in the argument, or set globally via "
-                "unify.activate('project_name')"
+                "unify.activate('project_name')",
             )
         if project not in list_projects(api_key):
             create_project(project, api_key)
@@ -57,7 +58,9 @@ def create_project(name: str, api_key: Optional[str] = None) -> Dict[str, str]:
 
 
 def rename_project(
-    name: str, new_name: str, api_key: Optional[str] = None
+    name: str,
+    new_name: str,
+    api_key: Optional[str] = None,
 ) -> Dict[str, str]:
     """
     Renames a project from `name` to `new_name` in your account.
@@ -159,14 +162,18 @@ def add_artifacts(
     body = {"artifacts": kwargs}
     project = _get_and_maybe_create_project(project, api_key)
     response = requests.post(
-        BASE_URL + f"/project/{project}/artifacts", headers=headers, json=body
+        BASE_URL + f"/project/{project}/artifacts",
+        headers=headers,
+        json=body,
     )
     response.raise_for_status()
     return response.json()
 
 
 def delete_artifact(
-    key: str, project: Optional[str] = None, api_key: Optional[str] = None
+    key: str,
+    project: Optional[str] = None,
+    api_key: Optional[str] = None,
 ) -> str:
     """
     Deletes an artifact from a project.
@@ -189,14 +196,16 @@ def delete_artifact(
     }
     project = _get_and_maybe_create_project(project, api_key)
     response = requests.delete(
-        BASE_URL + f"/project/{project}/artifacts/{key}", headers=headers
+        BASE_URL + f"/project/{project}/artifacts/{key}",
+        headers=headers,
     )
     response.raise_for_status()
     return response.json()
 
 
 def get_artifacts(
-    project: Optional[str] = None, api_key: Optional[str] = None
+    project: Optional[str] = None,
+    api_key: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     Returns the key-value pairs of all artifacts in a project.
@@ -320,14 +329,11 @@ def log(
     }
     if version:
         kwargs = {
-            k + "/" + version[k] if k in version else k: v
-            for k, v in kwargs.items()
+            k + "/" + version[k] if k in version else k: v for k, v in kwargs.items()
         }
     project = _get_and_maybe_create_project(project, api_key)
     body = {"project": project, "entries": kwargs}
-    response = requests.post(
-        BASE_URL + "/log", headers=headers, json=body
-    )
+    response = requests.post(BASE_URL + "/log", headers=headers, json=body)
     response.raise_for_status()
     return Log(response.json(), api_key, **kwargs)
 
@@ -359,7 +365,8 @@ def add_log_entries(id: int, api_key: Optional[str] = None, **kwargs) -> Dict[st
 
 
 def delete_log(
-    id: Union[int, List[int]], api_key: Optional[str] = None
+    id: Union[int, List[int]],
+    api_key: Optional[str] = None,
 ) -> Dict[str, str]:
     """
     Deletes logs from a project.
@@ -384,7 +391,9 @@ def delete_log(
 
 
 def delete_log_entry(
-    entry: str, id: int, api_key: Optional[str] = None
+    entry: str,
+    id: int,
+    api_key: Optional[str] = None,
 ) -> Dict[str, str]:
     """
     Deletes an entry from a log.
@@ -466,7 +475,9 @@ def get_logs(
 
 
 def get_groups(
-    key: str, project: Optional[str] = None, api_key: Optional[str] = None
+    key: str,
+    project: Optional[str] = None,
+    api_key: Optional[str] = None,
 ) -> Dict[str, List[Dict[str, Any]]]:
     """
     Returns a list of the different version/values of one entry within a given project
@@ -517,9 +528,11 @@ def group_logs(key: str, project: Optional[str] = None, api_key: Optional[str] =
     api_key = _validate_api_key(api_key)
     project = _get_and_maybe_create_project(project, api_key)
     return {
-        k: get_logs(project, "{} == {}".format(
-            key, '"' + v + '"' if isinstance(v, str) else v), api_key
-                    )
+        k: get_logs(
+            project,
+            "{} == {}".format(key, '"' + v + '"' if isinstance(v, str) else v),
+            api_key,
+        )
         for k, v in get_groups(key, project, api_key).items()
     }
 
@@ -561,7 +574,9 @@ def get_logs_metric(
     project = _get_and_maybe_create_project(project, api_key)
     params = {"project": project, "filter_expr": filter}
     response = requests.get(
-        BASE_URL + f"/logs/metric/{metric}/{key}", headers=headers, params=params
+        BASE_URL + f"/logs/metric/{metric}/{key}",
+        headers=headers,
+        params=params,
     )
     response.raise_for_status()
     return response.json()
