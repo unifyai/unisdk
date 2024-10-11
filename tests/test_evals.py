@@ -154,7 +154,7 @@ class TestMathsEvaluator(unittest.TestCase):
                             score=correct,
                         )
                     system_prompt_perf[name] = unify.get_logs_metric(
-                        "mean", "score", f"system_prompt == {system_prompt}"
+                        "mean", "score", f"system_prompt == '{system_prompt}'"
                     )
 
 
