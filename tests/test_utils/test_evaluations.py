@@ -6,8 +6,10 @@ import unittest
 class TestEvaluations(unittest.TestCase):
 
     def test_project(self):
-        assert unify.list_projects() == []
         name = "my_project"
+        if name in unify.list_projects():
+            unify.delete_project(name)
+        assert unify.list_projects() == []
         unify.create_project(name)
         assert name in unify.list_projects()
         new_name = "my_project1"
