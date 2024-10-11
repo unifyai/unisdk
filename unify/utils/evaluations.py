@@ -244,12 +244,26 @@ class Log(_Formatted):
     def id(self) -> int:
         return self._id
 
+    @property
+    def entries(self) -> Dict[str, Any]:
+        return self._entries
+
     # Dunders
 
     def __eq__(self, other: Union[dict, Log]) -> bool:
         if isinstance(other, dict):
             other = Log(other["id"], **other["entries"])
         return self._id == other._id
+
+    def __len__(self):
+        return len(self._entries)
+
+    def __rich_repr__(self) -> List[Any]:
+        """
+        Used by the rich package for representing and print the instance.
+        """
+        for k, v in self._entries.items():
+            yield k, v
 
     # Public
 
@@ -270,13 +284,6 @@ class Log(_Formatted):
 
     def delete(self) -> None:
         delete_log(self._id, self._api_key)
-
-    def __rich_repr__(self) -> List[Any]:
-        """
-        Used by the rich package for representing and print the instance.
-        """
-        for k, v in self._entries.items():
-            yield k, v
 
 
 def log(
