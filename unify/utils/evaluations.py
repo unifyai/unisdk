@@ -1,8 +1,10 @@
+from __future__ import annotations
 import requests
 from typing import Dict, Optional, Any, Union, List
 
 import unify
 from unify import BASE_URL
+from ..types import _Formatted
 from .helpers import _validate_api_key
 
 
@@ -224,30 +226,29 @@ def get_artifacts(
 # -----#
 
 
-class Log:
+class Log(_Formatted):
 
     def __init__(
         self,
         project: Optional[str] = None,
         version: Optional[Dict[str, str]] = None,
+        id: Optional[int] = None,
         api_key: Optional[str] = None,
         **kwargs,
     ):
         self._api_key = _validate_api_key(api_key)
-        headers = {
+        self._headers = {
             "accept": "application/json",
             "Authorization": f"Bearer {self._api_key}",
         }
-        project = _get_and_maybe_create_project(project)
         if version:
             kwargs = {
                 k + "/" + version[k] if k in version else k: v
                 for k, v in kwargs.items()
             }
-        body = {"project": project, "entries": kwargs}
-        response = requests.post(BASE_URL + "/log", headers=headers, json=body)
-        response.raise_for_status()
-        self._id = response.json()
+        project = _get_and_maybe_create_project(project, self._api_key)
+        self._body = {"project": project, "entries": kwargs}
+        self._id = id
 
     # Properties
 
@@ -255,10 +256,28 @@ class Log:
     def id(self) -> int:
         return self._id
 
-    # Public methods
+    # Dunders
+
+    def __eq__(self, other: Union[dict, Log]) -> bool:
+        if isinstance(other, dict):
+            other = Log(**other)
+        return self._id == other._id
+
+    # Public
+
+    def upload(self):
+        response = requests.post(
+            BASE_URL + "/log", headers=self._headers, json=self._body
+        )
+        response.raise_for_status()
+        self._id = response.json()
+
+    def download(self):
+        self._body = get_log(self._id, self._api_key)
 
     def add_entries(self, **kwargs) -> None:
         add_log_entries(self._id, self._api_key, **kwargs)
+        self._body["entries"] = {**self._body["entries"], **kwargs}
 
     def delete_entries(
         self,
@@ -266,9 +285,17 @@ class Log:
     ) -> None:
         for key in keys_to_delete:
             delete_log_entry(key, self._id, self._api_key)
+            del self._body["entries"][key]
 
     def delete(self) -> None:
         delete_log(self._id, self._api_key)
+
+    def __rich_repr__(self) -> List[Any]:
+        """
+        Used by the rich package for representing and print the instance.
+        """
+        yield "project", self._body["project"]
+        yield "entries", self._body["entries"]
 
 
 def log(
@@ -298,7 +325,9 @@ def log(
     Returns:
         The unique id of newly created log entry.
     """
-    return Log(project, version, api_key, **kwargs)
+    log = Log(project, version, api_key, **kwargs)
+    log.upload()
+    return log
 
 
 def add_log_entries(id: int, api_key: Optional[str] = None, **kwargs) -> Dict[str, str]:
@@ -379,7 +408,7 @@ def delete_log_entry(
     return response.json()
 
 
-def get_log(id: int, api_key: Optional[str] = None) -> List[Dict[str, Any]]:
+def get_log(id: int, api_key: Optional[str] = None) -> Log:
     """
     Returns the log associated with a given id.
 
@@ -399,14 +428,14 @@ def get_log(id: int, api_key: Optional[str] = None) -> List[Dict[str, Any]]:
     }
     response = requests.get(BASE_URL + f"/log/{id}", headers=headers)
     response.raise_for_status()
-    return response.json()
+    return Log(id=id, **response.json()["entries"])
 
 
 def get_logs(
     project: Optional[str] = None,
     filter: Optional[str] = None,
     api_key: Optional[str] = None,
-) -> List[Dict[str, Any]]:
+) -> List[Log]:
     """
     Returns a list of filtered logs from a project.
 
@@ -431,7 +460,7 @@ def get_logs(
     params = {"project": project, "filter": filter}
     response = requests.get(BASE_URL + "/logs", headers=headers, params=params)
     response.raise_for_status()
-    return response.json()
+    return [Log(**dct) for dct in response.json()]
 
 
 def get_groups(
