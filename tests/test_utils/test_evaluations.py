@@ -97,7 +97,9 @@ class TestEvaluations(unittest.TestCase):
         assert len(grouped_logs) == 2
         assert [version for version in grouped_logs].sort() == ["v1", "v2"]
 
-        log_metrics = unify.get_logs_metric(
-            "mean", "user_prompt", filter="'hello' in user_prompt"
+        logs_metric = unify.get_logs_metric(
+            "mean",
+            "score",
+            filter="'hello' in user_prompt"
         )
-        d = 0
+        assert logs_metric == 0.25
