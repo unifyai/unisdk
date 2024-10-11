@@ -812,7 +812,7 @@ class TestCRMEvaluator(unittest.TestCase):
             "Did the company express concerns about pricing?",
             "Is the company satisfied with our customer service?",
             "Is the company considering switching to a competitor?",
-            "Is the company interested in scheduling a follow-up meeting?"
+            "Is the company interested in scheduling a follow-up meeting?",
         ]
 
         self._sales_call_transcripts = {
@@ -836,7 +836,6 @@ class TestCRMEvaluator(unittest.TestCase):
         Sales Rep: Sounds good! I'll send over a calendar invite shortly.
 
         Mr. Johnson: Perfect. Talk to you then.""",
-
                 """Customer Support: Hello, this is Jamie from TechCorp customer support. I understand you're having issues with our current widget optimizer?
 
         Ms. Lee: Yes, it's been glitching and causing delays in our production.
@@ -851,9 +850,8 @@ class TestCRMEvaluator(unittest.TestCase):
 
         Customer Support: I can have someone from sales reach out to discuss that.
 
-        Ms. Lee: Please do."""
+        Ms. Lee: Please do.""",
             ],
-
             "Cosmic Pizza": [
                 """Sales Rep: Hello, is this Ms. Martinez from Cosmic Pizza?
 
@@ -871,7 +869,6 @@ class TestCRMEvaluator(unittest.TestCase):
 
         Ms. Martinez: Will do. Thanks for checking in."""
             ],
-
             "Nimbus Cloud Solutions": [
                 """Sales Rep: Hi, I'm calling from TechCorp Solutions regarding our new cloud security service.
 
@@ -884,7 +881,6 @@ class TestCRMEvaluator(unittest.TestCase):
         Sales Rep: Absolutely. I'll email you the details right after this call.
 
         Mr. Kim: Great, thank you.""",
-
                 """Customer Support: Hello, this is Riley from TechCorp customer support.
 
         Ms. Patel: Hi Riley, we're experiencing some downtime with your cloud services.
@@ -896,7 +892,6 @@ class TestCRMEvaluator(unittest.TestCase):
         Customer Support: I understand your frustration. Let me escalate this issue to our technical team.
 
         Ms. Patel: Please do. We can't afford this kind of unreliability.""",
-
                 """Sales Rep: Good morning, just following up on the information I sent over about our cloud security service.
 
         Mr. Kim: Yes, I received it. We're definitely interested.
@@ -911,7 +906,7 @@ class TestCRMEvaluator(unittest.TestCase):
 
         Sales Rep: Perfect, I'll send over an invite.
 
-        Mr. Kim: Looking forward to it."""
+        Mr. Kim: Looking forward to it.""",
             ],
         }
 
@@ -936,7 +931,7 @@ class TestCRMEvaluator(unittest.TestCase):
                 "Is the company satisfied with our customer service?": False,
                 "Is the company considering switching to a competitor?": True,
                 "Is the company interested in scheduling a follow-up meeting?": True,
-            }
+            },
         }
 
         # System prompt instructing the AI assistant on how to process the data
@@ -954,12 +949,13 @@ class TestCRMEvaluator(unittest.TestCase):
         # Variations of the system prompt for testing different scenarios
         self._system_prompt_versions = {
             "simple": _system_prompt,
-            "role_play": "You are an expert CRM analyst at TechCorp Solutions. " + _system_prompt,
+            "role_play": "You are an expert CRM analyst at TechCorp Solutions. "
+            + _system_prompt,
             "with_example": (
-                    _system_prompt + "\n\nFor example:\n"
-                                    "Question: Is the company interested in purchasing our new product line?\n"
-                                    "Answer: Yes.\n"
-                                    "Reasoning: The client said, 'We're considering integrating it into our production line next quarter.'"
+                _system_prompt + "\n\nFor example:\n"
+                "Question: Is the company interested in purchasing our new product line?\n"
+                "Answer: Yes.\n"
+                "Reasoning: The client said, 'We're considering integrating it into our production line next quarter.'"
             ),
         }
 
@@ -983,11 +979,13 @@ class TestCRMEvaluator(unittest.TestCase):
     def _evaluate(correct_answer: bool, response: str) -> bool:
         formatted = response.split("{")[-1].split("}")[0].lower()
         if correct_answer:
-            return ("yes" in formatted and
-                    "no" not in formatted and "none" not in formatted)
+            return (
+                "yes" in formatted and "no" not in formatted and "none" not in formatted
+            )
         elif correct_answer is False:
-            return ("no" in formatted and
-                    "yes" not in formatted  and "none" not in formatted)
+            return (
+                "no" in formatted and "yes" not in formatted and "none" not in formatted
+            )
         return "none" in formatted and "yes" not in formatted and "no" not in formatted
 
     def test_add_artifacts(self) -> None:
@@ -997,7 +995,7 @@ class TestCRMEvaluator(unittest.TestCase):
                     questions=self._questions,
                     sales_call_transcripts=self._sales_call_transcripts,
                     correct_answers=self._correct_answers,
-                    client=str(self._client)
+                    client=str(self._client),
                 )
                 artifacts = unify.get_artifacts()
                 self.assertEqual(len(artifacts), 2)
@@ -1007,7 +1005,7 @@ class TestCRMEvaluator(unittest.TestCase):
                         questions=self._questions,
                         sales_call_transcripts=self._sales_call_transcripts,
                         correct_answers=self._correct_answers,
-                        client=str(self._client)
+                        client=str(self._client),
                     ),
                 )
 
@@ -1018,23 +1016,25 @@ class TestCRMEvaluator(unittest.TestCase):
                     questions=self._questions,
                     sales_call_transcripts=self._sales_call_transcripts,
                     correct_answers=self._correct_answers,
-                    client=str(self._client)
+                    client=str(self._client),
                 )
                 unify.delete_artifact("sales_call_transcripts")
                 unify.delete_artifact("client")
                 artifacts = unify.get_artifacts()
                 self.assertEqual(len(artifacts), 2)
                 self.assertEqual(
-                    artifacts, dict(
-                        questions=self._questions,
-                        correct_answers=self._correct_answers
-                    )
+                    artifacts,
+                    dict(
+                        questions=self._questions, correct_answers=self._correct_answers
+                    ),
                 )
 
     def test_evals(self) -> None:
         for data in self._dataset:
-            msg = (f"The call transcripts are as follows:\n{data['call_transcripts']}."
-                   f"\n\nThe question is as follows:\n{data['question']}")
+            msg = (
+                f"The call transcripts are as follows:\n{data['call_transcripts']}."
+                f"\n\nThe question is as follows:\n{data['question']}"
+            )
             response = self._client.generate(msg, data["system_prompt"])
             self._evaluate(data["correct_answer"], response)
 
@@ -1042,15 +1042,13 @@ class TestCRMEvaluator(unittest.TestCase):
         with ProjectHandling():
             with unify.Project("test_project"):
                 for data in self._dataset:
-                    msg = (f"The call transcripts are as follows:\n{data['call_transcripts']}."
-                           f"\n\nThe question is as follows:\n{data['question']}")
+                    msg = (
+                        f"The call transcripts are as follows:\n{data['call_transcripts']}."
+                        f"\n\nThe question is as follows:\n{data['question']}"
+                    )
                     response = self._client.generate(msg, data["system_prompt"])
                     score = self._evaluate(data["correct_answer"], response)
-                    unify.log(
-                        **data,
-                        response=response,
-                        score=score
-                    )
+                    unify.log(**data, response=response, score=score)
 
     def test_system_prompt_opt(self) -> None:
         with ProjectHandling():
@@ -1060,14 +1058,11 @@ class TestCRMEvaluator(unittest.TestCase):
                     for data in self._dataset:
                         msg = (
                             f"The call transcripts are as follows:\n{data['call_transcripts']}."
-                            f"\n\nThe question is as follows:\n{data['question']}")
+                            f"\n\nThe question is as follows:\n{data['question']}"
+                        )
                         response = self._client.generate(msg, data["system_prompt"])
                         score = self._evaluate(data["correct_answer"], response)
-                        unify.log(
-                            **data,
-                            response=response,
-                            score=score
-                        )
+                        unify.log(**data, response=response, score=score)
                     system_prompt_perf[name] = unify.get_logs_metric(
                         "mean", "score", f"system_prompt == {system_prompt}"
                     )
