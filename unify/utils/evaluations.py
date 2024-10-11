@@ -455,7 +455,7 @@ def get_logs(
     params = {"project": project, "filter": filter}
     response = requests.get(BASE_URL + "/logs", headers=headers, params=params)
     response.raise_for_status()
-    return [Log(dct["id"] **dct["entries"]) for dct in response.json()]
+    return [Log(dct["id"], **dct["entries"]) for dct in response.json()]
 
 
 def get_groups(
