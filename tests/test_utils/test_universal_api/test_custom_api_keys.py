@@ -36,21 +36,58 @@ class TestCustomAPIKeys(unittest.TestCase):
 
     def setUp(self):
         self.key_name = "my_test_key2"
-        self.key_value = "4321"
+        self.key_value = "1234"
         self.new_name = "new_test_key"
         self._handler = CustomAPIKeyHandler(
             self.key_name, self.key_value, self.new_name
         )
 
-    def test_custom_api_keys(self):
+    def test_create_custom_api_key(self):
+        with self._handler:
+            response = unify.create_custom_api_key(self.key_name, self.key_value)
+            assert response == {"info": "API key created successfully!"}
+
+    def test_list_custom_api_keys(self):
+        with self._handler:
+            custom_keys = unify.list_custom_api_keys()
+            assert isinstance(custom_keys, list)
+            assert len(custom_keys) == 0
+            unify.create_custom_api_key(self.key_name, self.key_value)
+            custom_keys = unify.list_custom_api_keys()
+            assert isinstance(custom_keys, list)
+            assert len(custom_keys) == 1
+            assert custom_keys[0]["name"] == self.key_name
+            assert custom_keys[0]["value"] == "*"*4 + self.key_value
+
+    def test_get_custom_api_key(self):
         with self._handler:
             unify.create_custom_api_key(self.key_name, self.key_value)
-            get_key = unify.get_custom_api_key(self.key_name)
-            self.assertTrue(get_key["value"].endswith(self.key_value))
-            list_keys = unify.list_custom_api_keys()
-            self.assertTrue(_find_key(self.key_name, list_keys))
+            retrieved_key = unify.get_custom_api_key(self.key_name)
+            assert isinstance(retrieved_key, dict)
+            assert retrieved_key["name"] == self.key_name
+            assert retrieved_key["value"] == "*"*4 + self.key_value
 
+    def test_rename_custom_api_key(self):
+        with self._handler:
+            unify.create_custom_api_key(self.key_name, self.key_value)
+            custom_keys = unify.list_custom_api_keys()
+            assert isinstance(custom_keys, list)
+            assert len(custom_keys) == 1
+            assert custom_keys[0]["name"] == self.key_name
             unify.rename_custom_api_key(self.key_name, self.new_name)
-            list_keys = unify.list_custom_api_keys()
-            self.assertFalse(_find_key(self.key_name, list_keys))
-            self.assertTrue(_find_key(self.new_name, list_keys))
+            custom_keys = unify.list_custom_api_keys()
+            assert isinstance(custom_keys, list)
+            assert len(custom_keys) == 1
+            assert custom_keys[0]["name"] == self.new_name
+
+    def test_delete_custom_api_key(self):
+        with self._handler:
+            unify.create_custom_api_key(self.key_name, self.key_value)
+            custom_keys = unify.list_custom_api_keys()
+            assert isinstance(custom_keys, list)
+            assert len(custom_keys) == 1
+            assert custom_keys[0]["name"] == self.key_name
+            unify.delete_custom_api_key(self.key_name)
+            custom_keys = unify.list_custom_api_keys()
+            assert isinstance(custom_keys, list)
+            assert len(custom_keys) == 0
