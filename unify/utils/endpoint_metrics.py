@@ -1,7 +1,6 @@
-from datetime import datetime
-
+import datetime
 import requests
-from typing import Optional
+from typing import Optional, Union, Dict
 
 from unify import BASE_URL
 from .helpers import _validate_api_key
@@ -78,3 +77,48 @@ def get_endpoint_metrics(
         region=region,
         seq_len=seq_len,
     )
+
+
+def log_endpoint_metric(
+        endpoint_name: str,
+        metric_name: str,
+        value: float,
+        measured_at: Optional[Union[str, datetime.datetime]] = None,
+        api_key: Optional[str] = None,
+) -> Dict[str, str]:
+    """
+    Append speed or cost data to the standardized time-series benchmarks for a custom
+    endpoint (only custom endpoints are publishable by end users).
+
+    Args:
+        endpoint_name: Name of the custom endpoint to append benchmark data for.
+
+        metric_name: Name of the metric to submit. Allowed metrics are: “input-cost”,
+        “output-cost”, “time-to-first-token”, “inter-token-latency”.
+
+        value: Value of the metric to submit.
+
+        measured_at: The timestamp to associate with the submission. Defaults to current
+        time if unspecified.
+
+        api_key: If specified, unify API key to be used. Defaults to the value in the
+        `UNIFY_KEY` environment variable.
+    """
+    api_key = _validate_api_key(api_key)
+    headers = {
+        "accept": "application/json",
+        "Authorization": f"Bearer {api_key}",
+    }
+    params = {
+        "endpoint_name": endpoint_name,
+        "metric_name": metric_name,
+        "value": value,
+        "measured_at": measured_at,
+    }
+    response = requests.get(
+        BASE_URL + "/endpoint-metrics",
+        headers=headers,
+        params=params,
+    )
+    response.raise_for_status()
+    return response.json()

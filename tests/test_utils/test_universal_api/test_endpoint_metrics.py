@@ -1,7 +1,7 @@
 import unittest
 
 import unify
-from unify import Metrics, delete_custom_api_key
+from unify import Metrics
 
 
 # noinspection PyBroadException
@@ -63,3 +63,7 @@ class TestEndpointMetrics(unittest.TestCase):
         self.assertIsInstance(metrics.region, str)
         self.assertTrue(hasattr(metrics, "seq_len"))
         self.assertIsInstance(metrics.seq_len, str)
+
+    def test_log_endpoint_metric(self):
+        with self._handler:
+            unify.log_endpoint_metric(self._endpoint_name, "inter_token_latency", 1.23)
