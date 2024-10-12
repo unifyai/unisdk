@@ -14,3 +14,6 @@ class TestEndpointMetrics(unittest.TestCase):
         self.assertIn("input_cost", metrics.model_fields)
         self.assertIn("output_cost", metrics.model_fields)
         self.assertIn("measured_at", metrics.model_fields)
+
+    def test_log_endpoint_metric(self):
+        metrics = unify.log_endpoint("gpt-4o@openai")
