@@ -37,7 +37,7 @@ class CustomEndpointHandler:
 class TestEndpointMetrics(unittest.TestCase):
 
     def setUp(self):
-        self._endpoint_name = "test_new_endpoint"
+        self._endpoint_name = "my_endpoint@custom"
         self._endpoint_url = "test.com"
         self._key_name = "test_key"
         self._key_value = "4321"
