@@ -32,8 +32,8 @@ def get_query_tags(api_key: Optional[str] = None) -> List[str]:
 def get_queries(
     tags: Optional[Union[str, List[str]]] = None,
     endpoints: Optional[Union[str, List[str]]] = None,
-    start_time: Optional[datetime.datetime] = None,
-    end_time: Optional[datetime.datetime] = None,
+    start_time: Optional[Union[datetime.datetime, str]] = None,
+    end_time: Optional[Union[datetime.datetime, str]] = None,
     api_key: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
