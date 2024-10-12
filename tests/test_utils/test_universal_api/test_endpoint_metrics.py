@@ -1,4 +1,5 @@
 import unittest
+from datetime import datetime, timezone
 
 import unify
 from unify import Metrics
@@ -67,3 +68,12 @@ class TestEndpointMetrics(unittest.TestCase):
     def test_log_endpoint_metric(self):
         with self._handler:
             unify.log_endpoint_metric(self._endpoint_name, "inter_token_latency", 1.23)
+
+    def test_log_and_get_endpoint_metric(self):
+        with self._handler:
+            now = datetime.now(timezone.utc)
+            unify.log_endpoint_metric(self._endpoint_name, "inter_token_latency", 1.23)
+            metrics = unify.get_endpoint_metrics(self._endpoint_name, start_time=now)
+            self.assertTrue(hasattr(metrics, "inter_token_latency"))
+            self.assertIsInstance(metrics.inter_token_latency, float)
+            self.assertEqual(metrics.inter_token_latency, 1.23)
