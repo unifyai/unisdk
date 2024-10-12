@@ -111,11 +111,11 @@ def log_endpoint_metric(
     }
     params = {
         "endpoint_name": endpoint_name,
-        "metric_name": metric_name,
+        "metric_name": metric_name.replace("_", "-"),
         "value": value,
         "measured_at": measured_at,
     }
-    response = requests.get(
+    response = requests.post(
         BASE_URL + "/endpoint-metrics",
         headers=headers,
         params=params,
