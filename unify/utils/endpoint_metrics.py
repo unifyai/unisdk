@@ -12,7 +12,7 @@ class Metrics(_FormattedBaseModel):
     inter_token_latency: float
     input_cost: float
     output_cost: float
-    measured_at: str
+    measured_at: Union[datetime.datetime, str]
     region:str
     seq_len: str
 
@@ -21,8 +21,8 @@ def get_endpoint_metrics(
     endpoint: str,
     region: str = "Iowa",
     seq_len: str = "short",
-    start_time: Optional[str] = None,
-    end_time: Optional[str] = None,
+    start_time: Optional[Union[datetime.datetime, str]] = None,
+    end_time: Optional[Union[datetime.datetime, str]] = None,
     api_key: Optional[str] = None,
 ) -> Metrics:
     """
