@@ -97,7 +97,7 @@ def log_query(
     query_body: Dict,
     response_body: Optional[Dict] = None,
     tags: Optional[List[str]] = None,
-    timestamp: Optional[datetime.datetime] = None,
+    timestamp: Optional[Union[datetime.datetime, str]] = None,
     api_key: Optional[str] = None,
 ):
     """
@@ -145,8 +145,8 @@ def log_query(
 
 
 def get_query_metrics(
-    start_time: Optional[datetime.datetime] = None,
-    end_time: Optional[datetime.datetime] = None,
+    start_time: Optional[Union[datetime.datetime, str]] = None,
+    end_time: Optional[Union[datetime.datetime, str]] = None,
     models: Optional[str] = None,
     providers: Optional[str] = None,
     interval: int = 300,
