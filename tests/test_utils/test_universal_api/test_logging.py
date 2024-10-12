@@ -4,6 +4,7 @@ import unittest
 import unify
 
 
+# noinspection PyBroadException
 class LoggingHandler:
 
     def __init__(self, key_name, endpoint_names):
@@ -11,11 +12,15 @@ class LoggingHandler:
         self._endpoint_names = endpoint_names
 
     def _handle(self):
-        if self._key_name in unify.list_custom_api_keys():
+        try:
             unify.delete_custom_api_key(self._key_name)
+        except:
+            pass
         for endpoint_name in self._endpoint_names:
-            if endpoint_name in [ep["name"] for ep in unify.list_custom_endpoints()]:
+            try:
                 unify.delete_custom_endpoint(endpoint_name)
+            except:
+                pass
 
     def __enter__(self):
         self._handle()
