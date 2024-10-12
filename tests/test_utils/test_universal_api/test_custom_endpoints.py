@@ -6,8 +6,9 @@ import unify
 # noinspection PyBroadException
 class CustomEndpointHandler:
 
-    def __init__(self, key_name, endpoint_names):
+    def __init__(self, key_name, key_value, endpoint_names):
         self._key_name = key_name
+        self._key_value = key_value
         self._endpoint_names = endpoint_names
 
     def _handle(self):
@@ -20,6 +21,7 @@ class CustomEndpointHandler:
                 unify.delete_custom_endpoint(endpoint_name)
             except:
                 pass
+        unify.create_custom_api_key(self._key_name, self._key_value)
 
     def __enter__(self):
         self._handle()
@@ -38,7 +40,7 @@ class TestCustomEndpoints(unittest.TestCase):
         self.key_value = "4321"
         unify.create_custom_api_key(self.key_name, self.key_value)
         self._custom_endpoint_handler = CustomEndpointHandler(
-            self.key_name, [self.endpoint_name, self.new_endpoint_name]
+            self.key_name, self.key_value, [self.endpoint_name, self.new_endpoint_name]
         )
 
     def test_create_custom_endpoint(self):
