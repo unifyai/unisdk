@@ -116,17 +116,60 @@ class TestLogQuery(unittest.TestCase):
         self.assertEqual(len(history), 0)
 
     def test_get_query_failures(self):
-        unify.log_query(**self.data)
-        history = unify.get_queries(
-            endpoints="local_model_test@external",
-            start_time=self.start_time
+        client = unify.Unify("gpt-4o@openai")
+        client.generate(
+            "hello",
+            log_query_body=True,
+            log_response_body=True
         )
-        self.assertEqual(len(history), 1)
-        history = unify.get_queries(
-            endpoints="local_model_test@external",
-            start_time=datetime.now(timezone.utc) + timedelta(seconds=1)
+        with self.assertRaises(Exception):
+            client.generate(
+                "hello",
+                log_query_body=True,
+                log_response_body=True,
+                drop_params=False,
+                invalid_arg="invalid_value",
+            )
+
+        # inside logged timeframe
+        history_w_both = unify.get_queries(
+            endpoints="gpt-4o@openai",
+            start_time=self.start_time,
+            failures=True
         )
-        self.assertEqual(len(history), 0)
+        self.assertEqual(len(history_w_both), 2)
+        history_only_failures = unify.get_queries(
+            endpoints="gpt-4o@openai",
+            start_time=self.start_time,
+            failures="only"
+        )
+        self.assertEqual(len(history_only_failures), 1)
+        history_only_success = unify.get_queries(
+            endpoints="gpt-4o@openai",
+            start_time=self.start_time,
+            failures=False
+        )
+        self.assertEqual(len(history_only_success), 1)
+
+        # Outside logged timeframe
+        history_w_both = unify.get_queries(
+            endpoints="gpt-4o@openai",
+            start_time=datetime.now(timezone.utc) + timedelta(seconds=1),
+            failures=True
+        )
+        self.assertEqual(len(history_w_both), 0)
+        history_only_failures = unify.get_queries(
+            endpoints="gpt-4o@openai",
+            start_time=datetime.now(timezone.utc) + timedelta(seconds=1),
+            failures="only"
+        )
+        self.assertEqual(len(history_only_failures), 0)
+        history_only_success = unify.get_queries(
+            endpoints="gpt-4o@openai",
+            start_time=datetime.now(timezone.utc) + timedelta(seconds=1),
+            failures=False
+        )
+        self.assertEqual(len(history_only_success), 0)
 
     def test_get_query_tags(self):
         unify.log_query(**self.data)
