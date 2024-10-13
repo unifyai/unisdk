@@ -8,7 +8,6 @@ import re
 import shutil
 import subprocess
 
-
 replace = {
     "<uploaded_by>/<model_name>@<provider_name>": r"\<uploaded_by\>/\<model_name\>@\<provider_name\>",
     "<model_name>@<provider_name>": r"\<model_name\>@\<provider_name\>",
@@ -442,7 +441,7 @@ def get_mint_format(python_path, root=""):
             {
                 "group": key,
                 "pages": get_mint_format(python_path[key], os.path.join(root, key)),
-            }
+            },
         )
         if len(results[-1]["pages"]) == 0:
             results[-1] = os.path.join(root, key)
@@ -498,7 +497,9 @@ if __name__ == "__main__":
             )
 
     latest_hash = subprocess.check_output(
-        "git log -1 --format=%H", shell=True, text=True
+        "git log -1 --format=%H",
+        shell=True,
+        text=True,
     ).strip()
 
     module_paths = get_all_modules()

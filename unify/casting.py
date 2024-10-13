@@ -1,6 +1,6 @@
-from typing import Union, Type, List
-from unify.types import Prompt, ChatCompletion
+from typing import List, Type, Union
 
+from unify.types import ChatCompletion, Prompt
 
 # Upcasting
 

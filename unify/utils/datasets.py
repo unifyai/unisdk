@@ -1,14 +1,16 @@
 import json
-import requests
-from typing import List, Dict, Optional, Union, Any
+from typing import Any, Dict, List, Optional, Union
 
+import requests
 from unify import BASE_URL
-from unify.types import Prompt
-from .helpers import _validate_api_key, _res_to_list
+
+from .helpers import _res_to_list, _validate_api_key
 
 
 def _upload_dataset_from_str(
-    name: str, content: str, api_key: Optional[str] = None
+    name: str,
+    content: str,
+    api_key: Optional[str] = None,
 ) -> str:
     api_key = _validate_api_key(api_key)
     headers = {
@@ -19,14 +21,19 @@ def _upload_dataset_from_str(
     data = {"name": name}
     # Send POST request to the /dataset endpoint
     response = requests.post(
-        BASE_URL + "/dataset", headers=headers, data=data, files=files
+        BASE_URL + "/dataset",
+        headers=headers,
+        data=data,
+        files=files,
     )
     response.raise_for_status()
     return json.loads(response.text)
 
 
 def upload_dataset_from_file(
-    name: str, path: str, api_key: Optional[str] = None
+    name: str,
+    path: str,
+    api_key: Optional[str] = None,
 ) -> str:
     """
     Uploads a local file as a dataset to the platform.
@@ -48,7 +55,9 @@ def upload_dataset_from_file(
 
 
 def upload_dataset_from_dictionary(
-    name: str, content: List[Dict[str, str]], api_key: Optional[str] = None
+    name: str,
+    content: List[Dict[str, str]],
+    api_key: Optional[str] = None,
 ) -> str:
     """
     Uploads a list of dictionaries as a dataset to the platform.
@@ -149,7 +158,9 @@ def rename_dataset(name: str, new_name: str, api_key: Optional[str] = None):
     }
     params = {"name": name, "new_name": new_name}
     response = requests.post(
-        BASE_URL + "/dataset/rename", headers=headers, params=params
+        BASE_URL + "/dataset/rename",
+        headers=headers,
+        params=params,
     )
     response.raise_for_status()
     return response.json()
@@ -180,7 +191,9 @@ def list_datasets(api_key: Optional[str] = None) -> List[str]:
 
 
 def add_data_by_value(
-    name: str, data: Union[Any, List[Any]], api_key: Optional[str] = None
+    name: str,
+    data: Union[Any, List[Any]],
+    api_key: Optional[str] = None,
 ) -> Dict[str, Union[str, List[int]]]:
     """
     Adds data to a dataset by value, and returns a list of ids and values for each of
@@ -205,14 +218,18 @@ def add_data_by_value(
     }
     body = {"name": name, "data": data}
     response = requests.post(
-        BASE_URL + "/dataset/data/by_value", headers=headers, json=body
+        BASE_URL + "/dataset/data/by_value",
+        headers=headers,
+        json=body,
     )
     response.raise_for_status()
     return response.json()
 
 
 def add_data_by_id(
-    name: str, data: Union[int, List[int]], api_key: Optional[str] = None
+    name: str,
+    data: Union[int, List[int]],
+    api_key: Optional[str] = None,
 ) -> Dict[str, Union[str, List[int]]]:
     """
     Adds data to a dataset by id, and returns a list of ids and values for each of
@@ -237,14 +254,18 @@ def add_data_by_id(
     }
     body = {"name": name, "data": data}
     response = requests.post(
-        BASE_URL + "/dataset/data/by_id", headers=headers, json=body
+        BASE_URL + "/dataset/data/by_id",
+        headers=headers,
+        json=body,
     )
     response.raise_for_status()
     return response.json()
 
 
 def delete_data_by_value(
-    name: str, data: Union[Any, List[Any]], api_key: Optional[str] = None
+    name: str,
+    data: Union[Any, List[Any]],
+    api_key: Optional[str] = None,
 ) -> Dict[str, Union[str, List[int]]]:
     """
     Deletes data from a dataset by value, and returns a list of ids and values for each
@@ -271,14 +292,18 @@ def delete_data_by_value(
         return {"info": "data argument was empty. Nothing to delete."}
     params = {"name": name, "data": data}
     response = requests.delete(
-        BASE_URL + "/dataset/data/by_value", headers=headers, params=params
+        BASE_URL + "/dataset/data/by_value",
+        headers=headers,
+        params=params,
     )
     response.raise_for_status()
     return response.json()
 
 
 def delete_data_by_id(
-    name: str, data: Union[int, List[int]], api_key: Optional[str] = None
+    name: str,
+    data: Union[int, List[int]],
+    api_key: Optional[str] = None,
 ) -> Dict[str, Union[str, List[int]]]:
     """
     Deletes data from a dataset by id, and returns a list of ids and values for each
@@ -305,14 +330,17 @@ def delete_data_by_id(
         return {"info": "data argument was empty. Nothing to delete."}
     params = {"name": name, "data": data}
     response = requests.delete(
-        BASE_URL + "/dataset/data/by_id", headers=headers, params=params
+        BASE_URL + "/dataset/data/by_id",
+        headers=headers,
+        params=params,
     )
     response.raise_for_status()
     return response.json()
 
 
 def get_data_by_value(
-    data: Union[Any, List[Any]], api_key: Optional[str] = None
+    data: Union[Any, List[Any]],
+    api_key: Optional[str] = None,
 ) -> List[Dict[str, Union[int, Any]]]:
     """
     Returns the data (id and values) by querying the data based on their unique ids.
@@ -333,14 +361,17 @@ def get_data_by_value(
     }
     body = {"data": data}
     response = requests.get(
-        BASE_URL + "/dataset/data/by_value", headers=headers, json=body
+        BASE_URL + "/dataset/data/by_value",
+        headers=headers,
+        json=body,
     )
     response.raise_for_status()
     return response.json()
 
 
 def get_data_by_id(
-    data: Union[int, List[int]], api_key: Optional[str] = None
+    data: Union[int, List[int]],
+    api_key: Optional[str] = None,
 ) -> List[Dict[str, Union[int, Any]]]:
     """
     Returns the data (id and values) by querying the data based on their values.
@@ -361,7 +392,9 @@ def get_data_by_id(
     }
     body = {"data": data}
     response = requests.get(
-        BASE_URL + "/dataset/data/by_id", headers=headers, json=body
+        BASE_URL + "/dataset/data/by_id",
+        headers=headers,
+        json=body,
     )
     response.raise_for_status()
     return response.json()

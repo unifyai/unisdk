@@ -1,6 +1,7 @@
 import os
-import unify
 import unittest
+
+import unify
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 
@@ -28,14 +29,16 @@ class TestPrompt(unittest.TestCase):
 
     def test_create_prompt_from_messages_n_params(self) -> None:
         prompt = unify.Prompt(
-            messages=[{"role": "user", "content": "Hello"}], temperature=0.5
+            messages=[{"role": "user", "content": "Hello"}],
+            temperature=0.5,
         )
         self._assert_prompt_msg(prompt, "Hello")
         self._assert_prompt_param(prompt, "temperature", 0.5)
 
     def test_pass_prompts_to_client(self) -> None:
         prompt = unify.Prompt(
-            messages=[{"role": "user", "content": "Hello"}], temperature=0.5
+            messages=[{"role": "user", "content": "Hello"}],
+            temperature=0.5,
         )
         client = unify.Unify(**prompt.model_dump())
         self.assertEqual(client.temperature, 0.5)

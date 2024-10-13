@@ -1,8 +1,9 @@
-import os
 import json
+import os
+from typing import Any, Dict, List, Optional, Union
+
 import requests
 from pydantic import BaseModel, ValidationError
-from typing import List, Dict, Optional, Union, Any
 
 
 def _res_to_list(response: requests.Response) -> Union[List, Dict]:

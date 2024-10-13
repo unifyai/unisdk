@@ -1,10 +1,11 @@
 import copy
-from typing import Union, List, Dict, Type
+from typing import Dict, List, Type, Union
+
 from unify.types import (
-    _FormattedBaseModel,
     ChatCompletion,
-    Choice,
     ChatCompletionMessage,
+    Choice,
+    _FormattedBaseModel,
 )
 
 _REPR_MODE = None

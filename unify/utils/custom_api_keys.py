@@ -1,12 +1,15 @@
-import requests
-from typing import Optional, List, Any, Dict
+from typing import Any, Dict, List, Optional
 
+import requests
 from unify import BASE_URL
+
 from .helpers import _validate_api_key
 
 
 def create_custom_api_key(
-    name: str, value: str, api_key: Optional[str] = None
+    name: str,
+    value: str,
+    api_key: Optional[str] = None,
 ) -> Dict[str, str]:
     """
     Create a custom API key.
@@ -101,7 +104,9 @@ def delete_custom_api_key(name: str, api_key: Optional[str] = None) -> Dict[str,
 
 
 def rename_custom_api_key(
-    name: str, new_name: str, api_key: Optional[str] = None
+    name: str,
+    new_name: str,
+    api_key: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     Rename a custom API key.

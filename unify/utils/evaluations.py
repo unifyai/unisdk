@@ -136,7 +136,9 @@ def list_projects(api_key: Optional[str] = None) -> List[str]:
 
 
 def add_artifacts(
-    project: Optional[str] = None, api_key: Optional[str] = None, **kwargs
+    project: Optional[str] = None,
+    api_key: Optional[str] = None,
+    **kwargs,
 ) -> Dict[str, str]:
     """
     Creates one or more artifacts associated to a project. Artifacts are project-level

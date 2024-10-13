@@ -3,7 +3,6 @@
 import os
 from typing import Callable
 
-
 if "UNIFY_BASE_URL" in os.environ.keys():
     BASE_URL = os.environ["UNIFY_BASE_URL"]
 else:
@@ -19,48 +18,30 @@ def register_local_model(model_name: str, fn: Callable):
     LOCAL_MODELS[model_name] = fn
 
 
-from .utils import (
-    credits,
-    custom_api_keys,
-    custom_endpoints,
-    datasets,
-    endpoint_metrics,
-    helpers,
-    evaluations,
-    queries,
-    router_configurations,
-    router_deployment,
-    router_training,
-    supported_endpoints,
-)
+from unify.chat.clients.multi_llm import *
+from unify.chat.clients.uni_llm import *
+
+from .agent import *
+from .casting import *
+from .chat.chatbot import *
+from .chat.logging import *
+from .dataset import *
+from .evaluator import *
+from .repr import *
+from .types import *
+from .utils import helpers
 from .utils.credits import *
 from .utils.custom_api_keys import *
 from .utils.custom_endpoints import *
 from .utils.datasets import *
 from .utils.endpoint_metrics import *
-from .utils.helpers import *
 from .utils.evaluations import *
+from .utils.helpers import *
 from .utils.queries import *
 from .utils.router_configurations import *
 from .utils.router_deployment import *
 from .utils.router_training import *
 from .utils.supported_endpoints import *
-
-from .chat import chatbot, clients, logging
-from .chat.clients import multi_llm
-from .chat.chatbot import *
-from unify.chat.clients.uni_llm import *
-from unify.chat.clients.multi_llm import *
-
-from . import agent, casting, dataset, evaluator, repr, types
-from .agent import *
-from .casting import *
-from .dataset import *
-from .evaluator import *
-from .chat.logging import *
-from .repr import *
-from .types import *
-
 
 # Project #
 # --------#

@@ -1,7 +1,8 @@
-import requests
-from typing import Optional, List, Any, Dict
+from typing import Any, Dict, List, Optional
 
+import requests
 from unify import BASE_URL
+
 from .helpers import _validate_api_key
 
 
@@ -50,7 +51,9 @@ def create_custom_endpoint(
         params["provider"] = provider
 
     response = requests.post(
-        f"{BASE_URL}/custom_endpoint", headers=headers, params=params
+        f"{BASE_URL}/custom_endpoint",
+        headers=headers,
+        params=params,
     )
     response.raise_for_status()
 
@@ -88,7 +91,9 @@ def delete_custom_endpoint(name: str, api_key: Optional[str] = None) -> Dict[str
 
 
 def rename_custom_endpoint(
-    name: str, new_name: str, api_key: Optional[str] = None
+    name: str,
+    new_name: str,
+    api_key: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     Rename a custom endpoint.

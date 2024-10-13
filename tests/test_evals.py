@@ -1,18 +1,16 @@
-import json
-import random
-import os.path
-import unittest
 import builtins
 import importlib
+import json
+import os.path
+import random
 import traceback
-from typing import Dict, List, Any, Union, Optional
+import unittest
+from typing import Any, Dict, List, Optional, Union
 
+import unify
 from openai.types.chat.chat_completion_tool_message_param import (
     ChatCompletionToolMessageParam,
 )
-
-import unify
-
 
 # Helpers #
 # --------#
@@ -78,7 +76,7 @@ class TestMathsEvaluator(unittest.TestCase):
         correct_answer = eval(question)
         try:
             response_int = int(
-                "".join([c for c in response.split(" ")[-1] if c.isdigit()])
+                "".join([c for c in response.split(" ")[-1] if c.isdigit()]),
             )
             return correct_answer == response_int
         except ValueError:
@@ -154,7 +152,9 @@ class TestMathsEvaluator(unittest.TestCase):
                             score=correct,
                         )
                     system_prompt_perf[name] = unify.get_logs_metric(
-                        "mean", "score", f"system_prompt == '{system_prompt}'"
+                        "mean",
+                        "score",
+                        f"system_prompt == '{system_prompt}'",
                     )
 
 
@@ -209,8 +209,10 @@ class TestHumanEvaluator(unittest.TestCase):
             "How would you grade the quality of the assistant response {}, "
             "given the patient query {}, "
             "based on the following grading system: {}".format(
-                response, question, score_config
-            )
+                response,
+                question,
+                score_config,
+            ),
         )
         assert float(response) in score_config, (
             "response must be a floating point value, "
@@ -235,7 +237,8 @@ class TestHumanEvaluator(unittest.TestCase):
             with unify.Project("test_project"):
                 for data in self._dataset:
                     response = self._client.generate(
-                        data["question"], data["system_prompt"]
+                        data["question"],
+                        data["system_prompt"],
                     )
                     log_dict = dict(
                         question=data["question"],
@@ -374,7 +377,9 @@ class TestCodeEvaluator(unittest.TestCase):
                     runs = self._runs(response, data["inputs"])
                     self.assertIn(runs, self._score_configs["runs"])
                     correct = self._is_correct(
-                        response, data["inputs"], data["answers"]
+                        response,
+                        data["inputs"],
+                        data["answers"],
                     )
                     self.assertIn(correct, self._score_configs["correct"])
                     unify.log(**data, response=response, runs=runs, correct=correct)
@@ -449,7 +454,10 @@ class TestToolAgentAndLLMJudgeEvaluations(unittest.TestCase):
         self._dataset = [
             dict(prompt=p, correct_tool_use=ctu, content_check=cc, example_answer=ea)
             for p, ctu, cc, ea in zip(
-                _prompts, _correct_tool_use, _content_check, _example_answers
+                _prompts,
+                _correct_tool_use,
+                _content_check,
+                _example_answers,
             )
         ]
 
@@ -501,11 +509,13 @@ class TestToolAgentAndLLMJudgeEvaluations(unittest.TestCase):
                         continue
                     return choice.message.content
                 raise Exception(
-                    "Three iterations were performed, " "and no answer was found"
+                    "Three iterations were performed, " "and no answer was found",
                 )
 
         self._client = unify.Unify(
-            "gpt-4o@openai", return_full_completion=True, cache=True
+            "gpt-4o@openai",
+            return_full_completion=True,
+            cache=True,
         )
         self._agent = TravelAssistantAgent(
             self._client,
@@ -548,7 +558,8 @@ class TestToolAgentAndLLMJudgeEvaluations(unittest.TestCase):
 
     @staticmethod
     def _correct_tool_use(
-        response: unify.ChatCompletion, correct_tool_use: Optional[str]
+        response: unify.ChatCompletion,
+        correct_tool_use: Optional[str],
     ) -> bool:
         tool_calls = response.choices[0].message.tool_calls
         if correct_tool_use is None:
@@ -577,7 +588,8 @@ class TestToolAgentAndLLMJudgeEvaluations(unittest.TestCase):
         for data in self._dataset:
             response = self._client.generate(**data["prompt"])
             correct_tool_use = self._correct_tool_use(
-                response, data["correct_tool_use"]
+                response,
+                data["correct_tool_use"],
             )
             self.assertIn(correct_tool_use, self._score_configs["correct_tool_use"])
             self.assertEqual(correct_tool_use, 1.0)
@@ -588,10 +600,12 @@ class TestToolAgentAndLLMJudgeEvaluations(unittest.TestCase):
                 for data in self._dataset:
                     response = self._client.generate(**data["prompt"])
                     correct_tool_use = self._correct_tool_use(
-                        response, data["correct_tool_use"]
+                        response,
+                        data["correct_tool_use"],
                     )
                     self.assertIn(
-                        correct_tool_use, self._score_configs["correct_tool_use"]
+                        correct_tool_use,
+                        self._score_configs["correct_tool_use"],
                     )
                     self.assertEqual(correct_tool_use, 1.0)
                     unify.log(
@@ -664,7 +678,7 @@ class TestToolAgentAndLLMJudgeEvaluations(unittest.TestCase):
                     )
                     self.assertIn(judge_score, self._llm_judge.score_config)
                     true_score = random.choice(
-                        list(self._llm_judge.score_config.keys())
+                        list(self._llm_judge.score_config.keys()),
                     )
                     self.assertIn(true_score, self._llm_judge.score_config)
                     l1_diff = abs(true_score - judge_score)
@@ -867,7 +881,7 @@ class TestCRMEvaluator(unittest.TestCase):
 
         Sales Rep: Understood. If anything changes, feel free to reach out.
 
-        Ms. Martinez: Will do. Thanks for checking in."""
+        Ms. Martinez: Will do. Thanks for checking in.""",
             ],
             "Nimbus Cloud Solutions": [
                 """Sales Rep: Hi, I'm calling from TechCorp Solutions regarding our new cloud security service.
@@ -969,7 +983,7 @@ class TestCRMEvaluator(unittest.TestCase):
                         "question": question,
                         "system_prompt": _system_prompt,
                         "correct_answer": self._correct_answers[company_name],
-                    }
+                    },
                 )
 
         # Initialize the client with caching enabled
@@ -1025,7 +1039,8 @@ class TestCRMEvaluator(unittest.TestCase):
                 self.assertEqual(
                     artifacts,
                     dict(
-                        questions=self._questions, correct_answers=self._correct_answers
+                        questions=self._questions,
+                        correct_answers=self._correct_answers,
                     ),
                 )
 
@@ -1064,5 +1079,7 @@ class TestCRMEvaluator(unittest.TestCase):
                         score = self._evaluate(data["correct_answer"], response)
                         unify.log(**data, response=response, score=score)
                     system_prompt_perf[name] = unify.get_logs_metric(
-                        "mean", "score", f"system_prompt == {system_prompt}"
+                        "mean",
+                        "score",
+                        f"system_prompt == {system_prompt}",
                     )

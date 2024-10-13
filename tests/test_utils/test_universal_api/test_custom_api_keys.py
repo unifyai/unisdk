@@ -39,7 +39,9 @@ class TestCustomAPIKeys(unittest.TestCase):
         self.key_value = "1234"
         self.new_name = "new_test_key"
         self._handler = CustomAPIKeyHandler(
-            self.key_name, self.key_value, self.new_name
+            self.key_name,
+            self.key_value,
+            self.new_name,
         )
 
     def test_create_custom_api_key(self):
@@ -57,7 +59,7 @@ class TestCustomAPIKeys(unittest.TestCase):
             assert isinstance(custom_keys, list)
             assert len(custom_keys) == 1
             assert custom_keys[0]["name"] == self.key_name
-            assert custom_keys[0]["value"] == "*"*4 + self.key_value
+            assert custom_keys[0]["value"] == "*" * 4 + self.key_value
 
     def test_get_custom_api_key(self):
         with self._handler:
@@ -65,7 +67,7 @@ class TestCustomAPIKeys(unittest.TestCase):
             retrieved_key = unify.get_custom_api_key(self.key_name)
             assert isinstance(retrieved_key, dict)
             assert retrieved_key["name"] == self.key_name
-            assert retrieved_key["value"] == "*"*4 + self.key_value
+            assert retrieved_key["value"] == "*" * 4 + self.key_value
 
     def test_rename_custom_api_key(self):
         with self._handler:

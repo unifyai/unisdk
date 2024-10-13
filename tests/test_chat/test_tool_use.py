@@ -1,12 +1,12 @@
-import os
 import json
+import os
 import unittest
-from openai.types.chat.chat_completion_message_tool_call import Function
+
 from openai.types.chat.chat_completion_message import ChatCompletionMessage
 from openai.types.chat.chat_completion_message_tool_call import (
     ChatCompletionMessageToolCall,
+    Function,
 )
-
 from unify import Unify
 
 

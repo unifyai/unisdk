@@ -1,10 +1,11 @@
 import datetime
-import requests
-from typing import Optional, Union, Dict, List
+from typing import Dict, List, Optional, Union
 
+import requests
 from unify import BASE_URL
-from .helpers import _validate_api_key
 from unify.types import _FormattedBaseModel
+
+from .helpers import _validate_api_key
 
 
 class Metrics(_FormattedBaseModel, extra="allow"):
@@ -67,11 +68,11 @@ def get_endpoint_metrics(
 
 
 def log_endpoint_metric(
-        endpoint_name: str,
-        metric_name: str,
-        value: float,
-        measured_at: Optional[Union[str, datetime.datetime]] = None,
-        api_key: Optional[str] = None,
+    endpoint_name: str,
+    metric_name: str,
+    value: float,
+    measured_at: Optional[Union[str, datetime.datetime]] = None,
+    api_key: Optional[str] = None,
 ) -> Dict[str, str]:
     """
     Append speed or cost data to the standardized time-series benchmarks for a custom
@@ -112,9 +113,9 @@ def log_endpoint_metric(
 
 
 def delete_endpoint_metrics(
-        endpoint_name: str,
-        timestamps: Optional[Union[datetime.datetime, List[datetime.datetime]]] = None,
-        api_key: Optional[str] = None,
+    endpoint_name: str,
+    timestamps: Optional[Union[datetime.datetime, List[datetime.datetime]]] = None,
+    api_key: Optional[str] = None,
 ) -> Dict[str, str]:
     api_key = _validate_api_key(api_key)
     headers = {

@@ -1,25 +1,26 @@
 # global
 import abc
 import asyncio
+from typing import Dict, Iterable, List, Optional, Tuple, Union
+
 import requests
-from typing_extensions import Self
-from typing import Optional, Union, List, Tuple, Dict, Iterable
 
 # noinspection PyProtectedMember
 from openai._types import Headers, Query
 from openai.types.chat import (
-    ChatCompletionToolParam,
-    ChatCompletionToolChoiceOptionParam,
     ChatCompletionMessageParam,
+    ChatCompletionToolChoiceOptionParam,
+    ChatCompletionToolParam,
 )
 from openai.types.chat.completion_create_params import ResponseFormat
+from typing_extensions import Self
 
 # local
 from unify import BASE_URL
+from unify.chat.clients import AsyncUnify, _Client, _UniLLMClient
 
 # noinspection PyProtectedMember
 from unify.utils.helpers import _validate_api_key
-from unify.chat.clients import _Client, _UniLLMClient, AsyncUnify
 
 
 class _MultiLLMClient(_Client, abc.ABC):
@@ -285,7 +286,9 @@ class _MultiLLMClient(_Client, abc.ABC):
         }
 
     def add_endpoints(
-        self, endpoints: Union[List[str], str], ignore_duplicates: bool = True
+        self,
+        endpoints: Union[List[str], str],
+        ignore_duplicates: bool = True,
     ) -> Self:
         """
         Add extra endpoints to be queried for each call to generate.
@@ -310,8 +313,9 @@ class _MultiLLMClient(_Client, abc.ABC):
                 "at least one of the provided endpoints to add {}"
                 "was already set present in the endpoints {}."
                 "Set ignore_duplicates to True to ignore errors like this".format(
-                    endpoints, self._endpoints
-                )
+                    endpoints,
+                    self._endpoints,
+                ),
             )
         # update endpoints
         self._endpoints = self._endpoints + endpoints
@@ -320,7 +324,9 @@ class _MultiLLMClient(_Client, abc.ABC):
         return self
 
     def remove_endpoints(
-        self, endpoints: Union[List[str], str], ignore_missing: bool = True
+        self,
+        endpoints: Union[List[str], str],
+        ignore_missing: bool = True,
     ) -> Self:
         """
         Remove endpoints from the current list, which are queried for each call to
@@ -347,8 +353,9 @@ class _MultiLLMClient(_Client, abc.ABC):
                 "at least one of the provided endpoints to remove {}"
                 "was not present in the current endpoints {}."
                 "Set ignore_missing to True to ignore errors like this".format(
-                    endpoints, self._endpoints
-                )
+                    endpoints,
+                    self._endpoints,
+                ),
             )
         # update endpoints and clients
         for endpoint in endpoints:

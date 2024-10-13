@@ -9,7 +9,8 @@ class Agent(abc.ABC):
 
     def __init__(self):
         self.__call__ = unify.with_logging(
-            self.__call__, endpoint=self.__class__.__name__
+            self.__call__,
+            endpoint=self.__class__.__name__,
         )
 
     @abc.abstractmethod

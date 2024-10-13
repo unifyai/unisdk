@@ -32,7 +32,9 @@ class CustomEndpointHandler:
         self._cleanup()
         unify.create_custom_api_key(self._key_name, self._key_value)
         unify.create_custom_endpoint(
-            self._endpoint_name, self._endpoint_url, self._key_name
+            self._endpoint_name,
+            self._endpoint_url,
+            self._key_name,
         )
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -48,7 +50,10 @@ class TestEndpointMetrics(unittest.TestCase):
         self._key_value = "4321"
 
         self._handler = CustomEndpointHandler(
-            self._endpoint_name, self._endpoint_url, self._key_name, self._key_value
+            self._endpoint_name,
+            self._endpoint_url,
+            self._key_name,
+            self._key_value,
         )
 
     def test_get_public_endpoint_metrics(self):

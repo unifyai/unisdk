@@ -1,11 +1,11 @@
-from pydantic import ConfigDict
-from typing import Optional, List, Dict
+from typing import List, Optional
+
 from openai.types.chat import ChatCompletion as _ChatCompletion
-from openai.types.completion_usage import CompletionUsage as _CompletionUsage
 from openai.types.chat.chat_completion import (
     ChatCompletionMessage as _ChatCompletionMessage,
-    Choice as _Choice,
 )
+from openai.types.chat.chat_completion import Choice as _Choice
+from openai.types.completion_usage import CompletionUsage as _CompletionUsage
 
 from ..base import _FormattedBaseModel
 
@@ -49,14 +49,15 @@ class ChatCompletion(_FormattedBaseModel, _ChatCompletion):
                             finish_reason="stop",
                             index=0,
                             message=ChatCompletionMessage(
-                                role="assistant", content=assistant_message
+                                role="assistant",
+                                content=assistant_message,
                             ),
-                        )
+                        ),
                     ],
                     created=0,
                     model="",
                     object="chat.completion",
-                    **kwargs
+                    **kwargs,
                 ),
                 **kwargs,
             }

@@ -1,17 +1,18 @@
 # global
+from abc import ABC, abstractmethod
+from typing import Dict, Iterable, List, Mapping, Optional, Union
+
 import requests
 
 # noinspection PyProtectedMember
-from openai._types import Headers, Query, Body
+from openai._types import Body, Headers, Query
 from openai.types.chat import (
-    ChatCompletionToolParam,
-    ChatCompletionToolChoiceOptionParam,
     ChatCompletionMessageParam,
     ChatCompletionStreamOptionsParam,
+    ChatCompletionToolChoiceOptionParam,
+    ChatCompletionToolParam,
 )
 from openai.types.chat.completion_create_params import ResponseFormat
-from abc import ABC, abstractmethod
-from typing import Mapping, Dict, List, Optional, Union, Iterable
 from typing_extensions import Self
 
 # local
@@ -19,7 +20,7 @@ from unify import BASE_URL
 from unify.types import Prompt
 
 # noinspection PyProtectedMember
-from unify.utils.helpers import _validate_api_key, _default
+from unify.utils.helpers import _default, _validate_api_key
 
 
 class _Client(ABC):
@@ -456,7 +457,7 @@ class _Client(ABC):
                 f: getattr(self, f)
                 for f in Prompt.model_fields
                 if hasattr(self, f) and getattr(self, f)
-            }
+            },
         )
 
     # Setters #
@@ -1075,7 +1076,8 @@ class _Client(ABC):
             logprobs=_default(logprobs, self._logprobs),
             top_logprobs=_default(top_logprobs, self._top_logprobs),
             max_completion_tokens=_default(
-                max_completion_tokens, self._max_completion_tokens
+                max_completion_tokens,
+                self._max_completion_tokens,
             ),
             n=_default(n, self._n),
             presence_penalty=_default(presence_penalty, self._presence_penalty),
@@ -1089,7 +1091,8 @@ class _Client(ABC):
             tools=_default(tools, self._tools),
             tool_choice=_default(tool_choice, self._tool_choice),
             parallel_tool_calls=_default(
-                parallel_tool_calls, self._parallel_tool_calls
+                parallel_tool_calls,
+                self._parallel_tool_calls,
             ),
             # platform arguments
             use_custom_keys=_default(use_custom_keys, self._use_custom_keys),
@@ -1136,7 +1139,7 @@ class _Client(ABC):
             return response.json()["credits"]
         except requests.RequestException as e:
             raise requests.RequestException(
-                "There was an error with the request."
+                "There was an error with the request.",
             ) from e
         except (KeyError, ValueError) as e:
             raise ValueError("Error parsing JSON response.") from e

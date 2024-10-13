@@ -17,7 +17,8 @@ class TestUnifyCaching(unittest.TestCase):
         if os.path.exists(_cache_fpath):
             os.remove(_cache_fpath)
         client = Unify(
-            api_key=self.valid_api_key, endpoint="llama-3-8b-chat@together-ai"
+            api_key=self.valid_api_key,
+            endpoint="llama-3-8b-chat@together-ai",
         )
         t = time.perf_counter()
         r0 = client.generate(user_message="hello", cache=True)
