@@ -16,11 +16,15 @@ class CustomEndpointHandler:
 
     def _cleanup(self):
         try:
-            unify.delete_custom_api_key(self._key_name)
+            unify.delete_endpoint_metrics(self._endpoint_name)
         except:
             pass
         try:
             unify.delete_custom_endpoint(self._endpoint_name)
+        except:
+            pass
+        try:
+            unify.delete_custom_api_key(self._key_name)
         except:
             pass
 
@@ -60,10 +64,6 @@ class TestEndpointMetrics(unittest.TestCase):
         self.assertIsInstance(metrics.output_cost, float)
         self.assertTrue(hasattr(metrics, "measured_at"))
         self.assertIsInstance(metrics.measured_at, str)
-        self.assertTrue(hasattr(metrics, "region"))
-        self.assertIsInstance(metrics.region, str)
-        self.assertTrue(hasattr(metrics, "seq_len"))
-        self.assertIsInstance(metrics.seq_len, str)
 
     def test_log_endpoint_metric(self):
         with self._handler:

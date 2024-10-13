@@ -1,26 +1,22 @@
 import datetime
 import requests
-from typing import Optional, Union, Dict
+from typing import Optional, Union, Dict, List
 
 from unify import BASE_URL
 from .helpers import _validate_api_key
 from unify.types import _FormattedBaseModel
 
 
-class Metrics(_FormattedBaseModel):
-    time_to_first_token: float
-    inter_token_latency: float
-    input_cost: float
-    output_cost: float
-    measured_at: Union[datetime.datetime, str]
-    region:str
-    seq_len: str
+class Metrics(_FormattedBaseModel, extra="allow"):
+    time_to_first_token: Optional[float]
+    inter_token_latency: Optional[float]
+    input_cost: Optional[float]
+    output_cost: Optional[float]
+    measured_at: Union[datetime.datetime, str, Dict[str, Union[datetime.datetime, str]]]
 
 
 def get_endpoint_metrics(
     endpoint: str,
-    region: str = "Iowa",
-    seq_len: str = "short",
     start_time: Optional[Union[datetime.datetime, str]] = None,
     end_time: Optional[Union[datetime.datetime, str]] = None,
     api_key: Optional[str] = None,
@@ -30,11 +26,6 @@ def get_endpoint_metrics(
 
     Args:
         endpoint: The endpoint to retrieve the metrics for, in model@provider format
-
-        region: Region where the benchmark is run. Options are: "Belgium", "Hong Kong"
-        or "Iowa".
-
-        seq_len: Length of the sequence used for benchmarking, can be short or long.
 
         start_time: Window start time. Only returns the latest benchmark if unspecified.
 
@@ -56,8 +47,6 @@ def get_endpoint_metrics(
     params = {
         "model": endpoint.split("@")[0],
         "provider": endpoint.split("@")[1],
-        "region": region,
-        "seq_len": seq_len,
         "start_time": start_time,
         "end_time": end_time,
     }
@@ -69,13 +58,11 @@ def get_endpoint_metrics(
     response.raise_for_status()
     metrics_dct = response.json()[0]
     return Metrics(
-        time_to_first_token=metrics_dct["ttft"],
-        inter_token_latency=metrics_dct["itl"],
+        time_to_first_token=metrics_dct["time_to_first_token"],
+        inter_token_latency=metrics_dct["inter_token_latency"],
         input_cost=metrics_dct["input_cost"],
         output_cost=metrics_dct["output_cost"],
         measured_at=metrics_dct["measured_at"],
-        region=region,
-        seq_len=seq_len,
     )
 
 
@@ -93,8 +80,8 @@ def log_endpoint_metric(
     Args:
         endpoint_name: Name of the custom endpoint to append benchmark data for.
 
-        metric_name: Name of the metric to submit. Allowed metrics are: “input-cost”,
-        “output-cost”, “time-to-first-token”, “inter-token-latency”.
+        metric_name: Name of the metric to submit. Allowed metrics are: “input_cost”,
+        “output_cost”, “time_to_first_token”, “inter_token_latency”.
 
         value: Value of the metric to submit.
 
@@ -111,11 +98,34 @@ def log_endpoint_metric(
     }
     params = {
         "endpoint_name": endpoint_name,
-        "metric_name": metric_name.replace("_", "-"),
+        "metric_name": metric_name,
         "value": value,
         "measured_at": measured_at,
     }
     response = requests.post(
+        BASE_URL + "/endpoint-metrics",
+        headers=headers,
+        params=params,
+    )
+    response.raise_for_status()
+    return response.json()
+
+
+def delete_endpoint_metrics(
+        endpoint_name: str,
+        timestamps: Optional[Union[datetime.datetime, List[datetime.datetime]]] = None,
+        api_key: Optional[str] = None,
+) -> Dict[str, str]:
+    api_key = _validate_api_key(api_key)
+    headers = {
+        "accept": "application/json",
+        "Authorization": f"Bearer {api_key}",
+    }
+    params = {
+        "endpoint_name": endpoint_name,
+        "timestamps": timestamps,
+    }
+    response = requests.delete(
         BASE_URL + "/endpoint-metrics",
         headers=headers,
         params=params,
