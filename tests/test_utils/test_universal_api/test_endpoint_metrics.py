@@ -1,3 +1,4 @@
+import time
 import unittest
 from datetime import datetime, timezone
 
@@ -58,6 +59,9 @@ class TestEndpointMetrics(unittest.TestCase):
 
     def test_get_public_endpoint_metrics(self):
         metrics = unify.get_endpoint_metrics("gpt-4o@openai")
+        self.assertIsInstance(metrics, list)
+        self.assertEqual(len(metrics), 1)
+        metrics = metrics[0]
         self.assertIsInstance(metrics, Metrics)
         self.assertTrue(hasattr(metrics, "time_to_first_token"))
         self.assertIsInstance(metrics.time_to_first_token, float)
@@ -79,6 +83,44 @@ class TestEndpointMetrics(unittest.TestCase):
             now = datetime.now(timezone.utc)
             unify.log_endpoint_metric(self._endpoint_name, "inter_token_latency", 1.23)
             metrics = unify.get_endpoint_metrics(self._endpoint_name, start_time=now)
+            self.assertIsInstance(metrics, list)
+            self.assertEqual(len(metrics), 1)
+            metrics = metrics[0]
             self.assertTrue(hasattr(metrics, "inter_token_latency"))
             self.assertIsInstance(metrics.inter_token_latency, float)
             self.assertEqual(metrics.inter_token_latency, 1.23)
+
+    def test_log_and_get_endpoint_metric_with_time_windows(self):
+        with self._handler:
+            t0 = datetime.now(timezone.utc)
+            unify.log_endpoint_metric(self._endpoint_name, "inter_token_latency", 1.23)
+            unify.log_endpoint_metric(self._endpoint_name, "time_to_first_token", 4.56)
+            time.sleep(0.5)
+            t1 = datetime.now(timezone.utc)
+            unify.log_endpoint_metric(self._endpoint_name, "inter_token_latency", 7.89)
+            all_metrics = unify.get_endpoint_metrics(self._endpoint_name, start_time=t0)
+            # two log events detected, due to double inter_token_latency logging
+            self.assertEqual(len(all_metrics), 2)
+            # Data all accumulates at the latest entry (top of the stack)
+            self.assertIsInstance(all_metrics[0].inter_token_latency, float)
+            self.assertIs(all_metrics[0].time_to_first_token, None)
+            self.assertIsInstance(all_metrics[1].inter_token_latency, float)
+            self.assertIsInstance(all_metrics[1].time_to_first_token, float)
+            self.assertEqual(all_metrics[0].inter_token_latency, 1.23)
+            self.assertEqual(all_metrics[1].time_to_first_token, 4.56)
+            self.assertEqual(all_metrics[1].inter_token_latency, 7.89)
+            # The original two logs are not retrieved
+            limited_metrics = unify.get_endpoint_metrics(
+                self._endpoint_name, start_time=t1
+            )
+            self.assertEqual(len(limited_metrics), 1)
+            self.assertIs(limited_metrics[0].time_to_first_token, None)
+            self.assertIsInstance(limited_metrics[0].inter_token_latency, float)
+            self.assertEqual(limited_metrics[0].inter_token_latency, 7.89)
+            # The time_to_first_token is now retrieved due to 'latest' mode
+            latest_metrics = unify.get_endpoint_metrics(self._endpoint_name)
+            self.assertEqual(len(latest_metrics), 1)
+            self.assertIsInstance(latest_metrics[0].time_to_first_token, float)
+            self.assertIsInstance(latest_metrics[0].inter_token_latency, float)
+            self.assertEqual(latest_metrics[0].time_to_first_token, 4.56)
+            self.assertEqual(latest_metrics[0].inter_token_latency, 7.89)

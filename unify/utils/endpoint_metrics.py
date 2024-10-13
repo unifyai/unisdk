@@ -21,7 +21,7 @@ def get_endpoint_metrics(
     start_time: Optional[Union[datetime.datetime, str]] = None,
     end_time: Optional[Union[datetime.datetime, str]] = None,
     api_key: Optional[str] = None,
-) -> Metrics:
+) -> List[Metrics]:
     """
     Retrieve the set of cost and speed metrics for the specified endpoint.
 
@@ -57,14 +57,16 @@ def get_endpoint_metrics(
         params=params,
     )
     response.raise_for_status()
-    metrics_dct = response.json()[0]
-    return Metrics(
-        time_to_first_token=metrics_dct["time_to_first_token"],
-        inter_token_latency=metrics_dct["inter_token_latency"],
-        input_cost=metrics_dct["input_cost"],
-        output_cost=metrics_dct["output_cost"],
-        measured_at=metrics_dct["measured_at"],
-    )
+    return [
+        Metrics(
+            time_to_first_token=metrics_dct["time_to_first_token"],
+            inter_token_latency=metrics_dct["inter_token_latency"],
+            input_cost=metrics_dct["input_cost"],
+            output_cost=metrics_dct["output_cost"],
+            measured_at=metrics_dct["measured_at"],
+        )
+        for metrics_dct in response.json()
+    ]
 
 
 def log_endpoint_metric(
