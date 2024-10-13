@@ -111,7 +111,8 @@ class TestEndpointMetrics(unittest.TestCase):
             self.assertEqual(all_metrics[1].inter_token_latency, 7.89)
             # The original two logs are not retrieved
             limited_metrics = unify.get_endpoint_metrics(
-                self._endpoint_name, start_time=t1
+                self._endpoint_name,
+                start_time=t1,
             )
             self.assertEqual(len(limited_metrics), 1)
             self.assertIs(limited_metrics[0].time_to_first_token, None)
@@ -124,3 +125,18 @@ class TestEndpointMetrics(unittest.TestCase):
             self.assertIsInstance(latest_metrics[0].inter_token_latency, float)
             self.assertEqual(latest_metrics[0].time_to_first_token, 4.56)
             self.assertEqual(latest_metrics[0].inter_token_latency, 7.89)
+
+    def test_delete_all_metrics_for_endpoint(self):
+        with self._handler:
+            # public metric
+            unify.log_endpoint_metric(self._endpoint_name, "inter_token_latency", 1.23)
+            # verify it exists
+            metrics = unify.get_endpoint_metrics(self._endpoint_name)
+            self.assertIsInstance(metrics, list)
+            self.assertEqual(len(metrics), 1)
+            # delete it
+            unify.delete_endpoint_metrics(self._endpoint_name)
+            # verify it no longer exists
+            metrics = unify.get_endpoint_metrics(self._endpoint_name)
+            self.assertIsInstance(metrics, list)
+            self.assertEqual(len(metrics), 0)
