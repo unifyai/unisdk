@@ -5,6 +5,9 @@ from typing import Dict, Iterable, List, Optional, Tuple, Union
 
 import requests
 
+# local
+import unify
+
 # noinspection PyProtectedMember
 from openai._types import Headers, Query
 from openai.types.chat import (
@@ -14,10 +17,9 @@ from openai.types.chat import (
 )
 from openai.types.chat.completion_create_params import ResponseFormat
 from typing_extensions import Self
-
-# local
 from unify import BASE_URL
 from unify.chat.clients import AsyncUnify, _Client, _UniLLMClient
+from unify.utils.endpoint_metrics import Metrics
 
 # noinspection PyProtectedMember
 from unify.utils.helpers import _validate_api_key
@@ -386,6 +388,40 @@ class _MultiLLMClient(_Client, abc.ABC):
             raise Exception("There was an error with the request.") from e
         except (KeyError, ValueError) as e:
             raise ValueError("Error parsing JSON response.") from e
+
+    # Read-only Properties #
+    # ---------------------#
+
+    def _get_metrics(self) -> Dict[str, Metrics]:
+        return {
+            ep: unify.get_endpoint_metrics(ep, api_key=self._api_key)[0]
+            for ep in self._endpoints
+        }
+
+    def input_cost(self) -> Dict[str, float]:
+        return {
+            ep: metrics["input_cost"] for ep, metrics in self._get_metrics().items()
+        }
+
+    def output_cost(self) -> Dict[str, float]:
+        return {
+            ep: metrics["output_cost"] for ep, metrics in self._get_metrics().items()
+        }
+
+    def time_to_first_token(self) -> Dict[str, float]:
+        return {
+            ep: metrics["time_to_first_token"]
+            for ep, metrics in self._get_metrics().items()
+        }
+
+    def inter_token_latency(self) -> Dict[str, float]:
+        return {
+            ep: metrics["inter_token_latency"]
+            for ep, metrics in self._get_metrics().items()
+        }
+
+    # Settable Properties #
+    # --------------------#
 
     @property
     def endpoints(self) -> Tuple[str, ...]:
