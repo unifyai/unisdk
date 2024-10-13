@@ -272,15 +272,19 @@ class _UniLLMClient(_Client, abc.ABC):
     def _get_metric(self) -> Metrics:
         return unify.get_endpoint_metrics(self._endpoint, api_key=self._api_key)[0]
 
+    @property
     def input_cost(self) -> float:
         return self._get_metric()["input_cost"]
 
+    @property
     def output_cost(self) -> float:
         return self._get_metric()["output_cost"]
 
+    @property
     def time_to_first_token(self) -> float:
         return self._get_metric()["time_to_first_token"]
 
+    @property
     def inter_token_latency(self) -> float:
         return self._get_metric()["inter_token_latency"]
 

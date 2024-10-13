@@ -398,22 +398,26 @@ class _MultiLLMClient(_Client, abc.ABC):
             for ep in self._endpoints
         }
 
+    @property
     def input_cost(self) -> Dict[str, float]:
         return {
             ep: metrics["input_cost"] for ep, metrics in self._get_metrics().items()
         }
 
+    @property
     def output_cost(self) -> Dict[str, float]:
         return {
             ep: metrics["output_cost"] for ep, metrics in self._get_metrics().items()
         }
 
+    @property
     def time_to_first_token(self) -> Dict[str, float]:
         return {
             ep: metrics["time_to_first_token"]
             for ep, metrics in self._get_metrics().items()
         }
 
+    @property
     def inter_token_latency(self) -> Dict[str, float]:
         return {
             ep: metrics["inter_token_latency"]

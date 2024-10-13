@@ -74,6 +74,26 @@ class TestEndpointMetrics(unittest.TestCase):
         self.assertTrue(hasattr(metrics, "measured_at"))
         self.assertIsInstance(metrics.measured_at, str)
 
+    def test_client_metric_properties(self):
+        client = unify.Unify("gpt-4o@openai")
+        assert isinstance(client.input_cost, float)
+        assert isinstance(client.output_cost, float)
+        assert isinstance(client.time_to_first_token, float)
+        assert isinstance(client.inter_token_latency, float)
+        client = unify.MultiLLM(["gpt-4o@openai", "claude-3-haiku@anthropic"])
+        assert isinstance(client.input_cost, dict)
+        assert isinstance(client.input_cost["gpt-4o@openai"], float)
+        assert isinstance(client.input_cost["claude-3-haiku@anthropic"], float)
+        assert isinstance(client.output_cost, dict)
+        assert isinstance(client.output_cost["gpt-4o@openai"], float)
+        assert isinstance(client.output_cost["claude-3-haiku@anthropic"], float)
+        assert isinstance(client.time_to_first_token, dict)
+        assert isinstance(client.time_to_first_token["gpt-4o@openai"], float)
+        assert isinstance(client.time_to_first_token["claude-3-haiku@anthropic"], float)
+        assert isinstance(client.inter_token_latency, dict)
+        assert isinstance(client.inter_token_latency["gpt-4o@openai"], float)
+        assert isinstance(client.inter_token_latency["claude-3-haiku@anthropic"], float)
+
     def test_log_endpoint_metric(self):
         with self._handler:
             unify.log_endpoint_metric(self._endpoint_name, "inter_token_latency", 1.23)
