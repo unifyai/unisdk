@@ -1,6 +1,7 @@
 import os
 import unittest
-from unify import MultiLLM, AsyncMultiLLM
+
+from unify import AsyncMultiLLM, MultiLLM
 
 
 class TestMultiLLM(unittest.TestCase):
@@ -87,15 +88,17 @@ class TestMultiLLM(unittest.TestCase):
         endpoints = ("llama-3-8b-chat@together-ai", "gpt-4o@openai")
         messages = {
             "llama-3-8b-chat@together-ai": [
-                {"role": "assistant", "content": "Let's talk about cats"}
+                {"role": "assistant", "content": "Let's talk about cats"},
             ],
             "gpt-4o@openai": [
-                {"role": "assistant", "content": "Let's talk about dogs"}
+                {"role": "assistant", "content": "Let's talk about dogs"},
             ],
         }
         animals = {"llama-3-8b-chat@together-ai": "cat", "gpt-4o@openai": "dog"}
         client = MultiLLM(
-            api_key=self.valid_api_key, endpoints=endpoints, messages=messages
+            api_key=self.valid_api_key,
+            endpoints=endpoints,
+            messages=messages,
         )
         responses = client.generate("What animal did you want to talk about?")
         for endpoint, (response_endpoint, response) in zip(
@@ -115,7 +118,7 @@ class TestMultiLLM(unittest.TestCase):
         )
         client = MultiLLM(endpoints=endpoints)
         client.add_endpoints(["gpt-4@openai", "gpt-4-turbo@openai"]).remove_endpoints(
-            "claude-3.5-sonnet@anthropic"
+            "claude-3.5-sonnet@anthropic",
         )
         assert set(client.endpoints) == {
             "llama-3-8b-chat@together-ai",

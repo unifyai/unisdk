@@ -1,7 +1,8 @@
 import datetime
-from typing import Optional, List, Dict
+from typing import List, Optional
 
 import unify
+
 from ..utils.helpers import _validate_api_key
 
 
@@ -54,7 +55,7 @@ def with_logging(
                 "the model callable must be provided as keyword arguments. "
                 "Positional arguments are not supported. This is so the "
                 "query body dict can be fully populated with keys for each "
-                "entry."
+                "entry.",
             )
         query_body = kwargs
         response = model_fn(**query_body)

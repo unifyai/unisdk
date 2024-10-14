@@ -1,6 +1,7 @@
 import os
-import unify
 import unittest
+
+import unify
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 
@@ -11,7 +12,8 @@ class TestDatasets(unittest.TestCase):
         if "TestUploadAndDelete" in unify.list_datasets():
             unify.delete_dataset("TestUploadAndDelete")
         unify.upload_dataset_from_file(
-            "TestUploadAndDelete", os.path.join(dir_path, "prompts.jsonl")
+            "TestUploadAndDelete",
+            os.path.join(dir_path, "prompts.jsonl"),
         )
         assert "TestUploadAndDelete" in unify.list_datasets()
         unify.delete_dataset("TestUploadAndDelete")
@@ -22,24 +24,24 @@ class TestDatasets(unittest.TestCase):
             {
                 "prompt": {
                     "messages": [
-                        {"role": "user", "content": "This is the first user message"}
-                    ]
+                        {"role": "user", "content": "This is the first user message"},
+                    ],
                 },
                 "ref_answer": "First reference answer",
             },
             {
                 "prompt": {
                     "messages": [
-                        {"role": "user", "content": "This is the second user message"}
-                    ]
+                        {"role": "user", "content": "This is the second user message"},
+                    ],
                 },
                 "ref_answer": "Second reference answer",
             },
             {
                 "prompt": {
                     "messages": [
-                        {"role": "user", "content": "This is the third user message"}
-                    ]
+                        {"role": "user", "content": "This is the third user message"},
+                    ],
                 },
                 "ref_answer": "Third reference answer",
             },
@@ -56,24 +58,24 @@ class TestDatasets(unittest.TestCase):
             {
                 "prompt": {
                     "messages": [
-                        {"role": "user", "content": "This is the first user message"}
-                    ]
+                        {"role": "user", "content": "This is the first user message"},
+                    ],
                 },
                 "ref_answer": "First reference answer",
             },
             {
                 "prompt": {
                     "messages": [
-                        {"role": "user", "content": "This is the second user message"}
-                    ]
+                        {"role": "user", "content": "This is the second user message"},
+                    ],
                 },
                 "ref_answer": "Second reference answer",
             },
             {
                 "prompt": {
                     "messages": [
-                        {"role": "user", "content": "This is the third user message"}
-                    ]
+                        {"role": "user", "content": "This is the third user message"},
+                    ],
                 },
                 "ref_answer": "Third reference answer",
             },
@@ -87,9 +89,9 @@ class TestDatasets(unittest.TestCase):
         new_prompt_data = {
             "prompt": {
                 "messages": [
-                    {"role": "user", "content": "What is the powerhouse of the cell?"}
-                ]
-            }
+                    {"role": "user", "content": "What is the powerhouse of the cell?"},
+                ],
+            },
         }
         unify.datasets.add_data_by_value(dataset_name, new_prompt_data)
         data = unify.datasets.download_dataset(dataset_name)

@@ -1,8 +1,9 @@
-import requests
 from typing import Optional
 
+import requests
 from unify import BASE_URL
-from .helpers import _validate_api_key, _res_to_list
+
+from .helpers import _res_to_list, _validate_api_key
 
 
 def get_credits(api_key: Optional[str] = None) -> float:

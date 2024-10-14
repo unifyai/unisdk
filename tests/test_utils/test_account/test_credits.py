@@ -1,5 +1,6 @@
-import unify
 import unittest
+
+import unify
 
 
 class TestCredits(unittest.TestCase):

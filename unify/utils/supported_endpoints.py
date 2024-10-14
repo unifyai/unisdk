@@ -1,12 +1,14 @@
-import requests
 from typing import List, Optional
 
+import requests
 from unify import BASE_URL
-from .helpers import _validate_api_key, _res_to_list
+
+from .helpers import _res_to_list, _validate_api_key
 
 
 def list_providers(
-    model: Optional[str] = None, api_key: Optional[str] = None
+    model: Optional[str] = None,
+    api_key: Optional[str] = None,
 ) -> List[str]:
     """
     Get a list of available providers, either in total or for a specific model.
@@ -39,7 +41,8 @@ def list_providers(
 
 
 def list_models(
-    provider: Optional[str] = None, api_key: Optional[str] = None
+    provider: Optional[str] = None,
+    api_key: Optional[str] = None,
 ) -> List[str]:
     """
     Get a list of available models, either in total or for a specific provider.

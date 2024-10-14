@@ -1,8 +1,9 @@
-import requests
 import datetime
-from typing import Optional, List, Any, Dict, Union
+from typing import Any, Dict, List, Optional, Union
 
+import requests
 from unify import BASE_URL
+
 from .helpers import _validate_api_key
 
 
@@ -32,8 +33,10 @@ def get_query_tags(api_key: Optional[str] = None) -> List[str]:
 def get_queries(
     tags: Optional[Union[str, List[str]]] = None,
     endpoints: Optional[Union[str, List[str]]] = None,
-    start_time: Optional[datetime.datetime] = None,
-    end_time: Optional[datetime.datetime] = None,
+    start_time: Optional[Union[datetime.datetime, str]] = None,
+    end_time: Optional[Union[datetime.datetime, str]] = None,
+    page_number: Optional[int] = None,
+    failures: Optional[Union[bool, str]] = None,
     api_key: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
@@ -41,10 +44,24 @@ def get_queries(
 
     Args:
         tags: Tags to filter for queries that are marked with these tags.
+
         endpoints: Optionally specify an endpoint, or a list of endpoints to filter for.
-        start_time: Timestamp of the earliest query to aggregate. Format is `YYYY-MM-DD hh:mm:ss`.
-        end_time: Timestamp of the latest query to aggregate. Format is `YYYY-MM-DD hh:mm:ss`.
-        api_key: If specified, unify API key to be used. Defaults to the value in the `UNIFY_KEY` environment variable.
+
+        start_time: Timestamp of the earliest query to aggregate.
+        Format is `YYYY-MM-DD hh:mm:ss`.
+
+        end_time: Timestamp of the latest query to aggregate.
+        Format is `YYYY-MM-DD hh:mm:ss`.
+
+        page_number: The query history is returned in pages, with up to 100 prompts per
+        page. Increase the page number to see older prompts. Default is 1.
+
+        failures: indicates whether to includes failures in the return
+        (when set as True), or whether to return failures exclusively
+        (when set as ‘only’). Default is False.
+
+        api_key: If specified, unify API key to be used.
+        Defaults to the value in the `UNIFY_KEY` environment variable.
 
     Returns:
         A dictionary containing the query history data.
@@ -64,6 +81,10 @@ def get_queries(
         params["start_time"] = start_time
     if end_time:
         params["end_time"] = end_time
+    if page_number:
+        params["page_number"] = page_number
+    if failures:
+        params["failures"] = failures
 
     url = f"{BASE_URL}/queries"
     response = requests.get(url, headers=headers, params=params)
@@ -77,7 +98,7 @@ def log_query(
     query_body: Dict,
     response_body: Optional[Dict] = None,
     tags: Optional[List[str]] = None,
-    timestamp: Optional[datetime.datetime] = None,
+    timestamp: Optional[Union[datetime.datetime, str]] = None,
     api_key: Optional[str] = None,
 ):
     """
@@ -125,8 +146,8 @@ def log_query(
 
 
 def get_query_metrics(
-    start_time: Optional[datetime.datetime] = None,
-    end_time: Optional[datetime.datetime] = None,
+    start_time: Optional[Union[datetime.datetime, str]] = None,
+    end_time: Optional[Union[datetime.datetime, str]] = None,
     models: Optional[str] = None,
     providers: Optional[str] = None,
     interval: int = 300,

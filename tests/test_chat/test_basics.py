@@ -3,8 +3,8 @@ import unittest
 from types import AsyncGeneratorType, GeneratorType
 from unittest.mock import MagicMock, patch
 
-from unify.types import Prompt
 from unify import AsyncUnify, Unify
+from unify.types import Prompt
 
 
 class TestChatBasics(unittest.TestCase):
@@ -33,14 +33,16 @@ class TestChatBasics(unittest.TestCase):
 
     def test_generate_returns_string_when_stream_false(self) -> None:
         client = Unify(
-            api_key=self.valid_api_key, endpoint="llama-3-8b-chat@together-ai"
+            api_key=self.valid_api_key,
+            endpoint="llama-3-8b-chat@together-ai",
         )
         result = client.generate(user_message="hello", stream=False)
         self.assertIsInstance(result, str)
 
     def test_generate_returns_generator_when_stream_true(self) -> None:
         client = Unify(
-            api_key=self.valid_api_key, endpoint="llama-3-8b-chat@together-ai"
+            api_key=self.valid_api_key,
+            endpoint="llama-3-8b-chat@together-ai",
         )
         result = client.generate(user_message="hello", stream=True)
         self.assertIsInstance(result, GeneratorType)
@@ -57,7 +59,10 @@ class TestChatBasics(unittest.TestCase):
 
     def test_default_prompt_handled_correctly(self) -> None:
         client = Unify(
-            api_key=self.valid_api_key, endpoint="gpt-4o@openai", n=2, temperature=0.5
+            api_key=self.valid_api_key,
+            endpoint="gpt-4o@openai",
+            n=2,
+            temperature=0.5,
         )
         self.assertEqual(client.default_prompt.temperature, 0.5)
         self.assertEqual(client.default_prompt.n, 2)
@@ -123,7 +128,10 @@ class TestAsyncUnifyBasics(unittest.IsolatedAsyncioTestCase):
 
     async def test_default_prompt_handled_correctly(self) -> None:
         client = AsyncUnify(
-            api_key=self.valid_api_key, endpoint="gpt-4o@openai", n=2, temperature=0.5
+            api_key=self.valid_api_key,
+            endpoint="gpt-4o@openai",
+            n=2,
+            temperature=0.5,
         )
         self.assertEqual(client.default_prompt.temperature, 0.5)
         self.assertEqual(client.default_prompt.n, 2)

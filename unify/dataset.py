@@ -1,14 +1,14 @@
 from __future__ import annotations
-from typing_extensions import Self
-from pydantic import BaseModel
-from typing import List, Dict, Union, Optional, Any
+
+from typing import Any, Dict, List, Optional, Union
 
 import unify
-from unify.types import _Formatted
-from unify.types import Prompt
+from pydantic import BaseModel
+from typing_extensions import Self
+from unify.types import Prompt, _Formatted
 
 # noinspection PyProtectedMember
-from .utils.helpers import _validate_api_key, _dict_aligns_with_pydantic
+from .utils.helpers import _validate_api_key
 
 
 class Dataset(_Formatted):
@@ -124,7 +124,8 @@ class Dataset(_Formatted):
         if overwrite:
             if dataset_exists_upstream:
                 upstream_dataset = unify.download_dataset(
-                    self._name, api_key=self._api_key
+                    self._name,
+                    api_key=self._api_key,
                 )
                 unique_upstream = [
                     item.model_dump()
@@ -188,12 +189,12 @@ class Dataset(_Formatted):
         unique_upstream = [item for item in upstream_dataset if item not in self._data]
         print(
             "The following {} queries are stored upstream but not locally\n: "
-            "{}".format(len(unique_upstream), unique_upstream)
+            "{}".format(len(unique_upstream), unique_upstream),
         )
         unique_local = [item for item in self._data if item not in upstream_dataset]
         print(
             "The following {} queries are stored upstream but not locally\n: "
-            "{}".format(len(unique_local), unique_local)
+            "{}".format(len(unique_local), unique_local),
         )
         return self
 
@@ -218,7 +219,8 @@ class Dataset(_Formatted):
         return Dataset(data=data, api_key=self._api_key)
 
     def sub(
-        self, other: Union[Dataset, str, Dict, Prompt, List[Union[str, Dict, Prompt]]]
+        self,
+        other: Union[Dataset, str, Dict, Prompt, List[Union[str, Dict, Prompt]]],
     ) -> Self:
         """
         Subtracts another dataset from this one, return a new Dataset instance, with
@@ -259,7 +261,8 @@ class Dataset(_Formatted):
         return self
 
     def inplace_sub(
-        self, other: Union[Dataset, str, Dict, Prompt, List[Union[str, Dict, Prompt]]]
+        self,
+        other: Union[Dataset, str, Dict, Prompt, List[Union[str, Dict, Prompt]]],
     ) -> Self:
         """
         Subtracts another dataset from this one, with this dataset losing all queries
@@ -280,7 +283,8 @@ class Dataset(_Formatted):
         return self
 
     def __add__(
-        self, other: Union[Dataset, str, Dict, Prompt, List[Union[str, Dict, Prompt]]]
+        self,
+        other: Union[Dataset, str, Dict, Prompt, List[Union[str, Dict, Prompt]]],
     ) -> Self:
         """
         Adds another dataset to this one via the + operator, return a new Dataset
@@ -316,7 +320,8 @@ class Dataset(_Formatted):
         return Dataset(other).add(self)
 
     def __iadd__(
-        self, other: Union[Dataset, str, Dict, Prompt, List[Union[str, Dict, Prompt]]]
+        self,
+        other: Union[Dataset, str, Dict, Prompt, List[Union[str, Dict, Prompt]]],
     ) -> Self:
         """
         Adds another dataset to this one, with this dataset receiving all unique queries
@@ -331,7 +336,8 @@ class Dataset(_Formatted):
         return self.inplace_add(other)
 
     def __sub__(
-        self, other: Union[Dataset, str, Dict, Prompt, List[Union[str, Dict, Prompt]]]
+        self,
+        other: Union[Dataset, str, Dict, Prompt, List[Union[str, Dict, Prompt]]],
     ) -> Self:
         """
         Subtracts another dataset from this one via the - operator, return a new Dataset
@@ -347,7 +353,8 @@ class Dataset(_Formatted):
         return self.sub(other)
 
     def __rsub__(
-        self, other: Union[Dataset, str, Dict, Prompt, List[Union[str, Dict, Prompt]]]
+        self,
+        other: Union[Dataset, str, Dict, Prompt, List[Union[str, Dict, Prompt]]],
     ) -> Self:
         """
         Subtracts another dataset from this one via the - operator, this is used if the
@@ -364,7 +371,8 @@ class Dataset(_Formatted):
         return Dataset(other).sub(self)
 
     def __isub__(
-        self, other: Union[Dataset, str, Dict, Prompt, List[Union[str, Dict, Prompt]]]
+        self,
+        other: Union[Dataset, str, Dict, Prompt, List[Union[str, Dict, Prompt]]],
     ) -> Self:
         """
         Subtracts another dataset from this one, with this dataset losing all queries
@@ -389,7 +397,8 @@ class Dataset(_Formatted):
             yield x
 
     def __contains__(
-        self, item: Union[Dataset, str, Dict, Prompt, List[Union[str, Dict, Prompt]]]
+        self,
+        item: Union[Dataset, str, Dict, Prompt, List[Union[str, Dict, Prompt]]],
     ) -> bool:
         """
         Determine whether the item is contained within the dataset. The item is cast to
@@ -435,7 +444,7 @@ class Dataset(_Formatted):
             return Dataset(self._data[item.start : item.stop : item.step])
         raise TypeError(
             "expected item to be of type int or slice,"
-            "but found {} of type {}".format(item, type(item))
+            "but found {} of type {}".format(item, type(item)),
         )
 
     # noinspection PyBroadException
@@ -512,6 +521,6 @@ class Dataset(_Formatted):
             yield self._data
         else:
             yield "shared", self._prune(
-                self._create_pydantic_model(self._data[0], self._shared_data)
+                self._create_pydantic_model(self._data[0], self._shared_data),
             )
             yield [self._shared_items_pruned(d) for d in self._data]

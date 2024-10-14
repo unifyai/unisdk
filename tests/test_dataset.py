@@ -28,7 +28,7 @@ class TestDatasetConstruction(unittest.TestCase):
             [
                 Prompt(messages=[{"role": "user", "content": usr_msg}])
                 for usr_msg in ["a", "b", "c"]
-            ]
+            ],
         )
         self.assertIsInstance(dataset[0], Prompt)
 
@@ -41,13 +41,13 @@ class TestDatasetConstruction(unittest.TestCase):
             [
                 dict(messages=[{"role": "user", "content": usr_msg}])
                 for usr_msg in ["a", "b", "c"]
-            ]
+            ],
         )
         self.assertIsInstance(dataset[0], dict)
 
     def test_create_dataset_from_dict_w_prompt(self) -> None:
         dataset = unify.Dataset(
-            dict(prompt=Prompt(messages=[{"role": "user", "content": "a"}]))
+            dict(prompt=Prompt(messages=[{"role": "user", "content": "a"}])),
         )
         self.assertIsInstance(dataset[0], dict)
 
@@ -56,7 +56,7 @@ class TestDatasetConstruction(unittest.TestCase):
             [
                 dict(prompt=Prompt(messages=[{"role": "user", "content": usr_msg}]))
                 for usr_msg in ["a", "b", "c"]
-            ]
+            ],
         )
         self.assertIsInstance(dataset[0], dict)
 
@@ -64,7 +64,8 @@ class TestDatasetConstruction(unittest.TestCase):
         if "TestCreateDatasetFromStr" in unify.list_datasets():
             unify.delete_dataset("TestCreateDatasetFromStr")
         unify.upload_dataset_from_file(
-            "TestCreateDatasetFromStr", os.path.join(dir_path, "prompts.jsonl")
+            "TestCreateDatasetFromStr",
+            os.path.join(dir_path, "prompts.jsonl"),
         )
         assert "TestCreateDatasetFromStr" in unify.list_datasets()
         dataset = unify.Dataset.from_upstream("TestCreateDatasetFromStr")

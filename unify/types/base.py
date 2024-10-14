@@ -1,13 +1,12 @@
 import abc
 import inspect
-import rich.repr
 from io import StringIO
-from rich.console import Console
-from pydantic import BaseModel
-from pydantic import create_model
-from pydantic._internal._model_construction import ModelMetaclass
 
+import rich.repr
 import unify
+from pydantic import BaseModel, create_model
+from pydantic._internal._model_construction import ModelMetaclass
+from rich.console import Console
 
 RICH_CONSOLE = Console(file=StringIO())
 
@@ -70,7 +69,7 @@ class _Formatted(abc.ABC):
             else:
                 raise Exception(
                     "expected prune_pol to contain either 'keep' or 'skip',"
-                    "but neither were present: {}.".format(prune_pol)
+                    "but neither were present: {}.".format(prune_pol),
                 )
 
         if (
@@ -163,7 +162,7 @@ class _Formatted(abc.ABC):
         model = create_model(
             item.__class__.__name__,
             **config,
-            __cls_kwargs__={"arbitrary_types_allowed": True}
+            __cls_kwargs__={"arbitrary_types_allowed": True},
         )
         return model(**dct)
 

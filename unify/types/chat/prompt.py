@@ -1,13 +1,14 @@
-from pydantic import ConfigDict
-from typing import Optional, Union, List, Dict, Mapping
-from openai._types import Query, Body
-from openai.types.chat import (
-    ChatCompletionToolParam,
-    ChatCompletionToolChoiceOptionParam,
-)
-from openai.types.chat.completion_create_params import ResponseFormat
+from typing import Dict, List, Mapping, Optional, Union
 
 import unify
+from openai._types import Body, Query
+from openai.types.chat import (
+    ChatCompletionToolChoiceOptionParam,
+    ChatCompletionToolParam,
+)
+from openai.types.chat.completion_create_params import ResponseFormat
+from pydantic import ConfigDict
+
 from ..base import _FormattedBaseModel
 
 
@@ -38,7 +39,7 @@ class Prompt(_FormattedBaseModel):
         self,
         user_message: Optional[str] = None,
         system_message: Optional[str] = None,
-        **kwargs
+        **kwargs,
     ):
         """
         Create Prompt instance.
@@ -57,7 +58,7 @@ class Prompt(_FormattedBaseModel):
             kwargs["messages"] = list()
         if system_message:
             kwargs["messages"] = [
-                {"content": system_message, "role": "system"}
+                {"content": system_message, "role": "system"},
             ] + kwargs["messages"]
         if user_message:
             kwargs["messages"] += [{"content": user_message, "role": "user"}]

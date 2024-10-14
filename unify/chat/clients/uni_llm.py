@@ -21,6 +21,7 @@ from unify import BASE_URL, LOCAL_MODELS
 from unify._caching import _get_cache, _write_to_cache
 from unify.chat.clients.base import _Client
 from unify.types import ChatCompletion, Prompt
+from unify.utils.endpoint_metrics import Metrics
 
 
 class _UniLLMClient(_Client, abc.ABC):
@@ -265,8 +266,30 @@ class _UniLLMClient(_Client, abc.ABC):
         if model:
             self.set_model(model)
 
-    # Properties #
-    # -----------#
+    # Read-only Properties #
+    # ---------------------#
+
+    def _get_metric(self) -> Metrics:
+        return unify.get_endpoint_metrics(self._endpoint, api_key=self._api_key)[0]
+
+    @property
+    def input_cost(self) -> float:
+        return self._get_metric()["input_cost"]
+
+    @property
+    def output_cost(self) -> float:
+        return self._get_metric()["output_cost"]
+
+    @property
+    def time_to_first_token(self) -> float:
+        return self._get_metric()["time_to_first_token"]
+
+    @property
+    def inter_token_latency(self) -> float:
+        return self._get_metric()["inter_token_latency"]
+
+    # Settable Properties #
+    # --------------------#
 
     @property
     def endpoint(self) -> str:

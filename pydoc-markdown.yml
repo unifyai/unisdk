@@ -1,7 +1,7 @@
 loader:
-  - type: package
-    packages:
-      - unify  # Replace with your package name
+- type: package
+  packages:
+  - unify      # Replace with your package name
 
 renderer:
   type: markdown

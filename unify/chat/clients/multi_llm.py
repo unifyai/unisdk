@@ -1,25 +1,28 @@
 # global
 import abc
 import asyncio
+from typing import Dict, Iterable, List, Optional, Tuple, Union
+
 import requests
-from typing_extensions import Self
-from typing import Optional, Union, List, Tuple, Dict, Iterable
+
+# local
+import unify
 
 # noinspection PyProtectedMember
 from openai._types import Headers, Query
 from openai.types.chat import (
-    ChatCompletionToolParam,
-    ChatCompletionToolChoiceOptionParam,
     ChatCompletionMessageParam,
+    ChatCompletionToolChoiceOptionParam,
+    ChatCompletionToolParam,
 )
 from openai.types.chat.completion_create_params import ResponseFormat
-
-# local
+from typing_extensions import Self
 from unify import BASE_URL
+from unify.chat.clients import AsyncUnify, _Client, _UniLLMClient
+from unify.utils.endpoint_metrics import Metrics
 
 # noinspection PyProtectedMember
 from unify.utils.helpers import _validate_api_key
-from unify.chat.clients import _Client, _UniLLMClient, AsyncUnify
 
 
 class _MultiLLMClient(_Client, abc.ABC):
@@ -285,7 +288,9 @@ class _MultiLLMClient(_Client, abc.ABC):
         }
 
     def add_endpoints(
-        self, endpoints: Union[List[str], str], ignore_duplicates: bool = True
+        self,
+        endpoints: Union[List[str], str],
+        ignore_duplicates: bool = True,
     ) -> Self:
         """
         Add extra endpoints to be queried for each call to generate.
@@ -310,8 +315,9 @@ class _MultiLLMClient(_Client, abc.ABC):
                 "at least one of the provided endpoints to add {}"
                 "was already set present in the endpoints {}."
                 "Set ignore_duplicates to True to ignore errors like this".format(
-                    endpoints, self._endpoints
-                )
+                    endpoints,
+                    self._endpoints,
+                ),
             )
         # update endpoints
         self._endpoints = self._endpoints + endpoints
@@ -320,7 +326,9 @@ class _MultiLLMClient(_Client, abc.ABC):
         return self
 
     def remove_endpoints(
-        self, endpoints: Union[List[str], str], ignore_missing: bool = True
+        self,
+        endpoints: Union[List[str], str],
+        ignore_missing: bool = True,
     ) -> Self:
         """
         Remove endpoints from the current list, which are queried for each call to
@@ -347,8 +355,9 @@ class _MultiLLMClient(_Client, abc.ABC):
                 "at least one of the provided endpoints to remove {}"
                 "was not present in the current endpoints {}."
                 "Set ignore_missing to True to ignore errors like this".format(
-                    endpoints, self._endpoints
-                )
+                    endpoints,
+                    self._endpoints,
+                ),
             )
         # update endpoints and clients
         for endpoint in endpoints:
@@ -379,6 +388,44 @@ class _MultiLLMClient(_Client, abc.ABC):
             raise Exception("There was an error with the request.") from e
         except (KeyError, ValueError) as e:
             raise ValueError("Error parsing JSON response.") from e
+
+    # Read-only Properties #
+    # ---------------------#
+
+    def _get_metrics(self) -> Dict[str, Metrics]:
+        return {
+            ep: unify.get_endpoint_metrics(ep, api_key=self._api_key)[0]
+            for ep in self._endpoints
+        }
+
+    @property
+    def input_cost(self) -> Dict[str, float]:
+        return {
+            ep: metrics["input_cost"] for ep, metrics in self._get_metrics().items()
+        }
+
+    @property
+    def output_cost(self) -> Dict[str, float]:
+        return {
+            ep: metrics["output_cost"] for ep, metrics in self._get_metrics().items()
+        }
+
+    @property
+    def time_to_first_token(self) -> Dict[str, float]:
+        return {
+            ep: metrics["time_to_first_token"]
+            for ep, metrics in self._get_metrics().items()
+        }
+
+    @property
+    def inter_token_latency(self) -> Dict[str, float]:
+        return {
+            ep: metrics["inter_token_latency"]
+            for ep, metrics in self._get_metrics().items()
+        }
+
+    # Settable Properties #
+    # --------------------#
 
     @property
     def endpoints(self) -> Tuple[str, ...]:

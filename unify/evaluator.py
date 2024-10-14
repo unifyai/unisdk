@@ -1,16 +1,18 @@
 from __future__ import annotations
-import re
+
 import abc
 import copy
 import json
+import re
 from abc import abstractmethod
-from typing_extensions import Self
-from typing import Union, Optional, Tuple, Dict, List, Any
+from typing import Any, Dict, List, Optional, Tuple, Union
 
-from unify.chat.clients import Unify, AsyncUnify
+from typing_extensions import Self
 from unify.casting import cast
+from unify.chat.clients import AsyncUnify, Unify
+from unify.types import ChatCompletion, Prompt
+
 from .utils.helpers import _validate_api_key
-from unify.types import Prompt, ChatCompletion
 
 
 class Evaluator(abc.ABC):
@@ -227,12 +229,12 @@ class LLMJudge(Evaluator):
             head_str += f""": {description}"""
             prompt += head_str
 
-        prompt += """\nAfter that, you must output your final verdict in JSON by 
+        prompt += """\nAfter that, you must output your final verdict in JSON by
         **strictly** following this format:
 
         {"assistant_rating": RATING}
 
-        Do not output anything else after your final verdict, but make sure you do give 
+        Do not output anything else after your final verdict, but make sure you do give
         a verdict, that's the most important part!"""
         return prompt
 
@@ -260,7 +262,8 @@ class LLMJudge(Evaluator):
                 content = json.dumps(item) if isinstance(item, dict) else str(item)
             else:
                 content = self._parse(
-                    item if isinstance(item, dict) else item.model_dump(), parse_rule
+                    item if isinstance(item, dict) else item.model_dump(),
+                    parse_rule,
                 )
             messages = [
                 {
@@ -278,10 +281,12 @@ class LLMJudge(Evaluator):
     ) -> Union[float, Tuple[float, Union[str, ChatCompletion]]]:
         messages = copy.deepcopy(self._prompt.messages)
         for i, (item, parser) in enumerate(
-            zip((input, response), (self._input_parser, self._response_parser))
+            zip((input, response), (self._input_parser, self._response_parser)),
         ):
             messages = self._update_judge_messages(
-                copy.deepcopy(item), parser, messages
+                copy.deepcopy(item),
+                parser,
+                messages,
             )
         kw = self._prompt.model_dump()
         kw["messages"] = messages

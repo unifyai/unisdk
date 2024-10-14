@@ -1,6 +1,7 @@
-import os
 import json
-from typing import Dict, Union, Optional
+import os
+from typing import Dict, Optional, Union
+
 from unify.types import ChatCompletion
 
 _cache: Optional[Dict] = None

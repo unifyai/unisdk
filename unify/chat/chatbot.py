@@ -1,9 +1,9 @@
-import sys
 import asyncio
-from typing import Union, Dict
+import sys
+from typing import Dict, Union
 
 import unify
-from unify.chat.clients import _Client, _UniLLMClient, _MultiLLMClient
+from unify.chat.clients import _Client, _MultiLLMClient, _UniLLMClient
 
 
 class ChatBot:  # noqa: WPS338
@@ -59,7 +59,9 @@ class ChatBot:  # noqa: WPS338
         return self._client.get_credit_balance()
 
     def _update_message_history(
-        self, role: str, content: Union[str, Dict[str, str]]
+        self,
+        role: str,
+        content: Union[str, Dict[str, str]],
     ) -> None:
         """
         Updates message history with user input.
@@ -73,7 +75,7 @@ class ChatBot:  # noqa: WPS338
                 {
                     "role": role,
                     "content": content,
-                }
+                },
             )
         elif isinstance(self._client, _MultiLLMClient):
             if isinstance(content, str):
@@ -83,11 +85,11 @@ class ChatBot:  # noqa: WPS338
                     {
                         "role": role,
                         "content": cont,
-                    }
+                    },
                 )
         else:
             raise Exception(
-                "client must either be a UniLLMClient or MultiLLMClient instance."
+                "client must either be a UniLLMClient or MultiLLMClient instance.",
             )
 
     def clear_chat_history(self) -> None:
@@ -96,11 +98,11 @@ class ChatBot:  # noqa: WPS338
             self._client.set_messages([])
         elif isinstance(self._client, _MultiLLMClient):
             self._client.set_messages(
-                {endpoint: [] for endpoint in self._client.endpoints}
+                {endpoint: [] for endpoint in self._client.endpoints},
             )
         else:
             raise Exception(
-                "client must either be a UniLLMClient or MultiLLMClient instance."
+                "client must either be a UniLLMClient or MultiLLMClient instance.",
             )
 
     @staticmethod
@@ -114,7 +116,9 @@ class ChatBot:  # noqa: WPS338
         return words
 
     def _handle_uni_llm_response(
-        self, response: str, endpoint: Union[bool, str]
+        self,
+        response: str,
+        endpoint: Union[bool, str],
     ) -> str:
         if endpoint:
             endpoint = self._client.endpoint if endpoint is True else endpoint
@@ -133,7 +137,9 @@ class ChatBot:  # noqa: WPS338
         return response
 
     def _handle_response(
-        self, response: Union[str, Dict[str, str]], show_endpoint: bool
+        self,
+        response: Union[str, Dict[str, str]],
+        show_endpoint: bool,
     ) -> None:
         if isinstance(self._client, _UniLLMClient):
             response = self._handle_uni_llm_response(response, show_endpoint)
@@ -141,7 +147,7 @@ class ChatBot:  # noqa: WPS338
             response = self._handle_multi_llm_response(response)
         else:
             raise Exception(
-                "client must either be a UniLLMClient or MultiLLMClient instance."
+                "client must either be a UniLLMClient or MultiLLMClient instance.",
             )
         self._update_message_history(
             role="assistant",
