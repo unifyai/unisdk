@@ -8,7 +8,6 @@ import re
 import shutil
 import subprocess
 
-
 replace = {
     "<uploaded_by>/<model_name>@<provider_name>": r"\<uploaded_by\>/\<model_name\>@\<provider_name\>",
     "<model_name>@<provider_name>": r"\<model_name\>@\<provider_name\>",
@@ -208,6 +207,8 @@ def get_formatted_docstring(func):
 def write_function_and_class_jsons(details, private_modules):
     # create the json_files folder
     os.makedirs("json_files", exist_ok=True)
+    os.makedirs("json_files/functions", exist_ok=True)
+    os.makedirs("json_files/classes", exist_ok=True)
 
     # load all function and class docs
     for module_path in details:
@@ -327,17 +328,25 @@ def write_function_and_class_jsons(details, private_modules):
 
         # write all the functions to separate files
         for function_name in functions:
-            with open(f"json_files/{module_name}.{function_name}.json", "w") as f:
+            with open(
+                f"json_files/functions/{module_name}.{function_name}.json",
+                "w",
+            ) as f:
                 json.dump(functions[function_name], f)
 
         # write all the classes to separate files
         for class_name in classes:
-            with open(f"json_files/{module_name}.{class_name}.json", "w") as f:
+            with open(
+                f"json_files/classes/{module_name}.{class_name}.json",
+                "w",
+            ) as f:
                 json.dump(classes[class_name], f)
 
 
 def write_docs(latest_hash: str):
-    files = os.listdir("json_files")
+    files = [
+        os.path.join("functions", path) for path in os.listdir("json_files/functions")
+    ] + [os.path.join("classes", path) for path in os.listdir("json_files/classes")]
     new_line = lambda f: f.write("\n\n")
     python_path_json = dict()
     github_url = f"https://github.com/unifyai/unify/tree/{latest_hash}/"
@@ -346,6 +355,8 @@ def write_docs(latest_hash: str):
         # get the module str
         module_name = file_path.replace(".json", "")
         module_path = "docs/" + module_name.replace(".", "/")
+        module_name = "/".join(module_name.split("/")[1:])
+        actual_path = module_path.replace("unify/", "")
 
         # storing the tree of calls to update the mint.json
         info = python_path_json
@@ -356,7 +367,7 @@ def write_docs(latest_hash: str):
             info = info[key]
 
         # load the data from the json
-        os.makedirs("/".join(module_path.split("/")[:-1]), exist_ok=True)
+        os.makedirs("/".join(actual_path.split("/")[:-1]), exist_ok=True)
         with open(os.path.join("json_files", file_path)) as f:
             module_data = json.load(f)
 
@@ -364,7 +375,7 @@ def write_docs(latest_hash: str):
         name = module_name.split(".")[-1]
         python_file_path = module_data["module_path"]
         class_lineno = module_data["lineno"]
-        with open(f"{module_path}.mdx", "w") as f:
+        with open(f"{actual_path}.mdx", "w") as f:
             f.write("---\n" f"title: '{name}'\n" "---")
 
             # if the module is a class
@@ -419,6 +430,7 @@ def write_docs(latest_hash: str):
 
             # if the module is a function
             else:
+                lineno = module_data["lineno"]
                 github_path = github_url + python_file_path + f"#L{lineno}"
                 signature = module_data["signature"]
                 docstring = module_data["docstring"]
@@ -442,11 +454,30 @@ def get_mint_format(python_path, root=""):
             {
                 "group": key,
                 "pages": get_mint_format(python_path[key], os.path.join(root, key)),
-            }
+            },
         )
         if len(results[-1]["pages"]) == 0:
             results[-1] = os.path.join(root, key)
     return results
+
+
+def update_function_classes_path(mint_format):
+    if isinstance(mint_format, str):
+        mint_format = mint_format.replace("python/", "")
+        obj_name = mint_format.split("/")[-1]
+        return (
+            f"python/functions/{mint_format}"
+            if obj_name[0].islower()
+            else f"python/classes/{mint_format}"
+        )
+    updated_pages = []
+    for page in sorted(
+        mint_format["pages"],
+        key=lambda x: (x if isinstance(x, str) else x["group"]),
+    ):
+        updated_pages.append(update_function_classes_path(page))
+    mint_format["pages"] = updated_pages
+    return mint_format
 
 
 def update_mint():
@@ -456,9 +487,11 @@ def update_mint():
     with open("python_path.json") as f:
         python_path = json.load(f)
 
+    mint_format = get_mint_format(python_path["unify"], root="python")
+    updated_mint_format = [update_function_classes_path(group) for group in mint_format]
     mint["navigation"][1] = {
         "group": "",
-        "pages": get_mint_format(python_path["unify"], root="python"),
+        "pages": updated_mint_format,
     }
 
     with open("mint.json", "w") as f:
@@ -498,7 +531,9 @@ if __name__ == "__main__":
             )
 
     latest_hash = subprocess.check_output(
-        "git log -1 --format=%H", shell=True, text=True
+        "git log -1 --format=%H",
+        shell=True,
+        text=True,
     ).strip()
 
     module_paths = get_all_modules()
@@ -519,6 +554,6 @@ if __name__ == "__main__":
             shutil.rmtree("../unify-docs/python")
 
         # move files + dirs
-        shutil.move("docs/unify", "python")
+        shutil.move("docs", "python")
         shutil.move("python", "../unify-docs/python")
         shutil.move("mint.json", "../unify-docs/mint.json")
