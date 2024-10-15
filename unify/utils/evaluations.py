@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import inspect
+import functools
+from contextvars import ContextVar
 from typing import Any, Dict, List, Optional, Union
 
 import requests
@@ -11,6 +14,8 @@ from .helpers import _validate_api_key
 
 # Helpers #
 # --------#
+
+current_global_active_log = ContextVar("current_global_active_log", default=None)
 
 
 def _get_and_maybe_create_project(project: str, api_key: Optional[str] = None) -> str:
@@ -340,12 +345,16 @@ def log(
     return Log(response.json(), api_key, **kwargs)
 
 
-def add_log_entries(id: int, api_key: Optional[str] = None, **kwargs) -> Dict[str, str]:
+def add_log_entries(
+    id: Optional[int] = None,
+    api_key: Optional[str] = None,
+    **kwargs,
+) -> Dict[str, str]:
     """
     Returns the data (id and values) by querying the data based on their values.
 
     Args:
-        id: The log id to update with extra data.
+        id: The log id to update with extra data. Looks for the current active log if no id is provided.
 
         api_key: If specified, unify API key to be used. Defaults to the value in the
         `UNIFY_KEY` environment variable.
@@ -355,13 +364,22 @@ def add_log_entries(id: int, api_key: Optional[str] = None, **kwargs) -> Dict[st
     Returns:
         A message indicating whether the log was successfully updated.
     """
+    current_active_log: Log = current_global_active_log.get()
+    if current_active_log is None and id is None:
+        raise ValueError(
+            "`id` must be set if no current log is active within the context.",
+        )
     api_key = _validate_api_key(api_key)
     headers = {
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
     body = {"entries": kwargs}
-    response = requests.put(BASE_URL + f"/log/{id}", headers=headers, json=body)
+    response = requests.put(
+        BASE_URL + f"/log/{id if id else current_active_log.id}",
+        headers=headers,
+        json=body,
+    )
     response.raise_for_status()
     return response.json()
 
@@ -582,3 +600,36 @@ def get_logs_metric(
     )
     response.raise_for_status()
     return response.json()
+
+
+# if an active log is there, means the function is being called from within another traced function
+# if no active log, create a new log
+class trace:
+
+    def __enter__(self):
+        self.current_global_active_log_already_set = False
+        current_active_log = current_global_active_log.get()
+        if current_active_log is not None:
+            self.current_global_active_log_already_set = True
+        else:
+            self.token = current_global_active_log.set(log())
+            # print(current_global_active_log.get().id)
+
+    def __exit__(self, *args, **kwargs):
+        if not self.current_global_active_log_already_set:
+            current_global_active_log.reset(self.token)
+
+    def __call__(self, fn):
+        @functools.wraps(fn)
+        async def async_wrapper(*args, **kwargs):
+            with trace():
+                result = await fn(*args, **kwargs)
+                return result
+
+        @functools.wraps(fn)
+        def wrapper(*args, **kwargs):
+            with trace():
+                result = fn(*args, **kwargs)
+                return result
+
+        return async_wrapper if inspect.iscoroutinefunction(fn) else wrapper
