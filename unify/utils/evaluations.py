@@ -16,8 +16,9 @@ from .helpers import _validate_api_key
 # --------#
 
 current_global_active_log = ContextVar("current_global_active_log", default=None)
-current_global_active_log_kwargs = ContextVar("current_global_active_kwargs", default={})
-
+current_global_active_log_kwargs = ContextVar(
+    "current_global_active_kwargs", default={}
+)
 
 
 def _get_and_maybe_create_project(project: str, api_key: Optional[str] = None) -> str:
@@ -637,6 +638,7 @@ class trace:
 
         return async_wrapper if inspect.iscoroutinefunction(fn) else wrapper
 
+
 class Context:
     def __init__(self, **kwargs):
         self.kwargs = kwargs
@@ -648,11 +650,8 @@ class Context:
 
     def __enter__(self):
         self.token = current_global_active_log_kwargs.set(
-            {
-                **current_global_active_log_kwargs.get(),
-                **self.kwargs
-            }
-              )
+            {**current_global_active_log_kwargs.get(), **self.kwargs}
+        )
         if unify.active_project:
             self.trace.__enter__()
 
@@ -662,4 +661,3 @@ class Context:
         # print("After clearing", current_global_active_log_kwargs.get())
         if unify.active_project:
             self.trace.__exit__()
-
