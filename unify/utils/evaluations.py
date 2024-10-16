@@ -463,7 +463,7 @@ def get_log(id: int, api_key: Optional[str] = None) -> Log:
 
 
 def get_logs(
-    project: Optional[str] = None,
+    project: str,
     filter: Optional[str] = None,
     api_key: Optional[str] = None,
 ) -> List[Log]:
@@ -491,7 +491,7 @@ def get_logs(
     params = {"project": project, "filter_expr": filter}
     response = requests.get(BASE_URL + "/logs", headers=headers, params=params)
     response.raise_for_status()
-    return [Log(dct["id"], **dct["entries"]) for dct in response.json()]
+    return [Log(dct["id"], **dct["entries"], api_key=api_key) for dct in response.json()]
 
 
 def get_groups(
