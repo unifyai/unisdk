@@ -1,7 +1,10 @@
 import unittest
+import time
+import asyncio
 
 import unify
 from requests import HTTPError
+import threading
 
 
 class TestEvaluations(unittest.TestCase):
@@ -159,3 +162,68 @@ class TestEvaluations(unittest.TestCase):
         string_comparison_logs = unify.get_logs(project, filter="user_prompt == 'What is the weather today?'")
         assert len(string_comparison_logs) == 1, "There should be 1 log with user_prompt == 'What is the weather today?'."
         unify.delete_project(project)
+
+    def test_contextual_logging_threaded(self):
+        project = "my_project"
+        if project in unify.list_projects():
+            unify.delete_project(project)
+        unify.create_project(project)
+        unify.activate(project)
+
+        def inner_fn(data, st):
+            time.sleep(st)
+            unify.add_log_entries(d2=data)
+
+        @unify.trace()
+        def fn1(data1, data2, st):
+            unify.add_log_entries(d1=data1)
+            inner_fn(data2, st)
+
+        thread1 = threading.Thread(target=fn1, args=("Thread-1", "data1", 1))
+        thread2 = threading.Thread(target=fn1, args=("Thread-2", "data2", 2))
+
+        # Start the threads
+        thread1.start()
+        thread2.start()
+
+        # Wait for both threads to complete
+        thread1.join()
+        thread2.join()
+
+        logs = unify.get_logs("my_project")
+        list1 = [log.entries for log in logs]
+        list2 = [{"d1": "Thread-1", "d2": "data1"}, {"d1": "Thread-2", "d2": "data2"}]
+
+        # Sort each dictionary by keys and then sort the list
+        assert sorted([sorted(d.items()) for d in list1]) == sorted(
+            [sorted(d.items()) for d in list2],
+        )
+
+
+class TestAsyncEvaluations(unittest.IsolatedAsyncioTestCase):
+    async def test_contextual_logging_async(self):
+        project = "my_project"
+        if project in unify.list_projects():
+            unify.delete_project(project)
+        unify.create_project(project)
+        unify.activate(project)
+
+        async def inner_fn(data, st):
+            await asyncio.sleep(st)
+            unify.add_log_entries(d2=data)
+
+        @unify.trace()
+        async def fn1(data1, data2, st):
+            unify.add_log_entries(d1=data1)
+            await inner_fn(data2, st)
+
+        await asyncio.gather(fn1("Task-1", "data1", 1), fn1("Task-2", "data2", 2))
+
+        logs = unify.get_logs("my_project")
+        list1 = [log.entries for log in logs]
+        list2 = [{"d1": "Task-1", "d2": "data1"}, {"d1": "Task-2", "d2": "data2"}]
+
+        # Sort each dictionary by keys and then sort the list
+        assert sorted([sorted(d.items()) for d in list1]) == sorted(
+            [sorted(d.items()) for d in list2],
+        )
