@@ -147,6 +147,33 @@ class TestEvaluations(unittest.TestCase):
             [sorted(d.items()) for d in list2],
         )
 
+    def test_with_Context(self):
+        project = "my_project"
+        if project in unify.list_projects():
+            unify.delete_project(project)
+        unify.create_project(project)
+        unify.activate(project)
+
+        with unify.Context(context="random"):
+            log = unify.log(a="a")
+            with unify.Context(sys="sys"):
+                unify.add_log_entries(log.id, q="some q", r="some r")
+            with unify.Context(tool="tool"):
+                unify.add_log_entries(log.id, t="some t", b="some b")
+
+        expected = {
+            "context": "random",
+            "a": "a",
+            "q": "some q",
+            "t": "some t",
+            "b": "some b",
+            "r": "some r",
+            "sys": "sys",
+            "tool": "tool",
+        }
+        log = unify.get_logs()[0].entries
+        assert expected == log
+
 
 class TestAsyncEvaluations(unittest.IsolatedAsyncioTestCase):
     async def test_contextual_logging_async(self):

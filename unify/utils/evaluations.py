@@ -15,10 +15,15 @@ from .helpers import _validate_api_key
 # Helpers #
 # --------#
 
+# trace
 current_global_active_log = ContextVar("current_global_active_log", default=None)
+
+# Context
 current_global_active_log_kwargs = ContextVar(
     "current_global_active_kwargs", default={}
 )
+current_logged_logs = ContextVar("current_logged_logs_ids", default={})
+current_context_nest_level = ContextVar("current_context_nest_level", default=0)
 
 
 def _get_and_maybe_create_project(project: str, api_key: Optional[str] = None) -> str:
@@ -346,7 +351,12 @@ def log(
     body = {"project": project, "entries": kwargs}
     response = requests.post(BASE_URL + "/log", headers=headers, json=body)
     response.raise_for_status()
-    return Log(response.json(), api_key, **kwargs)
+    created_log = Log(response.json(), api_key, **kwargs)
+    if current_context_nest_level.get() > 0:
+        current_logged_logs.set(
+            {**current_logged_logs.get(), created_log.id: list(current_global_active_log_kwargs.get().keys())}
+        )
+    return created_log
 
 
 def add_log_entries(
@@ -378,6 +388,16 @@ def add_log_entries(
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
+    if current_context_nest_level.get() > 0:
+
+        kwargs = {
+            **kwargs,
+            **{
+                k: v
+                for k, v in current_global_active_log_kwargs.get().items()
+                if k not in current_logged_logs.get().get(id, {})
+            },
+        }
     body = {"entries": {**kwargs, **current_global_active_log_kwargs.get()}}
     response = requests.put(
         BASE_URL + f"/log/{id if id else current_active_log.id}",
@@ -642,22 +662,18 @@ class trace:
 class Context:
     def __init__(self, **kwargs):
         self.kwargs = kwargs
-        # I'm not fully sure about `trace` here.
-        # it would mainly allows us to support
-        # doing `unify.add_log_entries` without having to move log
-        # instances around, but its not behaving as "you would expect" atm.
-        self.trace = trace()
 
     def __enter__(self):
         self.token = current_global_active_log_kwargs.set(
             {**current_global_active_log_kwargs.get(), **self.kwargs}
         )
-        if unify.active_project:
-            self.trace.__enter__()
+        self.nest_level_token = current_context_nest_level.set(
+            current_context_nest_level.get() + 1
+        )
 
     def __exit__(self, *args, **kwargs):
         # print("Before clearing", current_global_active_log_kwargs.get())
         current_global_active_log_kwargs.reset(self.token)
-        # print("After clearing", current_global_active_log_kwargs.get())
-        if unify.active_project:
-            self.trace.__exit__()
+        current_context_nest_level.reset(self.nest_level_token)
+        if current_context_nest_level.get() == 0:
+            current_logged_logs.set({})
