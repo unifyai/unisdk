@@ -15,7 +15,15 @@ from .helpers import _validate_api_key
 # Helpers #
 # --------#
 
+# trace
 current_global_active_log = ContextVar("current_global_active_log", default=None)
+
+# Context
+current_global_active_log_kwargs = ContextVar(
+    "current_global_active_kwargs", default={}
+)
+current_logged_logs = ContextVar("current_logged_logs_ids", default={})
+current_context_nest_level = ContextVar("current_context_nest_level", default=0)
 
 
 def _get_and_maybe_create_project(project: str, api_key: Optional[str] = None) -> str:
@@ -338,11 +346,20 @@ def log(
         kwargs = {
             k + "/" + version[k] if k in version else k: v for k, v in kwargs.items()
         }
+    kwargs = {**kwargs, **current_global_active_log_kwargs.get()}
     project = _get_and_maybe_create_project(project, api_key)
     body = {"project": project, "entries": kwargs}
     response = requests.post(BASE_URL + "/log", headers=headers, json=body)
     response.raise_for_status()
-    return Log(response.json(), api_key, **kwargs)
+    created_log = Log(response.json(), api_key, **kwargs)
+    if current_context_nest_level.get() > 0:
+        current_logged_logs.set(
+            {
+                **current_logged_logs.get(),
+                created_log.id: list(current_global_active_log_kwargs.get().keys()),
+            }
+        )
+    return created_log
 
 
 def add_log_entries(
@@ -374,7 +391,17 @@ def add_log_entries(
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    body = {"entries": kwargs}
+    if current_context_nest_level.get() > 0:
+
+        kwargs = {
+            **kwargs,
+            **{
+                k: v
+                for k, v in current_global_active_log_kwargs.get().items()
+                if k not in current_logged_logs.get().get(id, {})
+            },
+        }
+    body = {"entries": {**kwargs, **current_global_active_log_kwargs.get()}}
     response = requests.put(
         BASE_URL + f"/log/{id if id else current_active_log.id}",
         headers=headers,
@@ -635,3 +662,23 @@ class trace:
                 return result
 
         return async_wrapper if inspect.iscoroutinefunction(fn) else wrapper
+
+
+class Context:
+    def __init__(self, **kwargs):
+        self.kwargs = kwargs
+
+    def __enter__(self):
+        self.token = current_global_active_log_kwargs.set(
+            {**current_global_active_log_kwargs.get(), **self.kwargs}
+        )
+        self.nest_level_token = current_context_nest_level.set(
+            current_context_nest_level.get() + 1
+        )
+
+    def __exit__(self, *args, **kwargs):
+        # print("Before clearing", current_global_active_log_kwargs.get())
+        current_global_active_log_kwargs.reset(self.token)
+        current_context_nest_level.reset(self.nest_level_token)
+        if current_context_nest_level.get() == 0:
+            current_logged_logs.set({})
