@@ -3,7 +3,7 @@ import sys
 from typing import Dict, Union
 
 import unify
-from unify.chat.clients import _Client, _MultiLLMClient, _UniLLMClient
+from unify.chat.clients import _Client, _MultiClient, _UniClient
 
 
 class ChatBot:  # noqa: WPS338
@@ -70,14 +70,14 @@ class ChatBot:  # noqa: WPS338
             role: Either "assistant" or "user".
             content: User input message.
         """
-        if isinstance(self._client, _UniLLMClient):
+        if isinstance(self._client, _UniClient):
             self._client.messages.append(
                 {
                     "role": role,
                     "content": content,
                 },
             )
-        elif isinstance(self._client, _MultiLLMClient):
+        elif isinstance(self._client, _MultiClient):
             if isinstance(content, str):
                 content = {endpoint: content for endpoint in self._client.endpoints}
             for endpoint, cont in content.items():
@@ -89,20 +89,20 @@ class ChatBot:  # noqa: WPS338
                 )
         else:
             raise Exception(
-                "client must either be a UniLLMClient or MultiLLMClient instance.",
+                "client must either be a UniClient or MultiClient instance.",
             )
 
     def clear_chat_history(self) -> None:
         """Clears the chat history."""
-        if isinstance(self._client, _UniLLMClient):
+        if isinstance(self._client, _UniClient):
             self._client.set_messages([])
-        elif isinstance(self._client, _MultiLLMClient):
+        elif isinstance(self._client, _MultiClient):
             self._client.set_messages(
                 {endpoint: [] for endpoint in self._client.endpoints},
             )
         else:
             raise Exception(
-                "client must either be a UniLLMClient or MultiLLMClient instance.",
+                "client must either be a UniClient or MultiClient instance.",
             )
 
     @staticmethod
@@ -141,13 +141,13 @@ class ChatBot:  # noqa: WPS338
         response: Union[str, Dict[str, str]],
         show_endpoint: bool,
     ) -> None:
-        if isinstance(self._client, _UniLLMClient):
+        if isinstance(self._client, _UniClient):
             response = self._handle_uni_llm_response(response, show_endpoint)
-        elif isinstance(self._client, _MultiLLMClient):
+        elif isinstance(self._client, _MultiClient):
             response = self._handle_multi_llm_response(response)
         else:
             raise Exception(
-                "client must either be a UniLLMClient or MultiLLMClient instance.",
+                "client must either be a UniClient or MultiClient instance.",
             )
         self._update_message_history(
             role="assistant",

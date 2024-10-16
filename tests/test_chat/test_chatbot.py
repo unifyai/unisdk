@@ -3,7 +3,7 @@ import os
 import traceback
 import unittest
 
-from unify import ChatBot, MultiLLM, Unify
+from unify import ChatBot, MultiUnify, Unify
 
 
 class SimulateInput:
@@ -70,7 +70,7 @@ class TestChatbotUniLLM(unittest.TestCase):
             chatbot.run()
 
 
-class TestChatbotMultiLLM(unittest.TestCase):
+class TestChatbotMultiUnify(unittest.TestCase):
     def setUp(self) -> None:
         self.valid_api_key = os.environ.get("UNIFY_KEY")
 
@@ -78,14 +78,14 @@ class TestChatbotMultiLLM(unittest.TestCase):
     # ------#
 
     def test_constructor(self) -> None:
-        client = MultiLLM(
+        client = MultiUnify(
             api_key=self.valid_api_key,
             endpoints=["llama-3-8b-chat@together-ai", "gpt-4o@openai"],
         )
         ChatBot(client)
 
     def test_simple_non_stream_chat_n_quit(self):
-        client = MultiLLM(
+        client = MultiUnify(
             api_key=self.valid_api_key,
             endpoints=["llama-3-8b-chat@together-ai", "gpt-4o@openai"],
         )

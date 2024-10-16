@@ -1,22 +1,22 @@
 import os
 import unittest
 
-from unify import AsyncMultiLLM, MultiLLM
+from unify import AsyncMultiUnify, MultiUnify
 
 
-class TestMultiLLM(unittest.TestCase):
+class TestMultiUnify(unittest.TestCase):
     def setUp(self) -> None:
         self.valid_api_key = os.environ.get("UNIFY_KEY")
 
     def test_constructor(self) -> None:
-        MultiLLM(
+        MultiUnify(
             api_key=self.valid_api_key,
             endpoints=["llama-3-8b-chat@together-ai", "gpt-4o@openai"],
         )
 
     def test_add_endpoints(self):
         endpoints = ("llama-3-8b-chat@together-ai", "gpt-4o@openai")
-        client = MultiLLM(api_key=self.valid_api_key, endpoints=endpoints)
+        client = MultiUnify(api_key=self.valid_api_key, endpoints=endpoints)
         self.assertEqual(client.endpoints, endpoints)
         self.assertEqual(tuple(client.clients.keys()), endpoints)
         client.add_endpoints("claude-3.5-sonnet@anthropic")
@@ -39,7 +39,7 @@ class TestMultiLLM(unittest.TestCase):
             "gpt-4o@openai",
             "claude-3.5-sonnet@anthropic",
         )
-        client = MultiLLM(api_key=self.valid_api_key, endpoints=endpoints)
+        client = MultiUnify(api_key=self.valid_api_key, endpoints=endpoints)
         self.assertEqual(client.endpoints, endpoints)
         self.assertEqual(tuple(client.clients.keys()), endpoints)
         client.remove_endpoints("claude-3.5-sonnet@anthropic")
@@ -58,7 +58,7 @@ class TestMultiLLM(unittest.TestCase):
             "gpt-4o@openai",
             "claude-3.5-sonnet@anthropic",
         )
-        client = MultiLLM(api_key=self.valid_api_key, endpoints=endpoints)
+        client = MultiUnify(api_key=self.valid_api_key, endpoints=endpoints)
         responses = client.generate("Hello, how it is going?")
         for endpoint, (response_endpoint, response) in zip(
             endpoints,
@@ -70,7 +70,7 @@ class TestMultiLLM(unittest.TestCase):
 
     def test_default_prompt_handled_correctly(self):
         endpoints = ("gpt-4o@openai", "gpt-4@openai")
-        client = MultiLLM(
+        client = MultiUnify(
             api_key=self.valid_api_key,
             endpoints=endpoints,
             n=2,
@@ -95,7 +95,7 @@ class TestMultiLLM(unittest.TestCase):
             ],
         }
         animals = {"llama-3-8b-chat@together-ai": "cat", "gpt-4o@openai": "dog"}
-        client = MultiLLM(
+        client = MultiUnify(
             api_key=self.valid_api_key,
             endpoints=endpoints,
             messages=messages,
@@ -116,7 +116,7 @@ class TestMultiLLM(unittest.TestCase):
             "gpt-4o@openai",
             "claude-3.5-sonnet@anthropic",
         )
-        client = MultiLLM(endpoints=endpoints)
+        client = MultiUnify(endpoints=endpoints)
         client.add_endpoints(["gpt-4@openai", "gpt-4-turbo@openai"]).remove_endpoints(
             "claude-3.5-sonnet@anthropic",
         )
@@ -128,7 +128,7 @@ class TestMultiLLM(unittest.TestCase):
         }
 
 
-class TestAsyncMultiLLM(unittest.IsolatedAsyncioTestCase):
+class TestAsyncMultiUnify(unittest.IsolatedAsyncioTestCase):
     def setUp(self) -> None:
         self.valid_api_key = os.environ.get("UNIFY_KEY")
 
@@ -138,7 +138,7 @@ class TestAsyncMultiLLM(unittest.IsolatedAsyncioTestCase):
             "gpt-4o@openai",
             "claude-3.5-sonnet@anthropic",
         )
-        client = AsyncMultiLLM(api_key=self.valid_api_key, endpoints=endpoints)
+        client = AsyncMultiUnify(api_key=self.valid_api_key, endpoints=endpoints)
         responses = await client.generate("Hello, how it is going?")
         for endpoint, (response_endpoint, response) in zip(
             endpoints,
@@ -150,7 +150,7 @@ class TestAsyncMultiLLM(unittest.IsolatedAsyncioTestCase):
 
     async def test_default_prompt_handled_correctly(self):
         endpoints = ("gpt-4o@openai", "gpt-4@openai")
-        client = AsyncMultiLLM(
+        client = AsyncMultiUnify(
             api_key=self.valid_api_key,
             endpoints=endpoints,
             n=2,

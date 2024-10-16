@@ -1,7 +1,7 @@
 # global
 import abc
 import asyncio
-from typing import Dict, Iterable, List, Optional, Tuple, Union
+from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
 
 import requests
 
@@ -18,18 +18,19 @@ from openai.types.chat import (
 from openai.types.chat.completion_create_params import ResponseFormat
 from typing_extensions import Self
 from unify import BASE_URL
-from unify.chat.clients import AsyncUnify, _Client, _UniLLMClient
+from unify.chat.clients import AsyncUnify, _Client, _UniClient
+from unify.types import ChatCompletion
 from unify.utils.endpoint_metrics import Metrics
 
 # noinspection PyProtectedMember
 from unify.utils.helpers import _validate_api_key
 
 
-class _MultiLLMClient(_Client, abc.ABC):
+class _MultiClient(_Client, abc.ABC):
 
     def __init__(
         self,
-        endpoints: Optional[Iterable[str]] = None,
+        endpoints: Optional[Union[str, Iterable[str]]] = None,
         *,
         system_message: Optional[str] = None,
         messages: Optional[
@@ -72,8 +73,8 @@ class _MultiLLMClient(_Client, abc.ABC):
         """Initialize the Multi LLM Unify client.
 
         Args:
-            endpoints: A list of endpoint names, with each name in OpenAI API format:
-            <model_name>@<provider_name>. Defaults to None.
+            endpoints: A single endpoint name or a list of endpoint names, with each name
+            in OpenAI API format: <model_name>@<provider_name>. Defaults to None.
 
             system_message: An optional string containing the system message. This
             always appears at the beginning of the list of messages.
@@ -241,7 +242,10 @@ class _MultiLLMClient(_Client, abc.ABC):
             **kwargs,
         )
         super().__init__(**self._constructor_args)
-        endpoints = list(endpoints)
+        if isinstance(endpoints, str):
+            endpoints = [endpoints]
+        else:
+            endpoints = list(endpoints)
         self._api_key = _validate_api_key(api_key)
         self._endpoints = endpoints
         self._client_class = AsyncUnify
@@ -438,7 +442,7 @@ class _MultiLLMClient(_Client, abc.ABC):
         return tuple(self._endpoints)
 
     @property
-    def clients(self) -> Dict[str, _UniLLMClient]:
+    def clients(self) -> Dict[str, _UniClient]:
         """
         Get the current dictionary of clients, with endpoint names as keys and
         Unify or AsyncUnify instances as values.
@@ -458,9 +462,9 @@ class _MultiLLMClient(_Client, abc.ABC):
         return "{}(endpoints={})".format(self.__class__.__name__, self._endpoints)
 
 
-class MultiLLM(_MultiLLMClient):
+class MultiUnify(_MultiClient):
 
-    def _generate(  # noqa: WPS234, WPS211
+    async def _async_gen(
         self,
         user_message: Optional[str] = None,
         system_message: Optional[str] = None,
@@ -499,7 +503,7 @@ class MultiLLM(_MultiLLMClient):
         extra_headers: Optional[Headers] = None,
         extra_query: Optional[Query] = None,
         **kwargs,
-    ) -> Dict[str, str]:
+    ):
         kw = dict(
             user_message=user_message,
             system_message=system_message,
@@ -530,34 +534,83 @@ class MultiLLM(_MultiLLMClient):
             extra_query=extra_query,
             **kwargs,
         )
+        multi_message = isinstance(kw["messages"], dict)
+        kw_ = {k: v for k, v in kw.items() if v is not None}
+        responses = dict()
+        for endpoint, client in self._clients.items():
+            these_kw = kw_.copy()
+            if multi_message:
+                these_kw["messages"] = these_kw["messages"][endpoint]
+            responses[endpoint] = await client.generate(**these_kw)
+        return responses[self._endpoints[0]] if len(self._endpoints) == 1 else responses
 
-        # noinspection DuplicatedCode
-        async def gen(kw_):
-            multi_message = isinstance(messages, dict)
-            kw_ = {k: v for k, v in kw_.items() if v is not None}
-            responses = dict()
-            for endpoint, client in self._clients.items():
-                these_kw = kw_.copy()
-                if multi_message:
-                    these_kw["messages"] = these_kw["messages"][endpoint]
-                responses[endpoint] = await client.generate(**these_kw)
-            return responses
+    def _generate(  # noqa: WPS234, WPS211
+        self,
+        *args,
+        **kwargs,
+    ) -> Dict[str, str]:
+        return asyncio.run(
+            self._async_gen(
+                *args,
+                **kwargs,
+            ),
+        )
 
-        return asyncio.run(gen(kw))
+    async def _multi_generate(
+        self,
+        multi_input,
+    ) -> List[Union[str, ChatCompletion]]:
+        assert isinstance(multi_input, list), (
+            f"Expected multi_kwargs to be a list, "
+            f"but found {multi_input} of type {type(multi_input)}."
+        )
+        assert all(
+            type(multi_input[0]) is type(i) for i in multi_input
+        ), "all entries in the list of inputs must be of the same type."
+        if isinstance(multi_input[0], str):
+            coroutines = [self._async_gen(s) for s in multi_input]
+        elif isinstance(multi_input[0], tuple):
+            coroutines = [self._async_gen(*a) for a in multi_input]
+        elif isinstance(multi_input[0], dict):
+            coroutines = [self._async_gen(**kw) for kw in multi_input]
+        else:
+            raise Exception(
+                f"Invalid format for first argument in list, expected either str, "
+                f"tuple or dict but found "
+                f"{multi_input[0]} of type {type(multi_input[0])}.",
+            )
+        return await asyncio.gather(*coroutines)
+
+    def multi_generate(
+        self,
+        multi_input: List[Union[str, Tuple[Any], Dict[str, Any]]],
+    ) -> List[Union[str, ChatCompletion]]:
+        """
+        Perform multiple generations to multiple inputs asynchronously, based on the
+        list keywords arguments passed in.
+
+        Args:
+            multi_input: The list of user messages, tuples of positional arguments, or
+            dict of keyword arguments to pass to each inner generate call.
+
+        Returns:
+            A list of LLM responses.
+        """
+        return asyncio.run(self._multi_generate(multi_input))
 
     def to_async_client(self):
         """
-        Return an asynchronous version of the client (`AsyncMultiLLM` instance), with
-        the exact same configuration as this synchronous (`MultiLLM`) client.
+        Return an asynchronous version of the client (`AsyncMultiUnify` instance), with
+        the exact same configuration as this synchronous (`MultiUnify`) client.
 
         Returns:
-            An `AsyncMultiLLM` instance with the same configuration as this `MultiLLM`
+            An `AsyncMultiUnify` instance with the same configuration as this `MultiUnify`
             instance.
         """
-        return AsyncMultiLLM(**self._constructor_args)
+        return AsyncMultiUnify(**self._constructor_args)
 
 
-class AsyncMultiLLM(_MultiLLMClient):
+class AsyncMultiUnify(_MultiClient):
 
     async def _generate(  # noqa: WPS234, WPS211
         self,
@@ -641,11 +694,11 @@ class AsyncMultiLLM(_MultiLLMClient):
 
     def to_sync_client(self):
         """
-        Return a synchronous version of the client (`MultiLLM` instance), with the
-        exact same configuration as this asynchronous (`AsyncMultiLLM`) client.
+        Return a synchronous version of the client (`MultiUnify` instance), with the
+        exact same configuration as this asynchronous (`AsyncMultiUnify`) client.
 
         Returns:
-            A `MultiLLM` instance with the same configuration as this `AsyncMultiLLM`
+            A `MultiUnify` instance with the same configuration as this `AsyncMultiUnify`
             instance.
         """
-        return MultiLLM(**self._constructor_args)
+        return MultiUnify(**self._constructor_args)

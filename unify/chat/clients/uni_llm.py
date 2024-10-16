@@ -24,7 +24,7 @@ from unify.types import ChatCompletion, Prompt
 from unify.utils.endpoint_metrics import Metrics
 
 
-class _UniLLMClient(_Client, abc.ABC):
+class _UniClient(_Client, abc.ABC):
 
     def __init__(
         self,
@@ -465,7 +465,7 @@ class _UniLLMClient(_Client, abc.ABC):
         raise NotImplementedError
 
 
-class Unify(_UniLLMClient):
+class Unify(_UniClient):
     """Class for interacting with the Unify chat completions endpoint in a synchronous
     manner."""
 
@@ -692,7 +692,7 @@ class Unify(_UniLLMClient):
         return AsyncUnify(**self._constructor_args)
 
 
-class AsyncUnify(_UniLLMClient):
+class AsyncUnify(_UniClient):
     """Class for interacting with the Unify chat completions endpoint in a synchronous
     manner."""
 
