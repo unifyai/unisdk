@@ -16,6 +16,8 @@ from .helpers import _validate_api_key
 # --------#
 
 current_global_active_log = ContextVar("current_global_active_log", default=None)
+current_global_active_log_kwargs = ContextVar("current_global_active_kwargs", default={})
+
 
 
 def _get_and_maybe_create_project(project: str, api_key: Optional[str] = None) -> str:
@@ -338,6 +340,7 @@ def log(
         kwargs = {
             k + "/" + version[k] if k in version else k: v for k, v in kwargs.items()
         }
+    kwargs = {**kwargs, **current_global_active_log_kwargs.get()}
     project = _get_and_maybe_create_project(project, api_key)
     body = {"project": project, "entries": kwargs}
     response = requests.post(BASE_URL + "/log", headers=headers, json=body)
@@ -374,7 +377,7 @@ def add_log_entries(
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    body = {"entries": kwargs}
+    body = {"entries": {**kwargs, **current_global_active_log_kwargs.get()}}
     response = requests.put(
         BASE_URL + f"/log/{id if id else current_active_log.id}",
         headers=headers,
@@ -633,3 +636,30 @@ class trace:
                 return result
 
         return async_wrapper if inspect.iscoroutinefunction(fn) else wrapper
+
+class Context:
+    def __init__(self, **kwargs):
+        self.kwargs = kwargs
+        # I'm not fully sure about `trace` here.
+        # it would mainly allows us to support
+        # doing `unify.add_log_entries` without having to move log
+        # instances around, but its not behaving as "you would expect" atm.
+        self.trace = trace()
+
+    def __enter__(self):
+        self.token = current_global_active_log_kwargs.set(
+            {
+                **current_global_active_log_kwargs.get(),
+                **self.kwargs
+            }
+              )
+        if unify.active_project:
+            self.trace.__enter__()
+
+    def __exit__(self, *args, **kwargs):
+        # print("Before clearing", current_global_active_log_kwargs.get())
+        current_global_active_log_kwargs.reset(self.token)
+        # print("After clearing", current_global_active_log_kwargs.get())
+        if unify.active_project:
+            self.trace.__exit__()
+
