@@ -445,7 +445,7 @@ def get_log(id: int, api_key: Optional[str] = None) -> Log:
 
 
 def get_logs(
-    project: Optional[str] = None,
+    project: str,
     filter: Optional[str] = None,
     api_key: Optional[str] = None,
 ) -> List[Log]:
