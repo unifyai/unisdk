@@ -354,7 +354,10 @@ def log(
     created_log = Log(response.json(), api_key, **kwargs)
     if current_context_nest_level.get() > 0:
         current_logged_logs.set(
-            {**current_logged_logs.get(), created_log.id: list(current_global_active_log_kwargs.get().keys())}
+            {
+                **current_logged_logs.get(),
+                created_log.id: list(current_global_active_log_kwargs.get().keys()),
+            }
         )
     return created_log
 
