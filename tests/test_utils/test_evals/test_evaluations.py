@@ -113,28 +113,20 @@ class TestEvaluations(unittest.TestCase):
         if project in unify.list_projects():
             unify.delete_project(project)
         unify.create_project(project)
-
-        # Initially, no logs should exist in the project
         logs = unify.get_logs(project)
         assert len(logs) == 0, "There should be no logs initially."
-
-        # Add a log
         log_data1 = {
             "system_prompt": "You are a weather assistant",
             "user_prompt": "What is the weather today?",
             "score": 0.9,
         }
         log1 = unify.log(project=project, **log_data1)
-
-        # Add another log
         log_data2 = {
             "system_prompt": "You are a travel assistant",
             "user_prompt": "What is the best route to the airport?",
             "score": 0.7,
         }
         log2 = unify.log(project=project, **log_data2)
-
-        # Add another log
         log_data3 = {
             "system_prompt": "You are a travel assistant",
             "user_prompt": "What is the best route to the airport?",
@@ -142,46 +134,28 @@ class TestEvaluations(unittest.TestCase):
         }
         log3 = unify.log(project=project, **log_data3)
 
-        # Get logs without any filtering
         logs = unify.get_logs(project)
         assert len(logs) == 3, "There should be 3 logs in the project."        
-
-        # Test filtering the logs (e.g., only logs with `"weather"` in `user_prompt`)
         filtered_logs = unify.get_logs(project, filter="'weather' in user_prompt")
         assert len(filtered_logs) == 1, "There should be 1 log with 'weather' in the user prompt."
         assert filtered_logs[0].entries.get("user_prompt") == log_data1["user_prompt"], \
             "The filtered log should be the one that asks about the weather."
-
-        # Test filtering for a nonexistent condition
         nonexistent_logs = unify.get_logs(project, filter="'nonexistent' in user_prompt")
         assert len(nonexistent_logs) == 0, "There should be no logs matching the nonexistent filter."
-
-        # Test with multiple filters
         multiple_filtered_logs = unify.get_logs(project, filter="'travel' in system_prompt and score < 0.5")
         assert len(multiple_filtered_logs) == 1, "There should be 1 log with 'travel' in the user prompt and score > 0.5."
-
-        # Test with brackets in the filter
         bracket_logs = unify.get_logs(project, filter="('weather' in user_prompt) and ('weather' in system_prompt)")
         assert len(bracket_logs) == 1, "There should be 1 log with 'weather' in the user prompt and system prompt."
         assert bracket_logs[0].entries.get("user_prompt") == log_data1["user_prompt"], \
             "The filtered log should be the one that asks about the weather."
-        
-        # Test Comparison Operators
         comparison_logs = unify.get_logs(project, filter="score > 0.5")
         assert len(comparison_logs) == 2, "There should be 2 logs with score > 0.5."
         comparison_logs = unify.get_logs(project, filter="score == 0.9")
         assert len(comparison_logs) == 1, "There should be 1 log with score == 0.9."
-
-        # Test Logical Operators
         logical_logs = unify.get_logs(project, filter="score > 0.5 and score < 0.8")
         assert len(logical_logs) == 1, "There should be 1 log with score > 0.5 and score < 0.8."
         logical_logs = unify.get_logs(project, filter="score < 0.5 or score > 0.8")
         assert len(logical_logs) == 2, "There should be 2 logs with score < 0.5 or score > 0.8."
-
-
-        # Check String Comparison
         string_comparison_logs = unify.get_logs(project, filter="user_prompt == 'What is the weather today?'")
         assert len(string_comparison_logs) == 1, "There should be 1 log with user_prompt == 'What is the weather today?'."
-
-        # Clean up by deleting the project
         unify.delete_project(project)
