@@ -11,7 +11,18 @@ def map(fn: callable, *args, mode="threading", **kwargs) -> Any:
         "asyncio",
     ), "map mode must be one of threading or asyncio."
 
-    num_calls = len(args[0])
+    if args:
+        num_calls = len(args[0])
+    else:
+        for v in kwargs.values():
+            if isinstance(v, list):
+                num_calls = len(v)
+                break
+        else:
+            raise Exception(
+                "At least one of the args or kwargs must be a list, "
+                "which is to be mapped across the threads",
+            )
 
     if mode == "threading":
 
@@ -22,8 +33,8 @@ def map(fn: callable, *args, mode="threading", **kwargs) -> Any:
         threads = list()
         returns = [None] * num_calls
         for i in range(num_calls):
-            a = (a[i] for a in args)
-            kw = {k: v[i] for k, v in kwargs.items()}
+            a = tuple(a[i] for a in args)
+            kw = {k: v[i] if isinstance(v, list) else v for k, v in kwargs.items()}
             thread = threading.Thread(
                 target=fn_w_indexing,
                 args=(returns, i, *a),

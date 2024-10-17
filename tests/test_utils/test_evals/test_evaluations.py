@@ -126,6 +126,12 @@ class TestEvaluations(unittest.TestCase):
         log0.delete()
         assert len(unify.get_logs_by_value(project, **data)) == 0
 
+    def test_project_thread_lock(self):
+        # all 10 threads would try to create the project at the same time without
+        # thread locking, but only will should acquire the lock, and this should pass
+        unify.map(unify.log, project="test_project", a=[1] * 10, b=[2] * 10, c=[3] * 10)
+        unify.delete_project("test_project")
+
     def test_atomic_functions(self):
         project = "my_project"
         if project in unify.list_projects():
