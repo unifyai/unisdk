@@ -1,6 +1,6 @@
 import json
 import os
-from typing import Dict, Optional, Union
+from typing import Dict, Optional, Union, Any
 
 from unify.types import ChatCompletion
 
@@ -22,7 +22,7 @@ def _create_cache_if_none():
 
 
 # noinspection PyTypeChecker,PyUnboundLocalVariable
-def _get_cache(kw: Dict) -> Union[None, Dict]:
+def _get_cache(kw: Dict[str, Any]) -> Union[None, Dict]:
     _create_cache_if_none()
     kw = {k: v for k, v in kw.items() if v is not None}
     kw_str = json.dumps(kw)
