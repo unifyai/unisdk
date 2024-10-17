@@ -46,12 +46,12 @@ class TestEvaluations(unittest.TestCase):
         version = {
             "system_prompt": "v1",
         }
-        log = {
+        data = {
             "system_prompt": "You are a weather assistant",
             "user_prompt": "hello world",
         }
         assert len(unify.get_logs(project)) == 0
-        log_id = unify.log(project, version, **log).id
+        log_id = unify.log(project, version, **data).id
         project_logs = unify.get_logs(project)
         assert len(project_logs) and project_logs[0].id == log_id
         id_log = unify.get_log_by_id(log_id)
@@ -59,7 +59,7 @@ class TestEvaluations(unittest.TestCase):
         unify.delete_log_entry("user_prompt", log_id)
         id_log = unify.get_log_by_id(log_id)
         assert len(id_log) and "user_prompt" not in id_log.entries
-        unify.add_log_entries(log_id, user_prompt=log["user_prompt"])
+        unify.add_log_entries(log_id, user_prompt=data["user_prompt"])
         id_log = unify.get_log_by_id(log_id)
         assert len(id_log) and "user_prompt" in id_log.entries
         unify.delete_log(log_id)
@@ -69,6 +69,20 @@ class TestEvaluations(unittest.TestCase):
             assert False
         except HTTPError as e:
             assert e.response.status_code == 404
+
+    def test_get_log_by_value(self):
+        project = "my_project"
+        if project in unify.list_projects():
+            unify.delete_project(project)
+        unify.create_project(project)
+        data = {
+            "system_prompt": "You are a weather assistant",
+            "user_prompt": "hello world",
+        }
+        assert len(unify.get_logs(project)) == 0
+        log = unify.log(project, **data)
+        retrieved_log = unify.get_log_by_value(project, **data)
+        assert log.entries == retrieved_log.entries
 
     def test_atomic_functions(self):
         project = "my_project"

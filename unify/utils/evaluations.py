@@ -543,8 +543,8 @@ def get_log_by_id(id: int, api_key: Optional[str] = None) -> Log:
 
 def get_logs_by_value(
     project: str,
-    data: Dict[str, Any],
     api_key: Optional[str] = None,
+    **kwargs,
 ) -> List[Log]:
     """
     Returns the logs with the data matching exactly if it exists,
@@ -553,22 +553,24 @@ def get_logs_by_value(
     Args:
         project: Name of the project to get logs from.
 
-        data: The data to search the upstream logs for.
-
         api_key: If specified, unify API key to be used. Defaults to the value in the
         `UNIFY_KEY` environment variable.
+
+        kwargs: The data to search the upstream logs for.
 
     Returns:
         The list of Logs which match the data, if any exist.
     """
-    filter_str = " and ".join([f"({k} == {_enclose_str(v)})" for k, v in data.items()])
+    filter_str = " and ".join(
+        [f"({k} == {_enclose_str(v)})" for k, v in kwargs.items()],
+    )
     return get_logs(project, filter_str, api_key=api_key)
 
 
 def get_log_by_value(
     project: str,
-    data: Dict[str, Any],
     api_key: Optional[str] = None,
+    **kwargs,
 ) -> Optional[Log]:
     """
     Returns the log with the data matching exactly if it exists,
@@ -577,15 +579,15 @@ def get_log_by_value(
     Args:
         project: Name of the project to get logs from.
 
-        data: The data to search the upstream logs for.
-
         api_key: If specified, unify API key to be used. Defaults to the value in the
         `UNIFY_KEY` environment variable.
+
+        kwargs: The data to search the upstream logs for.
 
     Returns:
         The single Log which matches the data, if it exists.
     """
-    logs = get_logs_by_value(project, data, api_key)
+    logs = get_logs_by_value(project, **kwargs, api_key=api_key)
     assert len(logs) in (
         0,
         1,
