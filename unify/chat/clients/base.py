@@ -1,8 +1,8 @@
 # global
+import httpx
+import requests
 from abc import ABC, abstractmethod
 from typing import Dict, Iterable, List, Mapping, Optional, Union
-
-import requests
 
 # noinspection PyProtectedMember
 from openai._types import Body, Headers, Query
@@ -62,6 +62,7 @@ class _Client(ABC):
         log_response_body: Optional[bool],
         api_key: Optional[str],
         # python client arguments
+        http_client: Optional[Union[httpx.AsyncClient, httpx.Client]] = None,
         return_full_completion: bool,
         cache: bool,
         # passthrough arguments
@@ -122,6 +123,8 @@ class _Client(ABC):
         self._log_response_body = None
         self.set_log_response_body(log_response_body)
         # python client arguments
+        self._http_client = None
+        self.set_http_client(http_client)
         self._return_full_completion = None
         self.set_return_full_completion(return_full_completion)
         self._cache = None
@@ -393,6 +396,16 @@ class _Client(ABC):
             The default log response body bool.
         """
         return self._log_response_body
+
+    @property
+    def http_client(self) -> httpx.AsyncClient:
+        """
+        Get the http client used under the hood.
+
+        Returns:
+            The http client used under the hood.
+        """
+        return self._http_client
 
     @property
     def return_full_completion(self) -> bool:
@@ -792,6 +805,19 @@ class _Client(ABC):
             This client, useful for chaining inplace calls.
         """
         self._log_response_body = value
+        return self
+
+    def set_http_client(self, value: httpx.AsyncClient) -> Self:
+        """
+        Set the http client used under the hood.  # noqa: DAR101.
+
+        Args:
+            value: The http client to use.
+
+        Returns:
+            This client, useful for chaining inplace calls.
+        """
+        self._http_client = value
         return self
 
     def set_return_full_completion(self, value: bool) -> Self:

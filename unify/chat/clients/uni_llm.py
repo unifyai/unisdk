@@ -714,6 +714,7 @@ class Unify(_UniClient):
         try:
             return openai.OpenAI(
                 base_url=f"{BASE_URL}",
+                http_client=self.http_client,
                 api_key=self._api_key,
             )
         except openai.OpenAIError as e:
@@ -934,6 +935,7 @@ class AsyncUnify(_UniClient):
         try:
             return openai.AsyncOpenAI(
                 base_url=f"{BASE_URL}",
+                http_client=self.http_client,
                 api_key=self._api_key,
             )
         except openai.APIStatusError as e:
