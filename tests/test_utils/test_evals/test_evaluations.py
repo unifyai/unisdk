@@ -83,6 +83,8 @@ class TestEvaluations(unittest.TestCase):
         log = unify.log(project, **data)
         retrieved_log = unify.get_log_by_value(project, **data)
         assert log.entries == retrieved_log.entries
+        log.delete()
+        assert unify.get_log_by_value(project, **data) is None
 
     def test_atomic_functions(self):
         project = "my_project"
