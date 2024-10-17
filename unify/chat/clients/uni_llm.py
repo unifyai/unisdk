@@ -1010,9 +1010,7 @@ class AsyncUnify(_UniClient):
             log_query_body=log_query_body,
             log_response_body=log_response_body,
         )
-        chat_completion, async_response = None, None
-        if cache:
-            chat_completion = _get_cache(kw)
+        chat_completion = _get_cache(kw) if cache else None
         if chat_completion is None:
             try:
                 if endpoint in LOCAL_MODELS:
@@ -1022,14 +1020,14 @@ class AsyncUnify(_UniClient):
                     async_response = await LOCAL_MODELS[endpoint](**kw)
                 else:
                     async_response = await self._client.chat.completions.create(**kw)
-                async_response = ChatCompletion(**async_response.model_dump())
+                chat_completion = ChatCompletion(**async_response.model_dump())
             except openai.APIStatusError as e:
                 raise Exception(e.message)
             if cache:
                 _write_to_cache(kw, chat_completion)
         if return_full_completion:
-            return async_response
-        content = async_response.choices[0].message.content
+            return chat_completion
+        content = chat_completion.choices[0].message.content
         if content:
             return content.strip(" ")
         return ""

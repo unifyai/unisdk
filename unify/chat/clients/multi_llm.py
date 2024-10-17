@@ -789,7 +789,8 @@ class MultiUnify(_MultiClient):
 
     async def _multi_inp_gen(
         self,
-        multi_input,
+        multi_input: List[Union[str, Tuple[Any], Dict[str, Any]]],
+        **kwargs,
     ) -> List[Union[str, ChatCompletion]]:
         assert isinstance(multi_input, list), (
             f"Expected multi_kwargs to be a list, "
@@ -799,11 +800,11 @@ class MultiUnify(_MultiClient):
             type(multi_input[0]) is type(i) for i in multi_input
         ), "all entries in the list of inputs must be of the same type."
         if isinstance(multi_input[0], str):
-            coroutines = [self._async_gen(s) for s in multi_input]
+            coroutines = [self._async_gen(s, **kwargs) for s in multi_input]
         elif isinstance(multi_input[0], tuple):
-            coroutines = [self._async_gen(*a) for a in multi_input]
+            coroutines = [self._async_gen(*a, **kwargs) for a in multi_input]
         elif isinstance(multi_input[0], dict):
-            coroutines = [self._async_gen(**kw) for kw in multi_input]
+            coroutines = [self._async_gen(**{**kwargs, **kw}) for kw in multi_input]
         else:
             raise Exception(
                 f"Invalid format for first argument in list, expected either str, "
@@ -814,20 +815,14 @@ class MultiUnify(_MultiClient):
 
     def _multi_inp_generate(
         self,
-        multi_input: List[Union[str, Tuple[Any], Dict[str, Any]]],
+        *args,
+        **kwargs,
     ) -> List[Union[str, ChatCompletion]]:
         """
         Perform multiple generations to multiple inputs asynchronously, based on the
         list keywords arguments passed in.
-
-        Args:
-            multi_input: The list of user messages, tuples of positional arguments, or
-            dict of keyword arguments to pass to each inner generate call.
-
-        Returns:
-            A list of LLM responses.
         """
-        return asyncio.run(self._multi_inp_gen(multi_input))
+        return asyncio.run(self._multi_inp_gen(*args, **kwargs))
 
     def _generate(  # noqa: WPS234, WPS211
         self,
@@ -847,7 +842,7 @@ class MultiUnify(_MultiClient):
         ],
     ]:
         if args and isinstance(args[0], list):
-            return self._multi_inp_generate(args[0])
+            return self._multi_inp_generate(*args, **kwargs)
         return asyncio.run(
             self._async_gen(
                 *args,
