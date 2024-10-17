@@ -40,10 +40,10 @@ def _get_and_maybe_create_project(project: str, api_key: Optional[str] = None) -
                 "either. A project must be passed in the argument, or set globally via "
                 "unify.activate('project_name')",
             )
-        PROJECT_LOCK.acquire()
-        if project not in list_projects(api_key):
-            create_project(project, api_key)
-        PROJECT_LOCK.release()
+    PROJECT_LOCK.acquire()
+    if project not in list_projects(api_key):
+        create_project(project, api_key)
+    PROJECT_LOCK.release()
     return project
 
 
