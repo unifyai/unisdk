@@ -487,7 +487,7 @@ def delete_log_entry(
 
 
 def get_logs(
-    project: str,
+    project: Optional[str] = None,
     filter: Optional[str] = None,
     limit: Optional[int] = 100,
     offset: Optional[int] = None,
