@@ -318,6 +318,7 @@ class Log(_Formatted):
 def log(
     project: Optional[str] = None,
     version: Optional[Dict[str, str]] = None,
+    skip_duplicates: bool = True,
     api_key: Optional[str] = None,
     **kwargs,
 ) -> Log:
@@ -332,6 +333,11 @@ def log(
         version: Optional version parameters which are associated with each key being
         logged, with the keys of this version dict being the keys being logged, and the
         values being the name of this particular version.
+
+        skip_duplicates: Whether to skip creating new log entries for identical log
+        data. If True (default), then the same eval Python script can be repeatedly run
+        without duplicating the logged data every time. If False, then repeat entries
+        will be added with identical data, but unique timestamps.
 
         api_key: If specified, unify API key to be used. Defaults to the value in the
         `UNIFY_KEY` environment variable.
@@ -353,6 +359,10 @@ def log(
         }
     kwargs = {**kwargs, **current_global_active_log_kwargs.get()}
     project = _get_and_maybe_create_project(project, api_key)
+    if skip_duplicates:
+        retrieved_logs = get_logs_by_value(project, **kwargs, api_key=api_key)
+        if retrieved_logs:
+            return retrieved_logs[0]
     body = {"project": project, "entries": kwargs}
     response = requests.post(BASE_URL + "/log", headers=headers, json=body)
     response.raise_for_status()
