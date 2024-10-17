@@ -82,7 +82,7 @@ class TestEvaluations(unittest.TestCase):
         assert len(unify.get_logs(project)) == 0
         log = unify.log(project, **data)
         retrieved_log = unify.get_log_by_value(project, **data)
-        assert log.entries == retrieved_log.entries
+        assert log == retrieved_log
         log.delete()
         assert unify.get_log_by_value(project, **data) is None
 
@@ -101,11 +101,11 @@ class TestEvaluations(unittest.TestCase):
         retrieved_logs = unify.get_logs_by_value(project, **data)
         assert len(retrieved_logs) == 2
         for log, retrieved_log in zip((log0, log1), retrieved_logs):
-            assert log.entries == retrieved_log.entries
+            assert log == retrieved_log
         log0.delete()
         retrieved_logs = unify.get_logs_by_value(project, **data)
         assert len(retrieved_logs) == 1
-        assert log1.entries == retrieved_logs[0].entries
+        assert log1 == retrieved_logs[0]
         log1.delete()
         assert unify.get_logs_by_value(project, **data) == []
 
