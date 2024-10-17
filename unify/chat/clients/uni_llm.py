@@ -760,7 +760,6 @@ class Unify(_UniClient):
                     content = ChatCompletion(**chunk.model_dump())
                 else:
                     content = chunk.choices[0].delta.content  # type: ignore[union-attr]    # noqa: E501
-                self.set_provider(chunk.model.split("@")[-1])  # type: ignore[union-attr]   # noqa: E501
                 if content is not None:
                     yield content
         except openai.APIStatusError as e:
@@ -810,12 +809,6 @@ class Unify(_UniClient):
                 raise Exception(e.message)
             if cache:
                 _write_to_cache(kw, chat_completion)
-        if "router" not in endpoint:
-            self.set_provider(
-                chat_completion.model.split(  # type: ignore[union-attr]
-                    "@",
-                )[-1],
-            )
         if return_full_completion:
             return chat_completion
         content = chat_completion.choices[0].message.content
@@ -983,7 +976,6 @@ class AsyncUnify(_UniClient):
             else:
                 async_stream = await self._client.chat.completions.create(**kw)
             async for chunk in async_stream:  # type: ignore[union-attr]
-                self.set_provider(chunk.model.split("@")[-1])
                 if return_full_completion:
                     yield ChatCompletion(**chunk.model_dump())
                 else:
@@ -1035,7 +1027,6 @@ class AsyncUnify(_UniClient):
                 raise Exception(e.message)
             if cache:
                 _write_to_cache(kw, chat_completion)
-        self.set_provider(async_response.model.split("@")[-1])  # type: ignore
         if return_full_completion:
             return async_response
         content = async_response.choices[0].message.content
