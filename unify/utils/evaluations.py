@@ -42,6 +42,10 @@ def _get_and_maybe_create_project(project: str, api_key: Optional[str] = None) -
     return project
 
 
+def _enclose_str(v):
+    return f'"{v}"' if isinstance(v, str) else v
+
+
 # Projects #
 # ---------#
 
