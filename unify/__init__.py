@@ -60,6 +60,7 @@ from .evaluator import *
 from .chat.logging import *
 from .repr import *
 from .types import *
+from .map import *
 
 
 # Project #
