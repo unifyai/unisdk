@@ -124,7 +124,6 @@ class _Client(ABC):
         self.set_log_response_body(log_response_body)
         # python client arguments
         self._http_client = None
-        self.set_http_client(http_client)
         self._return_full_completion = None
         self.set_return_full_completion(return_full_completion)
         self._cache = None
@@ -398,7 +397,7 @@ class _Client(ABC):
         return self._log_response_body
 
     @property
-    def http_client(self) -> httpx.AsyncClient:
+    def http_client(self) -> Union[httpx.AsyncClient, httpx.Client]:
         """
         Get the http client used under the hood.
 
@@ -805,19 +804,6 @@ class _Client(ABC):
             This client, useful for chaining inplace calls.
         """
         self._log_response_body = value
-        return self
-
-    def set_http_client(self, value: httpx.AsyncClient) -> Self:
-        """
-        Set the http client used under the hood.  # noqa: DAR101.
-
-        Args:
-            value: The http client to use.
-
-        Returns:
-            This client, useful for chaining inplace calls.
-        """
-        self._http_client = value
         return self
 
     def set_return_full_completion(self, value: bool) -> Self:
