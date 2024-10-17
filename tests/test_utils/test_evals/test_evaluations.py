@@ -86,6 +86,29 @@ class TestEvaluations(unittest.TestCase):
         log.delete()
         assert unify.get_log_by_value(project, **data) is None
 
+    def test_get_logs_by_value(self):
+        project = "my_project"
+        if project in unify.list_projects():
+            unify.delete_project(project)
+        unify.create_project(project)
+        data = {
+            "system_prompt": "You are a weather assistant",
+            "user_prompt": "hello world",
+        }
+        assert len(unify.get_logs(project)) == 0
+        log0 = unify.log(project, **data)
+        log1 = unify.log(project, **data)
+        retrieved_logs = unify.get_logs_by_value(project, **data)
+        assert len(retrieved_logs) == 2
+        for log, retrieved_log in zip((log0, log1), retrieved_logs):
+            assert log.entries == retrieved_log.entries
+        log0.delete()
+        retrieved_logs = unify.get_logs_by_value(project, **data)
+        assert len(retrieved_logs) == 1
+        assert log1.entries == retrieved_logs[0].entries
+        log1.delete()
+        assert unify.get_logs_by_value(project, **data) == []
+
     def test_atomic_functions(self):
         project = "my_project"
         if project in unify.list_projects():
