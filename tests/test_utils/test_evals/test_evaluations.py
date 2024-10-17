@@ -54,18 +54,18 @@ class TestEvaluations(unittest.TestCase):
         log_id = unify.log(project, version, **log).id
         project_logs = unify.get_logs(project)
         assert len(project_logs) and project_logs[0].id == log_id
-        id_log = unify.get_log(log_id)
+        id_log = unify.get_log_by_id(log_id)
         assert len(id_log) and "user_prompt" in id_log.entries
         unify.delete_log_entry("user_prompt", log_id)
-        id_log = unify.get_log(log_id)
+        id_log = unify.get_log_by_id(log_id)
         assert len(id_log) and "user_prompt" not in id_log.entries
         unify.add_log_entries(log_id, user_prompt=log["user_prompt"])
-        id_log = unify.get_log(log_id)
+        id_log = unify.get_log_by_id(log_id)
         assert len(id_log) and "user_prompt" in id_log.entries
         unify.delete_log(log_id)
         assert len(unify.get_logs(project)) == 0
         try:
-            unify.get_log(log_id)
+            unify.get_log_by_id(log_id)
             assert False
         except HTTPError as e:
             assert e.response.status_code == 404
@@ -147,13 +147,15 @@ class TestEvaluations(unittest.TestCase):
             filtered_logs[0].entries.get("user_prompt") == log_data1["user_prompt"]
         ), "The filtered log should be the one that asks about the weather."
         nonexistent_logs = unify.get_logs(
-            project, filter="'nonexistent' in user_prompt"
+            project,
+            filter="'nonexistent' in user_prompt",
         )
         assert (
             len(nonexistent_logs) == 0
         ), "There should be no logs matching the nonexistent filter."
         multiple_filtered_logs = unify.get_logs(
-            project, filter="'travel' in system_prompt and score < 0.5"
+            project,
+            filter="'travel' in system_prompt and score < 0.5",
         )
         assert (
             len(multiple_filtered_logs) == 1
@@ -181,7 +183,8 @@ class TestEvaluations(unittest.TestCase):
             len(logical_logs) == 2
         ), "There should be 2 logs with score < 0.5 or score > 0.8."
         string_comparison_logs = unify.get_logs(
-            project, filter="user_prompt == 'What is the weather today?'"
+            project,
+            filter="user_prompt == 'What is the weather today?'",
         )
         assert (
             len(string_comparison_logs) == 1

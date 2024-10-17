@@ -20,7 +20,8 @@ current_global_active_log = ContextVar("current_global_active_log", default=None
 
 # Context
 current_global_active_log_kwargs = ContextVar(
-    "current_global_active_kwargs", default={}
+    "current_global_active_kwargs",
+    default={},
 )
 current_logged_logs = ContextVar("current_logged_logs_ids", default={})
 current_context_nest_level = ContextVar("current_context_nest_level", default=0)
@@ -292,7 +293,7 @@ class Log(_Formatted):
     # Public
 
     def download(self):
-        self._entries = get_log(self._id, self._api_key)._entries
+        self._entries = get_log_by_id(self._id, self._api_key)._entries
 
     def add_entries(self, **kwargs) -> None:
         add_log_entries(self._id, self._api_key, **kwargs)
@@ -357,7 +358,7 @@ def log(
             {
                 **current_logged_logs.get(),
                 created_log.id: list(current_global_active_log_kwargs.get().keys()),
-            }
+            },
         )
     return created_log
 
@@ -466,29 +467,6 @@ def delete_log_entry(
     return response.json()
 
 
-def get_log(id: int, api_key: Optional[str] = None) -> Log:
-    """
-    Returns the log associated with a given id.
-
-    Args:
-        id: IDs of the logs to fetch.
-
-        api_key: If specified, unify API key to be used. Defaults to the value in the
-        `UNIFY_KEY` environment variable.
-
-    Returns:
-        The full set of log data.
-    """
-    api_key = _validate_api_key(api_key)
-    headers = {
-        "accept": "application/json",
-        "Authorization": f"Bearer {api_key}",
-    }
-    response = requests.get(BASE_URL + f"/log/{id}", headers=headers)
-    response.raise_for_status()
-    return Log(id, **response.json()["entries"])
-
-
 def get_logs(
     project: str,
     filter: Optional[str] = None,
@@ -534,6 +512,81 @@ def get_logs(
     return [
         Log(dct["id"], **dct["entries"], api_key=api_key) for dct in response.json()
     ]
+
+
+def get_log_by_id(id: int, api_key: Optional[str] = None) -> Log:
+    """
+    Returns the log associated with a given id.
+
+    Args:
+        id: IDs of the logs to fetch.
+
+        api_key: If specified, unify API key to be used. Defaults to the value in the
+        `UNIFY_KEY` environment variable.
+
+    Returns:
+        The full set of log data.
+    """
+    api_key = _validate_api_key(api_key)
+    headers = {
+        "accept": "application/json",
+        "Authorization": f"Bearer {api_key}",
+    }
+    response = requests.get(BASE_URL + f"/log/{id}", headers=headers)
+    response.raise_for_status()
+    return Log(id, **response.json()["entries"])
+
+
+def get_logs_by_value(
+    project: str,
+    data: Dict[str, Any],
+    api_key: Optional[str] = None,
+) -> List[Log]:
+    """
+    Returns the logs with the data matching exactly if it exists,
+    otherwise returns None.
+
+    Args:
+        project: Name of the project to get logs from.
+
+        data: The data to search the upstream logs for.
+
+        api_key: If specified, unify API key to be used. Defaults to the value in the
+        `UNIFY_KEY` environment variable.
+
+    Returns:
+        The list of Logs which match the data, if any exist.
+    """
+    filter_str = " and ".join([f"({k} == {_enclose_str(v)})" for k, v in data.items()])
+    return get_logs(project, filter_str, api_key=api_key)
+
+
+def get_log_by_value(
+    project: str,
+    data: Dict[str, Any],
+    api_key: Optional[str] = None,
+) -> Optional[Log]:
+    """
+    Returns the log with the data matching exactly if it exists,
+    otherwise returns None.
+
+    Args:
+        project: Name of the project to get logs from.
+
+        data: The data to search the upstream logs for.
+
+        api_key: If specified, unify API key to be used. Defaults to the value in the
+        `UNIFY_KEY` environment variable.
+
+    Returns:
+        The single Log which matches the data, if it exists.
+    """
+    logs = get_logs_by_value(project, data, api_key)
+    assert len(logs) in (
+        0,
+        1,
+    ), "Expected exactly zero or one log, but found {len(logs)}"
+    return logs[0] if logs else None
 
 
 def get_groups(
@@ -683,10 +736,10 @@ class Context:
 
     def __enter__(self):
         self.token = current_global_active_log_kwargs.set(
-            {**current_global_active_log_kwargs.get(), **self.kwargs}
+            {**current_global_active_log_kwargs.get(), **self.kwargs},
         )
         self.nest_level_token = current_context_nest_level.set(
-            current_context_nest_level.get() + 1
+            current_context_nest_level.get() + 1,
         )
 
     def __exit__(self, *args, **kwargs):

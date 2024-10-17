@@ -128,12 +128,12 @@ class TestMathsEvaluator(unittest.TestCase):
                     correct = self._evaluate(data["question"], response)
                     self.assertTrue(correct)
                     log.add_entries(score=correct)
-                    retrieved_log = unify.get_log(log.id)
+                    retrieved_log = unify.get_log_by_id(log.id)
                     self.assertIsNot(retrieved_log, None)
                     self.assertEqual(log, retrieved_log)
                     log.delete()
                     with self.assertRaises(Exception):
-                        unify.get_log(log.id)
+                        unify.get_log_by_id(log.id)
 
     def test_system_prompt_opt(self) -> None:
         with ProjectHandling():
