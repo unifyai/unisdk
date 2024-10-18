@@ -217,7 +217,7 @@ def write_function_and_class_jsons(details, private_modules):
             continue
 
         # get the module namespace from the path
-        module_name = module_path.strip(".py").replace("/", ".")
+        module_name = module_path[:-3].replace("/", ".")
 
         # load all function docs
         functions = details[module_path]["functions"]
