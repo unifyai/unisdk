@@ -163,8 +163,36 @@ class TestLogging(unittest.TestCase):
             "user_prompt": "hi earth",
         }
         log.replace_entries(**new_data)
+        assert log.entries == new_data
         assert len(unify.get_logs(project)) == 1
         assert unify.get_log_by_id(log.id).entries == new_data
+
+    def test_update_log_entries(self):
+        project = "my_project"
+        if project in unify.list_projects():
+            unify.delete_project(project)
+        unify.create_project(project)
+        messages = [
+            {
+                "role": "assistant",
+                "context": "you are a helpful assistant",
+            },
+        ]
+        assert len(unify.get_logs(project)) == 0
+        log = unify.log(project, messages=messages)
+        assert len(unify.get_logs(project)) == 1
+        assert unify.get_log_by_id(log.id).entries["messages"] == messages
+        new_messages = [
+            {
+                "role": "user",
+                "context": "what is 1 + 1?",
+            },
+        ]
+        log.update_entries(lambda x, y: x + y, messages=new_messages)
+        combined_messages = messages + new_messages
+        assert log.entries == combined_messages
+        assert len(unify.get_logs(project)) == 1
+        assert unify.get_log_by_id(log.id).entries == combined_messages
 
     def test_project_thread_lock(self):
         # all 10 threads would try to create the project at the same time without

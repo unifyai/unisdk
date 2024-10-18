@@ -312,6 +312,11 @@ class Log(_Formatted):
         replace_log_entries(self._id, self._api_key, **kwargs)
         self._entries = {**self._entries, **kwargs}
 
+    def update_entries(self, fn, **kwargs) -> None:
+        update_log_entries(fn, self._id, self._api_key, **kwargs)
+        for k, v in kwargs.items():
+            self._entries[k] = fn(self._entries[k], v)
+
     def delete_entries(
         self,
         keys_to_delete: List[str],
@@ -521,6 +526,37 @@ def replace_log_entries(
     for k, v in kwargs.items():
         delete_log_entry(k, id, api_key)
     return add_log_entries(id, api_key, **kwargs)
+
+
+def update_log_entries(
+    fn: Union[callable, Dict[str, callable]],
+    id: Optional[int] = None,
+    api_key: Optional[str] = None,
+    **kwargs,
+) -> Dict[str, str]:
+    """
+    Updates existing entries in an existing log.
+
+    Args:
+        fn: The function or set of functions to apply to each field in the log.
+
+        id: The log id to update fields for. Looks for the current active log if no
+        id is provided.
+
+        api_key: If specified, unify API key to be used. Defaults to the value in the
+        `UNIFY_KEY` environment variable.
+
+        kwargs: The data to update in the log.
+
+    Returns:
+        A message indicating whether the log was successfully updated.
+    """
+    # ToDo: add support for fn passed as a dict
+    data = get_log_by_id(id, api_key).entries
+    replacements = dict()
+    for k, v in kwargs.items():
+        replacements[k] = fn(data[k], v)
+    return replace_log_entries(id, api_key, **replacements)
 
 
 def get_logs(
