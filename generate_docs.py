@@ -72,7 +72,7 @@ def filter_and_import(details):
     private_modules = []
     for module_path in details:
         private_module = False
-        module_name = module_path.strip(".py").replace("/", ".")
+        module_name = module_path[:-3].replace("/", ".")
 
         # check if there are any private modules
         for namespace in module_name.split("."):
