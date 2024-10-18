@@ -266,6 +266,24 @@ class TestLogging(unittest.TestCase):
         assert "customer" not in retrieved_log.entries
         assert "customer/0" in retrieved_log.entries
 
+    def test_unversion_log_entries(self):
+        project = "my_project"
+        if project in unify.list_projects():
+            unify.delete_project(project)
+        unify.create_project(project)
+        customer = "John Smith"
+        assert len(unify.get_logs(project)) == 0
+        log = unify.log(project, customer=customer, version=0)
+        assert len(unify.get_logs(project)) == 1
+        assert unify.get_log_by_id(log.id).entries["customer/0"] == customer
+        log.unversion_entries("customer")
+        assert "customer/0" not in log.entries
+        assert "customer" in log.entries
+        assert len(unify.get_logs(project)) == 1
+        retrieved_log = unify.get_log_by_id(log.id)
+        assert "customer/0" not in retrieved_log.entries
+        assert "customer" in retrieved_log.entries
+
     def test_project_thread_lock(self):
         # all 10 threads would try to create the project at the same time without
         # thread locking, but only will should acquire the lock, and this should pass

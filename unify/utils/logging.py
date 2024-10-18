@@ -4,7 +4,7 @@ import inspect
 import functools
 import threading
 from contextvars import ContextVar
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union, Tuple
 
 import requests
 import unify
@@ -341,6 +341,13 @@ class Log(_Formatted):
             self._entries[new_name] = self._entries[field_name]
             del self._entries[field_name]
 
+    def unversion_entries(self, *field_names: str) -> None:
+        unversion_log_entries(*field_names, id=self._id, api_key=self._api_key)
+        for field_name in field_names:
+            new_name = "/".join(field_name.split("/")[:-1])
+            self._entries[new_name] = self._entries[field_name]
+            del self._entries[field_name]
+
     def delete_entries(
         self,
         keys_to_delete: List[str],
@@ -355,7 +362,7 @@ class Log(_Formatted):
 
 def log(
     project: Optional[str] = None,
-    version: Optional[Dict[str, str]] = None,
+    version: Optional[Union[Union[int, str], Dict[str, Union[int, str]]]] = None,
     skip_duplicates: bool = True,
     api_key: Optional[str] = None,
     **kwargs,
@@ -391,10 +398,19 @@ def log(
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    if version:
-        kwargs = {
-            k + "/" + version[k] if k in version else k: v for k, v in kwargs.items()
-        }
+    if version is not None:
+        if isinstance(version, dict):
+            kwargs = {
+                k + "/" + version[k] if k in version else k: v
+                for k, v in kwargs.items()
+            }
+        elif isinstance(version, str) or isinstance(version, int):
+            kwargs = {k + "/" + str(version): v for k, v in kwargs.items()}
+        else:
+            raise Exception(
+                f"Expected version to be of type int or str, "
+                f"but found {version} of type {type(version)}",
+            )
     kwargs = {**kwargs, **current_global_active_log_kwargs.get()}
     project = _get_and_maybe_create_project(project, api_key)
     if skip_duplicates:
@@ -639,6 +655,33 @@ def version_log_entries(
         "reversion_log_entries if you would like to change the version."
     )
     kwargs = {k: f"{k}/{v}" for k, v in kwargs.items()}
+    return rename_log_entries(id, api_key, **kwargs)
+
+
+def unversion_log_entries(
+    *field_names: str,
+    id: Optional[int] = None,
+    api_key: Optional[str] = None,
+) -> Dict[str, str]:
+    """
+    Removes versioning from the set of log entries.
+
+    Args:
+        field_names: The field names to un-version.
+
+        id: The log id to version the field names for. Looks for the current active log
+        if no id is provided.
+
+        api_key: If specified, unify API key to be used. Defaults to the value in the
+        `UNIFY_KEY` environment variable.
+
+    Returns:
+        A message indicating whether the log fields were successfully un-versioned.
+    """
+    assert all(
+        _versioned_field(name) for name in field_names
+    ), "Cannot unversion a log entry which is not already versioned."
+    kwargs = {name: "/".join(name.split("/")[:-1]) for name in field_names}
     return rename_log_entries(id, api_key, **kwargs)
 
 
