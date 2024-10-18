@@ -801,6 +801,37 @@ def get_logs_with_fields(
     return get_logs(project, filter=filter_exp, api_key=api_key)
 
 
+def get_logs_without_fields(
+    *fields: str,
+    mode: str = "all",
+    project: Optional[str] = None,
+    api_key: Optional[str] = None,
+) -> List[Log]:
+    """
+    Returns a list of logs which do not contain the specified fields, either the logs
+    which do not contain all of the fields ("all") or the logs which do not contain any
+    of the fields ("any").
+
+    Args:
+        fields: The fields to not retrieve logs for.
+
+        mode: The retrieval mode, either returning the logs with do not contain all of
+        the fields or the logs which do not contain any of the fields.
+
+        project: Name of the project to get logs from.
+
+        api_key: If specified, unify API key to be used. Defaults to the value in the
+        `UNIFY_KEY` environment variable.
+
+    Returns:
+        A list of logs which do not contain the specified fields.
+    """
+    api_key = _validate_api_key(api_key)
+    mode = {"any": "and", "all": "or"}[mode]
+    filter_exp = f" {mode} ".join([f"(not exists({field}))" for field in fields])
+    return get_logs(project, filter=filter_exp, api_key=api_key)
+
+
 def get_log_by_id(id: int, api_key: Optional[str] = None) -> Log:
     """
     Returns the log associated with a given id.

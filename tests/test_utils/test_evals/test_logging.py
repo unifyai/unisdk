@@ -335,6 +335,39 @@ class TestLogging(unittest.TestCase):
             == 2
         )
 
+    def test_get_logs_without_fields(self):
+        project = "my_project"
+        if project in unify.list_projects():
+            unify.delete_project(project)
+        unify.create_project(project)
+        assert len(unify.get_logs(project)) == 0
+        unify.log(project, customer="John Smith")
+        assert len(unify.get_logs_without_fields("customer", project=project)) == 0
+        assert len(unify.get_logs_without_fields("dummy", project=project)) == 1
+        unify.log(project, seller="Maggie Jones")
+        assert (
+            len(
+                unify.get_logs_without_fields(
+                    "customer",
+                    "seller",
+                    mode="all",
+                    project=project,
+                ),
+            )
+            == 2
+        )
+        assert (
+            len(
+                unify.get_logs_without_fields(
+                    "customer",
+                    "seller",
+                    mode="any",
+                    project=project,
+                ),
+            )
+            == 0
+        )
+
     def test_project_thread_lock(self):
         # all 10 threads would try to create the project at the same time without
         # thread locking, but only will should acquire the lock, and this should pass
