@@ -348,6 +348,14 @@ class Log(_Formatted):
             self._entries[new_name] = self._entries[field_name]
             del self._entries[field_name]
 
+    def reversion_entries(self, **kwargs) -> None:
+        reversion_log_entries(self._id, self._api_key, **kwargs)
+        for field_name, versions in kwargs.items():
+            old_name = f"{field_name}/{versions[0]}"
+            new_name = f"{field_name}/{versions[1]}"
+            self._entries[new_name] = self._entries[old_name]
+            del self._entries[old_name]
+
     def delete_entries(
         self,
         keys_to_delete: List[str],
@@ -682,6 +690,36 @@ def unversion_log_entries(
         _versioned_field(name) for name in field_names
     ), "Cannot unversion a log entry which is not already versioned."
     kwargs = {name: "/".join(name.split("/")[:-1]) for name in field_names}
+    return rename_log_entries(id, api_key, **kwargs)
+
+
+def reversion_log_entries(
+    id: Optional[int] = None,
+    api_key: Optional[str] = None,
+    **kwargs: Tuple[Union[int, str], Union[int, str]],
+) -> Dict[str, str]:
+    """
+    Updates versions to the set of log entries.
+
+    Args:
+        id: The log id to version the field names for. Looks for the current active log
+        if no id is provided.
+
+        api_key: If specified, unify API key to be used. Defaults to the value in the
+        `UNIFY_KEY` environment variable.
+
+        kwargs: The field names and versions to update in the log, with keys as field
+        names and values as length-2 tuples with the old version and new version,
+        in that order.
+
+    Returns:
+        A message indicating whether the log fields were successfully re-versioned.
+    """
+    assert not any(_versioned_field(k) for k in kwargs.keys()), (
+        "The keys should be in un-versioned form, with the old and new versions passed "
+        "as a tuple of values, old and new versions, in that order."
+    )
+    kwargs = {f"{k}/{v[0]}": f"{k}/{v[1]}" for k, v in kwargs.items()}
     return rename_log_entries(id, api_key, **kwargs)
 
 
