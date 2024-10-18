@@ -276,7 +276,7 @@ class TestLogging(unittest.TestCase):
         log = unify.log(project, customer=customer, version=0)
         assert len(unify.get_logs(project)) == 1
         assert unify.get_log_by_id(log.id).entries["customer/0"] == customer
-        log.unversion_entries("customer")
+        log.unversion_entries("customer/0")
         assert "customer/0" not in log.entries
         assert "customer" in log.entries
         assert len(unify.get_logs(project)) == 1
@@ -294,7 +294,7 @@ class TestLogging(unittest.TestCase):
         log = unify.log(project, customer=customer, version=0)
         assert len(unify.get_logs(project)) == 1
         assert unify.get_log_by_id(log.id).entries["customer/0"] == customer
-        log.reversion_entries(customer=1)
+        log.reversion_entries(customer=(0, 1))
         assert "customer/0" not in log.entries
         assert "customer/1" in log.entries
         assert len(unify.get_logs(project)) == 1

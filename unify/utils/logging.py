@@ -545,6 +545,7 @@ def delete_log_entry(
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
+    entry = entry.replace("/", "-")
     response = requests.delete(BASE_URL + f"/log/{id}/entry/{entry}", headers=headers)
     response.raise_for_status()
     return response.json()
