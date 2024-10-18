@@ -51,6 +51,17 @@ def _enclose_str(v):
     return f'"{v}"' if isinstance(v, str) else v
 
 
+def _versioned_field(field_name: str):
+    if "/" not in field_name:
+        return False
+    split = field_name.split("/")
+    assert len(split) == 2, (
+        "field name can have at most one / character, "
+        "reserved for identifying versions in the appending string"
+    )
+    return True
+
+
 # Projects #
 # ---------#
 
@@ -323,6 +334,13 @@ class Log(_Formatted):
             self._entries[new_name] = self._entries[old_name]
             del self._entries[old_name]
 
+    def version_entries(self, **kwargs) -> None:
+        version_log_entries(self._id, self._api_key, **kwargs)
+        for field_name, version in kwargs.items():
+            new_name = f"{field_name}/{version}"
+            self._entries[new_name] = self._entries[field_name]
+            del self._entries[field_name]
+
     def delete_entries(
         self,
         keys_to_delete: List[str],
@@ -592,6 +610,36 @@ def rename_log_entries(
         delete_log_entry(old_name, id, api_key)
     new_entries = {new_name: data[old_name] for old_name, new_name in kwargs.items()}
     return add_log_entries(id, api_key, **new_entries)
+
+
+def version_log_entries(
+    id: Optional[int] = None,
+    api_key: Optional[str] = None,
+    **kwargs,
+) -> Dict[str, str]:
+    """
+    Assigns versions to the set of log entries.
+
+    Args:
+        id: The log id to version the field names for. Looks for the current active log
+        if no id is provided.
+
+        api_key: If specified, unify API key to be used. Defaults to the value in the
+        `UNIFY_KEY` environment variable.
+
+        kwargs: The field names and versions to update in the log, with keys as field
+        names and values as versions representing the versions, of either str or int
+        type, with the latter being cast to a string.
+
+    Returns:
+        A message indicating whether the log fields were successfully versioned.
+    """
+    assert not any(_versioned_field(k) for k in kwargs.keys()), (
+        "Cannot version a log entry which is already versioned. Use "
+        "reversion_log_entries if you would like to change the version."
+    )
+    kwargs = {k: f"{k}/{v}" for k, v in kwargs.items()}
+    return rename_log_entries(id, api_key, **kwargs)
 
 
 def get_logs(
