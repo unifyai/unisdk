@@ -145,6 +145,27 @@ class TestLogging(unittest.TestCase):
         with self.assertRaises(Exception):
             log.add_entries(**new_data)
 
+    def test_replace_log_entries(self):
+        project = "my_project"
+        if project in unify.list_projects():
+            unify.delete_project(project)
+        unify.create_project(project)
+        data = {
+            "system_prompt": "You are a weather assistant",
+            "user_prompt": "hello world",
+        }
+        assert len(unify.get_logs(project)) == 0
+        log = unify.log(project, **data)
+        assert unify.get_log_by_id(log.id).entries == data
+        assert len(unify.get_logs(project)) == 1
+        new_data = {
+            "system_prompt": "You are a maths assistant",
+            "user_prompt": "hi earth",
+        }
+        log.replace_entries(**new_data)
+        assert len(unify.get_logs(project)) == 1
+        assert unify.get_log_by_id(log.id).entries == new_data
+
     def test_project_thread_lock(self):
         # all 10 threads would try to create the project at the same time without
         # thread locking, but only will should acquire the lock, and this should pass

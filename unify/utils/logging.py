@@ -308,6 +308,10 @@ class Log(_Formatted):
         add_log_entries(self._id, self._api_key, **kwargs)
         self._entries = {**self._entries, **kwargs}
 
+    def replace_entries(self, **kwargs) -> None:
+        replace_log_entries(self._id, self._api_key, **kwargs)
+        self._entries = {**self._entries, **kwargs}
+
     def delete_entries(
         self,
         keys_to_delete: List[str],
@@ -388,7 +392,7 @@ def add_log_entries(
     **kwargs,
 ) -> Dict[str, str]:
     """
-    Returns the data (id and values) by querying the data based on their values.
+    Add extra entries into an existing log.
 
     Args:
         id: The log id to update with extra data. Looks for the current active log if no id is provided.
@@ -491,6 +495,32 @@ def delete_log_entry(
     response = requests.delete(BASE_URL + f"/log/{id}/entry/{entry}", headers=headers)
     response.raise_for_status()
     return response.json()
+
+
+def replace_log_entries(
+    id: Optional[int] = None,
+    api_key: Optional[str] = None,
+    **kwargs,
+) -> Dict[str, str]:
+    """
+    Replaces existing entries in an existing log.
+
+    Args:
+        id: The log id to replace fields for. Looks for the current active log if no
+        id is provided.
+
+        api_key: If specified, unify API key to be used. Defaults to the value in the
+        `UNIFY_KEY` environment variable.
+
+        kwargs: The data to update in the log.
+
+    Returns:
+        A message indicating whether the log was successfully updated.
+    """
+    api_key = _validate_api_key(api_key)
+    for k, v in kwargs.items():
+        delete_log_entry(k, id, api_key)
+    return add_log_entries(id, api_key, **kwargs)
 
 
 def get_logs(
