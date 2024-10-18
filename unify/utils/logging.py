@@ -551,11 +551,11 @@ def update_log_entries(
     Returns:
         A message indicating whether the log was successfully updated.
     """
-    # ToDo: add support for fn passed as a dict
     data = get_log_by_id(id, api_key).entries
     replacements = dict()
     for k, v in kwargs.items():
-        replacements[k] = fn(data[k], v)
+        f = fn[k] if isinstance(fn, dict) else fn
+        replacements[k] = f(data[k], v)
     return replace_log_entries(id, api_key, **replacements)
 
 

@@ -194,6 +194,42 @@ class TestLogging(unittest.TestCase):
         assert len(unify.get_logs(project)) == 1
         assert unify.get_log_by_id(log.id).entries == combined_messages
 
+    def test_update_log_entries_w_dict(self):
+        project = "my_project"
+        if project in unify.list_projects():
+            unify.delete_project(project)
+        unify.create_project(project)
+        messages = [
+            {
+                "role": "assistant",
+                "context": "you are a helpful assistant",
+            },
+        ]
+        name = "John"
+        assert len(unify.get_logs(project)) == 0
+        log = unify.log(project, messages=messages, name=name)
+        assert len(unify.get_logs(project)) == 1
+        assert unify.get_log_by_id(log.id).entries["messages"] == messages
+        new_messages = [
+            {
+                "role": "user",
+                "context": "what is 1 + 1?",
+            },
+        ]
+        surname = "Smith"
+        log.update_entries(
+            {
+                "messages": lambda x, y: x + y,
+                "name": lambda x, y: f"{x} {y}",
+            },
+            messages=new_messages,
+            name=surname,
+        )
+        combined_messages = messages + new_messages
+        assert log.entries == combined_messages
+        assert len(unify.get_logs(project)) == 1
+        assert unify.get_log_by_id(log.id).entries == combined_messages
+
     def test_project_thread_lock(self):
         # all 10 threads would try to create the project at the same time without
         # thread locking, but only will should acquire the lock, and this should pass
