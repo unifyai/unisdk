@@ -32,6 +32,7 @@ from .utils import (
     router_deployment,
     router_training,
     supported_endpoints,
+    versioning,
 )
 from .utils.credits import *
 from .utils.custom_api_keys import *
@@ -45,6 +46,7 @@ from .utils.router_configurations import *
 from .utils.router_deployment import *
 from .utils.router_training import *
 from .utils.supported_endpoints import *
+from .utils.versioning import *
 
 from .chat import chatbot, clients, logging
 from .chat.clients import multi_llm
