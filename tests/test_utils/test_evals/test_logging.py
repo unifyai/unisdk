@@ -7,7 +7,7 @@ from requests import HTTPError
 import threading
 
 
-class TestEvaluations(unittest.TestCase):
+class TestLogging(unittest.TestCase):
 
     def test_project(self):
         name = "my_project"
@@ -317,7 +317,7 @@ class TestEvaluations(unittest.TestCase):
         assert expected == log
 
 
-class TestAsyncEvaluations(unittest.IsolatedAsyncioTestCase):
+class TestAsyncLogging(unittest.IsolatedAsyncioTestCase):
     async def test_contextual_logging_async(self):
         project = "my_project"
         if project in unify.list_projects():

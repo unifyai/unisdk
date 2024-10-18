@@ -26,7 +26,7 @@ from .utils import (
     datasets,
     endpoint_metrics,
     helpers,
-    evaluations,
+    logging,
     queries,
     router_configurations,
     router_deployment,
@@ -39,7 +39,7 @@ from .utils.custom_endpoints import *
 from .utils.datasets import *
 from .utils.endpoint_metrics import *
 from .utils.helpers import *
-from .utils.evaluations import *
+from .utils.logging import *
 from .utils.queries import *
 from .utils.router_configurations import *
 from .utils.router_deployment import *
