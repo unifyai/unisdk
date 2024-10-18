@@ -422,6 +422,13 @@ def add_log_entries(
             },
         }
     body = {"entries": {**kwargs, **current_global_active_log_kwargs.get()}}
+    # ToDo: remove this once duplicates are prevented in the backend
+    current_keys = get_log_by_id(id if id else current_active_log.id).entries.keys()
+    assert not any(key in body["entries"] for key in current_keys), (
+        "Duplicate keys detected, please use replace_log_entries or "
+        "update_log_entries if you want to replace or modify an existing key."
+    )
+    # End ToDo
     response = requests.put(
         BASE_URL + f"/log/{id if id else current_active_log.id}",
         headers=headers,
