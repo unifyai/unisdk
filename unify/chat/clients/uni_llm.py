@@ -1072,7 +1072,6 @@ class AsyncUnify(_UniClient):
         extra_query: Optional[Query],
         **kwargs,
     ) -> Union[AsyncGenerator[str, None], str]:  # noqa: DAR101, DAR201, DAR401
-        self._client = self._get_client()
         contents = []
         assert (
             messages or user_message

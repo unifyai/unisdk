@@ -841,6 +841,9 @@ class MultiUnify(_MultiClient):
             ],
         ],
     ]:
+        # refresh the openai client before doing a new event loop
+        for key, client in self._clients.items():
+            client._client = client._get_client()
         if args and isinstance(args[0], list):
             return self._multi_inp_generate(*args, **kwargs)
         return asyncio.run(
