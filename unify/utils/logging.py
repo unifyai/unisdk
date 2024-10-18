@@ -771,6 +771,36 @@ def get_logs(
     ]
 
 
+def get_logs_with_fields(
+    *fields: str,
+    mode: str = "all",
+    project: Optional[str] = None,
+    api_key: Optional[str] = None,
+) -> List[Log]:
+    """
+    Returns a list of logs which contain the specified fields, either the logs which
+    contain all of them ("all") or the logs which contain any of the fields ("any").
+
+    Args:
+        fields: The fields to retrieve logs for.
+
+        mode: The retrieval mode, either returning the logs with all of the fields or
+        the logs with any of the fields.
+
+        project: Name of the project to get logs from.
+
+        api_key: If specified, unify API key to be used. Defaults to the value in the
+        `UNIFY_KEY` environment variable.
+
+    Returns:
+        A list of logs which contain the specified fields.
+    """
+    api_key = _validate_api_key(api_key)
+    mode = {"any": "or", "all": "and"}[mode]
+    filter_exp = f" {mode} ".join([f"exists({field})" for field in fields])
+    return get_logs(project, filter=filter_exp, api_key=api_key)
+
+
 def get_log_by_id(id: int, api_key: Optional[str] = None) -> Log:
     """
     Returns the log associated with a given id.

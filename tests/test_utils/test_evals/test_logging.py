@@ -190,9 +190,9 @@ class TestLogging(unittest.TestCase):
         ]
         log.update_entries(lambda x, y: x + y, messages=new_messages)
         combined_messages = messages + new_messages
-        assert log.entries == combined_messages
+        assert log.entries["messages"] == combined_messages
         assert len(unify.get_logs(project)) == 1
-        assert unify.get_log_by_id(log.id).entries == combined_messages
+        assert unify.get_log_by_id(log.id).entries["messages"] == combined_messages
 
     def test_update_log_entries_w_dict(self):
         project = "my_project"
@@ -301,6 +301,39 @@ class TestLogging(unittest.TestCase):
         retrieved_log = unify.get_log_by_id(log.id)
         assert "customer/0" not in retrieved_log.entries
         assert "customer/1" in retrieved_log.entries
+
+    def test_get_logs_with_fields(self):
+        project = "my_project"
+        if project in unify.list_projects():
+            unify.delete_project(project)
+        unify.create_project(project)
+        assert len(unify.get_logs(project)) == 0
+        unify.log(project, customer="John Smith")
+        assert len(unify.get_logs_with_fields("customer", project=project)) == 1
+        assert len(unify.get_logs_with_fields("dummy", project=project)) == 0
+        unify.log(project, seller="Maggie Jones")
+        assert (
+            len(
+                unify.get_logs_with_fields(
+                    "customer",
+                    "seller",
+                    mode="all",
+                    project=project,
+                ),
+            )
+            == 0
+        )
+        assert (
+            len(
+                unify.get_logs_with_fields(
+                    "customer",
+                    "seller",
+                    mode="any",
+                    project=project,
+                ),
+            )
+            == 2
+        )
 
     def test_project_thread_lock(self):
         # all 10 threads would try to create the project at the same time without
