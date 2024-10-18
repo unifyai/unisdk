@@ -46,12 +46,14 @@ def map(fn: callable, *args, mode="threading", **kwargs) -> Any:
         return returns
 
     # noinspection PyShadowingNames
-    async def async_fn():
-        rets = list()
-        for i in range(num_calls):
-            a = (a[i] for a in args)
-            kw = {k: v[i] for k, v in kwargs.items()}
-            rets.append(await fn(*a, **kw))
-        return rets
 
-    return asyncio.run(async_fn())
+    fns = []
+    for i in range(num_calls):
+        a = (a[i] for a in args)
+        kw = {k: v[i] for k, v in kwargs.items()}
+        fns.append(fn(*a, **kw))
+
+    async def main():
+        return await asyncio.gather(*fns)
+
+    return asyncio.run(main())
