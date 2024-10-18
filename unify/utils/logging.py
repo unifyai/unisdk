@@ -317,6 +317,12 @@ class Log(_Formatted):
         for k, v in kwargs.items():
             self._entries[k] = fn(self._entries[k], v)
 
+    def rename_entries(self, **kwargs) -> None:
+        rename_log_entries(self._id, self._api_key, **kwargs)
+        for old_name, new_name in kwargs.items():
+            self._entries[new_name] = self._entries[old_name]
+            del self._entries[old_name]
+
     def delete_entries(
         self,
         keys_to_delete: List[str],
@@ -557,6 +563,35 @@ def update_log_entries(
         f = fn[k] if isinstance(fn, dict) else fn
         replacements[k] = f(data[k], v)
     return replace_log_entries(id, api_key, **replacements)
+
+
+def rename_log_entries(
+    id: Optional[int] = None,
+    api_key: Optional[str] = None,
+    **kwargs,
+) -> Dict[str, str]:
+    """
+    Renames the set of log entries.
+
+    Args:
+        id: The log id to update the field names for. Looks for the current active log
+        if no id is provided.
+
+        api_key: If specified, unify API key to be used. Defaults to the value in the
+        `UNIFY_KEY` environment variable.
+
+        kwargs: The field names to update in the log, with keys as old names and values
+        as new names.
+
+    Returns:
+        A message indicating whether the log field names were successfully updated.
+    """
+    api_key = _validate_api_key(api_key)
+    data = get_log_by_id(id, api_key).entries
+    for old_name in kwargs.keys():
+        delete_log_entry(old_name, id, api_key)
+    new_entries = {new_name: data[old_name] for old_name, new_name in kwargs.items()}
+    return add_log_entries(id, api_key, **new_entries)
 
 
 def get_logs(
