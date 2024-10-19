@@ -407,10 +407,13 @@ def log(
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
+    kwargs = {**kwargs, **current_global_active_log_kwargs.get()}
+    if version is None and "version" in kwargs:
+        version = kwargs.pop("version")
     if version is not None:
         if isinstance(version, dict):
             kwargs = {
-                k + "/" + version[k] if k in version else k: v
+                k + "/" + str(version[k]) if k in version else k: v
                 for k, v in kwargs.items()
             }
         elif isinstance(version, str) or isinstance(version, int):
@@ -420,7 +423,6 @@ def log(
                 f"Expected version to be of type int or str, "
                 f"but found {version} of type {type(version)}",
             )
-    kwargs = {**kwargs, **current_global_active_log_kwargs.get()}
     project = _get_and_maybe_create_project(project, api_key)
     if skip_duplicates:
         retrieved_logs = get_logs_by_value(project, **kwargs, api_key=api_key)
