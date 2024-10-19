@@ -1,5 +1,6 @@
 import asyncio
 import threading
+import contextvars
 from typing import Any, List
 
 
@@ -27,6 +28,9 @@ def map(fn: callable, *args, mode="threading", **kwargs) -> Any:
     if mode == "threading":
 
         def fn_w_indexing(rets: List[None], thread_idx: int, *a, **kw):
+            for var, value in kw["context"].items():
+                var.set(value)
+            del kw["context"]
             ret = fn(*a, **kw)
             rets[thread_idx] = ret
 
@@ -35,6 +39,7 @@ def map(fn: callable, *args, mode="threading", **kwargs) -> Any:
         for i in range(num_calls):
             a = tuple(a[i] for a in args)
             kw = {k: v[i] if isinstance(v, list) else v for k, v in kwargs.items()}
+            kw["context"] = contextvars.copy_context()
             thread = threading.Thread(
                 target=fn_w_indexing,
                 args=(returns, i, *a),
