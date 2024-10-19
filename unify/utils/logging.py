@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import inspect
 import functools
+import json
 import threading
 from contextvars import ContextVar
 from typing import Any, Dict, List, Optional, Union, Tuple
@@ -48,7 +49,7 @@ def _get_and_maybe_create_project(project: str, api_key: Optional[str] = None) -
 
 
 def _enclose_str(v):
-    return f'"{v}"' if isinstance(v, str) else v
+    return json.dumps(v) if isinstance(v, str) else v
 
 
 def _versioned_field(field_name: str):
