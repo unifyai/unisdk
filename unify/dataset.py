@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from typing import Any, Dict, List, Optional, Union
 
 import unify
@@ -15,26 +16,24 @@ class Dataset(_Formatted):
 
     def __init__(
         self,
-        data: Union[str, Dict, Prompt, List[Union[str, Dict, Prompt]]],
+        data: List[Any],
         *,
         name: str = None,
-        shared_data: Dict = None,
+        artifacts: Dict[str, Any] = {},
+        with_ids: Optional[bool] = False,
         api_key: Optional[str] = None,
     ) -> None:
         """
-        Initialize a local dataset of LLM queries.
+        Initialize a local dataset.
 
         Args:
-            data: The data for populating the dataset. This can either can a list of
-            user messages, a list of full queries, or a list of dicts of queries
-            alongside any extra fields. Individual items in any of the formats listed
-            above will also be converted to lists and processed automatically.
+            data: The data for populating the dataset. This needs to be a list of JSON serializable objects.
 
             name: The name of the dataset.
 
-            shared_data: Data which is shared across all items in the dataset, with a
-            nested structure following the nested structure of each dataset entry,
-            in dictionary format.
+            artifacts: Dataset metadata. This is an optional dict.
+
+            with_ids: If platform entry ids are passed with the data. Defaults to False.
 
             api_key: API key for accessing the Unify API. If None, it attempts to
             retrieve the API key from the environment variable UNIFY_KEY. Defaults to
@@ -48,9 +47,12 @@ class Dataset(_Formatted):
             data = list(data)
         elif not isinstance(data, list):
             data = [data]
-        self._data = data
+        if with_ids:
+            self._raw_data = data
+        else:
+            self._raw_data = [{"id": None, "entry": entry} for entry in data]
+        self._artifacts = artifacts
         self._api_key = _validate_api_key(api_key)
-        self._shared_data = shared_data
         super().__init__()
 
     @property
@@ -59,6 +61,16 @@ class Dataset(_Formatted):
         Name of the dataset.
         """
         return self._name
+
+    @property
+    def _data(self):
+        """
+        Dataset entries.
+        """
+        return [dt["entry"] for dt in self._raw_data]
+
+    def _set_data(self, data):
+        self._raw_data = [{"id": None, "entry": entry} for entry in data]
 
     def set_name(self, name: str) -> Self:
         """
@@ -79,7 +91,7 @@ class Dataset(_Formatted):
         api_key: Optional[str] = None,
     ) -> Dataset:
         """
-        Initialize a local dataset of LLM queries, from the upstream dataset.
+        Initialize a local dataset from the upstream dataset.
 
         Args:
             name: The name of the dataset.
@@ -95,7 +107,10 @@ class Dataset(_Formatted):
             UnifyError: If the API key is missing.
         """
         data = unify.download_dataset(name, api_key=api_key)
-        return Dataset(data, name=name, api_key=api_key)
+        artifacts = unify.download_artifacts(name, api_key=api_key)
+        return Dataset(
+            data, name=name, artifacts=artifacts, with_ids=True, api_key=api_key
+        )
 
     def _assert_name_exists(self) -> None:
         assert self._name is not None, (
@@ -118,29 +133,34 @@ class Dataset(_Formatted):
         Returns:
             This dataset, useful for chaining methods.
         """
+
+        def _dump(item):
+            if isinstance(item, BaseModel):
+                return item.model_dump()
+            return item
+
         self._assert_name_exists()
+        raw_data = [_dump(d) for d in self._data]
         dataset_exists_upstream = self._name in unify.list_datasets(self._api_key)
-        raw_data = [d.model_dump() for d in self._data]
-        if overwrite:
-            if dataset_exists_upstream:
+        if dataset_exists_upstream:
+            if overwrite:
                 upstream_dataset = unify.download_dataset(
                     self._name,
                     api_key=self._api_key,
                 )
-                unique_upstream = [
-                    item.model_dump()
+                unique_upstream_ids = [
+                    item["id"]
                     for item in upstream_dataset
-                    if item not in self._data
+                    if item["entry"] not in self._data
                 ]
-                unify.delete_data(self._name, unique_upstream)
-                unify.add_data_by_value(self._name, raw_data)
-            else:
-                unify.upload_dataset_from_dictionary(self._name, raw_data)
+
+                for _id in unique_upstream_ids:
+                    unify.delete_dataset_entry(self._name, _id)
+
+            unify.add_dataset_entries(self._name, raw_data)
         else:
-            if dataset_exists_upstream:
-                unify.add_data_by_value(self._name, raw_data)
-            else:
-                unify.upload_dataset_from_dictionary(self._name, raw_data)
+            unify.upload_dataset(self._name, raw_data)
+
         return self
 
     def download(self, overwrite: bool = False) -> Self:
@@ -157,12 +177,20 @@ class Dataset(_Formatted):
             This dataset after the in-place download, useful for chaining methods.
         """
         self._assert_name_exists()
-        if overwrite:
-            self._data = unify.download_dataset(self._name, api_key=self._api_key)
-        else:
-            upstream_dataset = unify.download_dataset(self._name, api_key=self._api_key)
-            unique_local = [item for item in self._data if item not in upstream_dataset]
-            self._data = upstream_dataset + unique_local
+
+        upstream_dataset = unify.download_dataset(self._name, api_key=self._api_key)
+        upstream_artifacts = unify.download_artifacts(self._name, api_key=self._api_key)
+        _data = upstream_dataset
+        _artifacts = upstream_artifacts
+        existing_data = set([d["entry"] for d in upstream_dataset])
+        if not overwrite:
+            _data += [
+                item for item in self._raw_data if item["entry"] not in existing_data
+            ]
+            _artifacts.update(self._artifacts)
+        self._raw_data = _data
+        self._artifacts = _artifacts
+
         return self
 
     def sync(self) -> Self:
@@ -186,14 +214,19 @@ class Dataset(_Formatted):
         """
         self._assert_name_exists()
         upstream_dataset = unify.download_dataset(self._name, api_key=self._api_key)
-        unique_upstream = [item for item in upstream_dataset if item not in self._data]
+        unique_upstream = [
+            item["entry"]
+            for item in upstream_dataset
+            if item["entry"] not in self._data
+        ]
         print(
-            "The following {} queries are stored upstream but not locally\n: "
+            "The following {} entries are stored upstream but not locally\n: "
             "{}".format(len(unique_upstream), unique_upstream),
         )
+        upstream_entries = set([item["entry"] for item in upstream_dataset])
         unique_local = [item for item in self._data if item not in upstream_dataset]
         print(
-            "The following {} queries are stored upstream but not locally\n: "
+            "The following {} entries are stored upstream but not locally\n: "
             "{}".format(len(unique_local), unique_local),
         )
         return self
@@ -215,7 +248,7 @@ class Dataset(_Formatted):
         if other == 0:
             return self
         other = other if isinstance(other, Dataset) else Dataset(other)
-        data = list(dict.fromkeys(self._data + other._data))
+        data = self._data + [d for d in other._data if d not in self._data]
         return Dataset(data=data, api_key=self._api_key)
 
     def sub(
@@ -257,7 +290,9 @@ class Dataset(_Formatted):
         if other == 0:
             return self
         other = other if isinstance(other, Dataset) else Dataset(other)
-        self._data = list(dict.fromkeys(self._data + other._data))
+        self._raw_data = self._raw_data + [
+            d for d in other._raw_data if d not in self._raw_data
+        ]
         return self
 
     def inplace_sub(
@@ -279,7 +314,9 @@ class Dataset(_Formatted):
             "cannot subtract dataset B from dataset A unless all queries of dataset "
             "B are also present in dataset A"
         )
-        self._data = [item for item in self._data if item not in other]
+        self._raw_data = [
+            item for item in self._raw_data if item not in other._raw_data
+        ]
         return self
 
     def __add__(

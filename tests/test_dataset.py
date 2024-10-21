@@ -63,13 +63,13 @@ class TestDatasetConstruction(unittest.TestCase):
     def test_create_dataset_from_upstream(self) -> None:
         if "TestCreateDatasetFromStr" in unify.list_datasets():
             unify.delete_dataset("TestCreateDatasetFromStr")
-        unify.upload_dataset_from_file(
-            "TestCreateDatasetFromStr",
-            os.path.join(dir_path, "prompts.jsonl"),
-        )
+
+        dataset = unify.Dataset(["a", "b", "c"], name="TestCreateDatasetFromStr")
+        self.assertNotIn(dataset.name, unify.list_datasets())
+        dataset.upload()
         assert "TestCreateDatasetFromStr" in unify.list_datasets()
         dataset = unify.Dataset.from_upstream("TestCreateDatasetFromStr")
-        self.assertIsInstance(dataset[0], dict)
+        self.assertIsInstance(dataset._raw_data[0], dict)
         unify.delete_dataset("TestCreateDatasetFromStr")
         assert "TestCreateDatasetFromStr" not in unify.list_datasets()
 
@@ -348,10 +348,10 @@ class TestDatasetDownloading(unittest.TestCase):
         with DownloadTesting():
             dataset = unify.Dataset.from_upstream("test_dataset")
             id_collection = list()
-            for item in dataset:
-                self.assertIsInstance(item.prompt._id, int)
-                self.assertNotIn(item.prompt._id, id_collection)
-                id_collection.append(item.prompt._id)
+            for item in dataset._raw_data:
+                self.assertIn("id", item)
+                self.assertIn("entry", item)
+                self.assertIsInstance(item["id"], str)
 
 
 class TestDatasetSync(unittest.TestCase):
