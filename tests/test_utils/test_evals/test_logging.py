@@ -558,6 +558,43 @@ class TestLogging(unittest.TestCase):
         log = unify.get_logs()[0].entries
         assert expected == log
 
+    def test_span(self):
+        project = "my_project"
+        if project in unify.list_projects():
+            unify.delete_project(project)
+        unify.create_project(project)
+        unify.activate(project)
+
+        @unify.span()
+        def deeper_fn():
+            time.sleep(1)
+            return 3
+
+        @unify.span()
+        def inner_fn():
+            time.sleep(1)
+            deeper_fn()
+            return 2
+
+        @unify.span()
+        def some_func(st):
+            time.sleep(st)
+            inner_fn()
+            inner_fn()
+            return 1
+
+        some_func(0.5)
+        log = unify.get_logs("my_project")[0].entries
+
+        assert log["trace"]["inputs"] == {"st": 0.5}
+        assert log["trace"]["span_name"] == "some_func"
+        assert len(log["trace"]["child_spans"]) == 2
+        assert log["trace"]["child_spans"][0]["span_name"] == "inner_fn"
+        assert len(log["trace"]["child_spans"][0]["child_spans"]) == 1
+        assert (
+            log["trace"]["child_spans"][0]["child_spans"][0]["span_name"] == "deeper_fn"
+        )
+
 
 class TestAsyncLogging(unittest.IsolatedAsyncioTestCase):
     async def test_contextual_logging_async(self):
