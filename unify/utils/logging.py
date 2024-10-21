@@ -771,7 +771,7 @@ def get_logs(
         `UNIFY_KEY` environment variable.
 
     Returns:
-        The full set of log data for the project, after optionally applying filtering.
+        The list of logs for the project, after optionally applying filtering.
     """
     api_key = _validate_api_key(api_key)
     headers = {
@@ -792,6 +792,32 @@ def get_logs(
     return [
         Log(dct["id"], **dct["entries"], api_key=api_key) for dct in response.json()
     ]
+
+
+def delete_logs(
+    project: Optional[str] = None,
+    filter: Optional[str] = None,
+    api_key: Optional[str] = None,
+):
+    """
+    Returns a list of filtered logs from a project.
+
+    Args:
+        project: Name of the project to delete logs from.
+
+        filter: Boolean string to filter logs for deletion, for example:
+        "(temperature > 0.5 and (len(system_msg) < 100 or 'no' in usr_response))"
+
+        api_key: If specified, unify API key to be used. Defaults to the value in the
+        `UNIFY_KEY` environment variable.
+
+    Returns:
+        The list of deleted logs for the project, after optionally applying filtering.
+    """
+    logs = get_logs(project, filter, None, None, api_key)
+    for log in logs:
+        log.delete()
+    return logs
 
 
 def get_logs_with_fields(
@@ -892,6 +918,9 @@ def get_logs_by_value(
 
         api_key: If specified, unify API key to be used. Defaults to the value in the
         `UNIFY_KEY` environment variable.
+
+        Whether or not to include logs which contain identical key-value pairs to all
+        kwargs passed which are present in the log, but
 
         kwargs: The data to search the upstream logs for.
 
@@ -1113,7 +1142,8 @@ def span(io=True):
                 "span_name": fn.__name__,
                 "exec_time": None,
                 "offset": round(
-                    0.0 if not current_span.get() else t1 - running_time.get(), 2
+                    0.0 if not current_span.get() else t1 - running_time.get(),
+                    2,
                 ),
                 "inputs": inputs,
                 "outputs": None,
@@ -1160,7 +1190,8 @@ def span(io=True):
                 "span_name": fn.__name__,
                 "exec_time": None,
                 "offset": round(
-                    0.0 if not current_span.get() else t1 - running_time.get(), 2
+                    0.0 if not current_span.get() else t1 - running_time.get(),
+                    2,
                 ),
                 "inputs": inputs,
                 "outputs": None,

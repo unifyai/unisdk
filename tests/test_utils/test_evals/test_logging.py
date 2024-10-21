@@ -495,6 +495,28 @@ class TestLogging(unittest.TestCase):
         ), "There should be 1 log with user_prompt == 'What is the weather today?'."
         unify.delete_project(project)
 
+    def test_delete_logs(self):
+        project = "my_project"
+        if project in unify.list_projects():
+            unify.delete_project(project)
+        unify.create_project(project)
+        assert len(unify.get_logs(project)) == 0
+        unify.log(project, customer="John Smith")
+        unify.log(project, customer="Maggie Smith")
+        unify.log(project, customer="John Terry")
+        assert len(unify.get_logs(project)) == 3
+        deleted_logs = unify.delete_logs(project, "'Smith' in customer")
+        assert len(deleted_logs) == 2
+        assert set([dl.entries["customer"] for dl in deleted_logs]) == {
+            "John Smith",
+            "Maggie Smith",
+        }
+        assert len(unify.get_logs(project)) == 1
+        deleted_logs = unify.delete_logs(project)
+        assert len(deleted_logs) == 1
+        assert deleted_logs[0].entries["customer"] == "John Terry"
+        assert len(unify.get_logs(project)) == 0
+
     def test_contextual_logging_threaded(self):
         project = "my_project"
         if project in unify.list_projects():
