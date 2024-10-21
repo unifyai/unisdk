@@ -433,7 +433,21 @@ def log(
     if skip_duplicates:
         retrieved_logs = get_logs_by_value(project, **kwargs, api_key=api_key)
         if retrieved_logs:
-            return retrieved_logs[0]
+            assert len(retrieved_logs) == 1, (
+                f"When skip_duplicates == True, then it's expected that each log "
+                f"entry is unique, but found {len(retrieved_logs)} entries with "
+                f"config {kwargs}"
+            )
+            retrieved_log = retrieved_logs[0]
+            if len(kwargs) > len(retrieved_log.entries):
+                retrieved_log.add_entries(
+                    **{
+                        k: v
+                        for k, v in kwargs.items()
+                        if k not in retrieved_log.entries
+                    },
+                )
+            return retrieved_log
     body = {"project": project, "entries": kwargs}
     response = requests.post(BASE_URL + "/log", headers=headers, json=body)
     response.raise_for_status()
