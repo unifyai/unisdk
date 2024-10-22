@@ -5,7 +5,6 @@ import time
 import uuid
 import functools
 import json
-import threading
 from contextvars import ContextVar
 from typing import Any, Dict, List, Optional, Union, Tuple
 
@@ -14,9 +13,7 @@ import unify
 from unify import BASE_URL
 
 from ..types import _Formatted
-from .helpers import _validate_api_key
-
-PROJECT_LOCK = threading.Lock()
+from .helpers import _validate_api_key, _get_and_maybe_create_project
 
 # Helpers #
 # --------#
@@ -35,23 +32,6 @@ current_context_nest_level = ContextVar("current_context_nest_level", default=0)
 # span
 current_span = ContextVar("current_span", default={})
 running_time = ContextVar("running_time", default=0.0)
-
-
-def _get_and_maybe_create_project(project: str, api_key: Optional[str] = None) -> str:
-    api_key = _validate_api_key(api_key)
-    if project is None:
-        project = unify.active_project
-        if project is None:
-            raise Exception(
-                "No project specified in the arguments, and no globally set project "
-                "either. A project must be passed in the argument, or set globally via "
-                "unify.activate('project_name')",
-            )
-    PROJECT_LOCK.acquire()
-    if project not in list_projects(api_key):
-        create_project(project, api_key=api_key)
-    PROJECT_LOCK.release()
-    return project
 
 
 def _enclose_str(v):

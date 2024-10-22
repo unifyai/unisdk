@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Optional, Union
 import requests
 from unify import BASE_URL
 
-from .helpers import _res_to_list, _validate_api_key
+from .helpers import _validate_api_key
 
 
 def upload_dataset(
