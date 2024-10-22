@@ -49,6 +49,28 @@ def _versioned_field(field_name: str):
     return True
 
 
+def _handle_version(
+    kwargs: Dict[str, Any],
+    version: Optional[Union[Union[int, str], Dict[str, Union[int, str]]]],
+) -> Dict[str, Any]:
+    if version is None and "version" in kwargs:
+        version = kwargs.pop("version")
+    if version is not None:
+        if isinstance(version, dict):
+            kwargs = {
+                k + "/" + str(version[k]) if k in version else k: v
+                for k, v in kwargs.items()
+            }
+        elif isinstance(version, str) or isinstance(version, int):
+            kwargs = {k + "/" + str(version): v for k, v in kwargs.items()}
+        else:
+            raise Exception(
+                f"Expected version to be of type int or str, "
+                f"but found {version} of type {type(version)}",
+            )
+    return kwargs
+
+
 # Projects #
 # ---------#
 
@@ -403,21 +425,7 @@ def log(
         "Authorization": f"Bearer {api_key}",
     }
     kwargs = {**kwargs, **current_global_active_log_kwargs.get()}
-    if version is None and "version" in kwargs:
-        version = kwargs.pop("version")
-    if version is not None:
-        if isinstance(version, dict):
-            kwargs = {
-                k + "/" + str(version[k]) if k in version else k: v
-                for k, v in kwargs.items()
-            }
-        elif isinstance(version, str) or isinstance(version, int):
-            kwargs = {k + "/" + str(version): v for k, v in kwargs.items()}
-        else:
-            raise Exception(
-                f"Expected version to be of type int or str, "
-                f"but found {version} of type {type(version)}",
-            )
+    kwargs = _handle_version(kwargs, version)
     project = _get_and_maybe_create_project(project, api_key)
     if skip_duplicates:
         retrieved_logs = get_logs_by_value(project, **kwargs, api_key=api_key)
@@ -444,6 +452,7 @@ def log(
 
 def add_log_entries(
     id: Optional[int] = None,
+    version: Optional[Union[Union[int, str], Dict[str, Union[int, str]]]] = None,
     api_key: Optional[str] = None,
     **kwargs,
 ) -> Dict[str, str]:
@@ -451,7 +460,12 @@ def add_log_entries(
     Add extra entries into an existing log.
 
     Args:
-        id: The log id to update with extra data. Looks for the current active log if no id is provided.
+        id: The log id to update with extra data. Looks for the current active log if no
+        id is provided.
+
+        version: Optional version parameters which are associated with each key being
+        logged, with the keys of this version dict being the keys being logged, and the
+        values being the name of this particular version.
 
         api_key: If specified, unify API key to be used. Defaults to the value in the
         `UNIFY_KEY` environment variable.
@@ -472,7 +486,6 @@ def add_log_entries(
         "Authorization": f"Bearer {api_key}",
     }
     if current_context_nest_level.get() > 0:
-
         kwargs = {
             **kwargs,
             **{
@@ -481,7 +494,9 @@ def add_log_entries(
                 if k not in current_logged_logs.get().get(id, {})
             },
         }
-    body = {"entries": {**kwargs, **current_global_active_log_kwargs.get()}}
+    kwargs = {**kwargs, **current_global_active_log_kwargs.get()}
+    kwargs = _handle_version(kwargs, version)
+    body = {"entries": kwargs}
     # ToDo: remove this once duplicates are prevented in the backend
     current_keys = get_log_by_id(id if id else current_active_log.id).entries.keys()
     assert not any(key in body["entries"] for key in current_keys), (
