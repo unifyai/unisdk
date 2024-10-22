@@ -74,9 +74,9 @@ def _versioned_field(field_name: str):
 
 
 def create_project(
-        name: str,
-        overwrite: bool = False,
-        api_key: Optional[str] = None
+    name: str,
+    overwrite: bool = False,
+    api_key: Optional[str] = None,
 ) -> Dict[str, str]:
     """
     Creates a logging project and adds this to your account. This project will have

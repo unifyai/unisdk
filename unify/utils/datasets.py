@@ -314,7 +314,9 @@ def create_artifacts(
     }
     data = {"artifacts": artifacts}
     response = requests.post(
-        BASE_URL + f"/datasetv2/{name}/artifacts", json=data, headers=headers
+        BASE_URL + f"/datasetv2/{name}/artifacts",
+        json=data,
+        headers=headers,
     )
     response.raise_for_status()
     ret = response.json()
@@ -344,7 +346,9 @@ def delete_artifact(
         "Authorization": f"Bearer {api_key}",
     }
     response = requests.delete(
-        BASE_URL + f"/datasetv2/{name}/artifacts/{key}", json=data, headers=headers
+        BASE_URL + f"/datasetv2/{name}/artifacts/{key}",
+        json=data,
+        headers=headers,
     )
     response.raise_for_status()
     return response.json()

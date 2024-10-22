@@ -111,7 +111,11 @@ class Dataset(_Formatted):
         data = unify.download_dataset(name, api_key=api_key)
         artifacts = unify.download_artifacts(name, api_key=api_key)
         return Dataset(
-            data, name=name, artifacts=artifacts, with_ids=True, api_key=api_key
+            data,
+            name=name,
+            artifacts=artifacts,
+            with_ids=True,
+            api_key=api_key,
         )
 
     def _assert_name_exists(self) -> None:
@@ -479,7 +483,7 @@ class Dataset(_Formatted):
         if isinstance(item, int):
             return self._data[item]
         elif isinstance(item, slice):
-            return Dataset(self._data[item.start:item.stop:item.step])
+            return Dataset(self._data[item.start : item.stop : item.step])
         raise TypeError(
             "expected item to be of type int or slice,"
             "but found {} of type {}".format(item, type(item)),
