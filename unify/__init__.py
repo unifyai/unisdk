@@ -98,8 +98,8 @@ class Project:
         self._api_key = helpers._validate_api_key(api_key)
         self._entered = False
 
-    def create(self):
-        create_project(self._project, self._api_key)
+    def create(self, overwrite: bool = False) -> None:
+        create_project(self._project, overwrite, api_key=self._api_key)
 
     def delete(self):
         delete_project(self._project, self._api_key)

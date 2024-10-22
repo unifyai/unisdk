@@ -49,7 +49,7 @@ def _get_and_maybe_create_project(project: str, api_key: Optional[str] = None) -
             )
     PROJECT_LOCK.acquire()
     if project not in list_projects(api_key):
-        create_project(project, api_key)
+        create_project(project, api_key=api_key)
     PROJECT_LOCK.release()
     return project
 
@@ -73,13 +73,19 @@ def _versioned_field(field_name: str):
 # ---------#
 
 
-def create_project(name: str, api_key: Optional[str] = None) -> Dict[str, str]:
+def create_project(
+        name: str,
+        overwrite: bool = False,
+        api_key: Optional[str] = None
+) -> Dict[str, str]:
     """
     Creates a logging project and adds this to your account. This project will have
     a set of logs associated with it.
 
     Args:
         name: A unique, user-defined name used when referencing the project.
+
+        overwrite: Whether to overwrite an existing project if is already exists.
 
         api_key: If specified, unify API key to be used. Defaults to the value in the
         `UNIFY_KEY` environment variable.
@@ -93,6 +99,9 @@ def create_project(name: str, api_key: Optional[str] = None) -> Dict[str, str]:
         "Authorization": f"Bearer {api_key}",
     }
     body = {"name": name}
+    if overwrite:
+        if name in list_projects(api_key):
+            delete_project(name, api_key=api_key)
     response = requests.post(BASE_URL + "/project", headers=headers, json=body)
     response.raise_for_status()
     return response.json()
