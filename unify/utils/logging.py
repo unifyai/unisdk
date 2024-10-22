@@ -214,7 +214,7 @@ def add_artifacts(
         "Authorization": f"Bearer {api_key}",
     }
     body = {"artifacts": kwargs}
-    project = _get_and_maybe_create_project(project, api_key)
+    project = _get_and_maybe_create_project(project, api_key=api_key)
     response = requests.post(
         BASE_URL + f"/project/{project}/artifacts",
         headers=headers,
@@ -248,7 +248,7 @@ def delete_artifact(
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    project = _get_and_maybe_create_project(project, api_key)
+    project = _get_and_maybe_create_project(project, api_key=api_key)
     response = requests.delete(
         BASE_URL + f"/project/{project}/artifacts/{key}",
         headers=headers,
@@ -279,7 +279,7 @@ def get_artifacts(
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    project = _get_and_maybe_create_project(project, api_key)
+    project = _get_and_maybe_create_project(project, api_key=api_key)
     response = requests.get(BASE_URL + f"/project/{project}/artifacts", headers=headers)
     response.raise_for_status()
     return response.json()
@@ -334,7 +334,7 @@ class Log(_Formatted):
         self._entries = get_log_by_id(self._id, self._api_key)._entries
 
     def add_entries(self, **kwargs) -> None:
-        add_log_entries(self._id, self._api_key, **kwargs)
+        add_log_entries(self._id, api_key=self._api_key, **kwargs)
         self._entries = {**self._entries, **kwargs}
 
     def replace_entries(self, **kwargs) -> None:
@@ -426,7 +426,7 @@ def log(
     }
     kwargs = {**kwargs, **current_global_active_log_kwargs.get()}
     kwargs = _handle_version(kwargs, version)
-    project = _get_and_maybe_create_project(project, api_key)
+    project = _get_and_maybe_create_project(project, api_key=api_key)
     if skip_duplicates:
         retrieved_logs = get_logs_by_value(project, **kwargs, api_key=api_key)
         if retrieved_logs:
@@ -439,7 +439,7 @@ def log(
     body = {"project": project, "entries": kwargs}
     response = requests.post(BASE_URL + "/log", headers=headers, json=body)
     response.raise_for_status()
-    created_log = Log(response.json(), api_key, **kwargs)
+    created_log = Log(response.json(), api_key=api_key, **kwargs)
     if current_context_nest_level.get() > 0:
         current_logged_logs.set(
             {
@@ -475,7 +475,7 @@ def add_log_entries(
     Returns:
         A message indicating whether the log was successfully updated.
     """
-    current_active_log: Log = current_global_active_log.get()
+    current_active_log: Optional[Log] = current_global_active_log.get()
     if current_active_log is None and id is None:
         raise ValueError(
             "`id` must be set if no current log is active within the context.",
@@ -591,8 +591,8 @@ def replace_log_entries(
     """
     api_key = _validate_api_key(api_key)
     for k, v in kwargs.items():
-        delete_log_entry(k, id, api_key)
-    return add_log_entries(id, api_key, **kwargs)
+        delete_log_entry(k, id, api_key=api_key)
+    return add_log_entries(id, api_key=api_key, **kwargs)
 
 
 def update_log_entries(
@@ -618,12 +618,12 @@ def update_log_entries(
     Returns:
         A message indicating whether the log was successfully updated.
     """
-    data = get_log_by_id(id, api_key).entries
+    data = get_log_by_id(id, api_key=api_key).entries
     replacements = dict()
     for k, v in kwargs.items():
         f = fn[k] if isinstance(fn, dict) else fn
         replacements[k] = f(data[k], v)
-    return replace_log_entries(id, api_key, **replacements)
+    return replace_log_entries(id, api_key=api_key, **replacements)
 
 
 def rename_log_entries(
@@ -648,11 +648,11 @@ def rename_log_entries(
         A message indicating whether the log field names were successfully updated.
     """
     api_key = _validate_api_key(api_key)
-    data = get_log_by_id(id, api_key).entries
+    data = get_log_by_id(id, api_key=api_key).entries
     for old_name in kwargs.keys():
-        delete_log_entry(old_name, id, api_key)
+        delete_log_entry(old_name, id, api_key=api_key)
     new_entries = {new_name: data[old_name] for old_name, new_name in kwargs.items()}
-    return add_log_entries(id, api_key, **new_entries)
+    return add_log_entries(id, api_key=api_key, **new_entries)
 
 
 def version_log_entries(
@@ -682,7 +682,7 @@ def version_log_entries(
         "reversion_log_entries if you would like to change the version."
     )
     kwargs = {k: f"{k}/{v}" for k, v in kwargs.items()}
-    return rename_log_entries(id, api_key, **kwargs)
+    return rename_log_entries(id, api_key=api_key, **kwargs)
 
 
 def unversion_log_entries(
@@ -709,7 +709,7 @@ def unversion_log_entries(
         _versioned_field(name) for name in field_names
     ), "Cannot unversion a log entry which is not already versioned."
     kwargs = {name: "/".join(name.split("/")[:-1]) for name in field_names}
-    return rename_log_entries(id, api_key, **kwargs)
+    return rename_log_entries(id, api_key=api_key, **kwargs)
 
 
 def reversion_log_entries(
@@ -739,7 +739,7 @@ def reversion_log_entries(
         "as a tuple of values, old and new versions, in that order."
     )
     kwargs = {f"{k}/{v[0]}": f"{k}/{v[1]}" for k, v in kwargs.items()}
-    return rename_log_entries(id, api_key, **kwargs)
+    return rename_log_entries(id, api_key=api_key, **kwargs)
 
 
 def get_logs(
@@ -773,7 +773,7 @@ def get_logs(
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    project = _get_and_maybe_create_project(project, api_key)
+    project = _get_and_maybe_create_project(project, api_key=api_key)
     params = {
         "project": project,
         "filter_expr": filter,
@@ -809,7 +809,7 @@ def delete_logs(
     Returns:
         The list of deleted logs for the project, after optionally applying filtering.
     """
-    logs = get_logs(project, filter, None, None, api_key)
+    logs = get_logs(project, filter, None, None, api_key=api_key)
     for log in logs:
         log.delete()
     return logs
@@ -982,7 +982,7 @@ def get_groups(
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    project = _get_and_maybe_create_project(project, api_key)
+    project = _get_and_maybe_create_project(project, api_key=api_key)
     params = {"project": project, "key": key}
     response = requests.get(BASE_URL + "/logs/groups", headers=headers, params=params)
     response.raise_for_status()
@@ -1008,14 +1008,14 @@ def group_logs(key: str, project: Optional[str] = None, api_key: Optional[str] =
         version of the log key with equal values, and the value being a list of logs.
     """
     api_key = _validate_api_key(api_key)
-    project = _get_and_maybe_create_project(project, api_key)
+    project = _get_and_maybe_create_project(project, api_key=api_key)
     return {
         k: get_logs(
             project,
             "{} == {}".format(key, '"' + v + '"' if isinstance(v, str) else v),
-            api_key,
+            api_key=api_key,
         )
-        for k, v in get_groups(key, project, api_key).items()
+        for k, v in get_groups(key, project, api_key=api_key).items()
     }
 
 
@@ -1053,7 +1053,7 @@ def get_logs_metric(
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    project = _get_and_maybe_create_project(project, api_key)
+    project = _get_and_maybe_create_project(project, api_key=api_key)
     params = {"project": project, "filter_expr": filter}
     response = requests.get(
         BASE_URL + f"/logs/metric/{metric}/{key}",
@@ -1064,8 +1064,9 @@ def get_logs_metric(
     return response.json()
 
 
-# if an active log is there, means the function is being called from within another traced function
-# if no active log, create a new log
+# If an active log is there, means the function is being called from within another
+# traced function.
+# If no active log, create a new log
 class trace:
 
     def __enter__(self):
@@ -1075,7 +1076,6 @@ class trace:
             self.current_global_active_log_already_set = True
         else:
             self.token = current_global_active_log.set(log())
-            # print(current_global_active_log.get().id)
 
     def __exit__(self, *args, **kwargs):
         if not self.current_global_active_log_already_set:
