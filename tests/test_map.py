@@ -1,5 +1,6 @@
 import time
 import unittest
+import asyncio
 
 import unify
 
@@ -71,6 +72,30 @@ class TestMap(unittest.TestCase):
                 serial_time = time.perf_counter() - t0
                 assert serial_time > 2 * mapped_time  # at least than 2x faster
 
+    def test_threaded_map_with_context(self) -> None:
+        with ProjectHandling():
+            with unify.Project("test_project"):
+
+                def contextual_func(a, b, c=3):
+                    with unify.Context(a=a, b=b, c=c):
+                        unify.log(test="some random value")
+                    return a + b + c
+
+                results = unify.map(
+                    contextual_func, args=[(1, 2), (3, 4)], kwargs={"c": 2}
+                )
+                assert results == [1 + 2 + 2, 3 + 4 + 2]
+                results = unify.map(
+                    contextual_func, args=[(1, 2), (3, 4)], kwargs=[{"c": 2}, {"c": 4}]
+                )
+                assert results == [1 + 2 + 2, 3 + 4 + 4]
+                results = unify.map(
+                    contextual_func,
+                    args=[1, 3],
+                    kwargs=[{"b": 2, "c": 2}, {"b": 4, "c": 4}],
+                )
+                assert results == [1 + 2 + 2, 3 + 4 + 4]
+
     def test_asyncio_map(self) -> None:
         t0 = time.perf_counter()
         unify.map(self._async_evaluate, self._qs, mode="asyncio")
@@ -80,3 +105,35 @@ class TestMap(unittest.TestCase):
             self._evaluate(q)
         serial_time = time.perf_counter() - t0
         assert serial_time > 2 * mapped_time  # at least than 2x faster
+
+    def test_asyncio_map_with_context(self) -> None:
+        with ProjectHandling():
+            with unify.Project("test_project"):
+
+                async def contextual_func(a, b, c=3):
+                    with unify.Context(a=a, b=b, c=c):
+                        await asyncio.sleep(0.1)
+                        unify.log(test="some random value")
+                    return a + b + c
+
+                results = unify.map(
+                    contextual_func,
+                    args=[(1, 2), (3, 4)],
+                    kwargs={"c": 2},
+                    mode="asyncio",
+                )
+                assert results == [1 + 2 + 2, 3 + 4 + 2]
+                results = unify.map(
+                    contextual_func,
+                    args=[(1, 2), (3, 4)],
+                    kwargs=[{"c": 2}, {"c": 4}],
+                    mode="asyncio",
+                )
+                assert results == [1 + 2 + 2, 3 + 4 + 4]
+                results = unify.map(
+                    contextual_func,
+                    args=[1, 3],
+                    kwargs=[{"b": 2, "c": 2}, {"b": 4, "c": 4}],
+                    mode="asyncio",
+                )
+                assert results == [1 + 2 + 2, 3 + 4 + 4]
