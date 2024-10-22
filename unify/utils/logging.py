@@ -49,26 +49,16 @@ def _versioned_field(field_name: str):
     return True
 
 
-def _handle_version(
+def _handle_versions(
     kwargs: Dict[str, Any],
-    version: Optional[Union[Union[int, str], Dict[str, Union[int, str]]]],
 ) -> Dict[str, Any]:
-    if version is None and "version" in kwargs:
-        version = kwargs.pop("version")
-    if version is not None:
-        if isinstance(version, dict):
-            kwargs = {
-                k + "/" + str(version[k]) if k in version else k: v
-                for k, v in kwargs.items()
-            }
-        elif isinstance(version, str) or isinstance(version, int):
-            kwargs = {k + "/" + str(version): v for k, v in kwargs.items()}
+    new_kwargs = dict()
+    for k, v in kwargs.items():
+        if isinstance(v, unify.Versioned):
+            new_kwargs[f"{k}/{v.version}"] = v.value
         else:
-            raise Exception(
-                f"Expected version to be of type int or str, "
-                f"but found {version} of type {type(version)}",
-            )
-    return kwargs
+            new_kwargs[k] = v
+    return new_kwargs
 
 
 # Projects #
@@ -388,7 +378,6 @@ class Log(_Formatted):
 
 def log(
     project: Optional[str] = None,
-    version: Optional[Union[Union[int, str], Dict[str, Union[int, str]]]] = None,
     skip_duplicates: bool = True,
     api_key: Optional[str] = None,
     **kwargs,
@@ -400,10 +389,6 @@ def log(
 
     Args:
         project: Name of the project the stored logs will be associated to.
-
-        version: Optional version parameters which are associated with each key being
-        logged, with the keys of this version dict being the keys being logged, and the
-        values being the name of this particular version.
 
         skip_duplicates: Whether to skip creating new log entries for identical log
         data. If True (default), then the same eval Python script can be repeatedly run
@@ -425,7 +410,7 @@ def log(
         "Authorization": f"Bearer {api_key}",
     }
     kwargs = {**kwargs, **current_global_active_log_kwargs.get()}
-    kwargs = _handle_version(kwargs, version)
+    kwargs = _handle_versions(kwargs)
     project = _get_and_maybe_create_project(project, api_key=api_key)
     if skip_duplicates:
         retrieved_logs = get_logs_by_value(project, **kwargs, api_key=api_key)
@@ -452,7 +437,6 @@ def log(
 
 def add_log_entries(
     id: Optional[int] = None,
-    version: Optional[Union[Union[int, str], Dict[str, Union[int, str]]]] = None,
     api_key: Optional[str] = None,
     **kwargs,
 ) -> Dict[str, str]:
@@ -462,10 +446,6 @@ def add_log_entries(
     Args:
         id: The log id to update with extra data. Looks for the current active log if no
         id is provided.
-
-        version: Optional version parameters which are associated with each key being
-        logged, with the keys of this version dict being the keys being logged, and the
-        values being the name of this particular version.
 
         api_key: If specified, unify API key to be used. Defaults to the value in the
         `UNIFY_KEY` environment variable.
@@ -495,7 +475,7 @@ def add_log_entries(
             },
         }
     kwargs = {**kwargs, **current_global_active_log_kwargs.get()}
-    kwargs = _handle_version(kwargs, version)
+    kwargs = _handle_versions(kwargs)
     body = {"entries": kwargs}
     # ToDo: remove this once duplicates are prevented in the backend
     current_keys = get_log_by_id(id if id else current_active_log.id).entries.keys()
@@ -1099,7 +1079,7 @@ class trace:
 
 class Context:
     def __init__(self, **kwargs):
-        self.kwargs = kwargs
+        self.kwargs = _handle_versions(kwargs)
 
     def __enter__(self):
         self.token = current_global_active_log_kwargs.set(

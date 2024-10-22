@@ -1,3 +1,6 @@
+from typing import Any, Union, Optional, Dict
+
+
 def get_code(fn: callable):
     """
     Takes a function and converts it to a string of the implementation within the file
@@ -20,3 +23,71 @@ def get_code(fn: callable):
             break
         fn_str.append(line)
     return "".join(fn_str)
+
+
+class Versioned:
+
+    def __init__(
+        self,
+        value: Any,
+        version: Union[int, str] = 0,
+        versions: Optional[Dict[Union[int, str], Any]] = None,
+    ):
+        self._value = value
+        self._version = version
+        self._versions = {**(versions if versions else {}), **{version: value}}
+
+    def __repr__(self):
+        return f"{self._value} [v:{self._version}]"
+
+    def update(self, value: Any, version: Optional[Union[int, str]] = None):
+        if version is None:
+            previous_version = list(self._versions.keys())[-1]
+            if isinstance(previous_version, int):
+                version = previous_version + 1
+            else:
+                raise Exception(
+                    "version must be specified explicitly if the"
+                    "previous version is not of type int",
+                )
+        self._value = value
+        self._version = version
+        self._versions[version] = value
+
+    def set_version(self, version: Union[int, str]):
+        assert (
+            version in self._versions
+        ), "Cannot set to a version which is not present in the current versions."
+        self._value = self._versions[version]
+        self._version = version
+
+    def at_version(self, version: Union[int, str]):
+        return Versioned(self._versions[version], version, self._versions)
+
+    @property
+    def value(self):
+        return self._value
+
+    @property
+    def version(self):
+        return self._version
+
+    def __len__(self):
+        return len(self._versions)
+
+
+def versioned(value: Any, version: Union[int, str] = 0):
+    """
+    Thinly wrap input value into `unify.Versioned` class, such that it includes version
+    information.
+
+    Args:
+        value: The value to wrap with attached version information.
+
+        version: The version associated with this value.
+        Defaults to 0.
+
+    Returns:
+        A `unify.Versioned` instance of the input value.
+    """
+    return Versioned(value, version)
