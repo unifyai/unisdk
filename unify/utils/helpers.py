@@ -36,16 +36,23 @@ def _dict_aligns_with_pydantic(dict_in: Dict, pydantic_cls: type(BaseModel)) -> 
         return False
 
 
-def _get_and_maybe_create_project(project: str, api_key: Optional[str] = None) -> str:
+def _get_and_maybe_create_project(
+    project: str,
+    required: bool = True,
+    api_key: Optional[str] = None,
+) -> Optional[str]:
     api_key = _validate_api_key(api_key)
     if project is None:
         project = unify.active_project
         if project is None:
-            raise Exception(
-                "No project specified in the arguments, and no globally set project "
-                "either. A project must be passed in the argument, or set globally via "
-                "unify.activate('project_name')",
-            )
+            if required:
+                raise Exception(
+                    "No project specified in the arguments, and no globally set "
+                    "project either, with required=True was passed. A project must be "
+                    "passed in the argument, or set globally via "
+                    "unify.activate('project_name')",
+                )
+            return None
     PROJECT_LOCK.acquire()
     if project not in unify.list_projects(api_key):
         unify.create_project(project, api_key=api_key)
