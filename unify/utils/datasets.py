@@ -4,7 +4,14 @@ from typing import Any, Dict, List, Optional, Union
 import requests
 from unify import BASE_URL
 
-from .helpers import _validate_api_key
+from .helpers import _validate_api_key, _get_and_maybe_create_project
+
+
+def _maybe_prepend_project_name(name: str, api_key: Optional[str] = None) -> str:
+    project = _get_and_maybe_create_project(required=False, api_key=api_key)
+    if project is not None and project not in name:
+        return f"{project}/{name}"
+    return name
 
 
 def upload_dataset(
@@ -24,6 +31,7 @@ def upload_dataset(
         `UNIFY_KEY` environment variable.
     """
     api_key = _validate_api_key(api_key)
+    name = _maybe_prepend_project_name(name, api_key)
     headers = {
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
@@ -50,7 +58,7 @@ def download_dataset(
     name: str,
     path: Optional[str] = None,
     api_key: Optional[str] = None,
-) -> Union[List[Any], None]:
+) -> Optional[List[Any]]:
     """
     Downloads a dataset from the platform.
 
@@ -69,6 +77,7 @@ def download_dataset(
         ValueError: If there was an HTTP error.
     """
     api_key = _validate_api_key(api_key)
+    name = _maybe_prepend_project_name(name, api_key)
     headers = {
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
@@ -82,7 +91,6 @@ def download_dataset(
             return None
     ret = response.json()
     return [{"id": e["id"], "entry": e["entry"]} for e in ret]
-    return ret
 
 
 def delete_dataset(name: str, api_key: Optional[str] = None) -> str:
@@ -101,6 +109,7 @@ def delete_dataset(name: str, api_key: Optional[str] = None) -> str:
         ValueError: If there was an HTTP error.
     """
     api_key = _validate_api_key(api_key)
+    name = _maybe_prepend_project_name(name, api_key)
     headers = {
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
@@ -124,6 +133,7 @@ def rename_dataset(name: str, new_name: str, api_key: Optional[str] = None):
 
     """
     api_key = _validate_api_key(api_key)
+    name = _maybe_prepend_project_name(name, api_key)
     headers = {
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
@@ -159,6 +169,13 @@ def list_datasets(api_key: Optional[str] = None) -> List[str]:
     # Send GET request to the /dataset/list endpoint
     response = requests.get(BASE_URL + "/datasetsv2/", headers=headers)
     response.raise_for_status()
+    project = _get_and_maybe_create_project(required=False, api_key=api_key)
+    if project is not None:
+        return [
+            item["name"].lstrip(project + "/")
+            for item in response.json()
+            if project in item["name"]
+        ]
     return [item["name"] for item in response.json()]
 
 
@@ -184,6 +201,7 @@ def add_dataset_entries(
         which were added and those which were already present.
     """
     api_key = _validate_api_key(api_key)
+    name = _maybe_prepend_project_name(name, api_key)
     headers = {
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
@@ -221,6 +239,7 @@ def delete_dataset_entry(
         which were deleted and those which were not present.
     """
     api_key = _validate_api_key(api_key)
+    name = _maybe_prepend_project_name(name, api_key)
     headers = {
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
@@ -253,6 +272,7 @@ def get_dataset_entry(
         A dict containing the dataset entry.
     """
     api_key = _validate_api_key(api_key)
+    name = _maybe_prepend_project_name(name, api_key)
     headers = {
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
@@ -280,6 +300,7 @@ def download_artifacts(
 
     """
     api_key = _validate_api_key(api_key)
+    name = _maybe_prepend_project_name(name, api_key)
     headers = {
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
@@ -308,6 +329,7 @@ def create_artifacts(
 
     """
     api_key = _validate_api_key(api_key)
+    name = _maybe_prepend_project_name(name, api_key)
     headers = {
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
@@ -341,13 +363,13 @@ def delete_artifact(
 
     """
     api_key = _validate_api_key(api_key)
+    name = _maybe_prepend_project_name(name, api_key)
     headers = {
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
     response = requests.delete(
         BASE_URL + f"/datasetv2/{name}/artifacts/{key}",
-        json=data,
         headers=headers,
     )
     response.raise_for_status()

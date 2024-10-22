@@ -37,7 +37,7 @@ def _dict_aligns_with_pydantic(dict_in: Dict, pydantic_cls: type(BaseModel)) -> 
 
 
 def _get_and_maybe_create_project(
-    project: str,
+    project: Optional[str] = None,
     required: bool = True,
     api_key: Optional[str] = None,
 ) -> Optional[str]:
