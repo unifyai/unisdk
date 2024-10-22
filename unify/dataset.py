@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 from typing import Any, Dict, List, Optional, Union
 
 import unify
@@ -19,7 +18,7 @@ class Dataset(_Formatted):
         data: List[Any],
         *,
         name: str = None,
-        artifacts: Dict[str, Any] = {},
+        artifacts: Dict[str, Any] = None,
         with_ids: Optional[bool] = False,
         api_key: Optional[str] = None,
     ) -> None:
@@ -27,7 +26,8 @@ class Dataset(_Formatted):
         Initialize a local dataset.
 
         Args:
-            data: The data for populating the dataset. This needs to be a list of JSON serializable objects.
+            data: The data for populating the dataset.
+            This needs to be a list of JSON serializable objects.
 
             name: The name of the dataset.
 
@@ -51,6 +51,8 @@ class Dataset(_Formatted):
             self._raw_data = data
         else:
             self._raw_data = [{"id": None, "entry": entry} for entry in data]
+        if artifacts is None:
+            artifacts = {}
         self._artifacts = artifacts
         self._api_key = _validate_api_key(api_key)
         super().__init__()
@@ -223,7 +225,6 @@ class Dataset(_Formatted):
             "The following {} entries are stored upstream but not locally\n: "
             "{}".format(len(unique_upstream), unique_upstream),
         )
-        upstream_entries = set([item["entry"] for item in upstream_dataset])
         unique_local = [item for item in self._data if item not in upstream_dataset]
         print(
             "The following {} entries are stored upstream but not locally\n: "
@@ -478,7 +479,7 @@ class Dataset(_Formatted):
         if isinstance(item, int):
             return self._data[item]
         elif isinstance(item, slice):
-            return Dataset(self._data[item.start : item.stop : item.step])
+            return Dataset(self._data[item.start:item.stop:item.step])
         raise TypeError(
             "expected item to be of type int or slice,"
             "but found {} of type {}".format(item, type(item)),
@@ -545,8 +546,6 @@ class Dataset(_Formatted):
             if dct == {}:
                 return None
             return self._create_pydantic_model(item, dct)
-        elif self._contains_chain(self._shared_data, chain, item):
-            return None
         else:
             return item
 
@@ -554,10 +553,4 @@ class Dataset(_Formatted):
         """
         Used by the rich package for representing and print the instance.
         """
-        if self._shared_data is None:
-            yield self._data
-        else:
-            yield "shared", self._prune(
-                self._create_pydantic_model(self._data[0], self._shared_data),
-            )
-            yield [self._shared_items_pruned(d) for d in self._data]
+        yield self._data
