@@ -61,7 +61,7 @@ def _handle_special_types(
                 val = v.value.name
             elif callable(v.value):
                 key = f"{k}/{v.version}"
-                val = unify.get_code(v.value)
+                val = inspect.getsource(v.value)
             else:
                 key = f"{k}/{v.version}"
                 val = v.value
@@ -70,7 +70,7 @@ def _handle_special_types(
             v.upload()
             new_kwargs[k] = v.name
         elif callable(v):
-            new_kwargs[k] = unify.get_code(v)
+            new_kwargs[k] = inspect.getsource(v)
         else:
             new_kwargs[k] = v
     return new_kwargs

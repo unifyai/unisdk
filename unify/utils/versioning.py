@@ -1,21 +1,6 @@
-import inspect
 from typing import Any, Union, Optional, Dict
 
 import unify
-
-
-def get_code(fn: callable):
-    """
-    Takes a function and converts it to a string of the implementation within the file
-    of the function (it doesn't parse the full AST, or sub-functions etc.)
-
-    Args:
-        fn: the function to convert to a string of the code implementation.
-
-    Returns:
-        The string of the code implementation.
-    """
-    return inspect.getsource(fn)
 
 
 class Versioned:
