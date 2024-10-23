@@ -113,6 +113,9 @@ class Versioned:
     def __len__(self):
         return len(self._versions)
 
+    def __contains__(self, version: Union[int, str]):
+        return version in self._versions
+
 
 def versioned(
     value: Any,

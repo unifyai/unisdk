@@ -70,3 +70,10 @@ class TestVersioning(unittest.TestCase):
         system_prompt.set_latest()
         assert system_prompt.version == 1
         assert system_prompt.value == "you are an expert mathematician"
+
+    def test_versioned_contains(self):
+        system_prompt = unify.versioned("you are an expert")
+        assert 0 in system_prompt
+        system_prompt.update("you are an expert mathematician")
+        assert 1 in system_prompt
+        assert 2 not in system_prompt
