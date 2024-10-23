@@ -108,7 +108,12 @@ class Versioned:
         return len(self._versions)
 
 
-def versioned(value: Any, version: Union[int, str] = 0):
+def versioned(
+    value: Any,
+    version: Union[int, str] = 0,
+    versions: Optional[Dict[Union[int, str], Any]] = None,
+    name: Optional[str] = None,
+) -> Versioned:
     """
     Thinly wrap input value into `unify.Versioned` class, such that it includes version
     information.
@@ -119,7 +124,11 @@ def versioned(value: Any, version: Union[int, str] = 0):
         version: The version associated with this value.
         Defaults to 0.
 
+        versions: Dictionary of versions to store in the instance
+
+        name: The name of the entry being versioned.
+
     Returns:
         A `unify.Versioned` instance of the input value.
     """
-    return Versioned(value, version)
+    return Versioned(value=value, version=version, versions=versions, name=name)
