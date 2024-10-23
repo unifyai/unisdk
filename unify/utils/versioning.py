@@ -94,6 +94,7 @@ class Versioned:
             )
             self._name = name
         logs = unify.get_logs_with_fields(self._name)
+        logs_to_version = list()
         for log in logs:
             if self._name not in log.entries:
                 # already versioned upstream
@@ -102,8 +103,9 @@ class Versioned:
             for local_version, local_val in self._versions.items():
                 if upstream_val != local_val:
                     continue
-                log.version_entries(**{self._name: local_version})
+                logs_to_version.append((log, local_version))
                 break
+        unify.map(lambda l, v: l.version_entries(**{self._name: v}), logs_to_version)
         self.download()
 
     @staticmethod
