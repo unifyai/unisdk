@@ -279,7 +279,7 @@ def get_artifacts(
 # -----#
 
 
-class Log(_Formatted):
+class Log:
 
     def __init__(
         self,
@@ -311,12 +311,8 @@ class Log(_Formatted):
     def __len__(self):
         return len(self._entries)
 
-    def __rich_repr__(self) -> List[Any]:
-        """
-        Used by the rich package for representing and print the instance.
-        """
-        for k, v in self._entries.items():
-            yield k, v
+    def __repr__(self) -> str:
+        return f"Log(id={self._id})"
 
     # Public
 
