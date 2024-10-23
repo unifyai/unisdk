@@ -67,6 +67,9 @@ class Versioned:
     def set_latest(self):
         self.set_version(list(self._versions.keys())[-1])
 
+    def set_name(self, name: str):
+        self._name = name
+
     def at_version(self, version: Union[int, str]):
         return Versioned(self._versions[version], version, self._versions)
 
