@@ -53,3 +53,10 @@ class TestVersioning(unittest.TestCase):
         assert system_prompt.value == "you are an expert mathematician"
         system_prompt.set_version(0)
         assert system_prompt.value == "you are an expert"
+
+    def test_add_version(self):
+        system_prompt = unify.versioned("you are an expert")
+        assert system_prompt.version == 0
+        assert system_prompt.value == "you are an expert"
+        system_prompt.add_version(1, "you are an expert mathematician")
+        assert len(system_prompt) == 2

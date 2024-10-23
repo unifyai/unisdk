@@ -76,6 +76,9 @@ class Versioned:
     def at_version(self, version: Union[int, str]):
         return Versioned(self._versions[version], version, self._versions)
 
+    def add_version(self, version: Union[int, str], value: Any):
+        self._versions[version] = value
+
     def download(self, name: Optional[str] = None):
         if self._name is None:
             assert name is not None, (
