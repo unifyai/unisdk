@@ -86,6 +86,26 @@ class Versioned:
         self._versions = unify.get_versions(self._name)
         self._version, self._value = list(self._versions.items())[-1]
 
+    def sync(self, name: Optional[str] = None):
+        if self._name is None:
+            assert name is not None, (
+                "If name is not set in the constructor, "
+                "then name argument must be provided."
+            )
+            self._name = name
+        logs = unify.get_logs_with_fields(self._name)
+        for log in logs:
+            if self._name not in log.entries:
+                # already versioned upstream
+                continue
+            upstream_val = log.entries[self._name]
+            for local_version, local_val in self._versions.items():
+                if upstream_val != local_val:
+                    continue
+                log.version_entries(**{self._name: local_version})
+                break
+        self.download()
+
     @staticmethod
     def from_upstream(name: str):
         versions = unify.get_versions(name)
