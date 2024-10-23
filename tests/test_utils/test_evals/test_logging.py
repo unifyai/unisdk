@@ -404,6 +404,23 @@ class TestLogging(unittest.TestCase):
         unify.map(unify.log, project="test_project", a=[1] * 10, b=[2] * 10, c=[3] * 10)
         unify.delete_project("test_project")
 
+    def test_log_function_logs_code(self):
+
+        def my_func(a):
+            return a + 1
+
+        project = "my_project"
+        if project in unify.list_projects():
+            unify.delete_project(project)
+        unify.create_project(project)
+        unify.log(project, my_func=my_func)
+        logs = unify.get_logs(project)
+        assert len(logs) == 1
+        assert (
+            logs[0].entries["my_func"]
+            == "        def my_func(a):\n            return a + 1\n"
+        )
+
     def test_atomic_functions(self):
         project = "my_project"
         if project in unify.list_projects():

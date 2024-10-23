@@ -59,6 +59,9 @@ def _handle_special_types(
                 key = k  # dataset name automatically versioned instead
                 v.value.upload()
                 val = v.value.name
+            elif callable(v.value):
+                key = f"{k}/{v.version}"
+                val = unify.get_code(v.value)
             else:
                 key = f"{k}/{v.version}"
                 val = v.value
@@ -66,6 +69,8 @@ def _handle_special_types(
         elif isinstance(v, unify.Dataset):
             v.upload()
             new_kwargs[k] = v.name
+        elif callable(v):
+            new_kwargs[k] = unify.get_code(v)
         else:
             new_kwargs[k] = v
     return new_kwargs
