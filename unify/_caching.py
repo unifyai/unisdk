@@ -32,8 +32,9 @@ def _get_cache(kw: Dict[str, Any]) -> Union[None, Dict]:
     kw = {k: v for k, v in kw.items() if v is not None}
     kw_str = json.dumps(kw)
     if kw_str in _cache:
+        ret = ChatCompletion(**json.loads(_cache[kw_str]))
         CACHE_LOCK.release()
-        return ChatCompletion(**json.loads(_cache[kw_str]))
+        return ret
     CACHE_LOCK.release()
 
 
