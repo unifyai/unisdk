@@ -98,6 +98,10 @@ class Versioned:
         return self._version
 
     @property
+    def versions(self):
+        return self._versions
+
+    @property
     def name(self):
         return self._name
 
