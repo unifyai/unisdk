@@ -16,15 +16,12 @@ CACHE_LOCK = threading.Lock()
 
 def _create_cache_if_none():
     global _cache
-    global CACHE_LOCK
-    CACHE_LOCK.acquire()
     if _cache is None:
         if not os.path.exists(_cache_fpath):
             with open(_cache_fpath, "w") as outfile:
                 json.dump({}, outfile)
         with open(_cache_fpath) as outfile:
             _cache = json.load(outfile)
-    CACHE_LOCK.release()
 
 
 # noinspection PyTypeChecker,PyUnboundLocalVariable
