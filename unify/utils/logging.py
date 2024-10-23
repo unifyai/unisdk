@@ -49,13 +49,23 @@ def _versioned_field(field_name: str):
     return True
 
 
-def _handle_versions(
+def _handle_special_types(
     kwargs: Dict[str, Any],
 ) -> Dict[str, Any]:
     new_kwargs = dict()
     for k, v in kwargs.items():
         if isinstance(v, unify.Versioned):
-            new_kwargs[f"{k}/{v.version}"] = v.value
+            if isinstance(v.value, unify.Dataset):
+                key = k  # dataset name automatically versioned instead
+                v.value.upload()
+                val = v.value.name
+            else:
+                key = f"{k}/{v.version}"
+                val = v.value
+            new_kwargs[key] = val
+        elif isinstance(v, unify.Dataset):
+            v.upload()
+            new_kwargs[k] = v.name
         else:
             new_kwargs[k] = v
     return new_kwargs
@@ -406,7 +416,7 @@ def log(
         "Authorization": f"Bearer {api_key}",
     }
     kwargs = {**kwargs, **current_global_active_log_kwargs.get()}
-    kwargs = _handle_versions(kwargs)
+    kwargs = _handle_special_types(kwargs)
     project = _get_and_maybe_create_project(project, api_key=api_key)
     if skip_duplicates:
         retrieved_logs = get_logs_by_value(project, **kwargs, api_key=api_key)
@@ -471,7 +481,7 @@ def add_log_entries(
             },
         }
     kwargs = {**kwargs, **current_global_active_log_kwargs.get()}
-    kwargs = _handle_versions(kwargs)
+    kwargs = _handle_special_types(kwargs)
     body = {"entries": kwargs}
     # ToDo: remove this once duplicates are prevented in the backend
     current_keys = get_log_by_id(id if id else current_active_log.id).entries.keys()
@@ -1102,7 +1112,7 @@ class trace:
 
 class Context:
     def __init__(self, **kwargs):
-        self.kwargs = _handle_versions(kwargs)
+        self.kwargs = _handle_special_types(kwargs)
 
     def __enter__(self):
         self.token = current_global_active_log_kwargs.set(

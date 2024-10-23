@@ -36,6 +36,9 @@ class Versioned:
         versions: Optional[Dict[Union[int, str], Any]] = None,
         name: Optional[str] = None,
     ):
+        if isinstance(value, unify.Dataset):
+            assert value.name is not None, "Versioned datasets must have a name"
+            value.set_name(f"{value.name}/{version}")
         self._value = value
         self._version = version
         self._versions = {**(versions if versions else {}), **{version: value}}

@@ -70,6 +70,36 @@ class TestLogging(unittest.TestCase):
         except HTTPError as e:
             assert e.response.status_code == 404
 
+    def test_log_dataset(self):
+        project = "my_project"
+        if project in unify.list_projects():
+            unify.delete_project(project)
+        unify.create_project(project)
+        unify.log(project, dataset=unify.Dataset(["a", "b", "c"], name="letters"))
+        logs = unify.get_logs(project)
+        assert len(logs) == 1
+        assert logs[0].entries == {"dataset": "letters"}
+        downloaded = unify.download_dataset("letters")
+        assert len(downloaded) == 3
+        logs[0].delete()
+        unify.delete_dataset("letters")
+
+    def test_log_versioned_dataset(self):
+        project = "my_project"
+        if project in unify.list_projects():
+            unify.delete_project(project)
+        unify.create_project(project)
+        dataset = unify.Dataset(["a", "b", "c"], name="letters")
+        unify.log(project, dataset=unify.versioned(dataset))
+        assert dataset.name == "letters/0"
+        logs = unify.get_logs(project)
+        assert len(logs) == 1
+        assert logs[0].entries == {"dataset": "letters/0"}
+        downloaded = unify.download_dataset("letters/0")
+        assert len(downloaded) == 3
+        logs[0].delete()
+        unify.delete_dataset("letters/0")
+
     def test_get_log_by_value(self):
         project = "my_project"
         if project in unify.list_projects():
