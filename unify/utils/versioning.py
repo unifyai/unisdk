@@ -39,9 +39,14 @@ class Versioned:
         if isinstance(value, unify.Dataset):
             assert value.name is not None, "Versioned datasets must have a name"
             value.set_name(f"{value.name}/{version}")
+        elif isinstance(value, Versioned):
+            value = value.value
         self._value = value
         self._version = version
-        self._versions = {**(versions if versions else {}), **{version: value}}
+        self._versions = {
+            **(versions if versions else {}),
+            **{version: value},
+        }
         self._name = name
 
     def __repr__(self):

@@ -30,6 +30,11 @@ class TestVersioning(unittest.TestCase):
         system_prompt.set_version(0)
         assert system_prompt.value == "you are an expert"
 
+    def test_double_versioned(self):
+        system_prompt = unify.versioned(unify.versioned("you are an expert"))
+        assert system_prompt.version == 0
+        assert system_prompt.value == "you are an expert"
+
     def test_versioned_from_upstream(self):
         project = "my_project"
         if project in unify.list_projects():
