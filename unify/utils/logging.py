@@ -759,6 +759,43 @@ def get_logs(
     ]
 
 
+def get_versions(
+    entry_name: str,
+    project: Optional[str] = None,
+    api_key: Optional[str] = None,
+):
+    """
+    Return all versions within the project for a specified log entry name.
+
+    Args:
+        entry_name: The name of the entry to return all versions for.
+
+        project: Name of the project to get versions from.
+
+        api_key: If specified, unify API key to be used. Defaults to the value in the
+        `UNIFY_KEY` environment variable.
+
+    Returns:
+        The versions for the specified entry name.
+    """
+    # ToDo remove this once `get_versions` is added to orchestra
+    logs_w_field = get_logs_with_fields(entry_name, project=project, api_key=api_key)
+    versions = dict()
+    for l in logs_w_field:
+        for k in l.entries.keys():
+            if "/" not in k or entry_name not in k:
+                continue
+            version = k.split("/")[-1]
+            if version in versions:
+                continue
+            if version.isdigit():
+                version = int(version)
+            versions[version] = l.entries[k]
+            break
+    # End ToDo
+    return versions
+
+
 def delete_logs(
     project: Optional[str] = None,
     filter: Optional[str] = None,
