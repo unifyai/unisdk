@@ -1,5 +1,7 @@
 from typing import Any, Union, Optional, Dict
 
+import unify
+
 
 def get_code(fn: callable):
     """
@@ -32,10 +34,12 @@ class Versioned:
         value: Any,
         version: Union[int, str] = 0,
         versions: Optional[Dict[Union[int, str], Any]] = None,
+        name: Optional[str] = None,
     ):
         self._value = value
         self._version = version
         self._versions = {**(versions if versions else {}), **{version: value}}
+        self._name = name
 
     def __repr__(self):
         return f"{self._value} [v:{self._version}]"
@@ -64,6 +68,22 @@ class Versioned:
     def at_version(self, version: Union[int, str]):
         return Versioned(self._versions[version], version, self._versions)
 
+    def download(self, name: Optional[str] = None):
+        if self._name is None:
+            assert name is not None, (
+                "If name is not set in the constructor, "
+                "then name argument must be provided."
+            )
+            self._name = name
+        self._versions = unify.get_versions(self._name)
+        self._version, self._value = list(self._versions.items())[-1]
+
+    @staticmethod
+    def from_upstream(name: str):
+        versions = unify.get_versions(name)
+        version, value = list(versions.items())[-1]
+        return Versioned(value=value, version=version, versions=versions, name=name)
+
     @property
     def value(self):
         return self._value
@@ -71,6 +91,10 @@ class Versioned:
     @property
     def version(self):
         return self._version
+
+    @property
+    def name(self):
+        return self._name
 
     def __len__(self):
         return len(self._versions)
