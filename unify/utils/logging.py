@@ -84,12 +84,13 @@ def handle_multiple_logs(fn: callable):
     ):
         if logs is None and "logs" in fn.__code__.co_varnames:
             idx = fn.__code__.co_varnames.index("logs")
-            logs = args[idx]
-            for i, val in enumerate(args[0:idx]):
-                kwargs[fn.__code__.co_varnames[i]] = val
-            for i, val in enumerate(args[idx + 1 :]):
-                kwargs[fn.__code__.co_varnames[idx + i + 1]] = val
-            args = ()
+            if len(args) > idx:
+                logs = args[idx]
+                for i, val in enumerate(args[0:idx]):
+                    kwargs[fn.__code__.co_varnames[i]] = val
+                for i, val in enumerate(args[idx + 1 :]):
+                    kwargs[fn.__code__.co_varnames[idx + i + 1]] = val
+                args = ()
         if logs is None:
             current_active_log: Optional[Log] = current_global_active_log.get()
             if current_active_log is None:
