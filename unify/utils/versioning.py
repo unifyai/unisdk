@@ -69,7 +69,8 @@ class Versioned:
             )
             self._name = name
         self._versions = unify.get_versions(self._name)
-        self._version, self._value = list(self._versions.items())[-1]
+        if self._versions:
+            self._version, self._value = list(self._versions.items())[-1]
 
     def sync(self, name: Optional[str] = None):
         if self._name is None:
