@@ -12,7 +12,6 @@ import requests
 import unify
 from unify import BASE_URL
 
-from ..types import _Formatted
 from .helpers import _validate_api_key, _get_and_maybe_create_project
 
 # Helpers #
@@ -74,6 +73,51 @@ def _handle_special_types(
         else:
             new_kwargs[k] = v
     return new_kwargs
+
+
+def handle_multiple_logs(fn: callable):
+
+    def wrapped(
+        *args,
+        logs: Optional[Union[int, Log, List[Union[int, Log]]]] = None,
+        **kwargs,
+    ):
+        if logs is None and "logs" in fn.__code__.co_varnames:
+            idx = fn.__code__.co_varnames.index("logs")
+            logs = args[idx]
+            for i, val in enumerate(args[0:idx]):
+                kwargs[fn.__code__.co_varnames[i]] = val
+            for i, val in enumerate(args[idx + 1 :]):
+                kwargs[fn.__code__.co_varnames[idx + i + 1]] = val
+            args = ()
+        if logs is None:
+            current_active_log: Optional[Log] = current_global_active_log.get()
+            if current_active_log is None:
+                raise Exception(
+                    "If logs is unspecified, then current_global_active_log must be.",
+                )
+            return fn(*args, logs=current_active_log.id, **kwargs)
+        elif isinstance(logs, int):
+            return fn(*args, logs=logs, **kwargs)
+        elif isinstance(logs, Log):
+            return fn(*args, logs=logs.id, **kwargs)
+        elif isinstance(logs, list):
+            if isinstance(logs[0], int):
+                return unify.map(lambda lg: fn(*args, logs=lg, **kwargs), logs)
+            elif isinstance(logs[0], Log):
+                return unify.map(lambda lg: fn(*args, logs=lg.id, **kwargs), logs)
+            else:
+                raise Exception(
+                    f"list must contain int or Log types, but found first entry "
+                    f"{logs[0]} of type {type(logs[0])}",
+                )
+        else:
+            raise Exception(
+                f"logs argument must be of type int, Log, or list, but found "
+                f"{logs} of type {type(logs)}",
+            )
+
+    return wrapped
 
 
 # Projects #
@@ -446,8 +490,9 @@ def log(
     return created_log
 
 
+@handle_multiple_logs
 def add_log_entries(
-    id: Optional[int] = None,
+    logs: Optional[Union[int, Log, List[Union[int, Log]]]] = None,
     api_key: Optional[str] = None,
     **kwargs,
 ) -> Dict[str, str]:
@@ -455,8 +500,8 @@ def add_log_entries(
     Add extra entries into an existing log.
 
     Args:
-        id: The log id to update with extra data. Looks for the current active log if no
-        id is provided.
+        logs: The log(s) to update with extra data. Looks for the current active log if
+        no id is provided.
 
         api_key: If specified, unify API key to be used. Defaults to the value in the
         `UNIFY_KEY` environment variable.
@@ -466,8 +511,9 @@ def add_log_entries(
     Returns:
         A message indicating whether the log was successfully updated.
     """
+    log_id = logs  # handle_multiple_logs decorator handles logs, returning a single id
     current_active_log: Optional[Log] = current_global_active_log.get()
-    if current_active_log is None and id is None:
+    if current_active_log is None and log_id is None:
         raise ValueError(
             "`id` must be set if no current log is active within the context.",
         )
@@ -482,21 +528,23 @@ def add_log_entries(
             **{
                 k: v
                 for k, v in current_global_active_log_kwargs.get().items()
-                if k not in current_logged_logs.get().get(id, {})
+                if k not in current_logged_logs.get().get(log_id, {})
             },
         }
     kwargs = {**kwargs, **current_global_active_log_kwargs.get()}
     kwargs = _handle_special_types(kwargs)
     body = {"entries": kwargs}
     # ToDo: remove this once duplicates are prevented in the backend
-    current_keys = get_log_by_id(id if id else current_active_log.id).entries.keys()
+    current_keys = get_log_by_id(
+        log_id if log_id else current_active_log.id,
+    ).entries.keys()
     assert not any(key in body["entries"] for key in current_keys), (
         "Duplicate keys detected, please use replace_log_entries or "
         "update_log_entries if you want to replace or modify an existing key."
     )
     # End ToDo
     response = requests.put(
-        BASE_URL + f"/log/{id if id else current_active_log.id}",
+        BASE_URL + f"/log/{log_id if log_id else current_active_log.id}",
         headers=headers,
         json=body,
     )
@@ -504,15 +552,16 @@ def add_log_entries(
     return response.json()
 
 
+@handle_multiple_logs
 def delete_log(
-    id: Union[int, List[int]],
+    logs: Optional[Union[int, Log, List[Union[int, Log]]]] = None,
     api_key: Optional[str] = None,
 ) -> Dict[str, str]:
     """
     Deletes logs from a project.
 
     Args:
-        id: IDs of the log to delete from a project.
+        logs: log(s) to delete from a project.
 
         api_key: If specified, unify API key to be used. Defaults to the value in the
         `UNIFY_KEY` environment variable.
@@ -520,19 +569,21 @@ def delete_log(
     Returns:
         A message indicating whether the logs were successfully deleted.
     """
+    log_id = logs  # handle_multiple_logs decorator handles logs, returning a single id
     api_key = _validate_api_key(api_key)
     headers = {
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    response = requests.delete(BASE_URL + f"/log/{id}", headers=headers)
+    response = requests.delete(BASE_URL + f"/log/{log_id}", headers=headers)
     response.raise_for_status()
     return response.json()
 
 
+@handle_multiple_logs
 def delete_log_entry(
     entry: str,
-    id: int,
+    logs: Optional[Union[int, Log, List[Union[int, Log]]]] = None,
     api_key: Optional[str] = None,
 ) -> Dict[str, str]:
     """
@@ -541,7 +592,7 @@ def delete_log_entry(
     Args:
         entry: Name of the entries to delete from a given log.
 
-        id: ID of the log to delete an entry from.
+        logs: log(s) to delete entries from.
 
         api_key: If specified, unify API key to be used. Defaults to the value in the
         `UNIFY_KEY` environment variable.
@@ -549,19 +600,24 @@ def delete_log_entry(
     Returns:
         A message indicating whether the log entries were successfully deleted.
     """
+    log_id = logs  # handle_multiple_logs decorator handles logs, returning a single id
     api_key = _validate_api_key(api_key)
     headers = {
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
     entry = entry.replace("/", "-")
-    response = requests.delete(BASE_URL + f"/log/{id}/entry/{entry}", headers=headers)
+    response = requests.delete(
+        BASE_URL + f"/log/{log_id}/entry/{entry}",
+        headers=headers,
+    )
     response.raise_for_status()
     return response.json()
 
 
+@handle_multiple_logs
 def replace_log_entries(
-    id: Optional[int] = None,
+    logs: Optional[Union[int, Log, List[Union[int, Log]]]] = None,
     api_key: Optional[str] = None,
     **kwargs,
 ) -> Dict[str, str]:
@@ -569,8 +625,8 @@ def replace_log_entries(
     Replaces existing entries in an existing log.
 
     Args:
-        id: The log id to replace fields for. Looks for the current active log if no
-        id is provided.
+        logs: The log(s) to replace fields for. Looks for the current active log if none
+        specified.
 
         api_key: If specified, unify API key to be used. Defaults to the value in the
         `UNIFY_KEY` environment variable.
@@ -580,15 +636,17 @@ def replace_log_entries(
     Returns:
         A message indicating whether the log was successfully updated.
     """
+    log_id = logs  # handle_multiple_logs decorator handles logs, returning a single id
     api_key = _validate_api_key(api_key)
     for k, v in kwargs.items():
-        delete_log_entry(k, id, api_key=api_key)
-    return add_log_entries(id, api_key=api_key, **kwargs)
+        delete_log_entry(k, log_id, api_key=api_key)
+    return add_log_entries(log_id, api_key=api_key, **kwargs)
 
 
+@handle_multiple_logs
 def update_log_entries(
     fn: Union[callable, Dict[str, callable]],
-    id: Optional[int] = None,
+    logs: Optional[Union[int, Log, List[Union[int, Log]]]] = None,
     api_key: Optional[str] = None,
     **kwargs,
 ) -> Dict[str, str]:
@@ -598,8 +656,8 @@ def update_log_entries(
     Args:
         fn: The function or set of functions to apply to each field in the log.
 
-        id: The log id to update fields for. Looks for the current active log if no
-        id is provided.
+        logs: The log(s) to update fields for. Looks for the current active log if not
+        provided.
 
         api_key: If specified, unify API key to be used. Defaults to the value in the
         `UNIFY_KEY` environment variable.
@@ -609,16 +667,18 @@ def update_log_entries(
     Returns:
         A message indicating whether the log was successfully updated.
     """
-    data = get_log_by_id(id, api_key=api_key).entries
+    log_id = logs  # handle_multiple_logs decorator handles logs, returning a single id
+    data = get_log_by_id(log_id, api_key=api_key).entries
     replacements = dict()
     for k, v in kwargs.items():
         f = fn[k] if isinstance(fn, dict) else fn
         replacements[k] = f(data[k], v)
-    return replace_log_entries(id, api_key=api_key, **replacements)
+    return replace_log_entries(log_id, api_key=api_key, **replacements)
 
 
+@handle_multiple_logs
 def rename_log_entries(
-    id: Optional[int] = None,
+    logs: Optional[Union[int, Log, List[Union[int, Log]]]] = None,
     api_key: Optional[str] = None,
     **kwargs,
 ) -> Dict[str, str]:
@@ -626,8 +686,8 @@ def rename_log_entries(
     Renames the set of log entries.
 
     Args:
-        id: The log id to update the field names for. Looks for the current active log
-        if no id is provided.
+        logs: The log(s) to update the field names for. Looks for the current active log
+        if none are provided.
 
         api_key: If specified, unify API key to be used. Defaults to the value in the
         `UNIFY_KEY` environment variable.
@@ -638,16 +698,18 @@ def rename_log_entries(
     Returns:
         A message indicating whether the log field names were successfully updated.
     """
+    log_id = logs  # handle_multiple_logs decorator handles logs, returning a single id
     api_key = _validate_api_key(api_key)
-    data = get_log_by_id(id, api_key=api_key).entries
+    data = get_log_by_id(log_id, api_key=api_key).entries
     for old_name in kwargs.keys():
-        delete_log_entry(old_name, id, api_key=api_key)
+        delete_log_entry(old_name, log_id, api_key=api_key)
     new_entries = {new_name: data[old_name] for old_name, new_name in kwargs.items()}
-    return add_log_entries(id, api_key=api_key, **new_entries)
+    return add_log_entries(log_id, api_key=api_key, **new_entries)
 
 
+@handle_multiple_logs
 def version_log_entries(
-    id: Optional[int] = None,
+    logs: Optional[Union[int, Log, List[Union[int, Log]]]] = None,
     api_key: Optional[str] = None,
     **kwargs,
 ) -> Dict[str, str]:
@@ -655,8 +717,8 @@ def version_log_entries(
     Assigns versions to the set of log entries.
 
     Args:
-        id: The log id to version the field names for. Looks for the current active log
-        if no id is provided.
+        logs: The log(s) to version the field names for. Looks for the current active
+        log if none are provided.
 
         api_key: If specified, unify API key to be used. Defaults to the value in the
         `UNIFY_KEY` environment variable.
@@ -668,17 +730,19 @@ def version_log_entries(
     Returns:
         A message indicating whether the log fields were successfully versioned.
     """
+    log_id = logs  # handle_multiple_logs decorator handles logs, returning a single id
     assert not any(_versioned_field(k) for k in kwargs.keys()), (
         "Cannot version a log entry which is already versioned. Use "
         "reversion_log_entries if you would like to change the version."
     )
     kwargs = {k: f"{k}/{v}" for k, v in kwargs.items()}
-    return rename_log_entries(id, api_key=api_key, **kwargs)
+    return rename_log_entries(log_id, api_key=api_key, **kwargs)
 
 
+@handle_multiple_logs
 def unversion_log_entries(
     *field_names: str,
-    id: Optional[int] = None,
+    logs: Optional[Union[int, Log, List[Union[int, Log]]]] = None,
     api_key: Optional[str] = None,
 ) -> Dict[str, str]:
     """
@@ -687,8 +751,8 @@ def unversion_log_entries(
     Args:
         field_names: The field names to un-version.
 
-        id: The log id to version the field names for. Looks for the current active log
-        if no id is provided.
+        logs: The log(s) to version the field names for. Looks for the current active
+        log if none are provided.
 
         api_key: If specified, unify API key to be used. Defaults to the value in the
         `UNIFY_KEY` environment variable.
@@ -696,15 +760,17 @@ def unversion_log_entries(
     Returns:
         A message indicating whether the log fields were successfully un-versioned.
     """
+    log_id = logs  # handle_multiple_logs decorator handles logs, returning a single id
     assert all(
         _versioned_field(name) for name in field_names
     ), "Cannot unversion a log entry which is not already versioned."
     kwargs = {name: "/".join(name.split("/")[:-1]) for name in field_names}
-    return rename_log_entries(id, api_key=api_key, **kwargs)
+    return rename_log_entries(log_id, api_key=api_key, **kwargs)
 
 
+@handle_multiple_logs
 def reversion_log_entries(
-    id: Optional[int] = None,
+    logs: Optional[Union[int, Log, List[Union[int, Log]]]] = None,
     api_key: Optional[str] = None,
     **kwargs: Tuple[Union[int, str], Union[int, str]],
 ) -> Dict[str, str]:
@@ -712,8 +778,8 @@ def reversion_log_entries(
     Updates versions to the set of log entries.
 
     Args:
-        id: The log id to version the field names for. Looks for the current active log
-        if no id is provided.
+        logs: The log(s) to version the field names for. Looks for the current active
+        log if none are provided.
 
         api_key: If specified, unify API key to be used. Defaults to the value in the
         `UNIFY_KEY` environment variable.
@@ -725,12 +791,13 @@ def reversion_log_entries(
     Returns:
         A message indicating whether the log fields were successfully re-versioned.
     """
+    log_id = logs  # handle_multiple_logs decorator handles logs, returning a single id
     assert not any(_versioned_field(k) for k in kwargs.keys()), (
         "The keys should be in un-versioned form, with the old and new versions passed "
         "as a tuple of values, old and new versions, in that order."
     )
     kwargs = {f"{k}/{v[0]}": f"{k}/{v[1]}" for k, v in kwargs.items()}
-    return rename_log_entries(id, api_key=api_key, **kwargs)
+    return rename_log_entries(log_id, api_key=api_key, **kwargs)
 
 
 def get_logs(
