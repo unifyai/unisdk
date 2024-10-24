@@ -520,6 +520,25 @@ class _Client(ABC):
         self._messages = value
         return self
 
+    def append_messages(
+        self,
+        value: Union[
+            List[ChatCompletionMessageParam],
+            Dict[str, List[ChatCompletionMessageParam]],
+        ],
+    ) -> Self:
+        """
+        Append to the default messages.  # noqa: DAR101.
+
+        Args:
+            value: The messages to append to the default.
+
+        Returns:
+            This client, useful for chaining inplace calls.
+        """
+        self._messages += value
+        return self
+
     def set_frequency_penalty(self, value: float) -> Self:
         """
         Set the default frequency penalty.  # noqa: DAR101.
