@@ -64,6 +64,7 @@ class _MultiClient(_Client, abc.ABC):
         log_response_body: Optional[bool] = True,
         api_key: Optional[str] = None,
         # python client arguments
+        stateful: bool = False,
         return_full_completion: bool = False,
         cache: bool = False,
         # passthrough arguments
@@ -180,6 +181,10 @@ class _MultiClient(_Client, abc.ABC):
 
             log_response_body: Whether to log the contents of the response json body.
 
+            stateful:  Whether the conversation history is preserved within the messages
+            of this client. If True, then history is preserved. If False, then this acts
+            as a stateless client, and message histories must be managed by the user.
+
             return_full_completion: If False, only return the message content
             chat_completion.choices[0].message.content.strip(" ") from the OpenAI
             return. Otherwise, the full response chat_completion is returned.
@@ -235,6 +240,7 @@ class _MultiClient(_Client, abc.ABC):
             log_response_body=log_response_body,
             api_key=api_key,
             # python client arguments
+            stateful=stateful,
             return_full_completion=return_full_completion,
             cache=cache,
             # passthrough arguments
@@ -282,6 +288,7 @@ class _MultiClient(_Client, abc.ABC):
                 log_response_body=self.log_response_body,
                 api_key=self._api_key,
                 # python client arguments
+                stateful=self.stateful,
                 return_full_completion=self.return_full_completion,
                 cache=self.cache,
                 # passthrough arguments
@@ -502,6 +509,7 @@ class _MultiClient(_Client, abc.ABC):
         log_query_body: Optional[bool] = None,
         log_response_body: Optional[bool] = None,
         # python client arguments
+        stateful: Optional[bool] = None,
         return_full_completion: Optional[bool] = None,
         cache: Optional[bool] = None,
         # passthrough arguments
@@ -609,6 +617,10 @@ class _MultiClient(_Client, abc.ABC):
             parallel_tool_calls: Whether to enable parallel function calling during tool
             use.
 
+            stateful:  Whether the conversation history is preserved within the messages
+            of this client. If True, then history is preserved. If False, then this acts
+            as a stateless client, and message histories must be managed by the user.
+
             use_custom_keys:  Whether to use custom API keys or our unified API keys
             with the backend provider. Defaults to False.
 
@@ -626,6 +638,10 @@ class _MultiClient(_Client, abc.ABC):
             log_query_body: Whether to log the contents of the query json body.
 
             log_response_body: Whether to log the contents of the response json body.
+
+            stateful:  Whether the conversation history is preserved within the messages
+            of this client. If True, then history is preserved. If False, then this acts
+            as a stateless client, and message histories must be managed by the user.
 
             return_full_completion: If False, only return the message content
             chat_completion.choices[0].message.content.strip(" ") from the OpenAI
@@ -657,7 +673,30 @@ class _MultiClient(_Client, abc.ABC):
         Raises:
             UnifyError: If an error occurs during content generation.
         """
-        return self._generate(
+        system_message = _default(system_message, self._system_message)
+        messages = _default(messages, self._messages)
+        stateful = _default(stateful, self._stateful)
+        if stateful:
+            if messages:
+                # system message only added once at the beginning
+                if isinstance(arg0, str):
+                    messages += [{"role": "user", "content": arg0}]
+                    arg0 = None
+            else:
+                messages = list()
+                if system_message is not None:
+                    messages += [{"role": "system", "content": system_message}]
+                    system_message = None
+                if isinstance(arg0, str):
+                    messages += [{"role": "user", "content": arg0}]
+                    arg0 = None
+                self._messages = messages
+        return_full_completion = (
+            True
+            if _default(tools, self._tools)
+            else _default(return_full_completion, self._return_full_completion)
+        )
+        ret = self._generate(
             arg0,
             system_message=_default(system_message, self._system_message),
             messages=_default(messages, self._messages),
@@ -692,17 +731,22 @@ class _MultiClient(_Client, abc.ABC):
             log_query_body=_default(log_query_body, self._log_query_body),
             log_response_body=_default(log_response_body, self._log_response_body),
             # python client arguments
-            return_full_completion=(
-                True
-                if _default(tools, self._tools)
-                else _default(return_full_completion, self._return_full_completion)
-            ),
+            return_full_completion=return_full_completion,
             cache=_default(cache, self._cache),
             # passthrough arguments
             extra_headers=_default(extra_headers, self._extra_headers),
             extra_query=_default(extra_query, self._extra_query),
             **{**self._extra_body, **kwargs},
         )
+        if stateful:
+            if return_full_completion:
+                msg = [ret.choices[0].message.model_dump()]
+            else:
+                msg = [{"role": "assistant", "content": ret}]
+            if self._messages is None:
+                self._messages = []
+            self._messages += msg
+        return ret
 
 
 class MultiUnify(_MultiClient):

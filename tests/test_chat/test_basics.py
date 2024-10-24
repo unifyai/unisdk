@@ -77,6 +77,18 @@ class TestUnifyBasics(unittest.TestCase):
         assert client.temperature == 0.5
         assert client.n == 2
 
+    def test_stateful(self):
+        client = Unify("gpt-4o@openai", stateful=True, return_full_completion=True)
+        client.set_system_message("you are a good mathematician.")
+        client.generate("What is 1 + 1?")
+        client.generate("How do you know?")
+        assert len(client.messages) == 5
+        assert client.messages[0]["role"] == "system"
+        assert client.messages[1]["role"] == "user"
+        assert client.messages[2]["role"] == "assistant"
+        assert client.messages[3]["role"] == "user"
+        assert client.messages[4]["role"] == "assistant"
+
 
 class TestAsyncUnifyBasics(unittest.IsolatedAsyncioTestCase):
     def setUp(self) -> None:

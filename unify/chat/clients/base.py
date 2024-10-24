@@ -62,6 +62,7 @@ class _Client(ABC):
         log_response_body: Optional[bool],
         api_key: Optional[str],
         # python client arguments
+        stateful: bool,
         http_client: Optional[Union[httpx.AsyncClient, httpx.Client]] = None,
         return_full_completion: bool,
         cache: bool,
@@ -123,6 +124,8 @@ class _Client(ABC):
         self._log_response_body = None
         self.set_log_response_body(log_response_body)
         # python client arguments
+        self._stateful = None
+        self.set_stateful(stateful)
         self._http_client = None
         self._return_full_completion = None
         self.set_return_full_completion(return_full_completion)
@@ -395,6 +398,16 @@ class _Client(ABC):
             The default log response body bool.
         """
         return self._log_response_body
+
+    @property
+    def stateful(self) -> bool:
+        """
+        Get the default stateful bool, if set.
+
+        Returns:
+            The default stateful bool.
+        """
+        return self._stateful
 
     @property
     def http_client(self) -> Union[httpx.AsyncClient, httpx.Client]:
@@ -804,6 +817,19 @@ class _Client(ABC):
             This client, useful for chaining inplace calls.
         """
         self._log_response_body = value
+        return self
+
+    def set_stateful(self, value: bool) -> Self:
+        """
+        Set the default stateful bool.  # noqa: DAR101.
+
+        Args:
+            value: The default stateful bool.
+
+        Returns:
+            This client, useful for chaining inplace calls.
+        """
+        self._stateful = value
         return self
 
     def set_return_full_completion(self, value: bool) -> Self:

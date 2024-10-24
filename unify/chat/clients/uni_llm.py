@@ -61,6 +61,7 @@ class _UniClient(_Client, abc.ABC):
         log_response_body: Optional[bool] = True,
         api_key: Optional[str] = None,
         # python client arguments
+        stateful: bool = False,
         return_full_completion: bool = False,
         cache: bool = False,
         # passthrough arguments
@@ -188,6 +189,10 @@ class _UniClient(_Client, abc.ABC):
 
             log_response_body: Whether to log the contents of the response json body.
 
+            stateful:  Whether the conversation history is preserved within the messages
+            of this client. If True, then history is preserved. If False, then this acts
+            as a stateless client, and message histories must be managed by the user.
+
             return_full_completion: If False, only return the message content
             chat_completion.choices[0].message.content.strip(" ") from the OpenAI
             return. Otherwise, the full response chat_completion is returned.
@@ -243,6 +248,7 @@ class _UniClient(_Client, abc.ABC):
             log_response_body=log_response_body,
             api_key=api_key,
             # python client arguments
+            stateful=stateful,
             return_full_completion=return_full_completion,
             cache=cache,
             # passthrough arguments
@@ -504,6 +510,7 @@ class _UniClient(_Client, abc.ABC):
         log_query_body: Optional[bool] = None,
         log_response_body: Optional[bool] = None,
         # python client arguments
+        stateful: Optional[bool] = None,
         return_full_completion: Optional[bool] = None,
         cache: Optional[bool] = None,
         # passthrough arguments
@@ -628,6 +635,10 @@ class _UniClient(_Client, abc.ABC):
 
             log_response_body: Whether to log the contents of the response json body.
 
+            stateful:  Whether the conversation history is preserved within the messages
+            of this client. If True, then history is preserved. If False, then this acts
+            as a stateless client, and message histories must be managed by the user.
+
             return_full_completion: If False, only return the message content
             chat_completion.choices[0].message.content.strip(" ") from the OpenAI
             return. Otherwise, the full response chat_completion is returned.
@@ -658,10 +669,33 @@ class _UniClient(_Client, abc.ABC):
         Raises:
             UnifyError: If an error occurs during content generation.
         """
-        return self._generate(
+        system_message = _default(system_message, self._system_message)
+        messages = _default(messages, self._messages)
+        stateful = _default(stateful, self._stateful)
+        if stateful:
+            if messages:
+                # system message only added once at the beginning
+                if user_message is not None:
+                    messages += [{"role": "user", "content": user_message}]
+                    user_message = None
+            else:
+                messages = list()
+                if system_message is not None:
+                    messages += [{"role": "system", "content": system_message}]
+                    system_message = None
+                if user_message is not None:
+                    messages += [{"role": "user", "content": user_message}]
+                    user_message = None
+                self._messages = messages
+        return_full_completion = (
+            True
+            if _default(tools, self._tools)
+            else _default(return_full_completion, self._return_full_completion)
+        )
+        ret = self._generate(
             user_message=user_message,
-            system_message=_default(system_message, self._system_message),
-            messages=_default(messages, self._messages),
+            system_message=system_message,
+            messages=messages,
             frequency_penalty=_default(frequency_penalty, self._frequency_penalty),
             logit_bias=_default(logit_bias, self._logit_bias),
             logprobs=_default(logprobs, self._logprobs),
@@ -693,17 +727,22 @@ class _UniClient(_Client, abc.ABC):
             log_query_body=_default(log_query_body, self._log_query_body),
             log_response_body=_default(log_response_body, self._log_response_body),
             # python client arguments
-            return_full_completion=(
-                True
-                if _default(tools, self._tools)
-                else _default(return_full_completion, self._return_full_completion)
-            ),
+            return_full_completion=return_full_completion,
             cache=_default(cache, self._cache),
             # passthrough arguments
             extra_headers=_default(extra_headers, self._extra_headers),
             extra_query=_default(extra_query, self._extra_query),
             **{**self._extra_body, **kwargs},
         )
+        if stateful:
+            if return_full_completion:
+                msg = [ret.choices[0].message.model_dump()]
+            else:
+                msg = [{"role": "assistant", "content": ret}]
+            if self._messages is None:
+                self._messages = []
+            self._messages += msg
+        return ret
 
 
 class Unify(_UniClient):
