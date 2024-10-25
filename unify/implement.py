@@ -133,11 +133,10 @@ def implement(fn: callable):
     def _load_function():
         while True:
             try:
-                fn_implemented = getattr(
-                    importlib.import_module("implementations"),
+                return getattr(
+                    importlib.reload(importlib.import_module("implementations")),
                     name,
                 )
-                return fn_implemented
             except Exception as e:
                 print("Error loading function", e)
                 input(
@@ -160,7 +159,11 @@ def implement(fn: callable):
             return
         fn_implemented = _load_function()
         src_code = inspect.getsource(fn_implemented)
-        new_content = imports + "\n\n\n" + content.replace(src_code, implementation)
+        loaded_imports = _get_imports(content)
+        new_content = content.replace(src_code, implementation).replace(
+            loaded_imports,
+            imports,
+        )
         with open(IMPLEMENTATION_PATH, "w") as file:
             file.write(new_content)
 
