@@ -76,6 +76,14 @@ class Interactive:
 
 def implement(fn: callable):
 
+    global IMPLEMENTATIONS
+    module = importlib.reload(
+        importlib.import_module(IMPLEMENTATION_PATH.rstrip(".py")),
+    )
+    for name, obj in inspect.getmembers(module):
+        if callable(obj):
+            IMPLEMENTATIONS[obj.__name__] = obj
+
     def _populate_system_message(template: str):
         return (
             template.replace(
@@ -145,7 +153,9 @@ def implement(fn: callable):
         while True:
             try:
                 return getattr(
-                    importlib.reload(importlib.import_module("implementations")),
+                    importlib.reload(
+                        importlib.import_module(IMPLEMENTATION_PATH.rstrip(".py")),
+                    ),
                     name,
                 )
             except Exception as e:
