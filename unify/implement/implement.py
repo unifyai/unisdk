@@ -2,7 +2,7 @@ import inspect
 import traceback
 import importlib
 import os.path
-from typing import Optional
+from typing import Optional, Tuple
 
 import unify
 from .system_messages import (
@@ -56,6 +56,10 @@ def implement(fn: callable, module_path: Optional[str] = None):
         full_module_path = os.path.join(os.getcwd(), MODULE_PATH)
 
     def _load_module(module_name: str):
+        if not os.path.exists(full_module_path):
+            with open(full_module_path, "w+") as file:
+                file.write("")
+            return
         while True:
             try:
                 return importlib.reload(
@@ -65,7 +69,7 @@ def implement(fn: callable, module_path: Optional[str] = None):
                 print("Error loading module", e)
                 input(
                     f"Open file {full_module_path} and fix any issues, "
-                    f"then press enter once you're done.",
+                    f"then press enter once you're done.\n",
                 )
 
     global IMPLEMENTATIONS
@@ -156,9 +160,9 @@ def implement(fn: callable, module_path: Optional[str] = None):
 
     def _generate_code():
         response = client.generate(
-            f"please implement the function {name} based on the prior chat history, "
-            f"and also strictly following the instructions in the original "
-            f"system message:",
+            f"please implement the function `{name}` by strictly following the "
+            "instructions in the original system message, and also carefully following "
+            "any instructions in the full chat history, if any is present:",
         )
         assert (
             first_line in response,
@@ -188,16 +192,10 @@ def implement(fn: callable, module_path: Optional[str] = None):
                 )
                 input(
                     f"Open file {full_module_path} and fix any issues, "
-                    f"then press enter once you're done.",
+                    f"then press enter once you're done.\n",
                 )
 
     def _write_to_file(*, fn_name, imports="", implementation=""):
-        if not os.path.exists(full_module_path):
-            with open(full_module_path, "w+") as file:
-                if imports != "":
-                    file.write(imports + "\n\n\n")
-                file.write(implementation)
-            return
         with open(full_module_path, "r") as file:
             content = file.read()
         if f"def {fn_name}" not in content:
@@ -215,51 +213,78 @@ def implement(fn: callable, module_path: Optional[str] = None):
         with open(full_module_path, "w") as file:
             file.write(new_content)
 
+    def _step_loop(this_client, assistant_msg="") -> str:
+        if assistant_msg:
+            print(assistant_msg)
+        assistant_questions = (
+            "\nIs there anything you would like me to change?\n"
+            "If so, then please respond in one of the two formats:\n"
+            '"Yes: {your explanation}"\n'
+            '"No: {your explanation}"\n\n'
+            "If you would like to make updates yourself, then you can directly "
+            f"modify the source code in {full_module_path}.\n"
+            "Simply respond in the following format once "
+            "you've made the changes, and then I can take another look:\n"
+            '"Reload: {your explanation}"\n\n'
+        )
+        response = input(assistant_questions).strip("'").strip('"')
+        if response[0:2].lower() == "no":
+            return "no"
+        elif response[0:6].lower() == "reload":
+            loaded_implementation = inspect.getsource(_load_function(name))
+            this_client.append_messages(
+                [
+                    {
+                        "role": "user",
+                        "content": response + ". Hers is the new implementation:"
+                        f"\n{loaded_implementation}",
+                    },
+                ],
+            )
+            return "reload"
+        elif response[0:3].lower() != "yes":
+            print(
+                "Please respond in one of the following formats:\n"
+                "Yes: {your explanation}\n"
+                "No: {your explanation}",
+            )
+            return "invalid"
+        this_client.append_messages(
+            [
+                {"role": "assistant", "content": assistant_questions},
+                {"role": "user", "content": response},
+            ],
+        )
+        return "yes"
+
     def _get_fn():
         global IMPLEMENTATIONS
         if name in IMPLEMENTATIONS:
             return IMPLEMENTATIONS[name]
-        imports, implementation, llm_response = _generate_code()
         client.set_system_message(update_system_message)
+        imports, implementation, llm_response = _generate_code()
         _write_to_file(fn_name=name, imports=imports, implementation=implementation)
         if interactive_mode():
-            while True:
-                assistant_msg = (
-                    "\nIs there anything you would like me to change?\n"
-                    "If so, then please respond in one of the two formats:\n"
-                    '"Yes: {your explanation}"\n'
-                    '"No: {your explanation}"\n\n'
-                    "If you would like to make updates yourself, then you can directly "
-                    f"modify the source code in {full_module_path}.\n"
-                    'Simply respond with the word "Reload" once '
-                    "you've made the changes, and then I can take another look.\n\n"
-                )
-                print(llm_response)
-                response = input(assistant_msg).strip("'").strip('"')
-                if response[0:2].lower() == "no":
-                    break
-                elif response[0:6].lower() == "reload":
-                    client.append_messages(
-                        [
-                            {"role": "assistant", "content": assistant_msg},
-                            {"role": "user", "content": response + ""},
-                        ],
+            should_continue = True
+            assistant_msg = llm_response
+            while should_continue:
+                mode = _step_loop(client, assistant_msg)
+                if mode == "reload":
+                    assistant_msg = (
+                        "Here is the latest implementation (following any changes "
+                        "you may have made):"
+                        f"\n\n{inspect.getsource(_load_function(name))}"
                     )
+                should_continue, should_update = {
+                    "yes": (True, True),
+                    "no": (False, False),
+                    "reload": (True, False),
+                    "invalid": (True, False),
+                }[mode]
+                if not should_update:
                     continue
-                elif response[0:3].lower() != "yes":
-                    print(
-                        "Please respond in one of the following formats:\n"
-                        "Yes: {your explanation}\n"
-                        "No: {your explanation}",
-                    )
-                    continue
-                client.append_messages(
-                    [
-                        {"role": "assistant", "content": assistant_msg},
-                        {"role": "user", "content": response},
-                    ],
-                )
                 imports, implementation, llm_response = _generate_code()
+                assistant_msg = llm_response
                 _write_to_file(
                     fn_name=name,
                     imports=imports,
@@ -270,7 +295,6 @@ def implement(fn: callable, module_path: Optional[str] = None):
         return fn_implemented
 
     def _add_new_function_spec_w_implement_decorator(name_error, tracebk):
-        # ToDo: make this process interactive
         system_message = DOCSTRING_SYS_MESSAGE_HEAD.replace("{name}", name_error.name)
         context = list()
         first_context = True
@@ -310,15 +334,33 @@ def implement(fn: callable, module_path: Optional[str] = None):
 
         system_message += DOCSTRING_SYS_MESSAGE_TAIL.replace("{name}", name_error.name)
         docstring_client.set_system_message(system_message)
+
+    def _get_fn_spec(name_error, tracebk):
+        _add_new_function_spec_w_implement_decorator(name_error, tracebk)
         function_spec, llm_response = _generate_function_spec(name_error.name)
         function_spec = "\n\n@unify.implement\n" + function_spec
         _write_to_file(fn_name=name_error.name, implementation=function_spec)
+        if interactive_mode():
+            should_continue = True
+            while should_continue:
+                should_continue, should_update = _step_loop(
+                    docstring_client,
+                    llm_response,
+                )
+                if should_update:
+                    function_spec, llm_response = _generate_function_spec(
+                        name_error.name,
+                    )
+                    _write_to_file(
+                        fn_name=name_error.name,
+                        implementation=function_spec,
+                    )
 
     def _execute_with_implement(func: callable, *args, **kwargs):
         try:
             return func(*args, **kwargs)
         except NameError as ne:
-            _add_new_function_spec_w_implement_decorator(ne, traceback.format_exc())
+            _get_fn_spec(ne, traceback.format_exc())
         return func(*args, **kwargs)
 
     def implemented(*args, **kwargs):
