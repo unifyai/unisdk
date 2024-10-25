@@ -45,8 +45,6 @@ IMPLEMENTATION_PATH = "implementations.py"
 
 INTERACTIVE = False
 
-TYPING_IMPORTS = "from typing import Tuple, Dict, List, Set, Tuple, Union, Optional\n"
-
 
 def set_interactive():
     global INTERACTIVE
@@ -135,8 +133,7 @@ def implement(fn: callable):
     def _write_to_file(imports, implementation):
         if not os.path.exists(IMPLEMENTATION_PATH):
             with open(IMPLEMENTATION_PATH, "w+") as file:
-                file.write(TYPING_IMPORTS)
-                file.write(imports)
+                file.write(imports + "\n\n\n")
                 file.write(implementation)
             return
         with open(IMPLEMENTATION_PATH, "r") as file:
