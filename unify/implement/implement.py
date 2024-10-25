@@ -156,7 +156,7 @@ def implement(fn: callable, module_path: Optional[str] = None):
             imports.append(line)
         return "\n".join(reversed(imports))
 
-    def _get_src_code(fn_name, context=None):
+    def _parse_src_code(fn_name, context=None):
         if context is None:
             with open(full_module_path, "r") as file:
                 context = file.read()
@@ -172,6 +172,26 @@ def implement(fn: callable, module_path: Optional[str] = None):
             valid_lines.append(line)
         return "\n".join(valid_lines)
 
+    def _remove_docstring(src_code: str) -> str:
+        lines = src_code.splitlines()
+        removing = False
+        new_lines = list()
+        for ln in lines:
+            if ln == '    """':
+                removing = not removing
+            if removing:
+                continue
+            new_lines.append(ln)
+        return "\n".join(new_lines)
+
+    def _inject_docstring(src_code: str, dcstr: str) -> str:
+        src_code = _remove_docstring(src_code)
+        lines = src_code.splitlines()
+        def_idx = ["def " in ln for ln in lines].index(True)
+        return "\n".join(
+            lines[0 : def_idx + 1] + [f'    """{dcstr}"""'] + lines[def_idx + 1 :],
+        )
+
     def _generate_code():
         response = client.generate(
             f"please implement the function `{name}` by strictly following the "
@@ -182,14 +202,18 @@ def implement(fn: callable, module_path: Optional[str] = None):
             first_line in response,
             "Model failed to follow the formatting instructions.",
         )
-        return _get_imports(response), _get_src_code(name, response), response
+        return (
+            _get_imports(response),
+            _inject_docstring(_parse_src_code(name, response), docstring),
+            response,
+        )
 
     def _generate_function_spec(fn_name):
         response = docstring_client.generate(
             f"please implement the function definition for {fn_name} as described in "
             "the format described in the system message.",
         )
-        return _get_src_code(fn_name, response), response
+        return _parse_src_code(fn_name, response), response
 
     def _load_function(fn_name: str):
         while True:
@@ -217,7 +241,7 @@ def implement(fn: callable, module_path: Optional[str] = None):
             with open(full_module_path, "w") as file:
                 file.write(_formatted(new_content))
             return
-        src_code = _get_src_code(fn_name)
+        src_code = _parse_src_code(fn_name)
         new_content = imports + content.replace(src_code, implementation)
         with open(full_module_path, "w") as file:
             file.write(_formatted(new_content))
@@ -253,7 +277,7 @@ def implement(fn: callable, module_path: Optional[str] = None):
         if response[0:2].lower() == "no":
             return "no"
         elif response[0:6].lower() == "reload":
-            loaded_implementation = _get_src_code(name)
+            loaded_implementation = _parse_src_code(name)
             this_client.append_messages(
                 [
                     {
@@ -297,7 +321,7 @@ def implement(fn: callable, module_path: Optional[str] = None):
                     assistant_msg = (
                         "Here is the latest implementation (following any changes "
                         "you may have made):"
-                        f"\n\n{_get_src_code(name)}"
+                        f"\n\n{_parse_src_code(name)}"
                     )
                 should_continue, should_update = {
                     "yes": (True, True),
@@ -345,7 +369,7 @@ def implement(fn: callable, module_path: Optional[str] = None):
                         DOCSTRING_SYS_MESSAGE_FIRST_CONTEXT,
                         child_name=name_error.name,
                         parent_name=parent_name,
-                        parent_implementation=_get_src_code(parent_name),
+                        parent_implementation=_parse_src_code(parent_name),
                         calling_line=context[0].lstrip(" "),
                     )
                     first_context = False
@@ -356,7 +380,7 @@ def implement(fn: callable, module_path: Optional[str] = None):
                         DOCSTRING_SYS_MESSAGE_EXTRA_CONTEXT,
                         child_name=child_name,
                         parent_name=parent_name,
-                        parent_implementation=_get_src_code(parent_name),
+                        parent_implementation=_parse_src_code(parent_name),
                         calling_line=context[0].lstrip(" "),
                     )
                 context.clear()
@@ -380,7 +404,7 @@ def implement(fn: callable, module_path: Optional[str] = None):
                     assistant_msg = (
                         "Here is the latest implementation (following any changes "
                         "you may have made):"
-                        f"\n\n{_get_src_code(name)}"
+                        f"\n\n{_parse_src_code(name)}"
                     )
                 should_continue, should_update = {
                     "yes": (True, True),
