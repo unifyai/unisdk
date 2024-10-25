@@ -5,18 +5,7 @@ import os.path
 import unify
 
 MODEL = "gpt-4o@openai"
-CODING_SYS_MESSAGE = """
-    You should write a Python implementation for a function {name} with the
-    following signature and docstring:
-
-    {signature}
-
-    {docstring}
-
-    If is exists, then read the full conversation history for context on any possible
-    previous implementation attempts, and requests made by the user. Such history might
-    not exist though.
-
+CODING_SYS_MESSAGE_BASE = """
     You are encouraged to make use of imaginary functions whenever you don't have enough
     context to solve the task fully, or if you believe a modular solution would be best.
     If that's the case, then make sure to give the function an expressive name, like so:
@@ -38,7 +27,22 @@ CODING_SYS_MESSAGE = """
 
     def {name}{signature}:
         {implementation}
+"""
+INIT_CODING_SYS_MESSAGE = """
+    You should write a Python implementation for a function {name} with the
+    following signature and docstring:
+
+    {signature}
+
+    {docstring}
+
     """
+UPDATING_CODING_SYS_MESSAGE = """
+    You should *update* the Python implementation (preserving the function name,
+    arguments, and general structure), and only make changes as requested by the user
+    in the chat.
+
+"""
 
 IMPLEMENTATIONS = dict()
 IMPLEMENTATION_PATH = "implementations.py"
@@ -72,26 +76,33 @@ class Interactive:
 
 def implement(fn: callable):
 
+    def _populate_system_message(template: str):
+        return (
+            template.replace(
+                "{name}",
+                name,
+            )
+            .replace(
+                "{docstring}",
+                docstring,
+            )
+            .replace(
+                "{signature}",
+                signature,
+            )
+        )
+
     name = fn.__name__
     docstring = fn.__doc__
     signature = str(inspect.signature(fn))
     client = unify.Unify(MODEL, cache=True)
     first_line = f"def {name}{signature}:"
-    system_message = (
-        CODING_SYS_MESSAGE.replace(
-            "{name}",
-            name,
-        )
-        .replace(
-            "{docstring}",
-            docstring,
-        )
-        .replace(
-            "{signature}",
-            signature,
-        )
-    )
-    client.set_system_message(system_message)
+    init_system_message = _populate_system_message(INIT_CODING_SYS_MESSAGE)
+    update_system_message = _populate_system_message(UPDATING_CODING_SYS_MESSAGE)
+    system_message_base = _populate_system_message(CODING_SYS_MESSAGE_BASE)
+    init_system_message += system_message_base
+    update_system_message += system_message_base
+    client.set_system_message(init_system_message)
     client.set_stateful(True)
 
     def _get_imports(response):
@@ -128,7 +139,7 @@ def implement(fn: callable):
             first_line in response,
             "Model failed to follow the formatting instructions.",
         )
-        return _get_imports(response), _get_src_code(response)
+        return _get_imports(response), _get_src_code(response), response
 
     def _load_function():
         while True:
@@ -172,27 +183,33 @@ def implement(fn: callable):
         global IMPLEMENTATIONS
         if name in IMPLEMENTATIONS:
             return IMPLEMENTATIONS[name]
-        imports, implementation = _generate_code()
+        imports, implementation, llm_response = _generate_code()
+        client.set_system_message(update_system_message)
         _write_to_file(imports, implementation)
         if interactive_mode():
             while True:
                 assistant_msg = (
-                    f"Here is the implementation:\n\n{implementation}\n\n"
-                    "Is there anything you would like me to change?\n\n"
+                    "\nIs there anything you would like me to change?\n"
+                    "If so, then please respond in one of the two formats:\n"
+                    '"Yes: {your explanation}"\n'
+                    '"No: {your explanation}"\n\n'
                     "If you would like to make updates yourself, then you can directly "
                     f"modify the source code in {IMPLEMENTATION_PATH}.\n"
                     'Simply respond with the word "Reload" once '
                     "you've made the changes, and then I can take another look.\n\n"
-                    "If you'd like me to make any changes myself, "
-                    "then please respond in one of the two formats:\n"
-                    '"Yes: {your explanation}"\n'
-                    '"No: {your explanation}"\n'
                 )
+                print(llm_response)
                 response = input(assistant_msg).strip("'").strip('"')
                 if response[0:2].lower() == "no":
                     break
                 elif response[0:6].lower() == "reload":
                     implementation = inspect.getsource(_load_function())
+                    client.append_messages(
+                        [
+                            {"role": "assistant", "content": assistant_msg},
+                            {"role": "user", "content": response + ""},
+                        ],
+                    )
                     continue
                 elif response[0:3].lower() != "yes":
                     print(
@@ -207,7 +224,7 @@ def implement(fn: callable):
                         {"role": "user", "content": response},
                     ],
                 )
-                imports, implementation = _generate_code()
+                imports, implementation, llm_response = _generate_code()
                 _write_to_file(imports, implementation)
         fn_implemented = _load_function()
         IMPLEMENTATIONS[name] = fn_implemented
