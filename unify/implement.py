@@ -158,12 +158,12 @@ def implement(fn: callable):
             while True:
                 assistant_msg = (
                     f"Here is the implementation:\n\n{implementation}\n\n"
-                    "Is there anything you would like me to change?\n"
+                    "Is there anything you would like me to change?\n\n"
                     "If you would like to make updates yourself, then you can directly "
-                    f"modify the source code in {IMPLEMENTATION_PATH}, "
-                    "and then I can take another look at it.\n"
-                    'Simply respond with the word "Reload" whenever you are ready.\n'
-                    "If you'd like me to make changes, "
+                    f"modify the source code in {IMPLEMENTATION_PATH}.\n"
+                    'Simply respond with the word "Reload" once '
+                    "you've made the changes, and then I can take another look.\n\n"
+                    "If you'd like me to make any changes myself, "
                     "then please respond in one of the two formats:\n"
                     '"Yes: {your explanation}"\n'
                     '"No: {your explanation}"'
