@@ -8,6 +8,10 @@ from .system_messages import (
     CODING_SYS_MESSAGE_BASE,
     INIT_CODING_SYS_MESSAGE,
     UPDATING_CODING_SYS_MESSAGE,
+    DOCSTRING_SYS_MESSAGE_HEAD,
+    DOCSTRING_SYS_MESSAGE_FIRST_CONTEXT,
+    DOCSTRING_SYS_MESSAGE_EXTRA_CONTEXT,
+    DOCSTRING_SYS_MESSAGE_TAIL,
 )
 
 MODEL = "gpt-4o@openai"
@@ -53,7 +57,7 @@ def implement(fn: callable):
         if callable(obj):
             IMPLEMENTATIONS[obj.__name__] = obj
 
-    def _populate_system_message(template: str):
+    def _populate_dev_system_message(template: str) -> str:
         return (
             template.replace(
                 "{name}",
@@ -69,14 +73,41 @@ def implement(fn: callable):
             )
         )
 
+    def _populate_docstring_context_system_message(
+        template: str,
+        child_name: str,
+        parent_name: str,
+        parent_implementation: str,
+        calling_line: str,
+    ) -> str:
+        return (
+            template.replace(
+                "{child_name}",
+                child_name,
+            )
+            .replace(
+                "{parent_name}",
+                parent_name,
+            )
+            .replace(
+                "{parent_implementation}",
+                parent_implementation,
+            )
+            .replace(
+                "{calling_line}",
+                calling_line,
+            )
+        )
+
     name = fn.__name__
     docstring = fn.__doc__
     signature = str(inspect.signature(fn))
     client = unify.Unify(MODEL, cache=True)
+    docstring_client = unify.Unify(MODEL, cache=True)
     first_line = f"def {name}{signature}:"
-    init_system_message = _populate_system_message(INIT_CODING_SYS_MESSAGE)
-    update_system_message = _populate_system_message(UPDATING_CODING_SYS_MESSAGE)
-    system_message_base = _populate_system_message(CODING_SYS_MESSAGE_BASE)
+    init_system_message = _populate_dev_system_message(INIT_CODING_SYS_MESSAGE)
+    update_system_message = _populate_dev_system_message(UPDATING_CODING_SYS_MESSAGE)
+    system_message_base = _populate_dev_system_message(CODING_SYS_MESSAGE_BASE)
     init_system_message += system_message_base
     update_system_message += system_message_base
     client.set_system_message(init_system_message)
@@ -118,14 +149,15 @@ def implement(fn: callable):
         )
         return _get_imports(response), _get_src_code(response), response
 
-    def _load_function():
+    def _load_function(fn_name: str = None):
+        fn_name = name if fn_name is None else fn_name
         while True:
             try:
                 return getattr(
                     importlib.reload(
                         importlib.import_module(IMPLEMENTATION_PATH.rstrip(".py")),
                     ),
-                    name,
+                    fn_name,
                 )
             except Exception as e:
                 print("Error loading function", e)
@@ -209,12 +241,54 @@ def implement(fn: callable):
         IMPLEMENTATIONS[name] = fn_implemented
         return fn_implemented
 
+    def _propose_docstring(name_error, tracebk):
+        system_message = DOCSTRING_SYS_MESSAGE_HEAD.replace("{name}", name_error.name)
+        context = list()
+        first_context = True
+        parent_name = None
+        for line in reversed(tracebk.split("\n")):
+            if not line or line[0] != " ":
+                continue
+            context.append(line)
+            if line[0:8] == '  File "':
+                if first_context:
+                    parent_name = context[1].split(",")[-1].split(" ")[-1]
+                    system_message += _populate_docstring_context_system_message(
+                        DOCSTRING_SYS_MESSAGE_FIRST_CONTEXT,
+                        child_name=name_error.name,
+                        parent_name=parent_name,
+                        parent_implementation=inspect.getsource(
+                            _load_function(parent_name),
+                        ),
+                        calling_line=context[0].lstrip(" "),
+                    )
+                    first_context = False
+                else:
+                    child_name = parent_name
+                    parent_name = context[1].split(",")[-1].split(" ")[-1]
+                    system_message += _populate_docstring_context_system_message(
+                        DOCSTRING_SYS_MESSAGE_EXTRA_CONTEXT,
+                        child_name=child_name,
+                        parent_name=parent_name,
+                        parent_implementation=inspect.getsource(
+                            _load_function(parent_name),
+                        ),
+                        calling_line=context[0].lstrip(" "),
+                    )
+                context.clear()
+                if parent_name == name:
+                    break
+
+        system_message += DOCSTRING_SYS_MESSAGE_TAIL.replace("{name}", name_error.name)
+        docstring_client.set_system_message(system_message)
+        # ToDo: finish implementation
+
     def _execute_or_implement(func: callable, *args, **kwargs):
         try:
             return func(*args, **kwargs)
-        except NameError:
-            tb = traceback.format_exc()
-            # ToDo: add recursive logic
+        except NameError as ne:
+            # ToDo: finish implementation
+            docstring = _propose_docstring(ne, traceback.format_exc())
 
     def implemented(*args, **kwargs):
         return _execute_or_implement(_get_fn(), *args, **kwargs)
