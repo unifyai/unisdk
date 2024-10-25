@@ -54,7 +54,7 @@ class SimulateInput:
         return True
 
 
-class TestImplement(unittest.TestCase):
+class TestZeroShotImplement(unittest.TestCase):
 
     @staticmethod
     @unify.implement

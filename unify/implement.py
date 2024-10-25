@@ -6,7 +6,7 @@ import unify
 
 MODEL = "gpt-4o@openai"
 CODING_SYS_MESSAGE = """
-    You should implement a Python implementation for a function {name} with the
+    You should write a Python implementation for a function {name} with the
     following signature and docstring:
 
     {signature}
@@ -16,6 +16,15 @@ CODING_SYS_MESSAGE = """
     If is exists, then read the full conversation history for context on any possible
     previous implementation attempts, and requests made by the user. Such history might
     not exist though.
+
+    You are encouraged to make use of imaginary functions whenever you don't have enough
+    context to solve the task fully, or if you believe a modular solution would be best.
+    If that's the case, then make sure to give the function an expressive name, like so:
+
+    companies = get_all_companies_from_crm()
+    large_companies = filter_companies_based_on_headcount(
+        companies, headcount=100, greater_than=True
+    )
 
     As the very last part of your response, please add the full implementation with
     correct indentation and valid syntax, starting with any necessary module imports
@@ -32,6 +41,8 @@ IMPLEMENTATIONS = dict()
 IMPLEMENTATION_PATH = "implementations.py"
 
 INTERACTIVE = False
+
+TYPING_IMPORTS = "from typing import Tuple, Dict, List, Set, Tuple, Union, Optional\n"
 
 
 def set_interactive():
@@ -95,12 +106,12 @@ def implement(fn: callable):
     def _get_src_code(response):
         implementation = first_line + response.split(first_line)[-1]
         lines = implementation.split("\n")
-        while True:
-            if len(lines[-1]) < 4 or lines[-1][0:4] != "    ":
-                lines = lines[:-1]
-            else:
+        valid_lines = [lines.pop(0)]
+        for line in lines:
+            if len(line) < 4 or line[0:4] != "    ":
                 break
-        return "\n".join(lines) + "\n"
+            valid_lines.append(line)
+        return "\n".join(valid_lines) + "\n"
 
     def _generate_code():
         response = client.generate(
@@ -117,6 +128,7 @@ def implement(fn: callable):
     def _write_to_file(imports, implementation):
         if not os.path.exists(IMPLEMENTATION_PATH):
             with open(IMPLEMENTATION_PATH, "w+") as file:
+                file.write(TYPING_IMPORTS)
                 file.write(imports)
                 file.write(implementation)
             return
@@ -146,17 +158,17 @@ def implement(fn: callable):
             while True:
                 assistant_msg = (
                     f"Here is the implementation:\n\n{implementation}\n\n"
-                    "Is there anything you would like me to change? "
+                    "Is there anything you would like me to change?\n"
                     "If you would like to make updates yourself, then you can directly "
-                    f"modify the source code in {IMPLEMENTATION_PATH} right now, "
-                    "and then I can take another look at it. Simply respond with the"
-                    "word Reload whenever you are ready. "
+                    f"modify the source code in {IMPLEMENTATION_PATH}, "
+                    "and then I can take another look at it.\n"
+                    'Simply respond with the word "Reload" whenever you are ready.\n'
                     "If you'd like me to make changes, "
                     "then please respond in one of the two formats:\n"
-                    "Yes: {your explanation}\n"
-                    "No: {your explanation}"
+                    '"Yes: {your explanation}"\n'
+                    '"No: {your explanation}"'
                 )
-                response = input(assistant_msg)
+                response = input(assistant_msg).strip("'").strip('"')
                 if response[0:2].lower() == "no":
                     break
                 elif response[0:6].lower() == "reload":
