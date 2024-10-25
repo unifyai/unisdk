@@ -2,7 +2,7 @@ import inspect
 import traceback
 import importlib
 import os.path
-from typing import Optional, Tuple
+from typing import Optional
 
 import unify
 from .system_messages import (
@@ -58,7 +58,7 @@ def implement(fn: callable, module_path: Optional[str] = None):
     def _load_module(module_name: str):
         if not os.path.exists(full_module_path):
             with open(full_module_path, "w+") as file:
-                file.write("")
+                file.write("import unify\n\n\n")
             return
         while True:
             try:
@@ -66,10 +66,17 @@ def implement(fn: callable, module_path: Optional[str] = None):
                     importlib.import_module(module_name),
                 )
             except Exception as e:
-                print("Error loading module", e)
+                print(
+                    "\nOops, seems like there was an error loading " "our new module.",
+                    e,
+                )
                 input(
-                    f"Open file {full_module_path} and fix any issues, "
-                    f"then press enter once you're done.\n",
+                    f"Open the file `{full_module_path}` and fix the issue "
+                    "mentioned above, then press enter once you're happy 👌\n"
+                    "Don't worry about any undefined imaginary functions which may "
+                    "have red underlines shown in your IDE etc., we just need to fix "
+                    "the specific issue mentioned above and then "
+                    "move to the next step.",
                 )
 
     global IMPLEMENTATIONS
@@ -186,13 +193,13 @@ def implement(fn: callable, module_path: Optional[str] = None):
                 )
             except Exception as e:
                 print(
-                    "Loaded module without errors, "
-                    "but there was an error trying to load function",
+                    "Hmmm, we loaded module without any errors, "
+                    "but there was an error trying to load the function",
                     e,
                 )
                 input(
-                    f"Open file {full_module_path} and fix any issues, "
-                    f"then press enter once you're done.\n",
+                    f"Open file `{full_module_path}` and fix the issue mentioned "
+                    "above, then press enter once you're done 👌\n",
                 )
 
     def _write_to_file(*, fn_name, imports="", implementation=""):
@@ -222,7 +229,7 @@ def implement(fn: callable, module_path: Optional[str] = None):
             '"Yes: {your explanation}"\n'
             '"No: {your explanation}"\n\n'
             "If you would like to make updates yourself, then you can directly "
-            f"modify the source code in {full_module_path}.\n"
+            f"modify the source code in `{full_module_path}`.\n"
             "Simply respond in the following format once "
             "you've made the changes, and then I can take another look:\n"
             '"Reload: {your explanation}"\n\n'
@@ -260,6 +267,7 @@ def implement(fn: callable, module_path: Optional[str] = None):
     def _get_fn():
         global IMPLEMENTATIONS
         if name in IMPLEMENTATIONS:
+            print(f"\n`{name}` is already implemented, stepping inside.\n")
             return IMPLEMENTATIONS[name]
         client.set_system_message(update_system_message)
         imports, implementation, llm_response = _generate_code()
@@ -292,6 +300,11 @@ def implement(fn: callable, module_path: Optional[str] = None):
                 )
         fn_implemented = _load_function(name)
         IMPLEMENTATIONS[name] = fn_implemented
+        print(
+            "\nGreat, we got there in the end! Now that we have an implementation in "
+            f"place for `{name}`, let's step inside and start to implement any "
+            "imaginary placeholder functions that we decided to add...",
+        )
         return fn_implemented
 
     def _add_new_function_spec_w_implement_decorator(name_error, tracebk):
@@ -342,26 +355,51 @@ def implement(fn: callable, module_path: Optional[str] = None):
         _write_to_file(fn_name=name_error.name, implementation=function_spec)
         if interactive_mode():
             should_continue = True
+            assistant_msg = llm_response
             while should_continue:
-                should_continue, should_update = _step_loop(
-                    docstring_client,
-                    llm_response,
+                mode = _step_loop(docstring_client, assistant_msg)
+                if mode == "reload":
+                    assistant_msg = (
+                        "Here is the latest implementation (following any changes "
+                        "you may have made):"
+                        f"\n\n{inspect.getsource(_load_function(name))}"
+                    )
+                should_continue, should_update = {
+                    "yes": (True, True),
+                    "no": (False, False),
+                    "reload": (True, False),
+                    "invalid": (True, False),
+                }[mode]
+                if not should_update:
+                    continue
+                function_spec, llm_response = _generate_function_spec(
+                    name_error.name,
                 )
-                if should_update:
-                    function_spec, llm_response = _generate_function_spec(
-                        name_error.name,
-                    )
-                    _write_to_file(
-                        fn_name=name_error.name,
-                        implementation=function_spec,
-                    )
+                assistant_msg = llm_response
+                _write_to_file(
+                    fn_name=name_error.name,
+                    implementation=function_spec,
+                )
+
+        print(
+            "\nGreat, I'm glad we're both happy with the specification for "
+            f"`{name_error.name}`! Let's now make a start on the implementation, "
+            f"and iterate on this together as before...",
+        )
 
     def _execute_with_implement(func: callable, *args, **kwargs):
         try:
             return func(*args, **kwargs)
         except NameError as ne:
+            print(
+                f"\nOkay, so it seems like `{ne.name}` is not yet implemented, "
+                "let's define the function specification together first, "
+                "before moving onto the implementation in the next step.\n"
+                "I'll make a first attempt based on the call stack, and then you "
+                "can give me feedback and we can iterate together 🔁\n",
+            )
             _get_fn_spec(ne, traceback.format_exc())
-        return func(*args, **kwargs)
+        return _load_function(func.__name__)(*args, **kwargs)
 
     def implemented(*args, **kwargs):
         return _execute_with_implement(_get_fn(), *args, **kwargs)
