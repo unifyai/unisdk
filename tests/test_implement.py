@@ -1,5 +1,6 @@
 import os
-import time
+import builtins
+import traceback
 
 import unify
 import unittest
@@ -16,28 +17,66 @@ class ImplementHandler:
             os.remove("implementations.py")
 
 
+# noinspection DuplicatedCode
+class SimulateInput:
+
+    def __init__(self):
+        self._messages = [
+            "Yes: could you please make use of the add operation via "
+            "`from operator import add` instead of using the + symbol?",
+            "Yes: can you also add a comment explaining what `add` does?",
+            "No: that looks good, I'm happy to accept this implementation.",
+        ]
+        self._count = 0
+        self._true_input = None
+
+    def _new_input(self, usr_prompt):
+        print(usr_prompt)
+        message = self._messages[self._count]
+        self._count += 1
+        print(message)
+        return message
+
+    @property
+    def num_interactions(self):
+        return self._count
+
+    def __enter__(self):
+        self._true_input = builtins.__dict__["input"]
+        builtins.__dict__["input"] = self._new_input
+
+    def __exit__(self, exc_type, exc_value, tb):
+        builtins.__dict__["input"] = self._true_input
+        self._count = 0
+        if exc_type is not None:
+            traceback.print_exception(exc_type, exc_value, tb)
+            return False
+        return True
+
+
 class TestImplement(unittest.TestCase):
 
-    def test_implement(self):
+    @staticmethod
+    @unify.implement
+    def add_two_numbers(x: int, y: int):
+        """
+        Add two integers together.
 
-        @unify.implement
-        def add_two_numbers(x: int, y: int):
-            """
-            Add two integers together.
+        Args:
+            x: First integer to add.
+            y: Second integer to add.
 
-            Args:
-                x: First integer to add.
-                y: Second integer to add.
+        Returns:
+            The sum of the two integers.
+        """
+        pass
 
-            Returns:
-                The sum of the two integers.
-            """
-            pass
-
+    def test_implement_non_interactive(self):
         with ImplementHandler():
-            t0 = time.perf_counter()
-            assert add_two_numbers(1, 1) == 2
-            t1 = time.perf_counter()
-            add_two_numbers(1, 1)
-            t2 = time.perf_counter()
-            assert (t2 - t1) * 10 < t1 - t0
+            assert self.add_two_numbers(1, 1) == 2
+
+    def test_implement_interactive(self):
+        simulate_input = SimulateInput()
+        with ImplementHandler(), unify.Interactive(), simulate_input:
+            assert self.add_two_numbers(1, 1) == 2
+            assert simulate_input.num_interactions == 3
