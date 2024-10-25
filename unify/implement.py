@@ -130,6 +130,21 @@ def implement(fn: callable):
         )
         return _get_imports(response), _get_src_code(response)
 
+    def _load_function():
+        while True:
+            try:
+                fn_implemented = getattr(
+                    importlib.import_module("implementations"),
+                    name,
+                )
+                return fn_implemented
+            except Exception as e:
+                print("Error loading function", e)
+                input(
+                    f"Open file {IMPLEMENTATION_PATH} and fix any issues, "
+                    f"then press enter once you're done.",
+                )
+
     def _write_to_file(imports, implementation):
         if not os.path.exists(IMPLEMENTATION_PATH):
             with open(IMPLEMENTATION_PATH, "w+") as file:
@@ -143,10 +158,7 @@ def implement(fn: callable):
             with open(IMPLEMENTATION_PATH, "w") as file:
                 file.write(new_content)
             return
-        fn_implemented = getattr(
-            importlib.import_module("implementations"),
-            name,
-        )
+        fn_implemented = _load_function()
         src_code = inspect.getsource(fn_implemented)
         new_content = imports + "\n\n\n" + content.replace(src_code, implementation)
         with open(IMPLEMENTATION_PATH, "w") as file:
@@ -176,9 +188,7 @@ def implement(fn: callable):
                 if response[0:2].lower() == "no":
                     break
                 elif response[0:6].lower() == "reload":
-                    implementation = inspect.getsource(
-                        getattr(importlib.import_module("implementations"), name),
-                    )
+                    implementation = inspect.getsource(_load_function())
                     continue
                 elif response[0:3].lower() != "yes":
                     print(
@@ -195,7 +205,7 @@ def implement(fn: callable):
                 )
                 imports, implementation = _generate_code()
                 _write_to_file(imports, implementation)
-        fn_implemented = getattr(importlib.import_module("implementations"), name)
+        fn_implemented = _load_function()
         IMPLEMENTATIONS[name] = fn_implemented
         return fn_implemented
 
