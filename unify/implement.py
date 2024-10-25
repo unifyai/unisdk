@@ -147,7 +147,8 @@ def implement(fn: callable):
     def _write_to_file(imports, implementation):
         if not os.path.exists(IMPLEMENTATION_PATH):
             with open(IMPLEMENTATION_PATH, "w+") as file:
-                file.write(imports + "\n\n\n")
+                if imports != "":
+                    file.write(imports + "\n\n\n")
                 file.write(implementation)
             return
         with open(IMPLEMENTATION_PATH, "r") as file:
