@@ -124,11 +124,11 @@ def implement(fn: callable):
             imports.append(line)
         return "\n".join(reversed(imports))
 
-    def _get_src_code(response):
-        implementation = first_line + response.split(first_line)[-1]
-        lines = implementation.split("\n")
-        valid_lines = [lines.pop(0)]
-        for line in lines:
+    def _get_src_code(response, fn_name):
+        lines = response.split("\n")
+        starting_line = [f"def {fn_name}(" in ln for ln in lines].index(True)
+        valid_lines = lines[starting_line : starting_line + 1]
+        for line in lines[starting_line + 1 :]:
             line_len = len(line)
             if (line_len > 4 and line[0:4] != "    ") or (
                 line_len <= 4 and line.strip(" ").strip("\n") != ""
@@ -147,7 +147,14 @@ def implement(fn: callable):
             first_line in response,
             "Model failed to follow the formatting instructions.",
         )
-        return _get_imports(response), _get_src_code(response), response
+        return _get_imports(response), _get_src_code(response, name), response
+
+    def _generate_docstring(fn_name):
+        response = docstring_client.generate(
+            f"please implement the function definition for {fn_name} as described in "
+            "the format described in the system message.",
+        )
+        return _get_src_code(response, fn_name), response
 
     def _load_function(fn_name: str = None):
         fn_name = name if fn_name is None else fn_name
@@ -214,7 +221,6 @@ def implement(fn: callable):
                 if response[0:2].lower() == "no":
                     break
                 elif response[0:6].lower() == "reload":
-                    implementation = inspect.getsource(_load_function())
                     client.append_messages(
                         [
                             {"role": "assistant", "content": assistant_msg},
@@ -281,6 +287,7 @@ def implement(fn: callable):
 
         system_message += DOCSTRING_SYS_MESSAGE_TAIL.replace("{name}", name_error.name)
         docstring_client.set_system_message(system_message)
+        docstring, llm_response = _generate_docstring(name_error.name)
         # ToDo: finish implementation
 
     def _execute_or_implement(func: callable, *args, **kwargs):
