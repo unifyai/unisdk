@@ -48,6 +48,10 @@ class Interactive:
         set_non_interactive()
 
 
+def _formatted(inp: str) -> str:
+    return inp if inp[-1] == "\n" else inp + "\n"
+
+
 def implement(fn: callable, module_path: Optional[str] = None):
 
     global MODULE_PATH
@@ -152,8 +156,11 @@ def implement(fn: callable, module_path: Optional[str] = None):
             imports.append(line)
         return "\n".join(reversed(imports))
 
-    def _get_src_code(response, fn_name):
-        lines = response.split("\n")
+    def _get_src_code(fn_name, context=None):
+        if context is None:
+            with open(full_module_path, "r") as file:
+                context = file.read()
+        lines = context.split("\n")
         starting_line = [f"def {fn_name}(" in ln for ln in lines].index(True)
         valid_lines = lines[starting_line : starting_line + 1]
         for line in lines[starting_line + 1 :]:
@@ -163,7 +170,7 @@ def implement(fn: callable, module_path: Optional[str] = None):
             ):
                 break
             valid_lines.append(line)
-        return "\n".join(valid_lines) + "\n"
+        return "\n".join(valid_lines)
 
     def _generate_code():
         response = client.generate(
@@ -175,14 +182,14 @@ def implement(fn: callable, module_path: Optional[str] = None):
             first_line in response,
             "Model failed to follow the formatting instructions.",
         )
-        return _get_imports(response), _get_src_code(response, name), response
+        return _get_imports(response), _get_src_code(name, response), response
 
     def _generate_function_spec(fn_name):
         response = docstring_client.generate(
             f"please implement the function definition for {fn_name} as described in "
             "the format described in the system message.",
         )
-        return _get_src_code(response, fn_name), response
+        return _get_src_code(fn_name, response), response
 
     def _load_function(fn_name: str):
         while True:
@@ -208,17 +215,12 @@ def implement(fn: callable, module_path: Optional[str] = None):
         if f"def {fn_name}" not in content:
             new_content = imports + content + implementation
             with open(full_module_path, "w") as file:
-                file.write(new_content)
+                file.write(_formatted(new_content))
             return
-        fn_implemented = _load_function(fn_name)
-        src_code = inspect.getsource(fn_implemented)
-        loaded_imports = _get_imports(content)
-        new_content = content.replace(src_code, implementation).replace(
-            loaded_imports,
-            imports,
-        )
+        src_code = _get_src_code(fn_name)
+        new_content = imports + content.replace(src_code, implementation)
         with open(full_module_path, "w") as file:
-            file.write(new_content)
+            file.write(_formatted(new_content))
 
     def _step_loop(this_client, assistant_msg="") -> str:
         if assistant_msg:
@@ -238,7 +240,7 @@ def implement(fn: callable, module_path: Optional[str] = None):
         if response[0:2].lower() == "no":
             return "no"
         elif response[0:6].lower() == "reload":
-            loaded_implementation = inspect.getsource(_load_function(name))
+            loaded_implementation = _get_src_code(name)
             this_client.append_messages(
                 [
                     {
@@ -281,7 +283,7 @@ def implement(fn: callable, module_path: Optional[str] = None):
                     assistant_msg = (
                         "Here is the latest implementation (following any changes "
                         "you may have made):"
-                        f"\n\n{inspect.getsource(_load_function(name))}"
+                        f"\n\n{_get_src_code(name)}"
                     )
                 should_continue, should_update = {
                     "yes": (True, True),
@@ -305,6 +307,11 @@ def implement(fn: callable, module_path: Optional[str] = None):
             f"place for `{name}`, let's step inside and start to implement any "
             "imaginary placeholder functions that we decided to add...",
         )
+        _write_to_file(
+            fn_name=name,
+            imports=imports,
+            implementation=implementation,
+        )
         return fn_implemented
 
     def _add_new_function_spec_w_implement_decorator(name_error, tracebk):
@@ -323,9 +330,7 @@ def implement(fn: callable, module_path: Optional[str] = None):
                         DOCSTRING_SYS_MESSAGE_FIRST_CONTEXT,
                         child_name=name_error.name,
                         parent_name=parent_name,
-                        parent_implementation=inspect.getsource(
-                            _load_function(parent_name),
-                        ),
+                        parent_implementation=_get_src_code(parent_name),
                         calling_line=context[0].lstrip(" "),
                     )
                     first_context = False
@@ -336,9 +341,7 @@ def implement(fn: callable, module_path: Optional[str] = None):
                         DOCSTRING_SYS_MESSAGE_EXTRA_CONTEXT,
                         child_name=child_name,
                         parent_name=parent_name,
-                        parent_implementation=inspect.getsource(
-                            _load_function(parent_name),
-                        ),
+                        parent_implementation=_get_src_code(parent_name),
                         calling_line=context[0].lstrip(" "),
                     )
                 context.clear()
@@ -362,7 +365,7 @@ def implement(fn: callable, module_path: Optional[str] = None):
                     assistant_msg = (
                         "Here is the latest implementation (following any changes "
                         "you may have made):"
-                        f"\n\n{inspect.getsource(_load_function(name))}"
+                        f"\n\n{_get_src_code(name)}"
                     )
                 should_continue, should_update = {
                     "yes": (True, True),
