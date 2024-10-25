@@ -26,6 +26,9 @@ CODING_SYS_MESSAGE = """
         companies, headcount=100, greater_than=True
     )
 
+    Please DO NOT implement any inner functions. Just assume they exist, and make calls
+    to them like the examples above.
+
     As the very last part of your response, please add the full implementation with
     correct indentation and valid syntax, starting with any necessary module imports
     (if relevant), and then the full function implementation, for example:
@@ -97,6 +100,7 @@ def implement(fn: callable):
         top_half = response.split(first_line)[0].rstrip("\n")
         lines = top_half.split("\n")
         imports = list()
+
         for line in reversed(lines):
             if not line.startswith("import ") and not line.startswith("from "):
                 break
@@ -108,7 +112,10 @@ def implement(fn: callable):
         lines = implementation.split("\n")
         valid_lines = [lines.pop(0)]
         for line in lines:
-            if len(line) < 4 or line[0:4] != "    ":
+            line_len = len(line)
+            if (line_len > 4 and line[0:4] != "    ") or (
+                line_len <= 4 and line.strip(" ").strip("\n") != ""
+            ):
                 break
             valid_lines.append(line)
         return "\n".join(valid_lines) + "\n"
@@ -166,7 +173,7 @@ def implement(fn: callable):
                     "If you'd like me to make any changes myself, "
                     "then please respond in one of the two formats:\n"
                     '"Yes: {your explanation}"\n'
-                    '"No: {your explanation}"'
+                    '"No: {your explanation}"\n'
                 )
                 response = input(assistant_msg).strip("'").strip('"')
                 if response[0:2].lower() == "no":
