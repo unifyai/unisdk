@@ -2,6 +2,7 @@ import inspect
 import traceback
 import importlib
 import os.path
+from typing import Optional
 
 import unify
 from .system_messages import (
@@ -18,7 +19,7 @@ MODEL = "gpt-4o@openai"
 
 
 IMPLEMENTATIONS = dict()
-IMPLEMENTATION_PATH = "implementations.py"
+MODULE_PATH = "implementations.py"
 
 INTERACTIVE = False
 
@@ -47,12 +48,28 @@ class Interactive:
         set_non_interactive()
 
 
-def implement(fn: callable):
+def implement(fn: callable, module_path: Optional[str] = None):
+
+    global MODULE_PATH
+    if module_path is None:
+        module_path = MODULE_PATH
+        full_module_path = os.path.join(os.getcwd(), MODULE_PATH)
+
+    def _load_module(module_name: str):
+        while True:
+            try:
+                return importlib.reload(
+                    importlib.import_module(module_name),
+                )
+            except Exception as e:
+                print("Error loading module", e)
+                input(
+                    f"Open file {full_module_path} and fix any issues, "
+                    f"then press enter once you're done.",
+                )
 
     global IMPLEMENTATIONS
-    module = importlib.reload(
-        importlib.import_module(IMPLEMENTATION_PATH.rstrip(".py")),
-    )
+    module = _load_module(module_path.rstrip(".py"))
     for name, obj in inspect.getmembers(module):
         if callable(obj):
             IMPLEMENTATIONS[obj.__name__] = obj
@@ -149,52 +166,53 @@ def implement(fn: callable):
         )
         return _get_imports(response), _get_src_code(response, name), response
 
-    def _generate_docstring(fn_name):
+    def _generate_function_spec(fn_name):
         response = docstring_client.generate(
             f"please implement the function definition for {fn_name} as described in "
             "the format described in the system message.",
         )
         return _get_src_code(response, fn_name), response
 
-    def _load_function(fn_name: str = None):
-        fn_name = name if fn_name is None else fn_name
+    def _load_function(fn_name: str):
         while True:
             try:
                 return getattr(
-                    importlib.reload(
-                        importlib.import_module(IMPLEMENTATION_PATH.rstrip(".py")),
-                    ),
+                    _load_module(module_path.rstrip(".py")),
                     fn_name,
                 )
             except Exception as e:
-                print("Error loading function", e)
+                print(
+                    "Loaded module without errors, "
+                    "but there was an error trying to load function",
+                    e,
+                )
                 input(
-                    f"Open file {IMPLEMENTATION_PATH} and fix any issues, "
+                    f"Open file {full_module_path} and fix any issues, "
                     f"then press enter once you're done.",
                 )
 
-    def _write_to_file(imports, implementation):
-        if not os.path.exists(IMPLEMENTATION_PATH):
-            with open(IMPLEMENTATION_PATH, "w+") as file:
+    def _write_to_file(*, fn_name, imports="", implementation=""):
+        if not os.path.exists(full_module_path):
+            with open(full_module_path, "w+") as file:
                 if imports != "":
                     file.write(imports + "\n\n\n")
                 file.write(implementation)
             return
-        with open(IMPLEMENTATION_PATH, "r") as file:
+        with open(full_module_path, "r") as file:
             content = file.read()
-        if first_line not in content:
+        if f"def {fn_name}" not in content:
             new_content = imports + content + implementation
-            with open(IMPLEMENTATION_PATH, "w") as file:
+            with open(full_module_path, "w") as file:
                 file.write(new_content)
             return
-        fn_implemented = _load_function()
+        fn_implemented = _load_function(fn_name)
         src_code = inspect.getsource(fn_implemented)
         loaded_imports = _get_imports(content)
         new_content = content.replace(src_code, implementation).replace(
             loaded_imports,
             imports,
         )
-        with open(IMPLEMENTATION_PATH, "w") as file:
+        with open(full_module_path, "w") as file:
             file.write(new_content)
 
     def _get_fn():
@@ -203,7 +221,7 @@ def implement(fn: callable):
             return IMPLEMENTATIONS[name]
         imports, implementation, llm_response = _generate_code()
         client.set_system_message(update_system_message)
-        _write_to_file(imports, implementation)
+        _write_to_file(fn_name=name, imports=imports, implementation=implementation)
         if interactive_mode():
             while True:
                 assistant_msg = (
@@ -212,7 +230,7 @@ def implement(fn: callable):
                     '"Yes: {your explanation}"\n'
                     '"No: {your explanation}"\n\n'
                     "If you would like to make updates yourself, then you can directly "
-                    f"modify the source code in {IMPLEMENTATION_PATH}.\n"
+                    f"modify the source code in {full_module_path}.\n"
                     'Simply respond with the word "Reload" once '
                     "you've made the changes, and then I can take another look.\n\n"
                 )
@@ -242,12 +260,17 @@ def implement(fn: callable):
                     ],
                 )
                 imports, implementation, llm_response = _generate_code()
-                _write_to_file(imports, implementation)
-        fn_implemented = _load_function()
+                _write_to_file(
+                    fn_name=name,
+                    imports=imports,
+                    implementation=implementation,
+                )
+        fn_implemented = _load_function(name)
         IMPLEMENTATIONS[name] = fn_implemented
         return fn_implemented
 
-    def _propose_docstring(name_error, tracebk):
+    def _add_new_function_spec_w_implement_decorator(name_error, tracebk):
+        # ToDo: make this process interactive
         system_message = DOCSTRING_SYS_MESSAGE_HEAD.replace("{name}", name_error.name)
         context = list()
         first_context = True
@@ -287,17 +310,18 @@ def implement(fn: callable):
 
         system_message += DOCSTRING_SYS_MESSAGE_TAIL.replace("{name}", name_error.name)
         docstring_client.set_system_message(system_message)
-        docstring, llm_response = _generate_docstring(name_error.name)
-        # ToDo: finish implementation
+        function_spec, llm_response = _generate_function_spec(name_error.name)
+        function_spec = "\n\n@unify.implement\n" + function_spec
+        _write_to_file(fn_name=name_error.name, implementation=function_spec)
 
-    def _execute_or_implement(func: callable, *args, **kwargs):
+    def _execute_with_implement(func: callable, *args, **kwargs):
         try:
             return func(*args, **kwargs)
         except NameError as ne:
-            # ToDo: finish implementation
-            docstring = _propose_docstring(ne, traceback.format_exc())
+            _add_new_function_spec_w_implement_decorator(ne, traceback.format_exc())
+        return func(*args, **kwargs)
 
     def implemented(*args, **kwargs):
-        return _execute_or_implement(_get_fn(), *args, **kwargs)
+        return _execute_with_implement(_get_fn(), *args, **kwargs)
 
     return implemented

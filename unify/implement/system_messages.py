@@ -54,7 +54,7 @@ Specifically, the line where `{child_name}` is called is: `{calling_line}`.
 """
 
 DOCSTRING_SYS_MESSAGE_EXTRA_CONTEXT = """
-This function (`{child_name}`) is itself called inside the function `{parent_name}`,
+This function (`{child_name}`) is itself called inside another function `{parent_name}`,
 which has the following implementation:
 
 ```python
@@ -67,7 +67,7 @@ Specifically, the line where `{child_name}` is called is: `{calling_line}`.
 DOCSTRING_SYS_MESSAGE_TAIL = """
 Given all of this context, your task is to provide a well informed proposal for the
 docstring and argument specification (with typing) for the new function {name},
-in the following format:
+with an empty implementation `pass`, in the following format:
 
 ```python
 def {name}({arg1}: {type1}, {arg2}: {type2} = {default2}, ...):
@@ -82,6 +82,7 @@ def {name}({arg1}: {type1}, {arg2}: {type2} = {default2}, ...):
     Returns:
         {return description}
     \"\"\"
+    pass
 ```
 
 Please respond in the format as above, and write nothing else after your answer.
