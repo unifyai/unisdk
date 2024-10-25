@@ -131,8 +131,8 @@ def implement(fn: callable, module_path: Optional[str] = None):
             )
         )
 
-    name = fn.__name__
-    docstring = fn.__doc__
+    name = fn.__name__ if fn.__name__ is not None else ""
+    docstring = fn.__doc__ if fn.__doc__ is not None else ""
     signature = str(inspect.signature(fn))
     client = unify.Unify(MODEL, cache=True)
     docstring_client = unify.Unify(MODEL, cache=True)
