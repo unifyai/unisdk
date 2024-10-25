@@ -222,6 +222,19 @@ def implement(fn: callable, module_path: Optional[str] = None):
         with open(full_module_path, "w") as file:
             file.write(_formatted(new_content))
 
+    def _remove_unify_decorator_if_present(fn_name: str):
+        with open(full_module_path, "r") as file:
+            content = file.read()
+        lines = content.splitlines()
+        fn_line_no = [f"def {fn_name}" in ln for ln in lines].index(True)
+        has_decorator = lines[fn_line_no - 1] == "@unify.implement"
+        if not has_decorator:
+            return
+        with open(full_module_path, "w") as file:
+            file.write(
+                _formatted("\n".join(lines[0 : fn_line_no - 1] + lines[fn_line_no:])),
+            )
+
     def _step_loop(this_client, assistant_msg="") -> str:
         if assistant_msg:
             print(assistant_msg)
@@ -269,6 +282,7 @@ def implement(fn: callable, module_path: Optional[str] = None):
     def _get_fn():
         global IMPLEMENTATIONS
         if name in IMPLEMENTATIONS:
+            _remove_unify_decorator_if_present(name)
             print(f"\n`{name}` is already implemented, stepping inside.\n")
             return IMPLEMENTATIONS[name]
         client.set_system_message(update_system_message)
@@ -300,6 +314,7 @@ def implement(fn: callable, module_path: Optional[str] = None):
                     imports=imports,
                     implementation=implementation,
                 )
+        _remove_unify_decorator_if_present(name)
         fn_implemented = _load_function(name)
         IMPLEMENTATIONS[name] = fn_implemented
         print(
