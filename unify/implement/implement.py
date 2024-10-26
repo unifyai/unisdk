@@ -401,9 +401,7 @@ def implement(fn: callable, module_path: Optional[str] = None):
                 f"Otherwise, if you're happy for us to work on `{first_child}` "
                 "then just press enter and we'll get started 👌\n"
             )
-        print(message)
-        # response = input(message)
-        # ToDo: implement branching logic here
+        input(message)
         IMPLEMENTATIONS[name] = fn_implemented
         _write_to_file(
             fn_name=name,
