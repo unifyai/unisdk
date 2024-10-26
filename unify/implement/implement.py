@@ -22,7 +22,7 @@ MODEL = "gpt-4o@openai"
 IMPLEMENTATIONS = dict()
 MODULE_PATH = "implementations.py"
 
-INTERACTIVE = False
+INTERACTIVE = True
 
 FN_TREE = dict()
 
