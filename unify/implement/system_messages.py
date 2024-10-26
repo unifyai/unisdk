@@ -22,18 +22,23 @@ def {name}{signature}:
     {implementation}
 """
 INIT_CODING_SYS_MESSAGE = """
-You should write a Python implementation for a function {name} with the
-following signature and docstring:
+You should write a Python implementation for a function `{name}` with the
+following signature, docstring and example inputs:
 
-{signature}
-
+def {name}{signature}
+    \"\"\"
 {docstring}
+    \"\"\"
+
+{name}({args} {kwargs})
 
     """
 UPDATING_CODING_SYS_MESSAGE = """
 You should *update* the Python implementation (preserving the function name,
 arguments, and general structure), and only make changes as requested by the user
-in the chat.
+in the chat. The following example inputs should be compatible with the implementation:
+
+{name}({args} {kwargs})
 
 """
 
@@ -66,7 +71,7 @@ Specifically, the line where `{child_name}` is called is: `{calling_line}`.
 
 DOCSTRING_SYS_MESSAGE_TAIL = """
 Given all of this context, your task is to provide a well informed proposal for the
-docstring and argument specification (with typing) for the new function {name},
+docstring and argument specification (with typing) for the new function `{name}`,
 with an empty implementation `pass`, in the following format:
 
 ```python

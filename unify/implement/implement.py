@@ -100,7 +100,7 @@ def implement(fn: callable, module_path: Optional[str] = None):
             )
             .replace(
                 "{docstring}",
-                docstring,
+                docstring.lstrip("\n").rstrip(" ").rstrip("\n"),
             )
             .replace(
                 "{signature}",
@@ -316,15 +316,28 @@ def implement(fn: callable, module_path: Optional[str] = None):
         if segments:
             return segments[0]
 
-    def _get_fn():
+    def _add_args_to_system_msg(*args, **kwargs):
+        client.set_system_message(
+            client.system_message.replace(
+                "{args}",
+                str(args)[1:-1],
+            ).replace(
+                "{kwargs}",
+                str(kwargs)[1:-1].replace("'", "").replace(": ", "="),
+            ),
+        )
+
+    def _get_fn(*args, **kwargs):
         global IMPLEMENTATIONS
         if name in IMPLEMENTATIONS:
             _remove_unify_decorator_if_present(name)
             print(f"\n`{name}` is already implemented, stepping inside.\n")
             return IMPLEMENTATIONS[name]
         print(f"We'll now work together to implement the function `{name}`.\n")
-        client.set_system_message(update_system_message)
+        _add_args_to_system_msg(*args, **kwargs)
         imports, implementation, llm_response = _generate_code()
+        client.set_system_message(update_system_message)
+        _add_args_to_system_msg(*args, **kwargs)
         _write_to_file(fn_name=name, imports=imports, implementation=implementation)
         if interactive_mode():
             should_continue = True
@@ -479,6 +492,6 @@ def implement(fn: callable, module_path: Optional[str] = None):
         return _load_function(func.__name__)(*args, **kwargs)
 
     def implemented(*args, **kwargs):
-        return _execute_with_implement(_get_fn(), *args, **kwargs)
+        return _execute_with_implement(_get_fn(*args, **kwargs), *args, **kwargs)
 
     return implemented
