@@ -1,4 +1,5 @@
 import inspect
+import json
 import traceback
 import importlib
 import os.path
@@ -22,6 +23,8 @@ IMPLEMENTATIONS = dict()
 MODULE_PATH = "implementations.py"
 
 INTERACTIVE = False
+
+FN_TREE = dict()
 
 
 def set_interactive():
@@ -210,7 +213,7 @@ def implement(fn: callable, module_path: Optional[str] = None):
 
     def _generate_function_spec(fn_name):
         response = docstring_client.generate(
-            f"please implement the function definition for {fn_name} as described in "
+            f"please implement the function definition for `{fn_name}` as described in "
             "the format described in the system message.",
         )
         return _parse_src_code(fn_name, response), response
@@ -303,12 +306,23 @@ def implement(fn: callable, module_path: Optional[str] = None):
         )
         return "yes"
 
+    def _add_child_functions_to_state(implementation: str):
+        segments = [s.split("(")[0] for s in implementation.split(" ") if "(" in s]
+        segments = [s for s in segments if s.replace("_", "").isalnum() and s != name]
+        if name not in FN_TREE:
+            FN_TREE[name] = dict()
+        for s in segments:
+            FN_TREE[name][s] = dict()
+        if segments:
+            return segments[0]
+
     def _get_fn():
         global IMPLEMENTATIONS
         if name in IMPLEMENTATIONS:
             _remove_unify_decorator_if_present(name)
             print(f"\n`{name}` is already implemented, stepping inside.\n")
             return IMPLEMENTATIONS[name]
+        print(f"We'll now work together to implement the function `{name}`.\n")
         client.set_system_message(update_system_message)
         imports, implementation, llm_response = _generate_code()
         _write_to_file(fn_name=name, imports=imports, implementation=implementation)
@@ -340,12 +354,33 @@ def implement(fn: callable, module_path: Optional[str] = None):
                 )
         _remove_unify_decorator_if_present(name)
         fn_implemented = _load_function(name)
-        IMPLEMENTATIONS[name] = fn_implemented
-        print(
-            "\nGreat, we got there in the end! Now that we have an implementation in "
-            f"place for `{name}`, let's step inside and start to implement any "
-            "imaginary placeholder functions that we decided to add...",
+        first_child = _add_child_functions_to_state(implementation)
+        message = (
+            "\nGreat, we got there in the end! Now that we have an "
+            f"implementation in place for `{name}`, "
+            "let's decide what to work on next!\n"
+            "The total set of functions being worked on within the uppermost "
+            "`unify.implement` context are as follows:"
+            "\n\n"
+            f"{json.dumps(FN_TREE, indent=4)}"
+            "\n\n"
+            "Functions with empty dicts are not yet implemented, "
+            "functions with `True` are implemented but don't have children, "
+            "and functions with sub-dicts are implemented using these child functions."
+            "We'll continue to follow the ordering of the call stack. "
         )
+        if first_child:
+            message += (
+                f"Therefore, we will work on implementing `{first_child}` next.\n"
+                "If you would like to work another function listed above, "
+                "just type the function name and we'll dive in and take a look.\n\n"
+                f"If you're happy for us to work on `{first_child}` "
+                "then just press enter and we'll get started 👌\n"
+            )
+        print(message)
+        # response = input(message)
+        # ToDo: implement branching logic here
+        IMPLEMENTATIONS[name] = fn_implemented
         _write_to_file(
             fn_name=name,
             imports=imports,
