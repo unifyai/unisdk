@@ -78,12 +78,14 @@ def implement(fn: callable, module_path: Optional[str] = None):
                     e,
                 )
                 input(
-                    f"Open the file `{full_module_path}` and fix the issue "
-                    "mentioned above, then press enter once you're happy 👌\n"
                     "Don't worry about any undefined imaginary functions which may "
                     "have red underlines shown in your IDE etc., we just need to fix "
                     "the specific issue mentioned above and then "
-                    "move to the next step.",
+                    "move to the next step.\n"
+                    f"Open the file `{full_module_path}` and fix the issue "
+                    "mentioned above, "
+                    "(don't forget to ctrl-S to save in your IDE/editor!), "
+                    "then press enter once you're happy 👌\n",
                 )
 
     global IMPLEMENTATIONS
@@ -182,6 +184,7 @@ def implement(fn: callable, module_path: Optional[str] = None):
         for ln in lines:
             if ln == '    """':
                 removing = not removing
+                continue
             if removing:
                 continue
             new_lines.append(ln)
@@ -266,19 +269,22 @@ def implement(fn: callable, module_path: Optional[str] = None):
         if assistant_msg:
             print(assistant_msg)
         assistant_questions = (
-            "\nIs there anything you would like me to change?\n"
-            "If so, then please respond in one of the two formats:\n"
-            '"Yes: {your explanation}"\n'
-            '"No: {your explanation}"\n\n'
+            "\nIs there anything you would like me to change? "
+            "If so, then please respond in the following format:\n"
+            '"Yes: {your explanation}"\n\n'
             "If you would like to make updates yourself, then you can directly "
             f"modify the source code in `{full_module_path}`.\n"
             "Simply respond in the following format once "
             "you've made the changes, and then I can take another look:\n"
             '"Reload: {your explanation}"\n\n'
+            "Finally, if you're happy with these edits "
+            "and would like to move onto the next function, "
+            "then please respond in the following format:\n"
+            '"Next: {your explanation}"\n\n'
         )
         response = input(assistant_questions).strip("'").strip('"')
-        if response[0:2].lower() == "no":
-            return "no"
+        if response[0:4].lower() == "next":
+            return "next"
         elif response[0:6].lower() == "reload":
             loaded_implementation = _parse_src_code(name)
             this_client.append_messages(
@@ -308,7 +314,11 @@ def implement(fn: callable, module_path: Optional[str] = None):
 
     def _add_child_functions_to_state(implementation: str):
         segments = [s.split("(")[0] for s in implementation.split(" ") if "(" in s]
-        segments = [s for s in segments if s.replace("_", "").isalnum() and s != name]
+        segments = [
+            s
+            for s in segments
+            if s.replace("_", "").isalnum() and s == s.lower() and s != name
+        ]
         if name not in FN_TREE:
             FN_TREE[name] = dict()
         for s in segments:
@@ -352,7 +362,7 @@ def implement(fn: callable, module_path: Optional[str] = None):
                     )
                 should_continue, should_update = {
                     "yes": (True, True),
-                    "no": (False, False),
+                    "next": (False, False),
                     "reload": (True, False),
                     "invalid": (True, False),
                 }[mode]
@@ -369,7 +379,7 @@ def implement(fn: callable, module_path: Optional[str] = None):
         fn_implemented = _load_function(name)
         first_child = _add_child_functions_to_state(implementation)
         message = (
-            "\nGreat, we got there in the end! Now that we have an "
+            "\nGreat! Now that we have an "
             f"implementation in place for `{name}`, "
             "let's decide what to work on next!\n"
             "The total set of functions being worked on within the uppermost "
@@ -379,15 +389,16 @@ def implement(fn: callable, module_path: Optional[str] = None):
             "\n\n"
             "Functions with empty dicts are not yet implemented, "
             "functions with `True` are implemented but don't have children, "
-            "and functions with sub-dicts are implemented using these child functions."
-            "We'll continue to follow the ordering of the call stack. "
+            "and functions with sub-dicts are implemented using those child functions. "
+            "We'll continue to follow the ordering of the call stack.\n"
         )
         if first_child:
             message += (
                 f"Therefore, we will work on implementing `{first_child}` next.\n"
-                "If you would like to work another function listed above, "
-                "just type the function name and we'll dive in and take a look.\n\n"
-                f"If you're happy for us to work on `{first_child}` "
+                "A quick reminder that you can CTRL-C at any time, and we will simply "
+                "pick up where we left off next time you run the `unify.implement` "
+                "decorated function.\n"
+                f"Otherwise, if you're happy for us to work on `{first_child}` "
                 "then just press enter and we'll get started 👌\n"
             )
         print(message)
@@ -456,7 +467,7 @@ def implement(fn: callable, module_path: Optional[str] = None):
                     )
                 should_continue, should_update = {
                     "yes": (True, True),
-                    "no": (False, False),
+                    "next": (False, False),
                     "reload": (True, False),
                     "invalid": (True, False),
                 }[mode]
