@@ -1,5 +1,6 @@
 import inspect
 import json
+import time
 import traceback
 import importlib
 import os.path
@@ -55,6 +56,14 @@ def _formatted(inp: str) -> str:
     return inp if inp[-1] == "\n" else inp + "\n"
 
 
+def _streamed_print(text: str, *args) -> None:
+    for line in text.splitlines():
+        for word in line.split(" "):
+            print(word + " ", *args, end="")
+            time.sleep(0.02)
+        print("\n", *args, end="")
+
+
 def implement(fn: callable, module_path: Optional[str] = None):
 
     global MODULE_PATH
@@ -73,7 +82,7 @@ def implement(fn: callable, module_path: Optional[str] = None):
                     importlib.import_module(module_name),
                 )
             except Exception as e:
-                print(
+                _streamed_print(
                     "\nOops, seems like there was an error loading " "our new module.",
                     e,
                 )
@@ -235,7 +244,7 @@ def implement(fn: callable, module_path: Optional[str] = None):
                     fn_name,
                 )
             except Exception as e:
-                print(
+                _streamed_print(
                     "Hmmm, we loaded module without any errors, "
                     "but there was an error trying to load the function",
                     e,
@@ -273,7 +282,7 @@ def implement(fn: callable, module_path: Optional[str] = None):
 
     def _step_loop(this_client, assistant_msg="") -> str:
         if assistant_msg:
-            print(assistant_msg)
+            _streamed_print(assistant_msg)
         assistant_questions = (
             "\nIs there anything you would like me to change? "
             "If so, then please respond in the following format:\n"
@@ -304,7 +313,7 @@ def implement(fn: callable, module_path: Optional[str] = None):
             )
             return "reload"
         elif response[0:3].lower() != "yes":
-            print(
+            _streamed_print(
                 "Please respond in one of the following formats:\n"
                 "Yes: {your explanation}\n"
                 "No: {your explanation}",
@@ -347,9 +356,11 @@ def implement(fn: callable, module_path: Optional[str] = None):
         global IMPLEMENTATIONS
         if name in IMPLEMENTATIONS:
             _remove_unify_decorator_if_present(name)
-            print(f"\n`{name}` is already implemented, stepping inside.\n")
+            _streamed_print(f"\n`{name}` is already implemented, stepping inside.\n")
             return IMPLEMENTATIONS[name]
-        print(f"We'll now work together to implement the function `{name}`.\n")
+        _streamed_print(
+            f"We'll now work together to implement the function `{name}`.\n",
+        )
         _add_args_to_system_msg(*args, **kwargs)
         imports, implementation, llm_response = _generate_code()
         client.set_system_message(update_system_message)
@@ -486,7 +497,7 @@ def implement(fn: callable, module_path: Optional[str] = None):
                     implementation=function_spec,
                 )
 
-        print(
+        _streamed_print(
             "\nGreat, I'm glad we're both happy with the specification for "
             f"`{name_error.name}`! Let's now make a start on the implementation, "
             f"and iterate on this together as before...",
@@ -496,7 +507,7 @@ def implement(fn: callable, module_path: Optional[str] = None):
         try:
             return func(*args, **kwargs)
         except NameError as ne:
-            print(
+            _streamed_print(
                 f"\nOkay, so it seems like `{ne.name}` is not yet implemented, "
                 "let's define the function specification together first, "
                 "before moving onto the implementation in the next step.\n"
