@@ -86,7 +86,7 @@ def implement(fn: callable, module_path: Optional[str] = None):
                     "\nOops, seems like there was an error loading " "our new module.",
                     e,
                 )
-                input(
+                _streamed_print(
                     "Don't worry about any undefined imaginary functions which may "
                     "have red underlines shown in your IDE etc., we just need to fix "
                     "the specific issue mentioned above and then "
@@ -96,6 +96,7 @@ def implement(fn: callable, module_path: Optional[str] = None):
                     "(don't forget to ctrl-S to save in your IDE/editor!), "
                     "then press enter once you're happy 👌\n",
                 )
+                input()
 
     global IMPLEMENTATIONS
     module = _load_module(module_path.rstrip(".py"))
@@ -249,10 +250,11 @@ def implement(fn: callable, module_path: Optional[str] = None):
                     "but there was an error trying to load the function",
                     e,
                 )
-                input(
+                _streamed_print(
                     f"Open file `{full_module_path}` and fix the issue mentioned "
                     "above, then press enter once you're done 👌\n",
                 )
+                input()
 
     def _write_to_file(*, fn_name, imports="", implementation=""):
         with open(full_module_path, "r") as file:
@@ -297,7 +299,8 @@ def implement(fn: callable, module_path: Optional[str] = None):
             "then please respond in the following format:\n"
             '"Next: {your explanation}"\n\n'
         )
-        response = input(assistant_questions).strip("'").strip('"')
+        _streamed_print(assistant_questions)
+        response = input().strip("'").strip('"')
         if response[0:4].lower() == "next":
             return "next"
         elif response[0:6].lower() == "reload":
@@ -418,7 +421,8 @@ def implement(fn: callable, module_path: Optional[str] = None):
                 f"Otherwise, if you're happy for us to work on `{first_child}` "
                 "then just press enter and we'll get started 👌\n"
             )
-        input(message)
+        _streamed_print(message)
+        input()
         IMPLEMENTATIONS[name] = fn_implemented
         _write_to_file(
             fn_name=name,
