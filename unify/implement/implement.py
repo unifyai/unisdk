@@ -173,7 +173,7 @@ def implement(fn: callable, module_path: Optional[str] = None):
         )
         for line in lines[starting_line + 1 :]:
             line_len = len(line)
-            if (line_len > indent and line[0:indent] != "    ") or (
+            if (line_len > indent and line[0:indent] != " " * indent) or (
                 line_len <= indent and line.strip(" ").strip("\n") != ""
             ):
                 break
@@ -185,7 +185,7 @@ def implement(fn: callable, module_path: Optional[str] = None):
         removing = False
         new_lines = list()
         for ln in lines:
-            if ln == '    """':
+            if ln.lstrip(" ") == '"""':
                 removing = not removing
                 continue
             if removing:
@@ -197,6 +197,9 @@ def implement(fn: callable, module_path: Optional[str] = None):
         src_code = _remove_docstring(src_code)
         lines = src_code.splitlines()
         def_idx = ["def " in ln for ln in lines].index(True)
+        dcstr_lines = dcstr.splitlines()
+        indent = len(dcstr_lines[1]) - len(dcstr_lines[1].lstrip(" "))
+        dcstr = "\n".join([" " * (4 - indent) + ln for ln in dcstr_lines])
         return "\n".join(
             lines[0 : def_idx + 1] + [f'    """{dcstr}"""'] + lines[def_idx + 1 :],
         )
