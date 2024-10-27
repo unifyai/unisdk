@@ -168,10 +168,13 @@ def implement(fn: callable, module_path: Optional[str] = None):
         lines = context.split("\n")
         starting_line = [f"def {fn_name}(" in ln for ln in lines].index(True)
         valid_lines = lines[starting_line : starting_line + 1]
+        indent = len(lines[starting_line + 1]) - len(
+            lines[starting_line + 1].lstrip(" "),
+        )
         for line in lines[starting_line + 1 :]:
             line_len = len(line)
-            if (line_len > 4 and line[0:4] != "    ") or (
-                line_len <= 4 and line.strip(" ").strip("\n") != ""
+            if (line_len > indent and line[0:indent] != "    ") or (
+                line_len <= indent and line.strip(" ").strip("\n") != ""
             ):
                 break
             valid_lines.append(line)
