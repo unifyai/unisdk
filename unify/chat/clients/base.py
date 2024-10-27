@@ -643,7 +643,7 @@ class _Client(ABC):
         self._response_format = value
         return self
 
-    def set_seed(self, value: int) -> Self:
+    def set_seed(self, value: Optional[int]) -> Self:
         """
         Set the default seed value.  # noqa: DAR101.
 

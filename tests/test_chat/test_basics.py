@@ -3,6 +3,7 @@ import unittest
 from types import AsyncGeneratorType, GeneratorType
 from unittest.mock import MagicMock, patch
 
+import unify
 from unify import AsyncUnify, Unify
 from unify.types import Prompt
 
@@ -88,6 +89,29 @@ class TestUnifyBasics(unittest.TestCase):
         assert client.messages[2]["role"] == "assistant"
         assert client.messages[3]["role"] == "user"
         assert client.messages[4]["role"] == "assistant"
+
+    def test_seed(self):
+        client = Unify("gpt-4@openai")
+
+        correct = client.generate("tell me a random number between 0-10", seed=0)
+
+        # generate arg
+        num0 = client.generate("tell me a random number between 0-10", seed=0)
+        num1 = client.generate("tell me a random number between 0-10", seed=0)
+        assert num0 == num1 == correct
+
+        # client attribute
+        client.set_seed(0)
+        num0 = client.generate("tell me a random number between 0-10")
+        num1 = client.generate("tell me a random number between 0-10")
+        assert num0 == num1 == correct
+
+        # global state
+        client.set_seed(None)
+        unify.set_seed(0)
+        num0 = client.generate("tell me a random number between 0-10")
+        num1 = client.generate("tell me a random number between 0-10")
+        assert num0 == num1 == correct
 
 
 class TestAsyncUnifyBasics(unittest.IsolatedAsyncioTestCase):

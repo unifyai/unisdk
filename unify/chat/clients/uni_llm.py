@@ -708,7 +708,7 @@ class _UniClient(_Client, abc.ABC):
             n=_default(n, self._n),
             presence_penalty=_default(presence_penalty, self._presence_penalty),
             response_format=_default(response_format, self._response_format),
-            seed=_default(seed, self._seed),
+            seed=_default(_default(seed, self._seed), unify.get_seed()),
             stop=_default(stop, self._stop),
             stream=_default(stream, self._stream),
             stream_options=_default(stream_options, self._stream_options),

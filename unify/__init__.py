@@ -1,7 +1,7 @@
 """Unify python module."""
 
 import os
-from typing import Callable
+from typing import Callable, Optional
 
 
 if "UNIFY_BASE_URL" in os.environ.keys():
@@ -11,6 +11,16 @@ else:
 
 
 LOCAL_MODELS = dict()
+SEED = None
+
+
+def set_seed(seed: int) -> None:
+    global SEED
+    SEED = seed
+
+
+def get_seed() -> Optional[int]:
+    return SEED
 
 
 def register_local_model(model_name: str, fn: Callable):
