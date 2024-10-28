@@ -26,6 +26,7 @@ MODULE_PATH = "implementations.py"
 INTERACTIVE = True
 
 FN_TREE = dict()
+FN_POINTER = list()
 
 
 def set_interactive():
@@ -52,8 +53,13 @@ class Interactive:
         set_non_interactive()
 
 
-def _formatted(inp: str) -> str:
-    return inp if inp[-1] == "\n" else inp + "\n"
+def _formatted(content: str) -> str:
+    too_long = True
+    while too_long:
+        old_content = content
+        content = content.replace("\n\n\n\n", "\n\n\n")
+        too_long = content != old_content
+    return content if (content and content[-1] == "\n") else content + "\n"
 
 
 def _streamed_print(text: str, *args) -> None:
@@ -282,6 +288,7 @@ def implement(fn: callable, module_path: Optional[str] = None):
         new_content = content
         for fn_name, implementation in implementations.items():
             if f"def {fn_name}" not in content:
+                new_content = new_content.rstrip("\n") + "\n\n\n"
                 new_content = new_content + implementation
             else:
                 src_code = _parse_src_code(fn_name)
@@ -316,7 +323,7 @@ def implement(fn: callable, module_path: Optional[str] = None):
             '"Reload: {your explanation}"\n\n'
             "Finally, if you're happy with these edits "
             "and would like to move onto the next function, "
-            "then just press enter!\n\n"
+            "then just press enter!\n"
         )
         _streamed_print(assistant_questions)
         response = input().strip("'").strip('"')
@@ -350,6 +357,16 @@ def implement(fn: callable, module_path: Optional[str] = None):
         )
         return "yes"
 
+    def _get_fn_tree_leaf():
+        global FN_POINTER
+        global FN_TREE
+        leaf = FN_TREE
+        for key in FN_POINTER:
+            if key not in leaf:
+                leaf[key] = dict()
+            leaf = leaf[key]
+        return leaf
+
     def _add_child_functions_to_state(implementation: str):
         segments = [s.split("(")[0] for s in implementation.split(" ") if "(" in s]
         segments = [
@@ -357,10 +374,9 @@ def implement(fn: callable, module_path: Optional[str] = None):
             for s in segments
             if s.replace("_", "").isalnum() and s == s.lower() and s != name
         ]
-        if name not in FN_TREE:
-            FN_TREE[name] = dict()
+        leaf = _get_fn_tree_leaf()
         for s in segments:
-            FN_TREE[name][s] = dict()
+            leaf[s] = dict()
         if segments:
             return segments[0]
 
@@ -382,7 +398,7 @@ def implement(fn: callable, module_path: Optional[str] = None):
             _streamed_print(f"\n`{name}` is already implemented, stepping inside.\n")
             return IMPLEMENTATIONS[name]
         _streamed_print(
-            f"We'll now work together to implement the function `{name}`.\n",
+            f"We'll now work together to implement the function `{name}`.\n\n",
         )
         _add_args_to_system_msg(*args, **kwargs)
         imports, implementations, llm_response = _generate_code()
@@ -419,7 +435,7 @@ def implement(fn: callable, module_path: Optional[str] = None):
         fn_implemented = _load_function(name)
         first_child = _add_child_functions_to_state(implementations[name])
         message = (
-            "\nGreat! Now that we have an "
+            "Great! Now that we have an "
             f"implementation in place for `{name}`, "
             "let's decide what to work on next!\n"
             "The total set of functions being worked on within the uppermost "
@@ -505,7 +521,7 @@ def implement(fn: callable, module_path: Optional[str] = None):
 
         _streamed_print(
             "\nGreat, I'm glad we're both happy with the specification for "
-            f"`{name_error.name}`!",
+            f"`{name_error.name}`!\n",
         )
 
     def _execute_with_implement(func: callable, *args, **kwargs):
@@ -523,6 +539,11 @@ def implement(fn: callable, module_path: Optional[str] = None):
         return _load_function(func.__name__)(*args, **kwargs)
 
     def implemented(*args, **kwargs):
-        return _execute_with_implement(_get_fn(*args, **kwargs), *args, **kwargs)
+        global FN_POINTER
+        FN_POINTER.append(name)
+        ret = _execute_with_implement(_get_fn(*args, **kwargs), *args, **kwargs)
+        FN_POINTER.pop()
+        _get_fn_tree_leaf()[name] = True
+        return ret
 
     return implemented
