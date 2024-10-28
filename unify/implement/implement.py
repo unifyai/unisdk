@@ -429,13 +429,8 @@ def implement(fn: callable, module_path: Optional[str] = None):
             "\n\n"
         )
         if first_child:
-            message += (
-                f"We will work on implementing `{first_child}` next.\n"
-                f"If you'd rather continue later then you can press CTRL-C any time, "
-                f"otherwise press enter and we'll get started 👌\n"
-            )
+            message += f"We will work on implementing `{first_child}` next.\n"
         _streamed_print(message)
-        input()
         IMPLEMENTATIONS[name] = fn_implemented
         _write_imports_to_file(imports)
         _write_functions_to_file(implementations)
