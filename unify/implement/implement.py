@@ -224,9 +224,22 @@ def implement(fn: callable, module_path: Optional[str] = None):
             first_line in response,
             "Model failed to follow the formatting instructions.",
         )
+        fn_names = [
+            ln.split("def ")[-1].split("(")[0]
+            for ln in response.splitlines()
+            if len(ln) > 7 and ln[0:4] == "def "
+        ]
+        source_codes = {
+            fn_name: (
+                _inject_docstring(_parse_src_code(fn_name, response), docstring)
+                if fn_name == name
+                else _parse_src_code(fn_name, response)
+            )
+            for fn_name in fn_names
+        }
         return (
             _get_imports(response),
-            _inject_docstring(_parse_src_code(name, response), docstring),
+            source_codes,
             response,
         )
 
@@ -256,16 +269,23 @@ def implement(fn: callable, module_path: Optional[str] = None):
                 )
                 input()
 
-    def _write_to_file(*, fn_name, imports="", implementation=""):
+    def _write_imports_to_file(imports=""):
         with open(full_module_path, "r") as file:
             content = file.read()
-        if f"def {fn_name}" not in content:
-            new_content = imports + content + implementation
-            with open(full_module_path, "w") as file:
-                file.write(_formatted(new_content))
-            return
-        src_code = _parse_src_code(fn_name)
-        new_content = imports + content.replace(src_code, implementation)
+        new_content = imports + content
+        with open(full_module_path, "w") as file:
+            file.write(_formatted(new_content))
+
+    def _write_functions_to_file(implementations):
+        with open(full_module_path, "r") as file:
+            content = file.read()
+        new_content = content
+        for fn_name, implementation in implementations.items():
+            if f"def {fn_name}" not in content:
+                new_content = new_content + implementation
+            else:
+                src_code = _parse_src_code(fn_name)
+                new_content = new_content.replace(src_code, implementation)
         with open(full_module_path, "w") as file:
             file.write(_formatted(new_content))
 
@@ -296,13 +316,12 @@ def implement(fn: callable, module_path: Optional[str] = None):
             '"Reload: {your explanation}"\n\n'
             "Finally, if you're happy with these edits "
             "and would like to move onto the next function, "
-            "then please respond in the following format:\n"
-            '"Next: {your explanation}"\n\n'
+            "then just press enter!\n\n"
         )
         _streamed_print(assistant_questions)
         response = input().strip("'").strip('"')
-        if response[0:4].lower() == "next":
-            return "next"
+        if response == "":
+            return ""
         elif response[0:6].lower() == "reload":
             loaded_implementation = _parse_src_code(name)
             this_client.append_messages(
@@ -317,9 +336,10 @@ def implement(fn: callable, module_path: Optional[str] = None):
             return "reload"
         elif response[0:3].lower() != "yes":
             _streamed_print(
-                "Please respond in one of the following formats:\n"
+                "Please either press enter to move onto the next step, "
+                "or respond in one of the two following formats:\n"
                 "Yes: {your explanation}\n"
-                "No: {your explanation}",
+                "reload: {your explanation}",
             )
             return "invalid"
         this_client.append_messages(
@@ -365,10 +385,11 @@ def implement(fn: callable, module_path: Optional[str] = None):
             f"We'll now work together to implement the function `{name}`.\n",
         )
         _add_args_to_system_msg(*args, **kwargs)
-        imports, implementation, llm_response = _generate_code()
+        imports, implementations, llm_response = _generate_code()
         client.set_system_message(update_system_message)
         _add_args_to_system_msg(*args, **kwargs)
-        _write_to_file(fn_name=name, imports=imports, implementation=implementation)
+        _write_imports_to_file(imports)
+        _write_functions_to_file(implementations)
         if interactive_mode():
             should_continue = True
             assistant_msg = llm_response
@@ -382,22 +403,21 @@ def implement(fn: callable, module_path: Optional[str] = None):
                     )
                 should_continue, should_update = {
                     "yes": (True, True),
-                    "next": (False, False),
+                    "": (False, False),
                     "reload": (True, False),
                     "invalid": (True, False),
                 }[mode]
                 if not should_update:
                     continue
-                imports, implementation, llm_response = _generate_code()
+                imports, implementations, llm_response = _generate_code()
                 assistant_msg = llm_response
-                _write_to_file(
-                    fn_name=name,
-                    imports=imports,
-                    implementation=implementation,
+                _write_imports_to_file(imports)
+                _write_functions_to_file(
+                    implementations,
                 )
         _remove_unify_decorator_if_present(name)
         fn_implemented = _load_function(name)
-        first_child = _add_child_functions_to_state(implementation)
+        first_child = _add_child_functions_to_state(implementations[name])
         message = (
             "\nGreat! Now that we have an "
             f"implementation in place for `{name}`, "
@@ -405,30 +425,20 @@ def implement(fn: callable, module_path: Optional[str] = None):
             "The total set of functions being worked on within the uppermost "
             "`unify.implement` context are as follows:"
             "\n\n"
-            f"{json.dumps(FN_TREE, indent=4)}"
+            f"{json.dumps(FN_TREE, indent=4).replace('{},', '⏳').replace('{}', '⏳').replace('True,', '✅').replace('True', '✅')}"
             "\n\n"
-            "Functions with empty dicts are not yet implemented, "
-            "functions with `True` are implemented but don't have children, "
-            "and functions with sub-dicts are implemented using those child functions. "
-            "We'll continue to follow the ordering of the call stack.\n"
         )
         if first_child:
             message += (
-                f"Therefore, we will work on implementing `{first_child}` next.\n"
-                "A quick reminder that you can CTRL-C at any time, and we will simply "
-                "pick up where we left off next time you run the `unify.implement` "
-                "decorated function.\n"
-                f"Otherwise, if you're happy for us to work on `{first_child}` "
-                "then just press enter and we'll get started 👌\n"
+                f"We will work on implementing `{first_child}` next.\n"
+                f"If you'd rather continue later then you can press CTRL-C any time, "
+                f"otherwise press enter and we'll get started 👌\n"
             )
         _streamed_print(message)
         input()
         IMPLEMENTATIONS[name] = fn_implemented
-        _write_to_file(
-            fn_name=name,
-            imports=imports,
-            implementation=implementation,
-        )
+        _write_imports_to_file(imports)
+        _write_functions_to_file(implementations)
         return fn_implemented
 
     def _add_new_function_spec_w_implement_decorator(name_error, tracebk):
@@ -472,7 +482,7 @@ def implement(fn: callable, module_path: Optional[str] = None):
         _add_new_function_spec_w_implement_decorator(name_error, tracebk)
         function_spec, llm_response = _generate_function_spec(name_error.name)
         function_spec = "\n\n@unify.implement\n" + function_spec
-        _write_to_file(fn_name=name_error.name, implementation=function_spec)
+        _write_functions_to_file({name_error.name: function_spec})
         if interactive_mode():
             should_continue = True
             assistant_msg = llm_response
@@ -486,7 +496,7 @@ def implement(fn: callable, module_path: Optional[str] = None):
                     )
                 should_continue, should_update = {
                     "yes": (True, True),
-                    "next": (False, False),
+                    "": (False, False),
                     "reload": (True, False),
                     "invalid": (True, False),
                 }[mode]
@@ -496,10 +506,7 @@ def implement(fn: callable, module_path: Optional[str] = None):
                     name_error.name,
                 )
                 assistant_msg = llm_response
-                _write_to_file(
-                    fn_name=name_error.name,
-                    implementation=function_spec,
-                )
+                _write_functions_to_file({name_error.name: function_spec})
 
         _streamed_print(
             "\nGreat, I'm glad we're both happy with the specification for "
