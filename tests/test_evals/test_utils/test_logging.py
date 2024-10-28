@@ -386,6 +386,22 @@ class TestLogging(unittest.TestCase):
         )
         assert logs_metric == 0.25
 
+    def test_log_ordering(self):
+        project = "test_project_log_ordering"
+        if project in unify.list_projects():
+            unify.delete_project(project)
+        unify.create_project(project)
+        for i in range(25):
+            unify.log(
+                project,
+                a=i,
+                b=i + 1,
+                c=i + 2,
+            )
+        logs = unify.get_logs(project)
+        for lg in logs:
+            assert list(lg.entries.keys()) == ["a", "b", "c"]
+
     def test_get_logs(self):
         project = "test_project_get_logs"
         if project in unify.list_projects():
