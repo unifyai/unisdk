@@ -564,6 +564,35 @@ class TestLogging(unittest.TestCase):
         assert deleted_logs[0].entries["customer"] == "John Terry"
         assert len(unify.get_logs(project)) == 0
 
+    def test_group_logs_by_config(self):
+        logs = list()
+        log_idx = 0
+        qs = ["1+1", "2+2", "3+3", "4+1"]
+        for system_prompt in ["You are an expert.", "You are an expert mathematician."]:
+            for dataset_version in ["vanilla", "with_failures", "with_successes"]:
+                config = unify.Config(
+                    system_prompt=system_prompt,
+                    dataset_version=dataset_version,
+                )
+                for q in qs:
+                    logs.append(unify.Log(log_idx, q=q, config=config))
+                    log_idx += 1
+        grouped_logs = unify.group_logs_by_config(logs)
+        assert len(grouped_logs) == 6
+        assert list(grouped_logs.keys()) == [
+            '{"system_prompt": "You are an expert.", ' '"dataset_version": "vanilla"}',
+            '{"system_prompt": "You are an expert.", '
+            '"dataset_version": "with_failures"}',
+            '{"system_prompt": "You are an expert.", '
+            '"dataset_version": "with_successes"}',
+            '{"system_prompt": "You are an expert mathematician.", '
+            '"dataset_version": "vanilla"}',
+            '{"system_prompt": "You are an expert mathematician.", '
+            '"dataset_version": "with_failures"}',
+            '{"system_prompt": "You are an expert mathematician.", '
+            '"dataset_version": "with_successes"}',
+        ]
+
     def test_contextual_logging_threaded(self):
         project = "my_project"
         if project in unify.list_projects():

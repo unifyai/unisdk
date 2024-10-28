@@ -4,6 +4,7 @@ import inspect
 import time
 import uuid
 import functools
+import datetime
 import json
 from contextvars import ContextVar
 from typing import Any, Dict, List, Optional, Union, Tuple
@@ -335,6 +336,23 @@ def get_artifacts(
     return response.json()
 
 
+# Config #
+# -------#
+
+
+class Config:
+
+    def __init__(
+        self,
+        **kwargs: Any,
+    ):
+        self._parameters = kwargs
+
+    @property
+    def parameters(self) -> Dict[str, Any]:
+        return self._parameters
+
+
 # Logs #
 # -----#
 
@@ -344,12 +362,16 @@ class Log:
     def __init__(
         self,
         id: int,
+        timestamp: Optional[datetime] = None,
         api_key: Optional[str] = None,
+        config: Config = None,
         **kwargs,
     ):
-        self._api_key = _validate_api_key(api_key)
-        self._entries = kwargs
         self._id = id
+        self._timestamp = timestamp
+        self._entries = kwargs
+        self._config = config
+        self._api_key = _validate_api_key(api_key)
 
     # Properties
 
@@ -358,8 +380,16 @@ class Log:
         return self._id
 
     @property
+    def timestamp(self) -> Optional[datetime]:
+        return self._timestamp
+
+    @property
     def entries(self) -> Dict[str, Any]:
         return self._entries
+
+    @property
+    def config(self) -> Config:
+        return self._config
 
     # Dunders
 
@@ -1148,6 +1178,14 @@ def get_logs_metric(
     )
     response.raise_for_status()
     return response.json()
+
+
+def group_logs_by_config(logs: List[Log]) -> Dict:
+    configs = list(dict.fromkeys([json.dumps(lg.config.parameters) for lg in logs]))
+    ret_dict = dict()
+    for conf in configs:
+        ret_dict[conf] = [lg for lg in logs if json.dumps(lg.config.parameters) == conf]
+    return ret_dict
 
 
 # If an active log is there, means the function is being called from within another
