@@ -29,51 +29,43 @@ def register_local_model(model_name: str, fn: Callable):
     LOCAL_MODELS[model_name] = fn
 
 
-from .utils import (
+from .universal_api.utils import (
     credits,
     custom_api_keys,
     custom_endpoints,
-    datasets,
     endpoint_metrics,
-    helpers,
-    logging,
     queries,
-    router_configurations,
-    router_deployment,
-    router_training,
     supported_endpoints,
-    versioning,
 )
-from .utils.credits import *
-from .utils.custom_api_keys import *
-from .utils.custom_endpoints import *
-from .utils.datasets import *
-from .utils.endpoint_metrics import *
-from .utils.helpers import *
-from .utils.logging import *
-from .utils.queries import *
-from .utils.router_configurations import *
-from .utils.router_deployment import *
-from .utils.router_training import *
-from .utils.supported_endpoints import *
-from .utils.versioning import *
+from .universal_api.utils.credits import *
+from .universal_api.utils.custom_api_keys import *
+from .universal_api.utils.custom_endpoints import *
+from .universal_api.utils.endpoint_metrics import *
+from .universal_api.utils.queries import *
+from .universal_api.utils.supported_endpoints import *
 
-from .chat import chatbot, clients, logging
-from .chat.clients import multi_llm
-from .chat.chatbot import *
-from unify.chat.clients.uni_llm import *
-from unify.chat.clients.multi_llm import *
+from .evals.utils import datasets
+from .evals.utils.datasets import *
 
-from . import agent, casting, dataset, evaluator, repr, types, map
-from .agent import *
-from .casting import *
-from .dataset import *
-from .evaluator import *
-from .chat.logging import *
-from .repr import *
-from .types import *
-from .implement.implement import *
-from .map import *
+from .utils import helpers, map
+
+from .universal_api import chatbot, clients, logging
+from .universal_api.clients import multi_llm
+from .universal_api.chatbot import *
+from unify.universal_api.clients.uni_llm import *
+from unify.universal_api.clients.multi_llm import *
+
+from .universal_api import casting, types
+from .evals import dataset, logging
+
+from .universal_api.casting import *
+from .universal_api.logging import *
+from .universal_api.types import *
+
+from .evals.dataset import *
+from .evals.logging import *
+from .evals.assist.implement import *
+from .evals.assist.suggest import *
 
 
 # Project #
