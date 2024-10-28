@@ -505,8 +505,7 @@ def implement(fn: callable, module_path: Optional[str] = None):
 
         _streamed_print(
             "\nGreat, I'm glad we're both happy with the specification for "
-            f"`{name_error.name}`! Let's now make a start on the implementation, "
-            f"and iterate on this together as before...",
+            f"`{name_error.name}`!",
         )
 
     def _execute_with_implement(func: callable, *args, **kwargs):
