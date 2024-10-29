@@ -85,7 +85,7 @@ class TestMathsEvaluator(unittest.TestCase):
     def test_add_artifacts(self) -> None:
         with ProjectHandling():
             with unify.Project("test_project"):
-                unify.add_artifacts(
+                unify.add_project_artifacts(
                     dataset=self._dataset,
                     client=str(self._client),
                 )
@@ -102,7 +102,7 @@ class TestMathsEvaluator(unittest.TestCase):
     def test_remove_artifacts(self) -> None:
         with ProjectHandling():
             with unify.Project("test_project"):
-                unify.add_artifacts(
+                unify.add_project_artifacts(
                     dataset=self._dataset,
                     client=str(self._client),
                 )
@@ -573,7 +573,7 @@ class TestCRMEvaluator(unittest.TestCase):
     def test_add_artifacts(self) -> None:
         with ProjectHandling():
             with unify.Project("test_project"):
-                unify.add_artifacts(
+                unify.add_project_artifacts(
                     questions=self._questions,
                     sales_call_transcripts=self._sales_call_transcripts,
                     correct_answers=self._correct_answers,
@@ -594,7 +594,7 @@ class TestCRMEvaluator(unittest.TestCase):
     def test_remove_artifacts(self) -> None:
         with ProjectHandling():
             with unify.Project("test_project"):
-                unify.add_artifacts(
+                unify.add_project_artifacts(
                     questions=self._questions,
                     sales_call_transcripts=self._sales_call_transcripts,
                     correct_answers=self._correct_answers,

@@ -9,7 +9,7 @@ from unify import BASE_URL
 # ----------#
 
 
-def add_artifacts(
+def add_project_artifacts(
     *,
     project: Optional[str] = None,
     api_key: Optional[str] = None,
@@ -47,7 +47,7 @@ def add_artifacts(
     return response.json()
 
 
-def delete_artifact(
+def delete_project_artifact(
     key: str,
     *,
     project: Optional[str] = None,
@@ -81,7 +81,7 @@ def delete_artifact(
     return response.json()
 
 
-def get_artifacts(
+def get_project_artifacts(
     *,
     project: Optional[str] = None,
     api_key: Optional[str] = None,

@@ -11,12 +11,12 @@ class TestArtifacts(unittest.TestCase):
             unify.delete_project(project)
         unify.create_project(project)
         artifacts = {"dataset": "my_dataset", "description": "this is my dataset"}
-        assert len(unify.get_artifacts(project)) == 0
-        unify.add_artifacts(project=project, **artifacts)
-        assert "dataset" in unify.get_artifacts(project)
-        unify.delete_artifact(
+        assert len(unify.get_project_artifacts(project=project)) == 0
+        unify.add_project_artifacts(project=project, **artifacts)
+        assert "dataset" in unify.get_project_artifacts(project=project)
+        unify.delete_project_artifact(
             "dataset",
-            project,
+            project=project,
         )
-        assert "dataset" not in unify.get_artifacts(project)
-        assert "description" in unify.get_artifacts(project)
+        assert "dataset" not in unify.get_project_artifacts(project=project)
+        assert "description" in unify.get_project_artifacts(project=project)
