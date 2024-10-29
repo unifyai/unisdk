@@ -69,7 +69,7 @@ def suggest(
         logs = unify.get_logs()
 
     # ToDo: remove hard-coding once REST API is complete
-    config = unify.Config(
+    config = unify.Parameters(
         evaluator_code="'def evaluate_response(question: str, response: str) -> float:\n    correct_answer = eval(question)\n    try:\n        response_int = int(\n            "
         ".join([c for c in response.split("
         ")[-1] if c.isdigit()]),\n        )\n        return float(correct_answer == response_int)\n    except ValueError:\n        return 0.\n'",

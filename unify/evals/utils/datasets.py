@@ -285,7 +285,7 @@ def get_dataset_entry(
     return response.json()
 
 
-def download_artifacts(
+def download_dataset_artifacts(
     name: str,
     api_key: Optional[str] = None,
 ) -> Union[List[Any], None]:
@@ -311,7 +311,7 @@ def download_artifacts(
     return ret
 
 
-def create_artifacts(
+def create_dataset_artifacts(
     name: str,
     artifacts: dict,
     api_key: Optional[str] = None,
@@ -345,7 +345,7 @@ def create_artifacts(
     return ret
 
 
-def delete_artifact(
+def delete_dataset_artifact(
     name: str,
     key: str,
     api_key: Optional[str] = None,
