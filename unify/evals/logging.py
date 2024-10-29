@@ -2,14 +2,15 @@ from __future__ import annotations
 import time
 import uuid
 import datetime
+import functools
 
 from ..utils.helpers import _validate_api_key
 from .utils.logging import _handle_special_types
 from .utils.logging import *
 
 
-# Logs #
-# -----#
+# Log #
+# ----#
 
 
 class Log:
@@ -130,6 +131,43 @@ class Entries:
         current_entries_nest_level.reset(self.nest_level_token)
         if current_entries_nest_level.get() == 0:
             current_logged_logs.set({})
+
+
+# Tracing #
+# --------#
+
+
+# If an active log is there, means the function is being called from within another
+# traced function.
+# If no active log, create a new log
+class trace:
+
+    def __enter__(self):
+        self.current_global_active_log_already_set = False
+        current_active_log = current_global_active_log.get()
+        if current_active_log is not None:
+            self.current_global_active_log_already_set = True
+        else:
+            self.token = current_global_active_log.set(log())
+
+    def __exit__(self, *args, **kwargs):
+        if not self.current_global_active_log_already_set:
+            current_global_active_log.reset(self.token)
+
+    def __call__(self, fn):
+        @functools.wraps(fn)
+        async def async_wrapper(*args, **kwargs):
+            with trace():
+                result = await fn(*args, **kwargs)
+                return result
+
+        @functools.wraps(fn)
+        def wrapper(*args, **kwargs):
+            with trace():
+                result = fn(*args, **kwargs)
+                return result
+
+        return async_wrapper if inspect.iscoroutinefunction(fn) else wrapper
 
 
 def span(io=True):
