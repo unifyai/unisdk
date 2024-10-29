@@ -39,14 +39,14 @@ def upload_dataset(
     data = {"name": name}
     # Create a dataset
     response = requests.post(
-        BASE_URL + "/datasetv2",
+        BASE_URL + "/dataset",
         headers=headers,
         json=data,
     )
     response.raise_for_status()
     # Add the entries
     response = requests.post(
-        BASE_URL + f"/datasetv2/{name}/entries",
+        BASE_URL + f"/dataset/{name}/entries",
         headers=headers,
         json={"entries": content},
     )
@@ -83,7 +83,7 @@ def download_dataset(
         "Authorization": f"Bearer {api_key}",
     }
     # Send GET request to the /dataset endpoint
-    response = requests.get(BASE_URL + f"/datasetv2/{name}", headers=headers)
+    response = requests.get(BASE_URL + f"/dataset/{name}", headers=headers)
     response.raise_for_status()
     if path:
         with open(path, "w+") as f:
@@ -114,7 +114,7 @@ def delete_dataset(name: str, api_key: Optional[str] = None) -> str:
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    response = requests.delete(BASE_URL + f"/datasetv2/{name}", headers=headers)
+    response = requests.delete(BASE_URL + f"/dataset/{name}", headers=headers)
     response.raise_for_status()
     return response.json()["info"]
 
@@ -140,7 +140,7 @@ def rename_dataset(name: str, new_name: str, api_key: Optional[str] = None):
     }
     data = {"new_name": new_name}
     response = requests.patch(
-        BASE_URL + f"/datasetv2/{name}",
+        BASE_URL + f"/dataset/{name}",
         headers=headers,
         data=data,
     )
@@ -167,7 +167,7 @@ def list_datasets(api_key: Optional[str] = None) -> List[str]:
         "Authorization": f"Bearer {api_key}",
     }
     # Send GET request to the /dataset/list endpoint
-    response = requests.get(BASE_URL + "/datasetsv2/", headers=headers)
+    response = requests.get(BASE_URL + "/datasets/", headers=headers)
     response.raise_for_status()
     project = _get_and_maybe_create_project(required=False, api_key=api_key)
     if project is not None:
@@ -209,7 +209,7 @@ def add_dataset_entries(
     if not isinstance(data, list):
         data = [data]
     response = requests.post(
-        BASE_URL + f"/datasetv2/{name}/entries",
+        BASE_URL + f"/dataset/{name}/entries",
         headers=headers,
         json={"entries": data},
     )
@@ -245,7 +245,7 @@ def delete_dataset_entry(
         "Authorization": f"Bearer {api_key}",
     }
     response = requests.delete(
-        BASE_URL + f"/datasetv2/{name}/entry/{id}",
+        BASE_URL + f"/dataset/{name}/entry/{id}",
         headers=headers,
     )
     response.raise_for_status()
@@ -278,7 +278,7 @@ def get_dataset_entry(
         "Authorization": f"Bearer {api_key}",
     }
     response = requests.get(
-        BASE_URL + f"/datasetv2/{name}/entry/{id}",
+        BASE_URL + f"/dataset/{name}/entry/{id}",
         headers=headers,
     )
     response.raise_for_status()
@@ -305,7 +305,7 @@ def download_dataset_artifacts(
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    response = requests.get(BASE_URL + f"/datasetv2/{name}/artifacts", headers=headers)
+    response = requests.get(BASE_URL + f"/dataset/{name}/artifacts", headers=headers)
     response.raise_for_status()
     ret = response.json()
     return ret
@@ -336,7 +336,7 @@ def create_dataset_artifacts(
     }
     data = {"artifacts": artifacts}
     response = requests.post(
-        BASE_URL + f"/datasetv2/{name}/artifacts",
+        BASE_URL + f"/dataset/{name}/artifacts",
         json=data,
         headers=headers,
     )
@@ -369,7 +369,7 @@ def delete_dataset_artifact(
         "Authorization": f"Bearer {api_key}",
     }
     response = requests.delete(
-        BASE_URL + f"/datasetv2/{name}/artifacts/{key}",
+        BASE_URL + f"/dataset/{name}/artifacts/{key}",
         headers=headers,
     )
     response.raise_for_status()
