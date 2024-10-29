@@ -46,11 +46,21 @@ def interactive_mode():
 
 class Interactive:
 
+    def __init__(self, value: bool = True):
+        assert isinstance(value, bool), "value must be bool"
+        self._value = value
+
     def __enter__(self):
-        set_interactive()
+        if self._value:
+            set_interactive()
+        else:
+            set_non_interactive()
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        set_non_interactive()
+        if self._value:
+            set_non_interactive()
+        else:
+            set_interactive()
 
 
 def _formatted(content: str) -> str:
@@ -92,17 +102,20 @@ def implement(fn: callable, module_path: Optional[str] = None):
                     "\nOops, seems like there was an error loading " "our new module.",
                     e,
                 )
-                _streamed_print(
-                    "Don't worry about any undefined imaginary functions which may "
-                    "have red underlines shown in your IDE etc., we just need to fix "
-                    "the specific issue mentioned above and then "
-                    "move to the next step.\n"
-                    f"Open the file `{full_module_path}` and fix the issue "
-                    "mentioned above, "
-                    "(don't forget to ctrl-S to save in your IDE/editor!), "
-                    "then press enter once you're happy 👌\n",
-                )
-                input()
+                if interactive_mode():
+                    _streamed_print(
+                        "Don't worry about any undefined imaginary functions which may "
+                        "have red underlines shown in your IDE etc., we just need to fix "
+                        "the specific issue mentioned above and then "
+                        "move to the next step.\n"
+                        f"Open the file `{full_module_path}` and fix the issue "
+                        "mentioned above, "
+                        "(don't forget to ctrl-S to save in your IDE/editor!), "
+                        "then press enter once you're happy 👌\n",
+                    )
+                    input()
+                else:
+                    raise e
 
     global IMPLEMENTATIONS
     module = _load_module(module_path.rstrip(".py"))
@@ -269,18 +282,30 @@ def implement(fn: callable, module_path: Optional[str] = None):
                     "but there was an error trying to load the function",
                     e,
                 )
-                _streamed_print(
-                    f"Open file `{full_module_path}` and fix the issue mentioned "
-                    "above, then press enter once you're done 👌\n",
-                )
-                input()
+                if interactive_mode():
+                    _streamed_print(
+                        f"Open file `{full_module_path}` and fix the issue mentioned "
+                        "above, then press enter once you're done 👌\n",
+                    )
+                    input()
+                else:
+                    raise e
+
+    def _create_module_if_not_exist():
+        if not os.path.exists(module_path):
+            with open(module_path, "w+"):
+                pass
 
     def _write_imports_to_file(imports=""):
+        if imports == "":
+            return
         with open(full_module_path, "r") as file:
             content = file.read()
-        new_content = imports + content
+        if imports in content:
+            return
+        imports = imports + "\n" if imports.rstrip(" ")[-1] != "\n" else imports
         with open(full_module_path, "w") as file:
-            file.write(_formatted(new_content))
+            file.write(_formatted(imports + content))
 
     def _write_functions_to_file(implementations):
         with open(full_module_path, "r") as file:
@@ -404,6 +429,7 @@ def implement(fn: callable, module_path: Optional[str] = None):
         imports, implementations, llm_response = _generate_code()
         client.set_system_message(update_system_message)
         _add_args_to_system_msg(*args, **kwargs)
+        _create_module_if_not_exist()
         _write_imports_to_file(imports)
         _write_functions_to_file(implementations)
         if interactive_mode():

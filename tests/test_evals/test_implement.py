@@ -25,16 +25,15 @@ class SimulateInput:
             "Yes: could you please make use of the add operation via "
             "`from operator import add` instead of using the + symbol?",
             "Yes: can you also add a comment explaining what `add` does?",
-            "No: that looks good, I'm happy to accept this implementation.",
+            "",
         ]
         self._count = 0
         self._true_input = None
 
-    def _new_input(self, usr_prompt):
-        print(usr_prompt)
+    def _new_input(self):
         message = self._messages[self._count]
         self._count += 1
-        print(message)
+        print("\n" + message)
         return message
 
     @property
@@ -72,11 +71,11 @@ class TestZeroShotImplement(unittest.TestCase):
         pass
 
     def test_implement_non_interactive(self):
-        with ImplementHandler():
+        with ImplementHandler(), unify.Interactive(False):
             assert self.add_two_numbers(1, 1) == 2
 
     def test_implement_interactive(self):
         simulate_input = SimulateInput()
-        with ImplementHandler(), unify.Interactive(), simulate_input:
+        with ImplementHandler(), unify.Interactive(True), simulate_input:
             assert self.add_two_numbers(1, 1) == 2
             assert simulate_input.num_interactions == 3
