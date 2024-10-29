@@ -419,6 +419,7 @@ def implement(fn: callable, module_path: Optional[str] = None):
     def _get_fn(*args, **kwargs):
         global IMPLEMENTATIONS
         if name in IMPLEMENTATIONS:
+            _create_module_if_not_exist()
             _remove_unify_decorator_if_present(name)
             _streamed_print(f"\n`{name}` is already implemented, stepping inside.\n")
             return IMPLEMENTATIONS[name]
