@@ -8,33 +8,6 @@ from .utils.logging import _handle_special_types
 from .utils.logging import *
 
 
-# Parameters #
-# -----------#
-
-
-class Parameters:
-
-    def __init__(
-        self,
-        **kwargs: Any,
-    ):
-        self._parameters = kwargs
-
-    @property
-    def parameters(self) -> Dict[str, Any]:
-        return self._parameters
-
-    def to_json(self):
-        return {
-            "parameters": self._parameters,
-        }
-
-    @staticmethod
-    def from_json(state):
-        assert "parameters" in state
-        return Parameters(**state["parameters"])
-
-
 # Logs #
 # -----#
 
@@ -46,13 +19,13 @@ class Log:
         id: int,
         timestamp: Optional[datetime] = None,
         api_key: Optional[str] = None,
-        config: Parameters = None,
+        parameters: Dict[str, Any] = None,
         **kwargs,
     ):
         self._id = id
         self._timestamp = timestamp
         self._entries = kwargs
-        self._config = config
+        self._parameters = parameters
         self._api_key = _validate_api_key(api_key)
 
     # Properties
@@ -70,8 +43,8 @@ class Log:
         return self._entries
 
     @property
-    def config(self) -> Parameters:
-        return self._config
+    def parameters(self) -> Dict[str, Any]:
+        return self._parameters
 
     # Dunders
 
@@ -126,7 +99,7 @@ class Log:
             "id": self._id,
             "timestamp": self._timestamp,
             "entries": self._entries,
-            "config": self._config.to_json(),
+            "parameters": self._parameters,
             "api_key": self._api_key,
         }
 

@@ -77,7 +77,7 @@ def suggest(
     for lg in logs:
         if "evaluator_code" in lg.entries:
             del lg.entries["evaluator_code"]
-        lg._config = config
+        lg._parameters = config
     # End ToDo
 
     evals = unify.group_logs_by_config(logs)

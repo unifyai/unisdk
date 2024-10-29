@@ -222,12 +222,12 @@ class TestLogging(unittest.TestCase):
         qs = ["1+1", "2+2", "3+3", "4+1"]
         for system_prompt in ["You are an expert.", "You are an expert mathematician."]:
             for dataset_version in ["vanilla", "with_failures", "with_successes"]:
-                config = unify.Parameters(
+                params = unify.Parameters(
                     system_prompt=system_prompt,
                     dataset_version=dataset_version,
                 )
                 for q in qs:
-                    logs.append(unify.Log(log_idx, q=q, config=config))
+                    logs.append(unify.Log(log_idx, q=q, parameters=params))
                     log_idx += 1
         grouped_logs = unify.group_logs_by_config(logs)
         assert len(grouped_logs) == 6

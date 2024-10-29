@@ -401,9 +401,16 @@ def get_logs(
     }
     response = requests.get(BASE_URL + "/logs", headers=headers, params=params)
     response.raise_for_status()
+    params, logs = response.json().values()
     return [
-        unify.Log(dct["id"], **dct["entries"], api_key=api_key)
-        for dct in response.json()
+        unify.Log(
+            id=dct["id"],
+            timestamp=dct["ts"],
+            **dct["entries"],
+            parameters={k: params[k][v] for k, v in dct["params"].items()},
+            api_key=api_key,
+        )
+        for dct in logs
     ]
 
 
