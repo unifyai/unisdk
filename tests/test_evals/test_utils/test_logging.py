@@ -21,7 +21,7 @@ class TestLogging(unittest.TestCase):
         assert len(project_logs) and project_logs[0].id == log_id
         id_log = unify.get_log_by_id(log_id)
         assert len(id_log) and "user_prompt" in id_log.entries
-        unify.delete_log_entry("user_prompt", log_id)
+        unify.delete_log_entries("user_prompt", log_id)
         id_log = unify.get_log_by_id(log_id)
         assert len(id_log) and "user_prompt" not in id_log.entries
         unify.add_log_entries(log_id, user_prompt=data["user_prompt"])
