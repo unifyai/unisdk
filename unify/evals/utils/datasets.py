@@ -15,9 +15,9 @@ def _maybe_prepend_project_name(name: str, api_key: Optional[str] = None) -> str
 
 
 def upload_dataset(
-    *,
     name: str,
     content: list,
+    *,
     api_key: Optional[str] = None,
 ) -> str:
     """
@@ -56,8 +56,8 @@ def upload_dataset(
 
 
 def download_dataset(
-    *,
     name: str,
+    *,
     path: Optional[str] = None,
     api_key: Optional[str] = None,
 ) -> Optional[List[Any]]:
@@ -96,8 +96,8 @@ def download_dataset(
 
 
 def delete_dataset(
-    *,
     name: str,
+    *,
     api_key: Optional[str] = None,
 ) -> str:
     """
@@ -126,9 +126,9 @@ def delete_dataset(
 
 
 def rename_dataset(
-    *,
     name: str,
     new_name: str,
+    *,
     api_key: Optional[str] = None,
 ):
     """
@@ -194,9 +194,9 @@ def list_datasets(
 
 
 def add_dataset_entries(
-    *,
     name: str,
     data: Union[Any, List[Any]],
+    *,
     api_key: Optional[str] = None,
 ) -> Dict[str, Union[str, List[int]]]:
     """
@@ -233,9 +233,9 @@ def add_dataset_entries(
 
 
 def delete_dataset_entry(
-    *,
     name: str,
     id: int,
+    *,
     api_key: Optional[str] = None,
 ) -> Dict[str, Union[str, List[int]]]:
     """
@@ -270,9 +270,9 @@ def delete_dataset_entry(
 
 # noinspection PyShadowingBuiltins
 def get_dataset_entry(
-    *,
     name: str,
     id: int,
+    *,
     api_key: Optional[str] = None,
 ) -> List[Dict[str, Union[int, Any]]]:
     """
@@ -304,8 +304,8 @@ def get_dataset_entry(
 
 
 def download_dataset_artifacts(
-    *,
     name: str,
+    *,
     api_key: Optional[str] = None,
 ) -> Union[List[Any], None]:
     """
@@ -331,9 +331,9 @@ def download_dataset_artifacts(
 
 
 def create_dataset_artifacts(
-    *,
     name: str,
     artifacts: dict,
+    *,
     api_key: Optional[str] = None,
 ) -> Union[List[Any], None]:
     """
@@ -366,9 +366,9 @@ def create_dataset_artifacts(
 
 
 def delete_dataset_artifact(
-    *,
     name: str,
     key: str,
+    *,
     api_key: Optional[str] = None,
 ) -> Union[List[Any], None]:
     """
