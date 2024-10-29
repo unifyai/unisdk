@@ -89,7 +89,7 @@ class TestMathsEvaluator(unittest.TestCase):
                     dataset=self._dataset,
                     client=str(self._client),
                 )
-                artifacts = unify.get_artifacts()
+                artifacts = unify.get_project_artifacts()
                 self.assertEqual(len(artifacts), 2)
                 self.assertEqual(
                     artifacts,
@@ -106,8 +106,8 @@ class TestMathsEvaluator(unittest.TestCase):
                     dataset=self._dataset,
                     client=str(self._client),
                 )
-                unify.delete_artifact("client")
-                artifacts = unify.get_artifacts()
+                unify.delete_project_artifact("client")
+                artifacts = unify.get_project_artifacts()
                 self.assertEqual(len(artifacts), 1)
                 self.assertEqual(artifacts, dict(dataset=self._dataset))
 
@@ -579,7 +579,7 @@ class TestCRMEvaluator(unittest.TestCase):
                     correct_answers=self._correct_answers,
                     client=str(self._client),
                 )
-                artifacts = unify.get_artifacts()
+                artifacts = unify.get_project_artifacts()
                 self.assertEqual(len(artifacts), 4)
                 self.assertEqual(
                     artifacts,
@@ -600,9 +600,9 @@ class TestCRMEvaluator(unittest.TestCase):
                     correct_answers=self._correct_answers,
                     client=str(self._client),
                 )
-                unify.delete_artifact("sales_call_transcripts")
-                unify.delete_artifact("client")
-                artifacts = unify.get_artifacts()
+                unify.delete_project_artifact("sales_call_transcripts")
+                unify.delete_project_artifact("client")
+                artifacts = unify.get_project_artifacts()
                 self.assertEqual(len(artifacts), 2)
                 self.assertEqual(
                     artifacts,
