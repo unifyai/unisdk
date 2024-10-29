@@ -48,17 +48,17 @@ class TestCustomEndpoints(unittest.TestCase):
     def test_create_custom_endpoint(self):
         with self._custom_endpoint_handler:
             unify.create_custom_endpoint(
-                self.endpoint_name,
-                self.endpoint_url,
-                self.key_name,
+                name=self.endpoint_name,
+                url=self.endpoint_url,
+                key_name=self.key_name,
             )
 
     def test_list_custom_endpoints(self):
         with self._custom_endpoint_handler:
             unify.create_custom_endpoint(
-                self.endpoint_name,
-                self.endpoint_url,
-                self.key_name,
+                name=self.endpoint_name,
+                url=self.endpoint_url,
+                key_name=self.key_name,
             )
             custom_endpoints = unify.list_custom_endpoints()
             assert len(custom_endpoints) == 1
@@ -67,9 +67,9 @@ class TestCustomEndpoints(unittest.TestCase):
     def test_rename_custom_endpoint(self):
         with self._custom_endpoint_handler:
             unify.create_custom_endpoint(
-                self.endpoint_name,
-                self.endpoint_url,
-                self.key_name,
+                name=self.endpoint_name,
+                url=self.endpoint_url,
+                key_name=self.key_name,
             )
             custom_endpoints = unify.list_custom_endpoints()
             assert len(custom_endpoints) == 1
@@ -85,9 +85,9 @@ class TestCustomEndpoints(unittest.TestCase):
     def test_delete_custom_endpoints(self):
         with self._custom_endpoint_handler:
             unify.create_custom_endpoint(
-                self.endpoint_name,
-                self.endpoint_url,
-                self.key_name,
+                name=self.endpoint_name,
+                url=self.endpoint_url,
+                key_name=self.key_name,
             )
             custom_endpoints = unify.list_custom_endpoints()
             assert len(custom_endpoints) == 1
