@@ -281,18 +281,18 @@ class TestLogging(unittest.TestCase):
             [sorted(d.items()) for d in list2],
         )
 
-    def test_with_Context(self):
+    def test_with_entries(self):
         project = "my_project"
         if project in unify.list_projects():
             unify.delete_project(project)
         unify.create_project(project)
         unify.activate(project)
 
-        with unify.Context(context="random"):
+        with unify.Entries(context="random"):
             log = unify.log(a="a")
-            with unify.Context(sys="sys"):
+            with unify.Entries(sys="sys"):
                 unify.add_log_entries(log.id, q="some q", r="some r")
-            with unify.Context(tool="tool"):
+            with unify.Entries(tool="tool"):
                 unify.add_log_entries(log.id, t="some t", b="some b")
 
         expected = {

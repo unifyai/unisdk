@@ -77,7 +77,7 @@ class TestMap(unittest.TestCase):
             with unify.Project("test_project"):
 
                 def contextual_func(a, b, c=3):
-                    with unify.Context(a=a, b=b, c=c):
+                    with unify.Entries(a=a, b=b, c=c):
                         unify.log(test="some random value")
                     return a + b + c
 
@@ -115,7 +115,7 @@ class TestMap(unittest.TestCase):
             with unify.Project("test_project"):
 
                 async def contextual_func(a, b, c=3):
-                    with unify.Context(a=a, b=b, c=c):
+                    with unify.Entries(a=a, b=b, c=c):
                         await asyncio.sleep(0.1)
                         unify.log(test="some random value")
                     return a + b + c

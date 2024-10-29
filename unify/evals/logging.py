@@ -112,23 +112,23 @@ class Log:
         return Log(**state)
 
 
-class Context:
+class Entries:
+
     def __init__(self, **kwargs):
-        self.kwargs = _handle_special_types(kwargs)
+        self._entries = _handle_special_types(kwargs)
 
     def __enter__(self):
-        self.token = current_global_active_log_kwargs.set(
-            {**current_global_active_log_kwargs.get(), **self.kwargs},
+        self.token = current_global_active_log_entries.set(
+            {**current_global_active_log_entries.get(), **self._entries},
         )
-        self.nest_level_token = current_context_nest_level.set(
-            current_context_nest_level.get() + 1,
+        self.nest_level_token = current_entries_nest_level.set(
+            current_entries_nest_level.get() + 1,
         )
 
     def __exit__(self, *args, **kwargs):
-        # print("Before clearing", current_global_active_log_kwargs.get())
-        current_global_active_log_kwargs.reset(self.token)
-        current_context_nest_level.reset(self.nest_level_token)
-        if current_context_nest_level.get() == 0:
+        current_global_active_log_entries.reset(self.token)
+        current_entries_nest_level.reset(self.nest_level_token)
+        if current_entries_nest_level.get() == 0:
             current_logged_logs.set({})
 
 

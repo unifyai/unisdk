@@ -16,12 +16,12 @@ from ...utils.helpers import _validate_api_key, _get_and_maybe_create_project
 current_global_active_log = ContextVar("current_global_active_log", default=None)
 
 # Context
-current_global_active_log_kwargs = ContextVar(
+current_global_active_log_entries = ContextVar(
     "current_global_active_kwargs",
     default={},
 )
 current_logged_logs = ContextVar("current_logged_logs_ids", default={})
-current_context_nest_level = ContextVar("current_context_nest_level", default=0)
+current_entries_nest_level = ContextVar("current_context_nest_level", default=0)
 
 # span
 current_span = ContextVar("current_span", default={})
@@ -71,7 +71,10 @@ def handle_multiple_logs(fn: callable):
                 )
             return fn(*args, logs=current_active_log.id, **kwargs)
         elif isinstance(logs, int):
-            return fn(*args, logs=logs, **kwargs)
+            try:
+                return fn(*args, logs=logs, **kwargs)
+            except:
+                breakpoint()
         elif isinstance(logs, unify.Log):
             return fn(*args, logs=logs.id, **kwargs)
         elif isinstance(logs, list):
@@ -126,7 +129,7 @@ def log(
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    kwargs = {**kwargs, **current_global_active_log_kwargs.get()}
+    kwargs = {**kwargs, **current_global_active_log_entries.get()}
     kwargs = _handle_special_types(kwargs)
     project = _get_and_maybe_create_project(project, api_key=api_key)
     if skip_duplicates:
@@ -142,11 +145,11 @@ def log(
     response = requests.post(BASE_URL + "/log", headers=headers, json=body)
     response.raise_for_status()
     created_log = unify.Log(response.json(), api_key=api_key, **kwargs)
-    if current_context_nest_level.get() > 0:
+    if current_entries_nest_level.get() > 0:
         current_logged_logs.set(
             {
                 **current_logged_logs.get(),
-                created_log.id: list(current_global_active_log_kwargs.get().keys()),
+                created_log.id: list(current_global_active_log_entries.get().keys()),
             },
         )
     return created_log
@@ -184,12 +187,12 @@ def add_log_entries(
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    if current_context_nest_level.get() > 0:
+    if current_entries_nest_level.get() > 0:
         kwargs = {
             **kwargs,
             **{
                 k: v
-                for k, v in current_global_active_log_kwargs.get().items()
+                for k, v in current_global_active_log_entries.get().items()
                 if k not in current_logged_logs.get().get(log_id, {})
             },
         }
