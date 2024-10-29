@@ -193,7 +193,6 @@ def add_log_entries(
                 if k not in current_logged_logs.get().get(log_id, {})
             },
         }
-    kwargs = {**kwargs, **current_global_active_log_kwargs.get()}
     kwargs = _handle_special_types(kwargs)
     body = {"entries": kwargs}
     # ToDo: remove this once duplicates are prevented in the backend
