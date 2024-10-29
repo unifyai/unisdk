@@ -887,7 +887,7 @@ class TestCRMEvaluator(unittest.TestCase):
                     client=str(self._client),
                 )
                 artifacts = unify.get_artifacts()
-                self.assertEqual(len(artifacts), 2)
+                self.assertEqual(len(artifacts), 4)
                 self.assertEqual(
                     artifacts,
                     dict(
