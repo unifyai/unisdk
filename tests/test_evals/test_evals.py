@@ -956,5 +956,5 @@ class TestCRMEvaluator(unittest.TestCase):
                     system_prompt_perf[name] = unify.get_logs_metric(
                         "mean",
                         "score",
-                        f"system_prompt == {system_prompt}",
+                        f"system_prompt == {json.dumps(system_prompt)}",
                     )

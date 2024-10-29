@@ -165,19 +165,19 @@ class TestLogging(unittest.TestCase):
             "user_prompt": "What is the weather today?",
             "score": 0.9,
         }
-        log1 = unify.log(project=project, **log_data1)
+        unify.log(project=project, **log_data1)
         log_data2 = {
             "system_prompt": "You are a travel assistant",
             "user_prompt": "What is the best route to the airport?",
             "score": 0.7,
         }
-        log2 = unify.log(project=project, **log_data2)
+        unify.log(project=project, **log_data2)
         log_data3 = {
             "system_prompt": "You are a travel assistant",
             "user_prompt": "What is the best route to the airport?",
             "score": 0.2,
         }
-        log3 = unify.log(project=project, **log_data3)
+        unify.log(project=project, **log_data3)
 
         logs = unify.get_logs(project)
         assert len(logs) == 3, "There should be 3 logs in the project."
