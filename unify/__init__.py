@@ -45,11 +45,13 @@ from .universal_api.utils.queries import *
 from .universal_api.utils.supported_endpoints import *
 
 from .evals.utils import artifacts
+from .evals.utils import compositions
 from .evals.utils import datasets
 from .evals.utils import logging
 from .evals.utils import projects
 
 from .evals.utils.artifacts import *
+from .evals.utils.compositions import *
 from .evals.utils.datasets import *
 from .evals.utils.logging import *
 from .evals.utils.projects import *
