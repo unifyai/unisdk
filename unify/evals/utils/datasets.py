@@ -15,6 +15,7 @@ def _maybe_prepend_project_name(name: str, api_key: Optional[str] = None) -> str
 
 
 def upload_dataset(
+    *,
     name: str,
     content: list,
     api_key: Optional[str] = None,
@@ -55,6 +56,7 @@ def upload_dataset(
 
 
 def download_dataset(
+    *,
     name: str,
     path: Optional[str] = None,
     api_key: Optional[str] = None,
@@ -93,7 +95,11 @@ def download_dataset(
     return [{"id": e["id"], "entry": e["entry"]} for e in ret]
 
 
-def delete_dataset(name: str, api_key: Optional[str] = None) -> str:
+def delete_dataset(
+    *,
+    name: str,
+    api_key: Optional[str] = None,
+) -> str:
     """
     Deletes a dataset from the platform.
 
@@ -119,7 +125,12 @@ def delete_dataset(name: str, api_key: Optional[str] = None) -> str:
     return response.json()["info"]
 
 
-def rename_dataset(name: str, new_name: str, api_key: Optional[str] = None):
+def rename_dataset(
+    *,
+    name: str,
+    new_name: str,
+    api_key: Optional[str] = None,
+):
     """
     Renames a dataset.
 
@@ -148,7 +159,10 @@ def rename_dataset(name: str, new_name: str, api_key: Optional[str] = None):
     return response.json()
 
 
-def list_datasets(api_key: Optional[str] = None) -> List[str]:
+def list_datasets(
+    *,
+    api_key: Optional[str] = None,
+) -> List[str]:
     """
     Fetches a list of all uploaded datasets.
 
@@ -180,6 +194,7 @@ def list_datasets(api_key: Optional[str] = None) -> List[str]:
 
 
 def add_dataset_entries(
+    *,
     name: str,
     data: Union[Any, List[Any]],
     api_key: Optional[str] = None,
@@ -218,6 +233,7 @@ def add_dataset_entries(
 
 
 def delete_dataset_entry(
+    *,
     name: str,
     id: int,
     api_key: Optional[str] = None,
@@ -252,7 +268,9 @@ def delete_dataset_entry(
     return response.json()
 
 
+# noinspection PyShadowingBuiltins
 def get_dataset_entry(
+    *,
     name: str,
     id: int,
     api_key: Optional[str] = None,
@@ -286,6 +304,7 @@ def get_dataset_entry(
 
 
 def download_dataset_artifacts(
+    *,
     name: str,
     api_key: Optional[str] = None,
 ) -> Union[List[Any], None]:
@@ -312,6 +331,7 @@ def download_dataset_artifacts(
 
 
 def create_dataset_artifacts(
+    *,
     name: str,
     artifacts: dict,
     api_key: Optional[str] = None,
@@ -346,12 +366,13 @@ def create_dataset_artifacts(
 
 
 def delete_dataset_artifact(
+    *,
     name: str,
     key: str,
     api_key: Optional[str] = None,
 ) -> Union[List[Any], None]:
     """
-    Downloads a dataset from the platform.
+    Deletes dataset artifact from the platform.
 
     Args:
         name: Name of the dataset to delete an artifact from.
@@ -360,7 +381,6 @@ def delete_dataset_artifact(
 
         api_key: If specified, unify API key to be used. Defaults to the value in the
         `UNIFY_KEY` environment variable.
-
     """
     api_key = _validate_api_key(api_key)
     name = _maybe_prepend_project_name(name, api_key)

@@ -18,6 +18,7 @@ class Metrics(BaseModel, extra="allow"):
 
 def get_endpoint_metrics(
     endpoint: str,
+    *,
     start_time: Optional[Union[datetime.datetime, str]] = None,
     end_time: Optional[Union[datetime.datetime, str]] = None,
     api_key: Optional[str] = None,
@@ -71,6 +72,7 @@ def get_endpoint_metrics(
 
 def log_endpoint_metric(
     endpoint_name: str,
+    *,
     metric_name: str,
     value: float,
     measured_at: Optional[Union[str, datetime.datetime]] = None,
@@ -116,6 +118,7 @@ def log_endpoint_metric(
 
 def delete_endpoint_metrics(
     endpoint_name: str,
+    *,
     timestamps: Optional[Union[datetime.datetime, List[datetime.datetime]]] = None,
     api_key: Optional[str] = None,
 ) -> Dict[str, str]:

@@ -8,6 +8,7 @@ from ...utils.helpers import _res_to_list, _validate_api_key
 
 def list_providers(
     model: Optional[str] = None,
+    *,
     api_key: Optional[str] = None,
 ) -> List[str]:
     """
@@ -42,6 +43,7 @@ def list_providers(
 
 def list_models(
     provider: Optional[str] = None,
+    *,
     api_key: Optional[str] = None,
 ) -> List[str]:
     """
@@ -76,6 +78,7 @@ def list_models(
 def list_endpoints(
     model: Optional[str] = None,
     provider: Optional[str] = None,
+    *,
     api_key: Optional[str] = None,
 ) -> List[str]:
     """

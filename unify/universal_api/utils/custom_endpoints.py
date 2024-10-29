@@ -7,6 +7,7 @@ from ...utils.helpers import _validate_api_key
 
 
 def create_custom_endpoint(
+    *,
     name: str,
     url: str,
     key_name: str,
@@ -60,7 +61,11 @@ def create_custom_endpoint(
     return response.json()
 
 
-def delete_custom_endpoint(name: str, api_key: Optional[str] = None) -> Dict[str, str]:
+def delete_custom_endpoint(
+    name: str,
+    *,
+    api_key: Optional[str] = None,
+) -> Dict[str, str]:
     """
     Delete a custom endpoint.
 
@@ -93,6 +98,7 @@ def delete_custom_endpoint(name: str, api_key: Optional[str] = None) -> Dict[str
 def rename_custom_endpoint(
     name: str,
     new_name: str,
+    *,
     api_key: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
@@ -125,7 +131,10 @@ def rename_custom_endpoint(
     return response.json()
 
 
-def list_custom_endpoints(api_key: Optional[str] = None) -> List[Dict[str, str]]:
+def list_custom_endpoints(
+    *,
+    api_key: Optional[str] = None,
+) -> List[Dict[str, str]]:
     """
     Get a list of custom endpoints for the authenticated user.
 

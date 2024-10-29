@@ -7,7 +7,10 @@ from unify import BASE_URL
 from ...utils.helpers import _validate_api_key
 
 
-def get_query_tags(api_key: Optional[str] = None) -> List[str]:
+def get_query_tags(
+    *,
+    api_key: Optional[str] = None,
+) -> List[str]:
     """
     Get a list of available query tags.
 
@@ -31,6 +34,7 @@ def get_query_tags(api_key: Optional[str] = None) -> List[str]:
 
 
 def get_queries(
+    *,
     tags: Optional[Union[str, List[str]]] = None,
     endpoints: Optional[Union[str, List[str]]] = None,
     start_time: Optional[Union[datetime.datetime, str]] = None,
@@ -94,6 +98,7 @@ def get_queries(
 
 
 def log_query(
+    *,
     endpoint: str,
     query_body: Dict,
     response_body: Optional[Dict] = None,
@@ -146,6 +151,7 @@ def log_query(
 
 
 def get_query_metrics(
+    *,
     start_time: Optional[Union[datetime.datetime, str]] = None,
     end_time: Optional[Union[datetime.datetime, str]] = None,
     models: Optional[str] = None,

@@ -6,7 +6,7 @@ import functools
 
 from ..utils.helpers import _validate_api_key
 from .utils.logging import _handle_special_types
-from .utils.logging import *
+from .utils.compositions import *
 
 
 # Log #
@@ -63,24 +63,24 @@ class Log:
     # Public
 
     def download(self):
-        self._entries = get_log_by_id(self._id, self._api_key)._entries
+        self._entries = get_log_by_id(id=self._id, api_key=self._api_key)._entries
 
     def add_entries(self, **kwargs) -> None:
-        add_log_entries(self._id, api_key=self._api_key, **kwargs)
+        add_log_entries(logs=self._id, api_key=self._api_key, **kwargs)
         self._entries = {**self._entries, **kwargs}
 
     def replace_entries(self, **kwargs) -> None:
-        replace_log_entries(self._id, self._api_key, **kwargs)
+        replace_log_entries(logs=self._id, api_key=self._api_key, **kwargs)
         self._entries = {**self._entries, **kwargs}
 
     def update_entries(self, fn, **kwargs) -> None:
-        update_log_entries(fn, self._id, self._api_key, **kwargs)
+        update_log_entries(fn=fn, logs=self._id, api_key=self._api_key, **kwargs)
         for k, v in kwargs.items():
             f = fn[k] if isinstance(fn, dict) else fn
             self._entries[k] = f(self._entries[k], v)
 
     def rename_entries(self, **kwargs) -> None:
-        rename_log_entries(self._id, self._api_key, **kwargs)
+        rename_log_entries(logs=self._id, api_key=self._api_key, **kwargs)
         for old_name, new_name in kwargs.items():
             self._entries[new_name] = self._entries[old_name]
             del self._entries[old_name]
@@ -90,11 +90,11 @@ class Log:
         keys_to_delete: List[str],
     ) -> None:
         for key in keys_to_delete:
-            delete_log_entries(key, self._id, self._api_key)
+            delete_log_entries(entry=key, logs=self._id, api_key=self._api_key)
             del self._entries[key]
 
     def delete(self) -> None:
-        delete_logs(self._id, self._api_key)
+        delete_logs(logs=self._id, api_key=self._api_key)
 
     def to_json(self):
         return {

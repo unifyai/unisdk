@@ -71,6 +71,7 @@ def _to_log_ids(
 
 
 def log(
+    *,
     project: Optional[str] = None,
     skip_duplicates: bool = True,
     api_key: Optional[str] = None,
@@ -107,7 +108,11 @@ def log(
     kwargs = _handle_special_types(kwargs)
     project = _get_and_maybe_create_project(project, api_key=api_key)
     if skip_duplicates:
-        retrieved_logs = unify.get_logs_by_value(project, **kwargs, api_key=api_key)
+        retrieved_logs = unify.get_logs_by_value(
+            project=project,
+            **kwargs,
+            api_key=api_key,
+        )
         if retrieved_logs:
             assert len(retrieved_logs) == 1, (
                 f"When skip_duplicates == True, then it's expected that each log "
@@ -130,6 +135,7 @@ def log(
 
 
 def add_log_entries(
+    *,
     logs: Optional[Union[int, unify.Log, List[Union[int, unify.Log]]]] = None,
     api_key: Optional[str] = None,
     **kwargs,
@@ -184,6 +190,7 @@ def add_log_entries(
 
 
 def delete_logs(
+    *,
     logs: Optional[Union[int, unify.Log, List[Union[int, unify.Log]]]] = None,
     api_key: Optional[str] = None,
 ) -> Dict[str, str]:
@@ -212,6 +219,7 @@ def delete_logs(
 
 
 def delete_log_entries(
+    *,
     entry: str,
     logs: Optional[Union[int, unify.Log, List[Union[int, unify.Log]]]] = None,
     api_key: Optional[str] = None,
@@ -247,7 +255,9 @@ def delete_log_entries(
     return response.json()
 
 
+# noinspection PyShadowingBuiltins
 def get_logs(
+    *,
     project: Optional[str] = None,
     filter: Optional[str] = None,
     api_key: Optional[str] = None,
@@ -292,7 +302,12 @@ def get_logs(
     ]
 
 
-def get_log_by_id(id: int, api_key: Optional[str] = None) -> unify.Log:
+# noinspection PyShadowingBuiltins
+def get_log_by_id(
+    *,
+    id: int,
+    api_key: Optional[str] = None,
+) -> unify.Log:
     """
     Returns the log associated with a given id.
 
@@ -315,7 +330,9 @@ def get_log_by_id(id: int, api_key: Optional[str] = None) -> unify.Log:
     return unify.Log(id, **response.json()["entries"])
 
 
+# noinspection PyShadowingBuiltins
 def get_logs_metric(
+    *,
     metric: str,
     key: str,
     filter: Optional[str] = None,
@@ -361,6 +378,7 @@ def get_logs_metric(
 
 
 def get_groups(
+    *,
     key: str,
     project: Optional[str] = None,
     api_key: Optional[str] = None,

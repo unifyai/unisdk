@@ -10,6 +10,7 @@ from unify import BASE_URL
 
 
 def add_artifacts(
+    *,
     project: Optional[str] = None,
     api_key: Optional[str] = None,
     **kwargs,
@@ -47,6 +48,7 @@ def add_artifacts(
 
 
 def delete_artifact(
+    *,
     key: str,
     project: Optional[str] = None,
     api_key: Optional[str] = None,
@@ -80,6 +82,7 @@ def delete_artifact(
 
 
 def get_artifacts(
+    *,
     project: Optional[str] = None,
     api_key: Optional[str] = None,
 ) -> Dict[str, Any]:

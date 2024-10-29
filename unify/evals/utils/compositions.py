@@ -6,6 +6,7 @@ from .logging import *
 
 
 def replace_log_entries(
+    *,
     logs: Optional[Union[int, unify.Log, List[Union[int, unify.Log]]]] = None,
     api_key: Optional[str] = None,
     **kwargs,
@@ -28,11 +29,12 @@ def replace_log_entries(
     log_id = logs  # handle_multiple_logs decorator handles logs, returning a single id
     api_key = _validate_api_key(api_key)
     for k, v in kwargs.items():
-        delete_log_entries(k, log_id, api_key=api_key)
-    return add_log_entries(log_id, api_key=api_key, **kwargs)
+        delete_log_entries(entry=k, logs=log_id, api_key=api_key)
+    return add_log_entries(logs=log_id, api_key=api_key, **kwargs)
 
 
 def update_log_entries(
+    *,
     fn: Union[callable, Dict[str, callable]],
     logs: Optional[Union[int, unify.Log, List[Union[int, unify.Log]]]] = None,
     api_key: Optional[str] = None,
@@ -56,15 +58,16 @@ def update_log_entries(
         A message indicating whether the log was successfully updated.
     """
     log_id = logs  # handle_multiple_logs decorator handles logs, returning a single id
-    data = get_log_by_id(log_id, api_key=api_key).entries
+    data = get_log_by_id(id=log_id, api_key=api_key).entries
     replacements = dict()
     for k, v in kwargs.items():
         f = fn[k] if isinstance(fn, dict) else fn
         replacements[k] = f(data[k], v)
-    return replace_log_entries(log_id, api_key=api_key, **replacements)
+    return replace_log_entries(logs=log_id, api_key=api_key, **replacements)
 
 
 def rename_log_entries(
+    *,
     logs: Optional[Union[int, unify.Log, List[Union[int, unify.Log]]]] = None,
     api_key: Optional[str] = None,
     **kwargs,
@@ -87,14 +90,16 @@ def rename_log_entries(
     """
     log_id = logs  # handle_multiple_logs decorator handles logs, returning a single id
     api_key = _validate_api_key(api_key)
-    data = get_log_by_id(log_id, api_key=api_key).entries
+    data = get_log_by_id(id=log_id, api_key=api_key).entries
     for old_name in kwargs.keys():
-        delete_log_entries(old_name, log_id, api_key=api_key)
+        delete_log_entries(entry=old_name, logs=log_id, api_key=api_key)
     new_entries = {new_name: data[old_name] for old_name, new_name in kwargs.items()}
-    return add_log_entries(log_id, api_key=api_key, **new_entries)
+    return add_log_entries(logs=log_id, api_key=api_key, **new_entries)
 
 
-def delete_logs(
+# noinspection PyShadowingBuiltins
+def delete_logs_by_value(
+    *,
     project: Optional[str] = None,
     filter: Optional[str] = None,
     api_key: Optional[str] = None,
@@ -114,9 +119,9 @@ def delete_logs(
     Returns:
         The list of deleted logs for the project, after optionally applying filtering.
     """
-    logs = get_logs(project, filter, api_key=api_key)
-    for log in logs:
-        log.delete()
+    logs = get_logs(project=project, filter=filter, api_key=api_key)
+    for lg in logs:
+        lg.delete()
     return logs
 
 
@@ -147,7 +152,7 @@ def get_logs_with_fields(
     api_key = _validate_api_key(api_key)
     mode = {"any": "or", "all": "and"}[mode]
     filter_exp = f" {mode} ".join([f"exists({field})" for field in fields])
-    return get_logs(project, filter=filter_exp, api_key=api_key)
+    return get_logs(project=project, filter=filter_exp, api_key=api_key)
 
 
 def get_logs_without_fields(
@@ -178,10 +183,11 @@ def get_logs_without_fields(
     api_key = _validate_api_key(api_key)
     mode = {"any": "and", "all": "or"}[mode]
     filter_exp = f" {mode} ".join([f"(not exists({field}))" for field in fields])
-    return get_logs(project, filter=filter_exp, api_key=api_key)
+    return get_logs(project=project, filter=filter_exp, api_key=api_key)
 
 
 def get_logs_by_value(
+    *,
     project: str,
     api_key: Optional[str] = None,
     **kwargs,
@@ -210,10 +216,11 @@ def get_logs_by_value(
             for k, v in kwargs.items()
         ],
     )
-    return get_logs(project, filter_str, api_key=api_key)
+    return get_logs(project=project, filter=filter_str, api_key=api_key)
 
 
 def get_log_by_value(
+    *,
     project: str,
     api_key: Optional[str] = None,
     **kwargs,
@@ -233,7 +240,7 @@ def get_log_by_value(
     Returns:
         The single unify.Log which matches the data, if it exists.
     """
-    logs = get_logs_by_value(project, **kwargs, api_key=api_key)
+    logs = get_logs_by_value(project=project, **kwargs, api_key=api_key)
     assert len(logs) in (
         0,
         1,
@@ -241,7 +248,12 @@ def get_log_by_value(
     return logs[0] if logs else None
 
 
-def group_logs(key: str, project: Optional[str] = None, api_key: Optional[str] = None):
+def group_logs(
+    *,
+    key: str,
+    project: Optional[str] = None,
+    api_key: Optional[str] = None,
+):
     """
     Groups logs based on equality '==' of the values for the specified key, returning a
     dict with group indices as the keys and the list of logs as the values. If the keys
@@ -263,15 +275,18 @@ def group_logs(key: str, project: Optional[str] = None, api_key: Optional[str] =
     project = _get_and_maybe_create_project(project, api_key=api_key)
     return {
         k: get_logs(
-            project,
-            "{} == {}".format(key, '"' + v + '"' if isinstance(v, str) else v),
+            project=project,
+            filter="{} == {}".format(key, '"' + v + '"' if isinstance(v, str) else v),
             api_key=api_key,
         )
-        for k, v in get_groups(key, project, api_key=api_key).items()
+        for k, v in get_groups(key=key, project=project, api_key=api_key).items()
     }
 
 
-def group_logs_by_params(logs: List[unify.Log]) -> Dict:
+def group_logs_by_params(
+    *,
+    logs: List[unify.Log],
+) -> Dict:
     configs = list(dict.fromkeys([json.dumps(lg.parameters) for lg in logs]))
     ret_dict = dict()
     for conf in configs:

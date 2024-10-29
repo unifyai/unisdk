@@ -108,8 +108,8 @@ class Dataset:
         Raises:
             UnifyError: If the API key is missing.
         """
-        data = unify.download_dataset(name, api_key=api_key)
-        artifacts = unify.download_dataset_artifacts(name, api_key=api_key)
+        data = unify.download_dataset(name=name, api_key=api_key)
+        artifacts = unify.download_dataset_artifacts(name=name, api_key=api_key)
         return Dataset(
             data,
             name=name,
@@ -147,11 +147,13 @@ class Dataset:
 
         self._assert_name_exists()
         raw_data = [_dump(d) for d in self._data]
-        dataset_exists_upstream = self._name in unify.list_datasets(self._api_key)
+        dataset_exists_upstream = self._name in unify.list_datasets(
+            api_key=self._api_key,
+        )
         if dataset_exists_upstream:
             if overwrite:
                 upstream_dataset = unify.download_dataset(
-                    self._name,
+                    name=self._name,
                     api_key=self._api_key,
                 )
                 unique_upstream_ids = [
@@ -161,11 +163,11 @@ class Dataset:
                 ]
 
                 for _id in unique_upstream_ids:
-                    unify.delete_dataset_entry(self._name, _id)
+                    unify.delete_dataset_entry(name=self._name, id=_id)
 
-            unify.add_dataset_entries(self._name, raw_data)
+            unify.add_dataset_entries(name=self._name, data=raw_data)
         else:
-            unify.upload_dataset(self._name, raw_data)
+            unify.upload_dataset(name=self._name, content=raw_data)
 
         return self
 
@@ -184,9 +186,12 @@ class Dataset:
         """
         self._assert_name_exists()
 
-        upstream_dataset = unify.download_dataset(self._name, api_key=self._api_key)
+        upstream_dataset = unify.download_dataset(
+            name=self._name,
+            api_key=self._api_key,
+        )
         upstream_artifacts = unify.download_dataset_artifacts(
-            self._name,
+            name=self._name,
             api_key=self._api_key,
         )
         _data = upstream_dataset
@@ -196,7 +201,7 @@ class Dataset:
             _data += [
                 item for item in self._raw_data if item["entry"] not in existing_data
             ]
-            _artifacts.update(self._artifacts)
+            _artifacts += self._artifacts
         self._raw_data = _data
         self._artifacts = _artifacts
 
@@ -222,7 +227,10 @@ class Dataset:
             This dataset after printing the diff, useful for chaining methods.
         """
         self._assert_name_exists()
-        upstream_dataset = unify.download_dataset(self._name, api_key=self._api_key)
+        upstream_dataset = unify.download_dataset(
+            name=self._name,
+            api_key=self._api_key,
+        )
         unique_upstream = [
             item["entry"]
             for item in upstream_dataset
@@ -241,7 +249,14 @@ class Dataset:
 
     def add(
         self,
-        other: Union[Dataset, str, Dict, Prompt, int, List[Union[str, Dict, Prompt]]],
+        other: Union[
+            Dataset,
+            str,
+            Dict,
+            Prompt,
+            int,
+            List[Union[str, Dict, Prompt]],
+        ],
     ) -> Self:
         """
         Adds another dataset to this one, return a new Dataset instance, with this
@@ -283,7 +298,14 @@ class Dataset:
 
     def inplace_add(
         self,
-        other: Union[Dataset, str, Dict, Prompt, int, List[Union[str, Dict, Prompt]]],
+        other: Union[
+            Dataset,
+            str,
+            Dict,
+            Prompt,
+            int,
+            List[Union[str, Dict, Prompt]],
+        ],
     ) -> Self:
         """
         Adds another dataset to this one, with this dataset receiving all unique queries
@@ -346,7 +368,14 @@ class Dataset:
 
     def __radd__(
         self,
-        other: Union[Dataset, str, Dict, Prompt, int, List[Union[str, Dict, Prompt]]],
+        other: Union[
+            Dataset,
+            str,
+            Dict,
+            Prompt,
+            int,
+            List[Union[str, Dict, Prompt]],
+        ],
     ) -> Self:
         """
         Adds another dataset to this one via the + operator, this is used if the

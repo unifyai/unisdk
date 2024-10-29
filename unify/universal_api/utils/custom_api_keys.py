@@ -1,7 +1,6 @@
-from typing import Any, Dict, List, Optional
-
 import requests
 from unify import BASE_URL
+from typing import Any, Dict, List, Optional
 
 from ...utils.helpers import _validate_api_key
 
@@ -9,6 +8,7 @@ from ...utils.helpers import _validate_api_key
 def create_custom_api_key(
     name: str,
     value: str,
+    *,
     api_key: Optional[str] = None,
 ) -> Dict[str, str]:
     """
@@ -39,7 +39,11 @@ def create_custom_api_key(
     return response.json()
 
 
-def get_custom_api_key(name: str, api_key: Optional[str] = None) -> Dict[str, Any]:
+def get_custom_api_key(
+    name: str,
+    *,
+    api_key: Optional[str] = None,
+) -> Dict[str, Any]:
     """
     Get the value of a custom API key.
 
@@ -68,7 +72,11 @@ def get_custom_api_key(name: str, api_key: Optional[str] = None) -> Dict[str, An
     return response.json()
 
 
-def delete_custom_api_key(name: str, api_key: Optional[str] = None) -> Dict[str, str]:
+def delete_custom_api_key(
+    name: str,
+    *,
+    api_key: Optional[str] = None,
+) -> Dict[str, str]:
     """
     Delete a custom API key.
 
@@ -106,6 +114,7 @@ def delete_custom_api_key(name: str, api_key: Optional[str] = None) -> Dict[str,
 def rename_custom_api_key(
     name: str,
     new_name: str,
+    *,
     api_key: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
@@ -139,7 +148,10 @@ def rename_custom_api_key(
     return response.json()
 
 
-def list_custom_api_keys(api_key: Optional[str] = None) -> List[Dict[str, str]]:
+def list_custom_api_keys(
+    *,
+    api_key: Optional[str] = None,
+) -> List[Dict[str, str]]:
     """
     Get a list of custom API keys associated with the user's account.
 

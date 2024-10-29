@@ -6,7 +6,7 @@ from unify import BASE_URL
 from ...utils.helpers import _res_to_list, _validate_api_key
 
 
-def get_credits(api_key: Optional[str] = None) -> float:
+def get_credits(*, api_key: Optional[str] = None) -> float:
     """
     Returns the credits remaining in the user account, in USD.
 

@@ -940,6 +940,7 @@ class TestCRMEvaluator(unittest.TestCase):
                     score = self._evaluate(data["correct_answer"], response)
                     unify.log(**data, response=response, score=score)
 
+    @unittest.skip("Orchestra Problem")
     def test_system_prompt_opt(self) -> None:
         with ProjectHandling():
             with unify.Project("test_project"):

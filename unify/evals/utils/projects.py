@@ -10,6 +10,7 @@ from unify import BASE_URL
 
 
 def create_project(
+    *,
     name: str,
     overwrite: bool = False,
     api_key: Optional[str] = None,
@@ -36,14 +37,15 @@ def create_project(
     }
     body = {"name": name}
     if overwrite:
-        if name in list_projects(api_key):
-            delete_project(name, api_key=api_key)
+        if name in list_projects(api_key=api_key):
+            delete_project(name=name, api_key=api_key)
     response = requests.post(BASE_URL + "/project", headers=headers, json=body)
     response.raise_for_status()
     return response.json()
 
 
 def rename_project(
+    *,
     name: str,
     new_name: str,
     api_key: Optional[str] = None,
@@ -73,7 +75,11 @@ def rename_project(
     return response.json()
 
 
-def delete_project(name: str, api_key: Optional[str] = None) -> str:
+def delete_project(
+    *,
+    name: str,
+    api_key: Optional[str] = None,
+) -> str:
     """
     Deletes a project from your account.
 
@@ -96,7 +102,10 @@ def delete_project(name: str, api_key: Optional[str] = None) -> str:
     return response.json()
 
 
-def list_projects(api_key: Optional[str] = None) -> List[str]:
+def list_projects(
+    *,
+    api_key: Optional[str] = None,
+) -> List[str]:
     """
     Returns the names of all projects stored in your account.
 
