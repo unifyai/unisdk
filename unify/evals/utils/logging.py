@@ -39,6 +39,37 @@ def _handle_special_types(
     return new_kwargs
 
 
+def _to_log_ids(
+    logs: Optional[Union[int, unify.Log, List[Union[int, unify.Log]]]] = None,
+):
+    if logs is None:
+        current_active_log: Optional[unify.Log] = current_global_active_log.get()
+        if current_active_log is None:
+            raise Exception(
+                "If logs is unspecified, then current_global_active_log must be.",
+            )
+        return [current_active_log.id]
+    elif isinstance(logs, int):
+        return [logs]
+    elif isinstance(logs, unify.Log):
+        return [logs.id]
+    elif isinstance(logs, list):
+        if isinstance(logs[0], int):
+            return logs
+        elif isinstance(logs[0], unify.Log):
+            return [lg.id for lg in logs]
+        else:
+            raise Exception(
+                f"list must contain int or unify.Log types, but found first entry "
+                f"{logs[0]} of type {type(logs[0])}",
+            )
+    else:
+        raise Exception(
+            f"logs argument must be of type int, unify.Log, or list, but found "
+            f"{logs} of type {type(logs)}",
+        )
+
+
 def log(
     project: Optional[str] = None,
     skip_duplicates: bool = True,
@@ -118,30 +149,33 @@ def add_log_entries(
     Returns:
         A message indicating whether the log was successfully updated.
     """
-    log_id = logs  # handle_multiple_logs decorator handles logs, returning a single id
-    current_active_log: Optional[unify.Log] = current_global_active_log.get()
-    if current_active_log is None and log_id is None:
-        raise ValueError(
-            "`id` must be set if no current log is active within the context.",
-        )
+    log_ids = _to_log_ids(logs)
     api_key = _validate_api_key(api_key)
     headers = {
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
+    all_kwargs = list()
     if current_entries_nest_level.get() > 0:
-        kwargs = {
-            **kwargs,
-            **{
-                k: v
-                for k, v in current_global_active_log_entries.get().items()
-                if k not in current_logged_logs.get().get(log_id, {})
-            },
-        }
+        for log_id in log_ids:
+            combined_kwargs = {
+                **kwargs,
+                **{
+                    k: v
+                    for k, v in current_global_active_log_entries.get().items()
+                    if k not in current_logged_logs.get().get(log_id, {})
+                },
+            }
+            all_kwargs.append(combined_kwargs)
+        assert all(kw == all_kwargs[0] for kw in all_kwargs), (
+            "All logs must share the same context if they're all "
+            "being updated at the same time."
+        )
+        kwargs = all_kwargs[0]
     kwargs = _handle_special_types(kwargs)
-    body = {"entries": kwargs, "overwrite": False}
+    body = {"ids": log_ids, "entries": kwargs, "overwrite": False}
     response = requests.put(
-        BASE_URL + f"/log/{log_id if log_id else current_active_log.id}",
+        BASE_URL + f"/logs",
         headers=headers,
         json=body,
     )
