@@ -122,5 +122,4 @@ def suggest(
         "please follow the instructions of the system message",
         system_message=system_message,
     )
-    breakpoint()
     return response

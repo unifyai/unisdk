@@ -71,10 +71,7 @@ def handle_multiple_logs(fn: callable):
                 )
             return fn(*args, logs=current_active_log.id, **kwargs)
         elif isinstance(logs, int):
-            try:
-                return fn(*args, logs=logs, **kwargs)
-            except:
-                breakpoint()
+            return fn(*args, logs=logs, **kwargs)
         elif isinstance(logs, unify.Log):
             return fn(*args, logs=logs.id, **kwargs)
         elif isinstance(logs, list):
