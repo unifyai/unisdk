@@ -109,7 +109,7 @@ class Dataset:
             UnifyError: If the API key is missing.
         """
         data = unify.download_dataset(name, api_key=api_key)
-        artifacts = unify.download_artifacts(name, api_key=api_key)
+        artifacts = unify.download_dataset_artifacts(name, api_key=api_key)
         return Dataset(
             data,
             name=name,
@@ -185,7 +185,10 @@ class Dataset:
         self._assert_name_exists()
 
         upstream_dataset = unify.download_dataset(self._name, api_key=self._api_key)
-        upstream_artifacts = unify.download_artifacts(self._name, api_key=self._api_key)
+        upstream_artifacts = unify.download_dataset_artifacts(
+            self._name,
+            api_key=self._api_key,
+        )
         _data = upstream_dataset
         _artifacts = upstream_artifacts
         existing_data = set([d["entry"] for d in upstream_dataset])
