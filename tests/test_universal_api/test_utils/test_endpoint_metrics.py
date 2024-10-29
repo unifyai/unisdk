@@ -33,9 +33,9 @@ class CustomEndpointHandler:
         self._cleanup()
         unify.create_custom_api_key(self._key_name, self._key_value)
         unify.create_custom_endpoint(
-            self._endpoint_name,
-            self._endpoint_url,
-            self._key_name,
+            name=self._endpoint_name,
+            url=self._endpoint_url,
+            key_name=self._key_name,
         )
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -96,12 +96,20 @@ class TestEndpointMetrics(unittest.TestCase):
 
     def test_log_endpoint_metric(self):
         with self._handler:
-            unify.log_endpoint_metric(self._endpoint_name, "inter_token_latency", 1.23)
+            unify.log_endpoint_metric(
+                self._endpoint_name,
+                metric_name="inter_token_latency",
+                value=1.23,
+            )
 
     def test_log_and_get_endpoint_metric(self):
         with self._handler:
             now = datetime.now(timezone.utc)
-            unify.log_endpoint_metric(self._endpoint_name, "inter_token_latency", 1.23)
+            unify.log_endpoint_metric(
+                self._endpoint_name,
+                metric_name="inter_token_latency",
+                value=1.23,
+            )
             metrics = unify.get_endpoint_metrics(self._endpoint_name, start_time=now)
             self.assertIsInstance(metrics, list)
             self.assertEqual(len(metrics), 1)
@@ -113,11 +121,23 @@ class TestEndpointMetrics(unittest.TestCase):
     def test_log_and_get_endpoint_metric_with_time_windows(self):
         with self._handler:
             t0 = datetime.now(timezone.utc)
-            unify.log_endpoint_metric(self._endpoint_name, "inter_token_latency", 1.23)
-            unify.log_endpoint_metric(self._endpoint_name, "time_to_first_token", 4.56)
+            unify.log_endpoint_metric(
+                self._endpoint_name,
+                metric_name="inter_token_latency",
+                value=1.23,
+            )
+            unify.log_endpoint_metric(
+                self._endpoint_name,
+                metric_name="time_to_first_token",
+                value=4.56,
+            )
             time.sleep(0.5)
             t1 = datetime.now(timezone.utc)
-            unify.log_endpoint_metric(self._endpoint_name, "inter_token_latency", 7.89)
+            unify.log_endpoint_metric(
+                self._endpoint_name,
+                metric_name="inter_token_latency",
+                value=7.89,
+            )
             all_metrics = unify.get_endpoint_metrics(self._endpoint_name, start_time=t0)
             # two log events detected, due to double inter_token_latency logging
             self.assertEqual(len(all_metrics), 2)
@@ -149,7 +169,11 @@ class TestEndpointMetrics(unittest.TestCase):
     def test_delete_all_metrics_for_endpoint(self):
         with self._handler:
             # log metric
-            unify.log_endpoint_metric(self._endpoint_name, "inter_token_latency", 1.23)
+            unify.log_endpoint_metric(
+                self._endpoint_name,
+                metric_name="inter_token_latency",
+                value=1.23,
+            )
             # verify it exists
             metrics = unify.get_endpoint_metrics(self._endpoint_name)
             self.assertIsInstance(metrics, list)
@@ -165,19 +189,31 @@ class TestEndpointMetrics(unittest.TestCase):
         with self._handler:
             # log metrics at t0
             t0 = datetime.now(timezone.utc)
-            unify.log_endpoint_metric(self._endpoint_name, "inter_token_latency", 1.23)
-            unify.log_endpoint_metric(self._endpoint_name, "time_to_first_token", 4.56)
+            unify.log_endpoint_metric(
+                self._endpoint_name,
+                metric_name="inter_token_latency",
+                value=1.23,
+            )
+            unify.log_endpoint_metric(
+                self._endpoint_name,
+                metric_name="time_to_first_token",
+                value=4.56,
+            )
             time.sleep(0.5)
             # log metric at t1
             t1 = datetime.now(timezone.utc)
-            unify.log_endpoint_metric(self._endpoint_name, "inter_token_latency", 7.89)
+            unify.log_endpoint_metric(
+                self._endpoint_name,
+                metric_name="inter_token_latency",
+                value=7.89,
+            )
             # verify both exist
             metrics = unify.get_endpoint_metrics(self._endpoint_name, start_time=t0)
             self.assertEqual(len(metrics), 2)
             # delete the first itl entry
             unify.delete_endpoint_metrics(
                 self._endpoint_name,
-                metrics[0].measured_at["inter_token_latency"],
+                timestamps=metrics[0].measured_at["inter_token_latency"],
             )
             # verify only the latest entry exists, with both itl and ttft
             metrics = unify.get_endpoint_metrics(self._endpoint_name, start_time=t0)
@@ -187,7 +223,7 @@ class TestEndpointMetrics(unittest.TestCase):
             # delete the ttft entry
             unify.delete_endpoint_metrics(
                 self._endpoint_name,
-                metrics[0].measured_at["time_to_first_token"],
+                timestamps=metrics[0].measured_at["time_to_first_token"],
             )
             # verify only the latest entry exists, with only the itl
             metrics = unify.get_endpoint_metrics(self._endpoint_name, start_time=t0)
@@ -197,7 +233,7 @@ class TestEndpointMetrics(unittest.TestCase):
             # delete the final itl entry
             unify.delete_endpoint_metrics(
                 self._endpoint_name,
-                metrics[0].measured_at["inter_token_latency"],
+                timestamps=metrics[0].measured_at["inter_token_latency"],
             )
             # verify no metrics exist
             metrics = unify.get_endpoint_metrics(self._endpoint_name, start_time=t0)
