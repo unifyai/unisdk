@@ -17,12 +17,12 @@ class TestLogging(unittest.TestCase):
             "system_prompt": "You are a weather assistant",
             "user_prompt": "hello world",
         }
-        assert len(unify.get_logs(project)) == 0
-        log = unify.log(project, **data)
-        retrieved_log = unify.get_log_by_value(project, **data)
+        assert len(unify.get_logs(project=project)) == 0
+        log = unify.log(project=project, **data)
+        retrieved_log = unify.get_log_by_value(project=project, **data)
         assert log == retrieved_log
         log.delete()
-        assert unify.get_log_by_value(project, **data) is None
+        assert unify.get_log_by_value(project=project, **data) is None
 
     def test_get_logs_by_value(self):
         project = "my_project"
@@ -33,19 +33,19 @@ class TestLogging(unittest.TestCase):
             "system_prompt": "You are a weather assistant",
             "user_prompt": "hello world",
         }
-        assert len(unify.get_logs(project)) == 0
-        log0 = unify.log(project, **data, skip_duplicates=False)
-        log1 = unify.log(project, **data, skip_duplicates=False)
-        retrieved_logs = unify.get_logs_by_value(project, **data)
+        assert len(unify.get_logs(project=project)) == 0
+        log0 = unify.log(project=project, **data, skip_duplicates=False)
+        log1 = unify.log(project=project, **data, skip_duplicates=False)
+        retrieved_logs = unify.get_logs_by_value(project=project, **data)
         assert len(retrieved_logs) == 2
         for log, retrieved_log in zip((log0, log1), retrieved_logs):
             assert log == retrieved_log
         log0.delete()
-        retrieved_logs = unify.get_logs_by_value(project, **data)
+        retrieved_logs = unify.get_logs_by_value(project=project, **data)
         assert len(retrieved_logs) == 1
         assert log1 == retrieved_logs[0]
         log1.delete()
-        assert unify.get_logs_by_value(project, **data) == []
+        assert unify.get_logs_by_value(project=project, **data) == []
 
     def test_replace_log_entries(self):
         project = "my_project"
@@ -56,17 +56,17 @@ class TestLogging(unittest.TestCase):
             "system_prompt": "You are a weather assistant",
             "user_prompt": "hello world",
         }
-        assert len(unify.get_logs(project)) == 0
-        log = unify.log(project, **data)
+        assert len(unify.get_logs(project=project)) == 0
+        log = unify.log(project=project, **data)
         assert unify.get_log_by_id(log.id).entries == data
-        assert len(unify.get_logs(project)) == 1
+        assert len(unify.get_logs(project=project)) == 1
         new_data = {
             "system_prompt": "You are a maths assistant",
             "user_prompt": "hi earth",
         }
         log.replace_entries(**new_data)
         assert log.entries == new_data
-        assert len(unify.get_logs(project)) == 1
+        assert len(unify.get_logs(project=project)) == 1
         assert unify.get_log_by_id(log.id).entries == new_data
 
     def test_update_log_entries(self):
@@ -80,9 +80,9 @@ class TestLogging(unittest.TestCase):
                 "context": "you are a helpful assistant",
             },
         ]
-        assert len(unify.get_logs(project)) == 0
-        log = unify.log(project, messages=messages)
-        assert len(unify.get_logs(project)) == 1
+        assert len(unify.get_logs(project=project)) == 0
+        log = unify.log(project=project, messages=messages)
+        assert len(unify.get_logs(project=project)) == 1
         assert unify.get_log_by_id(log.id).entries["messages"] == messages
         new_messages = [
             {
@@ -93,7 +93,7 @@ class TestLogging(unittest.TestCase):
         log.update_entries(lambda x, y: x + y, messages=new_messages)
         combined_messages = messages + new_messages
         assert log.entries["messages"] == combined_messages
-        assert len(unify.get_logs(project)) == 1
+        assert len(unify.get_logs(project=project)) == 1
         assert unify.get_log_by_id(log.id).entries["messages"] == combined_messages
 
     def test_update_log_entries_w_dict(self):
@@ -108,9 +108,9 @@ class TestLogging(unittest.TestCase):
             },
         ]
         name = "John"
-        assert len(unify.get_logs(project)) == 0
-        log = unify.log(project, messages=messages, name=name)
-        assert len(unify.get_logs(project)) == 1
+        assert len(unify.get_logs(project=project)) == 0
+        log = unify.log(project=project, messages=messages, name=name)
+        assert len(unify.get_logs(project=project)) == 1
         assert unify.get_log_by_id(log.id).entries["messages"] == messages
         new_messages = [
             {
@@ -129,7 +129,7 @@ class TestLogging(unittest.TestCase):
         )
         combined_messages = messages + new_messages
         assert log.entries["messages"] == combined_messages
-        assert len(unify.get_logs(project)) == 1
+        assert len(unify.get_logs(project=project)) == 1
         assert unify.get_log_by_id(log.id).entries["messages"] == combined_messages
 
     def test_rename_log_entries(self):
@@ -138,14 +138,14 @@ class TestLogging(unittest.TestCase):
             unify.delete_project(project)
         unify.create_project(project)
         customer = "John Smith"
-        assert len(unify.get_logs(project)) == 0
-        log = unify.log(project, customer=customer)
-        assert len(unify.get_logs(project)) == 1
+        assert len(unify.get_logs(project=project)) == 0
+        log = unify.log(project=project, customer=customer)
+        assert len(unify.get_logs(project=project)) == 1
         assert unify.get_log_by_id(log.id).entries["customer"] == customer
         log.rename_entries(customer="customer_name")
         assert "customer" not in log.entries
         assert "customer_name" in log.entries
-        assert len(unify.get_logs(project)) == 1
+        assert len(unify.get_logs(project=project)) == 1
         retrieved_log = unify.get_log_by_id(log.id)
         assert "customer" not in retrieved_log.entries
         assert "customer_name" in retrieved_log.entries
@@ -155,11 +155,11 @@ class TestLogging(unittest.TestCase):
         if project in unify.list_projects():
             unify.delete_project(project)
         unify.create_project(project)
-        assert len(unify.get_logs(project)) == 0
-        unify.log(project, customer="John Smith")
+        assert len(unify.get_logs(project=project)) == 0
+        unify.log(project=project, customer="John Smith")
         assert len(unify.get_logs_with_fields("customer", project=project)) == 1
         assert len(unify.get_logs_with_fields("dummy", project=project)) == 0
-        unify.log(project, seller="Maggie Jones")
+        unify.log(project=project, seller="Maggie Jones")
         assert (
             len(
                 unify.get_logs_with_fields(
@@ -188,11 +188,11 @@ class TestLogging(unittest.TestCase):
         if project in unify.list_projects():
             unify.delete_project(project)
         unify.create_project(project)
-        assert len(unify.get_logs(project)) == 0
-        unify.log(project, customer="John Smith")
+        assert len(unify.get_logs(project=project)) == 0
+        unify.log(project=project, customer="John Smith")
         assert len(unify.get_logs_without_fields("customer", project=project)) == 0
         assert len(unify.get_logs_without_fields("dummy", project=project)) == 1
-        unify.log(project, seller="Maggie Jones")
+        unify.log(project=project, seller="Maggie Jones")
         assert (
             len(
                 unify.get_logs_without_fields(
@@ -229,7 +229,7 @@ class TestLogging(unittest.TestCase):
                 for q in qs:
                     logs.append(unify.Log(log_idx, q=q, parameters=params))
                     log_idx += 1
-        grouped_logs = unify.group_logs_by_params(logs)
+        grouped_logs = unify.group_logs_by_params(logs=logs)
         assert len(grouped_logs) == 6
         assert list(grouped_logs.keys()) == [
             '{"system_prompt": "You are an expert.", ' '"dataset_version": "vanilla"}',
@@ -272,7 +272,7 @@ class TestLogging(unittest.TestCase):
         thread1.join()
         thread2.join()
 
-        logs = unify.get_logs("my_project")
+        logs = unify.get_logs(project="my_project")
         list1 = [log.entries for log in logs]
         list2 = [{"d1": "Thread-1", "d2": "data1"}, {"d1": "Thread-2", "d2": "data2"}]
 
@@ -291,9 +291,9 @@ class TestLogging(unittest.TestCase):
         with unify.Entries(context="random"):
             log = unify.log(a="a")
             with unify.Entries(sys="sys"):
-                unify.add_log_entries(log.id, q="some q", r="some r")
+                unify.add_log_entries(logs=log.id, q="some q", r="some r")
             with unify.Entries(tool="tool"):
-                unify.add_log_entries(log.id, t="some t", b="some b")
+                unify.add_log_entries(logs=log.id, t="some t", b="some b")
 
         expected = {
             "context": "random",
@@ -334,7 +334,7 @@ class TestLogging(unittest.TestCase):
             return 1
 
         some_func(0.5)
-        log = unify.get_logs("my_project")[0].entries
+        log = unify.get_logs(project="my_project")[0].entries
 
         assert log["trace"]["inputs"] == {"st": 0.5}
         assert log["trace"]["span_name"] == "some_func"
@@ -366,7 +366,7 @@ class TestAsyncLogging(unittest.IsolatedAsyncioTestCase):
 
         await asyncio.gather(fn1("Task-1", "data1", 1), fn1("Task-2", "data2", 2))
 
-        logs = unify.get_logs("my_project")
+        logs = unify.get_logs(project="my_project")
         list1 = [log.entries for log in logs]
         list2 = [{"d1": "Task-1", "d2": "data1"}, {"d1": "Task-2", "d2": "data2"}]
 

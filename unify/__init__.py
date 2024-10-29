@@ -111,13 +111,13 @@ class Project:
         self._entered = False
 
     def create(self, overwrite: bool = False) -> None:
-        create_project(self._project, overwrite, api_key=self._api_key)
+        create_project(self._project, overwrite=overwrite, api_key=self._api_key)
 
     def delete(self):
-        delete_project(self._project, self._api_key)
+        delete_project(self._project, api_key=self._api_key)
 
     def rename(self, new_name: str):
-        rename_project(self._project, new_name, self._api_key)
+        rename_project(self._project, new_name, api_key=self._api_key)
         self._project = new_name
         if self._entered:
             activate(self._project)

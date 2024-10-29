@@ -54,10 +54,7 @@ def _get_and_maybe_create_project(
                 )
             return None
     PROJECT_LOCK.acquire()
-    if project not in unify.list_projects(api_key):
-        try:
-            unify.create_project(project, api_key=api_key)
-        except:
-            breakpoint()
+    if project not in unify.list_projects(api_key=api_key):
+        unify.create_project(project, api_key=api_key)
     PROJECT_LOCK.release()
     return project

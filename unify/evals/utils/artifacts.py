@@ -48,8 +48,8 @@ def add_artifacts(
 
 
 def delete_artifact(
-    *,
     key: str,
+    *,
     project: Optional[str] = None,
     api_key: Optional[str] = None,
 ) -> str:

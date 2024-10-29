@@ -152,9 +152,9 @@ class TestMathsEvaluator(unittest.TestCase):
                             score=correct,
                         )
                     system_prompt_perf[name] = unify.get_logs_metric(
-                        "mean",
-                        "score",
-                        f"system_prompt == '{system_prompt}'",
+                        metric="mean",
+                        key="score",
+                        filter=f"system_prompt == '{system_prompt}'",
                     )
 
 
@@ -940,7 +940,6 @@ class TestCRMEvaluator(unittest.TestCase):
                     score = self._evaluate(data["correct_answer"], response)
                     unify.log(**data, response=response, score=score)
 
-    @unittest.skip("Orchestra Problem")
     def test_system_prompt_opt(self) -> None:
         with ProjectHandling():
             with unify.Project("test_project"):

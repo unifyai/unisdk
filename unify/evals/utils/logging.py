@@ -304,8 +304,8 @@ def get_logs(
 
 # noinspection PyShadowingBuiltins
 def get_log_by_id(
-    *,
     id: int,
+    *,
     api_key: Optional[str] = None,
 ) -> unify.Log:
     """
