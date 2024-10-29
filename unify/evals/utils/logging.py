@@ -689,9 +689,9 @@ def get_logs_metric(
     return response.json()
 
 
-def group_logs_by_config(logs: List[unify.Log]) -> Dict:
-    configs = list(dict.fromkeys([json.dumps(lg.config.parameters) for lg in logs]))
+def group_logs_by_params(logs: List[unify.Log]) -> Dict:
+    configs = list(dict.fromkeys([json.dumps(lg.parameters) for lg in logs]))
     ret_dict = dict()
     for conf in configs:
-        ret_dict[conf] = [lg for lg in logs if json.dumps(lg.config.parameters) == conf]
+        ret_dict[conf] = [lg for lg in logs if json.dumps(lg.parameters) == conf]
     return ret_dict

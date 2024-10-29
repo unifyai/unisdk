@@ -216,20 +216,20 @@ class TestLogging(unittest.TestCase):
             == 0
         )
 
-    def test_group_logs_by_config(self):
+    def test_group_logs_by_params(self):
         logs = list()
         log_idx = 0
         qs = ["1+1", "2+2", "3+3", "4+1"]
         for system_prompt in ["You are an expert.", "You are an expert mathematician."]:
             for dataset_version in ["vanilla", "with_failures", "with_successes"]:
-                params = unify.Parameters(
+                params = dict(
                     system_prompt=system_prompt,
                     dataset_version=dataset_version,
                 )
                 for q in qs:
                     logs.append(unify.Log(log_idx, q=q, parameters=params))
                     log_idx += 1
-        grouped_logs = unify.group_logs_by_config(logs)
+        grouped_logs = unify.group_logs_by_params(logs)
         assert len(grouped_logs) == 6
         assert list(grouped_logs.keys()) == [
             '{"system_prompt": "You are an expert.", ' '"dataset_version": "vanilla"}',
