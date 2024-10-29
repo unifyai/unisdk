@@ -10,8 +10,8 @@ from unify import BASE_URL
 
 
 def create_project(
-    *,
     name: str,
+    *,
     overwrite: bool = False,
     api_key: Optional[str] = None,
 ) -> Dict[str, str]:
@@ -45,9 +45,9 @@ def create_project(
 
 
 def rename_project(
-    *,
     name: str,
     new_name: str,
+    *,
     api_key: Optional[str] = None,
 ) -> Dict[str, str]:
     """
@@ -76,8 +76,8 @@ def rename_project(
 
 
 def delete_project(
-    *,
     name: str,
+    *,
     api_key: Optional[str] = None,
 ) -> str:
     """
