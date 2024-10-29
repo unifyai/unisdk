@@ -128,9 +128,9 @@ class TestLogging(unittest.TestCase):
             name=surname,
         )
         combined_messages = messages + new_messages
-        assert log.entries == combined_messages
+        assert log.entries["messages"] == combined_messages
         assert len(unify.get_logs(project)) == 1
-        assert unify.get_log_by_id(log.id).entries == combined_messages
+        assert unify.get_log_by_id(log.id).entries["messages"] == combined_messages
 
     def test_rename_log_entries(self):
         project = "my_project"

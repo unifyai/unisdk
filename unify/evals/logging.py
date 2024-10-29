@@ -75,7 +75,8 @@ class Log:
     def update_entries(self, fn, **kwargs) -> None:
         update_log_entries(fn, self._id, self._api_key, **kwargs)
         for k, v in kwargs.items():
-            self._entries[k] = fn(self._entries[k], v)
+            f = fn[k] if isinstance(fn, dict) else fn
+            self._entries[k] = f(self._entries[k], v)
 
     def rename_entries(self, **kwargs) -> None:
         rename_log_entries(self._id, self._api_key, **kwargs)
