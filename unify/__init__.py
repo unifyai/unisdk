@@ -72,7 +72,7 @@ from .universal_api.types import *
 from .evals.dataset import *
 from .evals.logging import *
 from .evals.assist.implement import *
-from .evals.assist.suggest import *
+from .evals.assist.update import *
 
 
 # Project #

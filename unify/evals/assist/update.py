@@ -42,7 +42,7 @@ def _format_evals(evals: Dict[str, List[Dict[str, Any]]]) -> str:
     return "\n".join(ret)
 
 
-def suggest(
+def update(
     metric: str,
     mode: str = "maximize",
     logs: Optional[List[unify.Log]] = None,
