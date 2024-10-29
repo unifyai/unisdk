@@ -94,7 +94,7 @@ class Log:
             del self._entries[key]
 
     def delete(self) -> None:
-        delete_log(self._id, self._api_key)
+        delete_logs(self._id, self._api_key)
 
     def to_json(self):
         return {

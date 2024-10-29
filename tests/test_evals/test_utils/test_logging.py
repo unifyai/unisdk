@@ -27,7 +27,7 @@ class TestLogging(unittest.TestCase):
         unify.add_log_entries(log_id, user_prompt=data["user_prompt"])
         id_log = unify.get_log_by_id(log_id)
         assert len(id_log) and "user_prompt" in id_log.entries
-        unify.delete_log(log_id)
+        unify.delete_logs(log_id)
         assert len(unify.get_logs(project)) == 0
         try:
             unify.get_log_by_id(log_id)

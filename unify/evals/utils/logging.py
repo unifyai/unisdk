@@ -183,7 +183,7 @@ def add_log_entries(
     return response.json()
 
 
-def delete_log(
+def delete_logs(
     logs: Optional[Union[int, unify.Log, List[Union[int, unify.Log]]]] = None,
     api_key: Optional[str] = None,
 ) -> Dict[str, str]:
@@ -199,13 +199,14 @@ def delete_log(
     Returns:
         A message indicating whether the logs were successfully deleted.
     """
-    log_id = logs  # handle_multiple_logs decorator handles logs, returning a single id
+    log_ids = _to_log_ids(logs)
     api_key = _validate_api_key(api_key)
     headers = {
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    response = requests.delete(BASE_URL + f"/log/{log_id}", headers=headers)
+    body = {"ids": log_ids}
+    response = requests.delete(BASE_URL + f"/logs", headers=headers, json=body)
     response.raise_for_status()
     return response.json()
 
