@@ -307,7 +307,7 @@ def download_dataset_artifacts(
     name: str,
     *,
     api_key: Optional[str] = None,
-) -> Union[List[Any], None]:
+) -> Union[Dict[str, Any], None]:
     """
     Downloads a dataset from the platform.
 
