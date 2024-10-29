@@ -201,7 +201,7 @@ class Dataset:
             _data += [
                 item for item in self._raw_data if item["entry"] not in existing_data
             ]
-            _artifacts += self._artifacts
+            _artifacts.update(self._artifacts)
         self._raw_data = _data
         self._artifacts = _artifacts
 
