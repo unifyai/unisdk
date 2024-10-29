@@ -124,7 +124,7 @@ class Project:
 
     def __enter__(self):
         activate(self._project)
-        if self._project not in list_projects(self._api_key):
+        if self._project not in list_projects(api_key=self._api_key):
             self.create()
         self._entered = True
 

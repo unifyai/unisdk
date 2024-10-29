@@ -955,7 +955,7 @@ class TestCRMEvaluator(unittest.TestCase):
                         score = self._evaluate(data["correct_answer"], response)
                         unify.log(**data, response=response, score=score)
                     system_prompt_perf[name] = unify.get_logs_metric(
-                        "mean",
-                        "score",
-                        f"system_prompt == {json.dumps(system_prompt)}",
+                        metric="mean",
+                        key="score",
+                        filter=f"system_prompt == {json.dumps(system_prompt)}",
                     )
