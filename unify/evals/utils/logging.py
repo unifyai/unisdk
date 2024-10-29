@@ -197,16 +197,7 @@ def add_log_entries(
             },
         }
     kwargs = _handle_special_types(kwargs)
-    body = {"entries": kwargs}
-    # ToDo: remove this once duplicates are prevented in the backend
-    current_keys = get_log_by_id(
-        log_id if log_id else current_active_log.id,
-    ).entries.keys()
-    assert not any(key in body["entries"] for key in current_keys), (
-        "Duplicate keys detected, please use replace_log_entries or "
-        "update_log_entries if you want to replace or modify an existing key."
-    )
-    # End ToDo
+    body = {"entries": kwargs, "overwrite": False}
     response = requests.put(
         BASE_URL + f"/log/{log_id if log_id else current_active_log.id}",
         headers=headers,
