@@ -128,7 +128,7 @@ def log(
         LOGGED.set(
             {
                 **LOGGED.get(),
-                created_log.id: list(ACTIVE_ENTRIES.get().keys()),
+                created_log.id: list(kwargs.keys()),
             },
         )
     return created_log
