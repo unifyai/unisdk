@@ -34,7 +34,10 @@ def map(fn: callable, *args, mode="threading", **kwargs) -> Any:
         returns = [None] * num_calls
         for i in range(num_calls):
             a = tuple(a[i] for a in args)
-            kw = {k: v[i] if isinstance(v, list) else v for k, v in kwargs.items()}
+            kw = {
+                k: v[i] if (isinstance(v, list) or isinstance(v, tuple)) else v
+                for k, v in kwargs.items()
+            }
             thread = threading.Thread(
                 target=fn_w_indexing,
                 args=(returns, i, *a),
@@ -50,7 +53,10 @@ def map(fn: callable, *args, mode="threading", **kwargs) -> Any:
     fns = []
     for i in range(num_calls):
         a = (a[i] for a in args)
-        kw = {k: v[i] for k, v in kwargs.items()}
+        kw = {
+            k: v[i] if (isinstance(v, list) or isinstance(v, tuple)) else v
+            for k, v in kwargs.items()
+        }
         fns.append(fn(*a, **kw))
 
     async def main():
