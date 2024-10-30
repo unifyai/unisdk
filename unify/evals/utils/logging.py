@@ -9,8 +9,7 @@ from unify import BASE_URL
 from ...utils.helpers import _validate_api_key, _get_and_maybe_create_project
 
 # log
-ACTIVE_LOG = ContextVar("active_log", default=None)
-LOG_NEST_LEVEL = ContextVar("log_nest_level", default=0)
+ACTIVE_LOG = ContextVar("active_log", default=[])
 LOGGED = ContextVar("logged", default={})
 
 # entries
@@ -44,12 +43,12 @@ def _to_log_ids(
     logs: Optional[Union[int, unify.Log, List[Union[int, unify.Log]]]] = None,
 ):
     if logs is None:
-        current_active_log: Optional[unify.Log] = ACTIVE_LOG.get()
-        if current_active_log is None:
+        current_active_logs = ACTIVE_LOG.get()
+        if not current_active_logs:
             raise Exception(
                 "If logs is unspecified, then current_global_active_log must be.",
             )
-        return [current_active_log.id]
+        return [current_active_logs[-1].id]
     elif isinstance(logs, int):
         return [logs]
     elif isinstance(logs, unify.Log):

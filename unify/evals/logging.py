@@ -127,17 +127,13 @@ class Log:
             **self._entries,
         )
         self._active_log_set = False
-        if ACTIVE_LOG.get() is not None:
-            self._active_log_set = True
-        else:
-            self._log_token = ACTIVE_LOG.set(lg)
+        self._log_token = ACTIVE_LOG.set(ACTIVE_LOG.get() + [lg])
         self._id = lg.id
         self._timestamp = lg.timestamp
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.download()
-        if not self._active_log_set:
-            ACTIVE_LOG.reset(self._log_token)
+        ACTIVE_LOG.reset(self._log_token)
 
 
 class Entries:
@@ -171,15 +167,12 @@ class trace:
 
     def __enter__(self):
         self._current_global_active_log_set = False
-        current_active_log = ACTIVE_LOG.get()
-        if current_active_log is not None:
-            self._current_global_active_log_set = True
-        else:
-            self._log_token = ACTIVE_LOG.set(log(skip_duplicates=False))
+        self._log_token = ACTIVE_LOG.set(
+            ACTIVE_LOG.get() + [log(skip_duplicates=False)],
+        )
 
     def __exit__(self, *args, **kwargs):
-        if not self._current_global_active_log_set:
-            ACTIVE_LOG.reset(self._log_token)
+        ACTIVE_LOG.reset(self._log_token)
 
     def __call__(self, fn):
         @functools.wraps(fn)
