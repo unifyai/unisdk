@@ -259,7 +259,33 @@ def test_group_logs_by_params():
 # Tracing #
 # --------#
 
-# ToDo: add serial test
+
+def test_trace():
+    project = "my_project"
+    if project in unify.list_projects():
+        unify.delete_project(project)
+    unify.create_project(project)
+    unify.activate(project)
+
+    def inner_fn(data):
+        unify.add_log_entries(d2=data)
+
+    @unify.trace()
+    def fn1(data1, data2):
+        time.sleep(0.1)
+        unify.add_log_entries(d1=data1)
+        inner_fn(data2)
+
+    fn1(1, 2)
+
+    logs = unify.get_logs(project="my_project")
+    list1 = [log.entries for log in logs]
+    list2 = [{"d1": 1, "d2": 2}]
+
+    # Sort each dictionary by keys and then sort the list
+    assert sorted([sorted(d.items()) for d in list1]) == sorted(
+        [sorted(d.items()) for d in list2],
+    )
 
 
 def test_threaded_trace():
