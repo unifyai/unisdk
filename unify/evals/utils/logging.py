@@ -74,6 +74,7 @@ def log(
     *,
     project: Optional[str] = None,
     skip_duplicates: bool = True,
+    parameters: Dict[str, Any] = None,
     api_key: Optional[str] = None,
     **kwargs,
 ) -> unify.Log:
@@ -90,11 +91,14 @@ def log(
         without duplicating the logged data every time. If False, then repeat entries
         will be added with identical data, but unique timestamps.
 
+        parameters: Dictionary containing one or more key:value pairs that will be
+        logged into the platform as parameters.
+
         api_key: If specified, unify API key to be used. Defaults to the value in the
         `UNIFY_KEY` environment variable.
 
         kwargs: Dictionary containing one or more key:value pairs that will be logged
-        into the platform.
+        into the platform as entries.
 
     Returns:
         The unique id of newly created log entry.
@@ -120,7 +124,7 @@ def log(
                 f"config {kwargs}"
             )
             return retrieved_logs[0]
-    body = {"project": project, "entries": kwargs}
+    body = {"project": project, "parameters": parameters, "entries": kwargs}
     response = requests.post(BASE_URL + "/log", headers=headers, json=body)
     response.raise_for_status()
     created_log = unify.Log(id=response.json(), api_key=api_key, **kwargs)
@@ -137,6 +141,7 @@ def log(
 def add_log_entries(
     *,
     logs: Optional[Union[int, unify.Log, List[Union[int, unify.Log]]]] = None,
+    parameters: Dict[str, Any] = None,
     api_key: Optional[str] = None,
     **kwargs,
 ) -> Dict[str, str]:
@@ -147,10 +152,14 @@ def add_log_entries(
         logs: The log(s) to update with extra data. Looks for the current active log if
         no id is provided.
 
+        parameters: Dictionary containing one or more key:value pairs that will be
+        logged into the platform as parameters.
+
         api_key: If specified, unify API key to be used. Defaults to the value in the
         `UNIFY_KEY` environment variable.
 
-        kwargs: The data to log into the console.
+        kwargs: Dictionary containing one or more key:value pairs that will be logged
+        into the platform as entries.
 
     Returns:
         A message indicating whether the log was successfully updated.
@@ -179,7 +188,12 @@ def add_log_entries(
         )
         kwargs = all_kwargs[0]
     kwargs = _handle_special_types(kwargs)
-    body = {"ids": log_ids, "entries": kwargs, "overwrite": False}
+    body = {
+        "ids": log_ids,
+        "parameters": parameters,
+        "entries": kwargs,
+        "overwrite": False,
+    }
     response = requests.put(
         BASE_URL + f"/logs",
         headers=headers,
