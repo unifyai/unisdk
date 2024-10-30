@@ -3,6 +3,7 @@ import json
 import time
 import traceback
 import importlib
+from importlib.machinery import SourceFileLoader
 import os.path
 from typing import Optional
 
@@ -95,7 +96,7 @@ def implement(fn: callable, module_path: Optional[str] = None):
         while True:
             try:
                 return importlib.reload(
-                    importlib.import_module(module_name),
+                    SourceFileLoader(module_name, full_module_path).load_module(),
                 )
             except Exception as e:
                 _streamed_print(
