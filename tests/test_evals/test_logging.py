@@ -1,5 +1,6 @@
 import time
 import asyncio
+import pytest
 
 import unify
 import threading
@@ -353,6 +354,7 @@ def test_span():
     assert log["trace"]["child_spans"][0]["child_spans"][0]["span_name"] == "deeper_fn"
 
 
+@pytest.mark.asyncio
 async def test_contextual_logging_async():
     project = "my_project"
     if project in unify.list_projects():
