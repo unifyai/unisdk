@@ -20,8 +20,8 @@ class ProjectHandling:
             unify.delete_project("test_project")
 
 
-client = unify.Unify("gpt-4o@openai")
-async_client = unify.AsyncUnify("gpt-4o@openai")
+client = unify.Unify("gpt-4o@openai", cache=True)
+async_client = unify.AsyncUnify("gpt-4o@openai", cache=True)
 qs = ["3 - 1", "4 + 7", "6 + 2", "9 - 3", "7 + 9"]
 
 

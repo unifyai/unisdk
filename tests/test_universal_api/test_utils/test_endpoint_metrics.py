@@ -72,12 +72,15 @@ def test_get_public_endpoint_metrics():
 
 
 def test_client_metric_properties():
-    client = unify.Unify("gpt-4o@openai")
+    client = unify.Unify("gpt-4o@openai", cache=True)
     assert isinstance(client.input_cost, float)
     assert isinstance(client.output_cost, float)
     assert isinstance(client.time_to_first_token, float)
     assert isinstance(client.inter_token_latency, float)
-    client = unify.MultiUnify(["gpt-4o@openai", "claude-3-haiku@anthropic"])
+    client = unify.MultiUnify(
+        ["gpt-4o@openai", "claude-3-haiku@anthropic"],
+        cache=True,
+    )
     assert isinstance(client.input_cost, dict)
     assert isinstance(client.input_cost["gpt-4o@openai"], float)
     assert isinstance(client.input_cost["claude-3-haiku@anthropic"], float)

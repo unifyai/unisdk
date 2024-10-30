@@ -41,7 +41,7 @@ def test_pass_prompts_to_client() -> None:
         messages=[{"role": "user", "content": "Hello"}],
         temperature=0.5,
     )
-    client = unify.Unify(**prompt.model_dump())
+    client = unify.Unify(**prompt.model_dump(), cache=True)
     assert client.temperature == 0.5
 
 

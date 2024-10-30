@@ -8,11 +8,12 @@ class TestMultiUnify:
     def test_constructor(self) -> None:
         MultiUnify(
             endpoints=["llama-3-8b-chat@together-ai", "gpt-4o@openai"],
+            cache=True,
         )
 
     def test_add_endpoints(self):
         endpoints = ("llama-3-8b-chat@together-ai", "gpt-4o@openai")
-        client = MultiUnify(endpoints=endpoints)
+        client = MultiUnify(endpoints=endpoints, cache=True)
         assert client.endpoints == endpoints
         assert tuple(client.clients.keys()) == endpoints
         client.add_endpoints("claude-3.5-sonnet@anthropic")
@@ -35,7 +36,7 @@ class TestMultiUnify:
             "gpt-4o@openai",
             "claude-3.5-sonnet@anthropic",
         )
-        client = MultiUnify(endpoints=endpoints)
+        client = MultiUnify(endpoints=endpoints, cache=True)
         assert client.endpoints == endpoints
         assert tuple(client.clients.keys()) == endpoints
         client.remove_endpoints("claude-3.5-sonnet@anthropic")
@@ -54,7 +55,7 @@ class TestMultiUnify:
             "gpt-4o@openai",
             "claude-3.5-sonnet@anthropic",
         )
-        client = MultiUnify(endpoints=endpoints)
+        client = MultiUnify(endpoints=endpoints, cache=True)
         responses = client.generate("Hello, how it is going?")
         for endpoint, (response_endpoint, response) in zip(
             endpoints,
@@ -70,6 +71,7 @@ class TestMultiUnify:
             endpoints=endpoints,
             n=2,
             return_full_completion=True,
+            cache=True,
         )
         responses = client.generate("Hello, how it is going?")
         for endpoint, (response_endpoint, response) in zip(
@@ -93,6 +95,7 @@ class TestMultiUnify:
         client = MultiUnify(
             endpoints=endpoints,
             messages=messages,
+            cache=True,
         )
         responses = client.generate("What animal did you want to talk about?")
         for endpoint, (response_endpoint, response) in zip(
@@ -110,7 +113,7 @@ class TestMultiUnify:
             "gpt-4o@openai",
             "claude-3.5-sonnet@anthropic",
         )
-        client = MultiUnify(endpoints=endpoints)
+        client = MultiUnify(endpoints=endpoints, cache=True)
         client.add_endpoints(["gpt-4@openai", "gpt-4-turbo@openai"]).remove_endpoints(
             "claude-3.5-sonnet@anthropic",
         )
@@ -131,7 +134,7 @@ class TestAsyncMultiUnify:
             "gpt-4o@openai",
             "claude-3.5-sonnet@anthropic",
         )
-        client = AsyncMultiUnify(endpoints=endpoints)
+        client = AsyncMultiUnify(endpoints=endpoints, cache=True)
         responses = await client.generate("Hello, how it is going?")
         for endpoint, (response_endpoint, response) in zip(
             endpoints,
@@ -147,6 +150,7 @@ class TestAsyncMultiUnify:
             endpoints=endpoints,
             n=2,
             return_full_completion=True,
+            cache=True,
         )
         responses = await client.generate("Hello, how it is going?")
         for endpoint, (response_endpoint, response) in zip(
