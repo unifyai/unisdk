@@ -95,7 +95,7 @@ class Log:
         keys_to_delete: List[str],
     ) -> None:
         for key in keys_to_delete:
-            delete_log_entries(entry=key, logs=self._id, api_key=self._api_key)
+            delete_log_fields(field=key, logs=self._id, api_key=self._api_key)
             del self._entries[key]
 
     def delete(self) -> None:

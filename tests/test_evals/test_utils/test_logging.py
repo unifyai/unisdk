@@ -19,7 +19,7 @@ def test_log():
     assert len(project_logs) and project_logs[0].id == log_id
     id_log = unify.get_log_by_id(log_id)
     assert len(id_log) and "user_prompt" in id_log.entries
-    unify.delete_log_entries(entry="user_prompt", logs=log_id)
+    unify.delete_log_fields(field="user_prompt", logs=log_id)
     id_log = unify.get_log_by_id(log_id)
     assert len(id_log) and "user_prompt" not in id_log.entries
     unify.add_log_entries(logs=log_id, user_prompt=data["user_prompt"])

@@ -10,13 +10,14 @@ from ...utils.helpers import _validate_api_key, _get_and_maybe_create_project
 
 # log
 ACTIVE_LOG = ContextVar("active_log", default=None)
+LOG_NEST_LEVEL = ContextVar("log_nest_level", default=0)
+LOGGED = ContextVar("logged", default={})
 
 # entries
 ACTIVE_ENTRIES = ContextVar(
     "active_entries",
     default={},
 )
-LOGGED = ContextVar("logged", default={})
 ENTRIES_NEST_LEVEL = ContextVar("entries_nest_level", default=0)
 
 # span
@@ -218,9 +219,9 @@ def delete_logs(
     return response.json()
 
 
-def delete_log_entries(
+def delete_log_fields(
     *,
-    entry: str,
+    field: str,
     logs: Optional[Union[int, unify.Log, List[Union[int, unify.Log]]]] = None,
     api_key: Optional[str] = None,
 ) -> Dict[str, str]:
@@ -228,7 +229,7 @@ def delete_log_entries(
     Deletes an entry from a log.
 
     Args:
-        entry: Name of the entries to delete from a given log.
+        field: Name of the field to delete from the given logs.
 
         logs: log(s) to delete entries from.
 
@@ -245,9 +246,9 @@ def delete_log_entries(
         "Authorization": f"Bearer {api_key}",
     }
     body = {"ids": log_ids}
-    entry = entry.replace("/", "-")
+    field = field.replace("/", "-")
     response = requests.delete(
-        BASE_URL + f"/logs/entry/{entry}",
+        BASE_URL + f"/logs/field/{field}",
         headers=headers,
         json=body,
     )

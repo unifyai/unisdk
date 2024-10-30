@@ -29,7 +29,7 @@ def replace_log_entries(
     log_id = logs  # handle_multiple_logs decorator handles logs, returning a single id
     api_key = _validate_api_key(api_key)
     for k, v in kwargs.items():
-        delete_log_entries(entry=k, logs=log_id, api_key=api_key)
+        delete_log_fields(field=k, logs=log_id, api_key=api_key)
     return add_log_entries(logs=log_id, api_key=api_key, **kwargs)
 
 
@@ -92,7 +92,7 @@ def rename_log_entries(
     api_key = _validate_api_key(api_key)
     data = get_log_by_id(id=log_id, api_key=api_key).entries
     for old_name in kwargs.keys():
-        delete_log_entries(entry=old_name, logs=log_id, api_key=api_key)
+        delete_log_fields(field=old_name, logs=log_id, api_key=api_key)
     new_entries = {new_name: data[old_name] for old_name, new_name in kwargs.items()}
     return add_log_entries(logs=log_id, api_key=api_key, **new_entries)
 
