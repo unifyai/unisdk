@@ -294,7 +294,38 @@ def test_with_log():
         assert logs[0].entries == {"a": "a", "b": "b", "c": "c", "g": "g"}
 
 
-# ToDo: implement test_with_log_threaded
+def test_with_log_threaded():
+    project = "my_project"
+    if project in unify.list_projects():
+        unify.delete_project(project)
+    unify.create_project(project)
+    unify.activate(project)
+
+    def fn(a, b, c, d, e, f, g):
+        with unify.Log(a=a):
+            unify.add_log_entries(b=b, c=c)
+            with unify.Log(d=d):
+                unify.add_log_entries(e=e, f=f)
+            unify.add_log_entries(g=g)
+
+    threads = [
+        threading.Thread(
+            target=fn,
+            args=[7 * i + j for j in range(7)],
+        )
+        for i in range(4)
+    ]
+    [t.start() for t in threads]
+    [t.join() for t in threads]
+
+    logs = unify.get_logs(project="my_project")
+    entries = [log.entries for log in logs]
+
+    assert sorted([sorted(d.items()) for d in entries]) == [
+        [("a", i * 7), ("b", i * 7 + 1), ("c", i * 7 + 2), ("g", i * 7 + 6)]
+        for i in range(4)
+    ] + [[("d", i * 7 + 3), ("e", i * 7 + 4), ("f", i * 7 + 5)] for i in range(4)]
+
 
 # ToDo: implement test_with_log_async
 

@@ -13,6 +13,7 @@ from .utils.compositions import *
 # ----#
 
 
+# noinspection PyShadowingBuiltins
 class Log:
 
     def __init__(
@@ -56,7 +57,7 @@ class Log:
 
     def __eq__(self, other: Union[dict, Log]) -> bool:
         if isinstance(other, dict):
-            other = Log(other["id"], **other["entries"])
+            other = Log(id=other["id"], **other["entries"])
         return self._id == other._id
 
     def __len__(self):
