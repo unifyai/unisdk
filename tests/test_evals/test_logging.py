@@ -256,8 +256,13 @@ def test_group_logs_by_params():
     ]
 
 
+# ToDo: implement test unify.add_param
+
+
 # Context Handlers #
 # -----------------#
+
+# Entries
 
 
 def test_with_entries():
@@ -286,6 +291,35 @@ def test_with_entries():
     }
     log = unify.get_logs()[0].entries
     assert expected == log
+
+
+# ToDo: implement test_with_entries_threaded
+
+# ToDo: implement test_with_entries_async
+
+# Params
+
+# ToDo: implement test_with_params
+
+# ToDo: implement test_with_params_threaded
+
+# ToDo: implement test_with_params_async
+
+# Log
+
+# ToDo: implement test_with_log
+
+# ToDo: implement test_with_log_threaded
+
+# ToDo: implement test_with_log_async
+
+# Combos
+
+# ToDo: implement test_with_all
+
+# ToDo: implement test_with_all_threaded
+
+# ToDo: implement test_with_all_async
 
 
 # Tracing #
@@ -320,7 +354,7 @@ def test_trace():
     )
 
 
-def test_threaded_trace():
+def test_trace_threaded():
     project = "my_project"
     if project in unify.list_projects():
         unify.delete_project(project)
@@ -357,7 +391,7 @@ def test_threaded_trace():
 
 
 @pytest.mark.asyncio
-async def test_async_trace():
+async def test_trace_async():
     project = "my_project"
     if project in unify.list_projects():
         unify.delete_project(project)
@@ -427,7 +461,7 @@ def test_span():
     assert log["trace"]["child_spans"][0]["child_spans"][0]["span_name"] == "deeper_fn"
 
 
-def test_threaded_span():
+def test_span_threaded():
     project = "my_project"
     if project in unify.list_projects():
         unify.delete_project(project)
@@ -475,7 +509,7 @@ def test_threaded_span():
 
 
 @pytest.mark.asyncio
-async def test_async_span():
+async def test_span_async():
     project = "my_project"
     if project in unify.list_projects():
         unify.delete_project(project)
