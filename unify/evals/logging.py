@@ -17,14 +17,19 @@ class Log:
 
     def __init__(
         self,
-        id: int,
+        *,
+        id: int = None,
         timestamp: Optional[datetime] = None,
+        project: Optional[str] = None,
+        skip_duplicates: bool = False,
         api_key: Optional[str] = None,
         parameters: Dict[str, Any] = None,
         **kwargs,
     ):
         self._id = id
         self._timestamp = timestamp
+        self._project = project
+        self._skip_duplicates = skip_duplicates
         self._entries = kwargs
         self._parameters = parameters
         self._api_key = _validate_api_key(api_key)
@@ -112,6 +117,29 @@ class Log:
         state = {**state, **entries}
         return Log(**state)
 
+    # Context #
+
+    def __enter__(self):
+        lg = unify.log(
+            project=self._project,
+            skip_duplicates=self._skip_duplicates,
+            api_key=self._api_key,
+            **self._entries,
+        )
+        self._current_global_active_log_set = False
+        current_active_log = current_global_active_log.get()
+        if current_active_log is not None:
+            self._current_global_active_log_set = True
+        else:
+            self._log_token = current_global_active_log.set(lg)
+        self._id = lg.id
+        self._timestamp = lg.timestamp
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.download()
+        if not self._current_global_active_log_set:
+            current_global_active_log.reset(self._log_token)
+
 
 class Entries:
 
@@ -143,16 +171,16 @@ class Entries:
 class trace:
 
     def __enter__(self):
-        self.current_global_active_log_already_set = False
+        self._current_global_active_log_set = False
         current_active_log = current_global_active_log.get()
         if current_active_log is not None:
-            self.current_global_active_log_already_set = True
+            self._current_global_active_log_set = True
         else:
-            self.token = current_global_active_log.set(log(skip_duplicates=False))
+            self._log_token = current_global_active_log.set(log(skip_duplicates=False))
 
     def __exit__(self, *args, **kwargs):
-        if not self.current_global_active_log_already_set:
-            current_global_active_log.reset(self.token)
+        if not self._current_global_active_log_set:
+            current_global_active_log.reset(self._log_token)
 
     def __call__(self, fn):
         @functools.wraps(fn)

@@ -262,6 +262,34 @@ def test_group_logs_by_params():
 # Context Handlers #
 # -----------------#
 
+# Log
+
+
+def test_with_log():
+    project = "my_project"
+    if project in unify.list_projects():
+        unify.delete_project(project)
+    unify.create_project(project)
+    unify.activate(project)
+
+    with unify.Log(a="a"):
+        logs = unify.get_logs()
+        assert len(logs) == 1
+        assert logs[0].entries == {"a": "a"}
+        unify.add_log_entries(b="b", c="c")
+        logs = unify.get_logs()
+        assert len(logs) == 1
+        assert logs[0].entries == {"a": "a", "b": "b", "c": "c"}
+        with unify.Log(d="d"):
+            logs = unify.get_logs()
+            assert len(logs) == 2
+            assert logs[1].entries == {"d": "d"}
+
+
+# ToDo: implement test_with_log_threaded
+
+# ToDo: implement test_with_log_async
+
 # Entries
 
 
@@ -304,14 +332,6 @@ def test_with_entries():
 # ToDo: implement test_with_params_threaded
 
 # ToDo: implement test_with_params_async
-
-# Log
-
-# ToDo: implement test_with_log
-
-# ToDo: implement test_with_log_threaded
-
-# ToDo: implement test_with_log_async
 
 # Combos
 

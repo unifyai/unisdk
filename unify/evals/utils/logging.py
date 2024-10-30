@@ -123,7 +123,7 @@ def log(
     body = {"project": project, "entries": kwargs}
     response = requests.post(BASE_URL + "/log", headers=headers, json=body)
     response.raise_for_status()
-    created_log = unify.Log(response.json(), api_key=api_key, **kwargs)
+    created_log = unify.Log(id=response.json(), api_key=api_key, **kwargs)
     if current_entries_nest_level.get() > 0:
         current_logged_logs.set(
             {
@@ -327,7 +327,7 @@ def get_log_by_id(
     }
     response = requests.get(BASE_URL + f"/log/{id}", headers=headers)
     response.raise_for_status()
-    return unify.Log(id, **response.json()["entries"])
+    return unify.Log(id=id, **response.json()["entries"])
 
 
 # noinspection PyShadowingBuiltins
