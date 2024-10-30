@@ -18,7 +18,7 @@ jobs:
     - name: Run black check
       run: poetry run black --check .
 
-  unittests:
+  pytest:
     runs-on: ubuntu-latest
     environment: unify-testing
     steps:
@@ -32,11 +32,11 @@ jobs:
         python -m pip install --upgrade pip
         pip install poetry
         poetry install --with dev
-    - name: Download cache
-      uses: actions/download-artifact@v4
-      with:
-        name: cache
-        path: .cache.json
+#    - name: Download cache
+#      uses: actions/download-artifact@v4
+#      with:
+#        name: cache
+#        path: .cache.json
     - name: Run unit tests
       run: poetry run pytest -p no:warnings -vv --cov="unify" -n 4 .
       env:
