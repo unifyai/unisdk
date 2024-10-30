@@ -98,6 +98,7 @@ class TestUnifyBasics:
         assert num0 == num1 == correct
 
 
+@pytest.mark.asyncio
 class TestAsyncUnifyBasics:
 
     async def test_invalid_api_key_raises_authentication_error(self) -> None:

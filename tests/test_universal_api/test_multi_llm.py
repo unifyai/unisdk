@@ -122,6 +122,7 @@ class TestMultiUnify:
         }
 
 
+@pytest.mark.asyncio
 class TestAsyncMultiUnify:
 
     async def test_async_generate(self):

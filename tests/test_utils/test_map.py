@@ -1,4 +1,5 @@
 import time
+import pytest
 import asyncio
 
 import unify
@@ -51,6 +52,7 @@ def evaluate_w_log(q: str):
     )
 
 
+@pytest.mark.asyncio
 async def async_evaluate(q: str):
     response = await async_client.generate(q)
     return evaluate_response(q, response)
@@ -116,6 +118,7 @@ def test_asyncio_map() -> None:
     assert serial_time > 2 * mapped_time  # at least 2x faster
 
 
+@pytest.mark.asyncio
 def test_asyncio_map_with_context() -> None:
     with ProjectHandling():
         with unify.Project("test_project"):
