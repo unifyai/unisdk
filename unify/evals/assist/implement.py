@@ -95,9 +95,7 @@ def implement(fn: callable, module_path: Optional[str] = None):
             return
         while True:
             try:
-                return importlib.reload(
-                    SourceFileLoader(module_name, full_module_path).load_module(),
-                )
+                return SourceFileLoader(module_name, full_module_path).load_module()
             except Exception as e:
                 _streamed_print(
                     "\nOops, seems like there was an error loading " "our new module.",
