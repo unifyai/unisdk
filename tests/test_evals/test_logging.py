@@ -256,6 +256,38 @@ def test_group_logs_by_params():
     ]
 
 
+# Context Handlers #
+# -----------------#
+
+
+def test_with_entries():
+    project = "my_project"
+    if project in unify.list_projects():
+        unify.delete_project(project)
+    unify.create_project(project)
+    unify.activate(project)
+
+    with unify.Entries(context="random"):
+        log = unify.log(a="a")
+        with unify.Entries(sys="sys"):
+            unify.add_log_entries(logs=log.id, q="some q", r="some r")
+        with unify.Entries(tool="tool"):
+            unify.add_log_entries(logs=log.id, t="some t", b="some b")
+
+    expected = {
+        "context": "random",
+        "a": "a",
+        "q": "some q",
+        "t": "some t",
+        "b": "some b",
+        "r": "some r",
+        "sys": "sys",
+        "tool": "tool",
+    }
+    log = unify.get_logs()[0].entries
+    assert expected == log
+
+
 # Tracing #
 # --------#
 
@@ -304,16 +336,14 @@ def test_threaded_trace():
         unify.add_log_entries(d1=data1)
         inner_fn(data2)
 
-    threads = list()
-    for i in range(8):
-        threads.append(
-            threading.Thread(target=fn1, args=(f"Thread-{i}", f"data{i}")),
+    threads = [
+        threading.Thread(
+            target=fn1,
+            args=(f"Thread-{i}", f"data{i}"),
         )
-
-    # Start the threads
+        for i in range(8)
+    ]
     [t.start() for t in threads]
-
-    # Wait for both threads to complete
     [t.join() for t in threads]
 
     logs = unify.get_logs(project="my_project")
@@ -357,38 +387,6 @@ async def test_async_trace():
     )
 
 
-# Context Handlers #
-# -----------------#
-
-
-def test_with_entries():
-    project = "my_project"
-    if project in unify.list_projects():
-        unify.delete_project(project)
-    unify.create_project(project)
-    unify.activate(project)
-
-    with unify.Entries(context="random"):
-        log = unify.log(a="a")
-        with unify.Entries(sys="sys"):
-            unify.add_log_entries(logs=log.id, q="some q", r="some r")
-        with unify.Entries(tool="tool"):
-            unify.add_log_entries(logs=log.id, t="some t", b="some b")
-
-    expected = {
-        "context": "random",
-        "a": "a",
-        "q": "some q",
-        "t": "some t",
-        "b": "some b",
-        "r": "some r",
-        "sys": "sys",
-        "tool": "tool",
-    }
-    log = unify.get_logs()[0].entries
-    assert expected == log
-
-
 # Span #
 # -----#
 
@@ -429,7 +427,52 @@ def test_span():
     assert log["trace"]["child_spans"][0]["child_spans"][0]["span_name"] == "deeper_fn"
 
 
-# ToDo: add threaded test
+def test_threaded_span():
+    project = "my_project"
+    if project in unify.list_projects():
+        unify.delete_project(project)
+    unify.create_project(project)
+    unify.activate(project)
+
+    @unify.span()
+    def deeper_fn():
+        time.sleep(1)
+        return 3
+
+    @unify.span()
+    def inner_fn():
+        time.sleep(1)
+        deeper_fn()
+        return 2
+
+    @unify.span()
+    def some_func(st):
+        time.sleep(st)
+        inner_fn()
+        inner_fn()
+        return 1
+
+    threads = [
+        threading.Thread(
+            target=some_func,
+            args=[i / 100],
+        )
+        for i in range(8)
+    ]
+    [t.start() for t in threads]
+    [t.join() for t in threads]
+
+    logs = unify.get_logs(project="my_project")
+
+    for i, log in enumerate(logs):
+        trace = log.entries["trace"]
+        assert trace["inputs"] == {"st": i / 100}
+        assert trace["span_name"] == "some_func"
+        assert len(trace["child_spans"]) == 2
+        assert trace["child_spans"][0]["span_name"] == "inner_fn"
+        assert len(trace["child_spans"][0]["child_spans"]) == 1
+        assert trace["child_spans"][0]["child_spans"][0]["span_name"] == "deeper_fn"
+
 
 # ToDo: add async test
 
