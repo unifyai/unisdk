@@ -474,7 +474,44 @@ def test_threaded_span():
         assert trace["child_spans"][0]["child_spans"][0]["span_name"] == "deeper_fn"
 
 
-# ToDo: add async test
+@pytest.mark.asyncio
+async def test_async_span():
+    project = "my_project"
+    if project in unify.list_projects():
+        unify.delete_project(project)
+    unify.create_project(project)
+    unify.activate(project)
+
+    @unify.span()
+    async def deeper_fn():
+        time.sleep(1)
+        return 3
+
+    @unify.span()
+    async def inner_fn():
+        time.sleep(1)
+        await deeper_fn()
+        return 2
+
+    @unify.span()
+    async def some_func(st):
+        time.sleep(st)
+        await inner_fn()
+        await inner_fn()
+        return 1
+
+    await asyncio.gather(*[some_func(i / 100) for i in range(8)])
+
+    logs = unify.get_logs(project="my_project")
+
+    for i, log in enumerate(logs):
+        trace = log.entries["trace"]
+        assert trace["inputs"] == {"st": i / 100}
+        assert trace["span_name"] == "some_func"
+        assert len(trace["child_spans"]) == 2
+        assert trace["child_spans"][0]["span_name"] == "inner_fn"
+        assert len(trace["child_spans"][0]["child_spans"]) == 1
+        assert trace["child_spans"][0]["child_spans"][0]["span_name"] == "deeper_fn"
 
 
 if __name__ == "__main__":
