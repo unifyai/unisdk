@@ -10,11 +10,19 @@ class CustomAPIKeyHandler:
         self._new_name = nw_name
 
     def _handle(self):
+        # should work even if list_custom_api_keys does not
         for name in (self._key_name, self._new_name):
             try:
                 unify.delete_custom_api_key(name)
             except:
                 pass
+        # should if other keys have wrongly been created
+        try:
+            custom_keys = unify.list_custom_api_keys()
+            for name, val in custom_keys:
+                unify.delete_custom_api_key(name)
+        except:
+            pass
 
     def __enter__(self):
         self._handle()
