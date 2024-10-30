@@ -252,29 +252,30 @@ class TestLogging(unittest.TestCase):
         unify.create_project(project)
         unify.activate(project)
 
-        def inner_fn(data, st):
-            time.sleep(st)
+        def inner_fn(data):
             unify.add_log_entries(d2=data)
 
         @unify.trace()
-        def fn1(data1, data2, st):
+        def fn1(data1, data2):
+            time.sleep(0.1)
             unify.add_log_entries(d1=data1)
-            inner_fn(data2, st)
+            inner_fn(data2)
 
-        thread1 = threading.Thread(target=fn1, args=("Thread-1", "data1", 1))
-        thread2 = threading.Thread(target=fn1, args=("Thread-2", "data2", 2))
+        threads = list()
+        for i in range(8):
+            threads.append(
+                threading.Thread(target=fn1, args=(f"Thread-{i}", f"data{i}")),
+            )
 
         # Start the threads
-        thread1.start()
-        thread2.start()
+        [t.start() for t in threads]
 
         # Wait for both threads to complete
-        thread1.join()
-        thread2.join()
+        [t.join() for t in threads]
 
         logs = unify.get_logs(project="my_project")
         list1 = [log.entries for log in logs]
-        list2 = [{"d1": "Thread-1", "d2": "data1"}, {"d1": "Thread-2", "d2": "data2"}]
+        list2 = [{"d1": f"Thread-{i}", "d2": f"data{i}"} for i in range(len(threads))]
 
         # Sort each dictionary by keys and then sort the list
         assert sorted([sorted(d.items()) for d in list1]) == sorted(
