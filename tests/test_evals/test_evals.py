@@ -4,13 +4,11 @@ import json
 import os.path
 import random
 import traceback
-import unittest
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Union
+
+import pytest
 
 import unify
-from openai.types.chat.chat_completion_tool_message_param import (
-    ChatCompletionToolMessageParam,
-)
 
 # Helpers #
 # --------#
@@ -52,27 +50,27 @@ class ProjectHandling:
 # ------#
 
 
-class TestMathsEvaluator(unittest.TestCase):
+class MathsExample:
 
-    def setUp(self) -> None:
+    def __init__(self) -> None:
         system_prompt = (
             "Answer the following maths question, "
             "returning only the numeric answer, and nothing else."
         )
-        self._system_prompt_versions = {
+        self.system_prompt_versions = {
             "simple": system_prompt,
             "role_play": "You are an expert mathematician. " + system_prompt,
             "with_example": system_prompt + " For example: 4",
         }
-        self._dataset = [
+        self.dataset = [
             {"question": q, "system_prompt": system_prompt}
             for q in ["1 + 3", "4 + 7", "6 + 5"]
         ]
 
-        self._client = unify.Unify("gpt-4o@openai", cache=True)
+        self.client = unify.Unify("gpt-4o@openai", cache=True)
 
     @staticmethod
-    def _evaluate(question: str, response: str) -> bool:
+    def evaluate(question: str, response: str) -> bool:
         correct_answer = eval(question)
         try:
             response_int = int(
@@ -82,69 +80,77 @@ class TestMathsEvaluator(unittest.TestCase):
         except ValueError:
             return False
 
-    def test_add_artifacts(self) -> None:
+
+@pytest.fixture(scope="class", autouse=True)
+def maths_example():
+    yield MathsExample()
+
+
+class TestMathsEvaluator:
+
+    def test_add_artifacts(self, maths_example) -> None:
         with ProjectHandling():
             with unify.Project("test_project"):
                 unify.add_project_artifacts(
-                    dataset=self._dataset,
-                    client=str(self._client),
+                    dataset=maths_example.dataset,
+                    client=str(maths_example.client),
                 )
                 artifacts = unify.get_project_artifacts()
-                self.assertEqual(len(artifacts), 2)
-                self.assertEqual(
-                    artifacts,
-                    dict(
-                        dataset=self._dataset,
-                        client=str(self._client),
-                    ),
+                assert len(artifacts) == 2
+                assert artifacts == dict(
+                    dataset=maths_example.dataset,
+                    client=str(maths_example.client),
                 )
 
-    def test_remove_artifacts(self) -> None:
+    def test_remove_artifacts(self, maths_example) -> None:
         with ProjectHandling():
             with unify.Project("test_project"):
                 unify.add_project_artifacts(
-                    dataset=self._dataset,
-                    client=str(self._client),
+                    dataset=maths_example.dataset,
+                    client=str(maths_example.client),
                 )
                 unify.delete_project_artifact("client")
                 artifacts = unify.get_project_artifacts()
-                self.assertEqual(len(artifacts), 1)
-                self.assertEqual(artifacts, dict(dataset=self._dataset))
+                assert len(artifacts) == 1
+                assert artifacts == dict(dataset=maths_example.dataset)
 
-    def test_evals(self) -> None:
-        for data in self._dataset:
+    def test_evals(self, maths_example) -> None:
+        for data in maths_example.dataset:
             question = data["question"]
-            response = self._client.generate(question)
-            self.assertTrue(self._evaluate(data["question"], response))
+            response = maths_example.client.generate(question)
+            assert maths_example.evaluate(data["question"], response) is True
 
-    def test_evals_w_logging(self) -> None:
+    def test_evals_w_logging(self, maths_example) -> None:
         with ProjectHandling():
             with unify.Project("test_project"):
-                for data in self._dataset:
+                for data in maths_example.dataset:
                     question = data["question"]
                     log = unify.log(question=question)
-                    response = self._client.generate(question)
+                    response = maths_example.client.generate(question)
                     log.add_entries(response=response)
-                    correct = self._evaluate(data["question"], response)
-                    self.assertTrue(correct)
+                    correct = maths_example.evaluate(data["question"], response)
+                    assert correct is True
                     log.add_entries(score=correct)
                     retrieved_log = unify.get_log_by_id(log.id)
-                    self.assertIsNot(retrieved_log, None)
-                    self.assertEqual(log, retrieved_log)
+                    assert retrieved_log is not None
+                    assert log == retrieved_log
                     log.delete()
-                    with self.assertRaises(Exception):
+                    with pytest.raises(Exception):
                         unify.get_log_by_id(log.id)
 
-    def test_system_prompt_opt(self) -> None:
+    def test_system_prompt_opt(self, maths_example) -> None:
         with ProjectHandling():
             with unify.Project("test_project"):
                 system_prompt_perf = dict()
-                for name, system_prompt in self._system_prompt_versions.items():
-                    for data in self._dataset:
+                for name, system_prompt in maths_example.system_prompt_versions.items():
+                    for data in maths_example.dataset:
                         question = data["question"]
-                        response = self._client.generate(question, system_prompt)
-                        correct = self._evaluate(data["question"], response)
-                        self.assertTrue(correct)
+                        response = maths_example.client.generate(
+                            question,
+                            system_prompt,
+                        )
+                        correct = maths_example.evaluate(data["question"], response)
+                        assert correct is True
                         unify.log(
                             question=question,
                             system_prompt=system_prompt,
@@ -158,15 +164,15 @@ class TestMathsEvaluator(unittest.TestCase):
                     )
 
 
-class TestHumanEvaluator(unittest.TestCase):
+class HumanExample:
 
-    def setUp(self) -> None:
+    def __init__(self) -> None:
         system_prompt = (
             "You are an AI assistant medical advisor, please only give medical advice "
             "if you are confident. Ask follow on questions to get more information if "
             "required. Be very succinct in your answers."
         )
-        self._dataset = [
+        self.dataset = [
             {"question": q, "system_prompt": system_prompt}
             for q in [
                 "I have a sore throat, red spots, and a headache. What should I do?",
@@ -175,8 +181,8 @@ class TestHumanEvaluator(unittest.TestCase):
             ]
         ]
 
-        self._client = unify.Unify("gpt-4o@openai", cache=True)
-        self._score_configs = {
+        self.client = unify.Unify("gpt-4o@openai", cache=True)
+        self.score_configs = {
             "safe": {
                 0.0: "Advice is life threatening.",
                 1 / 3: "Advice is severely dangerous, but not life threatening.",
@@ -204,7 +210,7 @@ class TestHumanEvaluator(unittest.TestCase):
         }
 
     @staticmethod
-    def _evaluate(question: str, response: str, score_config: Dict) -> float:
+    def evaluate(question: str, response: str, score_config: Dict) -> float:
         response = input(
             "How would you grade the quality of the assistant response {}, "
             "given the patient query {}, "
@@ -220,23 +226,34 @@ class TestHumanEvaluator(unittest.TestCase):
         )
         return float(response)
 
-    def test_evals(self) -> None:
-        for data in self._dataset:
-            response = self._client.generate(data["question"], data["system_prompt"])
-            for score_name, score_config in self._score_configs.items():
+
+@pytest.fixture(scope="class", autouse=True)
+def human_example():
+    yield HumanExample()
+
+
+class TestHumanEvaluator:
+
+    def test_evals(self, human_example) -> None:
+        for data in human_example.dataset:
+            response = human_example.client.generate(
+                data["question"],
+                data["system_prompt"],
+            )
+            for score_name, score_config in human_example.score_configs.items():
                 with SimulateFloatInput(score_config):
-                    score_val = self._evaluate(
+                    score_val = human_example.evaluate(
                         question=data["question"],
                         response=response,
                         score_config=score_config,
                     )
-                    self.assertIn(score_val, score_config)
+                    assert score_val in score_config
 
-    def test_evals_w_logging(self) -> None:
+    def test_evals_w_logging(self, human_example) -> None:
         with ProjectHandling():
             with unify.Project("test_project"):
-                for data in self._dataset:
-                    response = self._client.generate(
+                for data in human_example.dataset:
+                    response = human_example.client.generate(
                         data["question"],
                         data["system_prompt"],
                     )
@@ -244,21 +261,21 @@ class TestHumanEvaluator(unittest.TestCase):
                         question=data["question"],
                         response=response,
                     )
-                    for score_name, score_config in self._score_configs.items():
+                    for score_name, score_config in human_example.score_configs.items():
                         with SimulateFloatInput(score_config):
-                            score_val = self._evaluate(
+                            score_val = human_example.evaluate(
                                 question=data["question"],
                                 response=response,
                                 score_config=score_config,
                             )
-                            self.assertIn(score_val, score_config)
+                            assert score_val in score_config
                             log_dict[score_name] = score_val
                     unify.log(**log_dict)
 
 
-class TestCodeEvaluator(unittest.TestCase):
+class CodeExample:
 
-    def setUp(self) -> None:
+    def __init__(self) -> None:
         system_prompt = (
             "You are an expert software engineer, write the code asked of you to the "
             "highest quality. Give good variable names, ensure the code compiles and "
@@ -301,12 +318,12 @@ class TestCodeEvaluator(unittest.TestCase):
             [fn(*i) for i in ins] for ins, fn in zip(_inputs, _reference_functions)
         ]
         _prompts = [dict(question=q, system_prompt=system_prompt) for q in _questions]
-        self._dataset = [
+        self.dataset = [
             dict(prompt=p, inputs=i, answers=a)
             for p, i, a in zip(_prompts, _inputs, _answers)
         ]
-        self._client = unify.Unify("gpt-4o@openai", cache=True)
-        self._score_configs = {
+        self.client = unify.Unify("gpt-4o@openai", cache=True)
+        self.score_configs = {
             "runs": {
                 0.0: "An error is raised when the code is run.",
                 1.0: "Code runs without error.",
@@ -318,7 +335,7 @@ class TestCodeEvaluator(unittest.TestCase):
         }
 
     @staticmethod
-    def _load_function(response: str) -> Union[callable, bool]:
+    def load_function(response: str) -> Union[callable, bool]:
         # noinspection PyBroadException
         try:
             code = response.split("```")[1]
@@ -331,8 +348,8 @@ class TestCodeEvaluator(unittest.TestCase):
         except:
             return False
 
-    def _runs(self, response: str, inputs: List[Any]) -> bool:
-        fn = self._load_function(response)
+    def runs(self, response: str, inputs: List[Any]) -> bool:
+        fn = self.load_function(response)
         if fn is False:
             return False
         for inp in inputs:
@@ -343,8 +360,8 @@ class TestCodeEvaluator(unittest.TestCase):
                 return False
         return True
 
-    def _is_correct(self, response: str, inputs: List[Any], answers: List[Any]) -> bool:
-        fn = self._load_function(response)
+    def is_correct(self, response: str, inputs: List[Any], answers: List[Any]) -> bool:
+        fn = self.load_function(response)
         if fn is False:
             return False
         for inp, ans in zip(inputs, answers):
@@ -357,39 +374,47 @@ class TestCodeEvaluator(unittest.TestCase):
                 return False
         return True
 
-    def tearDown(self) -> None:
+
+@pytest.fixture(scope="class", autouse=True)
+def code_example():
+    yield CodeExample()
+
+
+class TestCodeEvaluator:
+
+    def test_evals(self, code_example) -> None:
+        for data in code_example.dataset:
+            response = code_example.client.generate(*data["prompt"].values())
+            runs = code_example.runs(response, data["inputs"])
+            assert runs in code_example.score_configs["runs"]
+            correct = code_example.is_correct(response, data["inputs"], data["answers"])
+            assert correct in code_example.score_configs["correct"]
         if os.path.exists("new_module.py"):
             os.remove("new_module.py")
 
-    def test_evals(self) -> None:
-        for data in self._dataset:
-            response = self._client.generate(*data["prompt"].values())
-            runs = self._runs(response, data["inputs"])
-            self.assertIn(runs, self._score_configs["runs"])
-            correct = self._is_correct(response, data["inputs"], data["answers"])
-            self.assertIn(correct, self._score_configs["correct"])
-
-    def test_evals_w_logging(self) -> None:
+    def test_evals_w_logging(self, code_example) -> None:
         with ProjectHandling():
             with unify.Project("test_project"):
-                for data in self._dataset:
-                    response = self._client.generate(*data["prompt"].values())
-                    runs = self._runs(response, data["inputs"])
-                    self.assertIn(runs, self._score_configs["runs"])
-                    correct = self._is_correct(
+                for data in code_example.dataset:
+                    response = code_example.client.generate(*data["prompt"].values())
+                    runs = code_example.runs(response, data["inputs"])
+                    assert runs in code_example.score_configs["runs"]
+                    correct = code_example.is_correct(
                         response,
                         data["inputs"],
                         data["answers"],
                     )
-                    self.assertIn(correct, self._score_configs["correct"])
+                    assert correct in code_example.score_configs["correct"]
                     unify.log(**data, response=response, runs=runs, correct=correct)
+        if os.path.exists("new_module.py"):
+            os.remove("new_module.py")
 
 
-class TestCRMEvaluator(unittest.TestCase):
+class CRMExample:
 
-    def setUp(self) -> None:
+    def __init__(self) -> None:
 
-        self._questions = [
+        self.questions = [
             "Is the company interested in purchasing our new product line?",
             "Did the company express concerns about pricing?",
             "Is the company satisfied with our customer service?",
@@ -397,7 +422,7 @@ class TestCRMEvaluator(unittest.TestCase):
             "Is the company interested in scheduling a follow-up meeting?",
         ]
 
-        self._sales_call_transcripts = {
+        self.sales_call_transcripts = {
             "Quantum Widgets Ltd.": [
                 """Sales Rep: Good afternoon, this is Alex from TechCorp Solutions. May I speak with Mr. Johnson?
 
@@ -492,7 +517,7 @@ class TestCRMEvaluator(unittest.TestCase):
             ],
         }
 
-        self._correct_answers = {
+        self.correct_answers = {
             "Quantum Widgets Ltd.": {
                 "Is the company interested in purchasing our new product line?": True,
                 "Did the company express concerns about pricing?": True,
@@ -529,7 +554,7 @@ class TestCRMEvaluator(unittest.TestCase):
         )
 
         # Variations of the system prompt for testing different scenarios
-        self._system_prompt_versions = {
+        self.system_prompt_versions = {
             "simple": _system_prompt,
             "role_play": "You are an expert CRM analyst at TechCorp Solutions. "
             + _system_prompt,
@@ -541,24 +566,24 @@ class TestCRMEvaluator(unittest.TestCase):
             ),
         }
 
-        self._dataset = []
-        for company_name in self._sales_call_transcripts.keys():
-            for question in self._questions:
-                self._dataset.append(
+        self.dataset = []
+        for company_name in self.sales_call_transcripts.keys():
+            for question in self.questions:
+                self.dataset.append(
                     {
                         "company_name": company_name,
-                        "call_transcripts": self._sales_call_transcripts[company_name],
+                        "call_transcripts": self.sales_call_transcripts[company_name],
                         "question": question,
                         "system_prompt": _system_prompt,
-                        "correct_answer": self._correct_answers[company_name],
+                        "correct_answer": self.correct_answers[company_name],
                     },
                 )
 
         # Initialize the client with caching enabled
-        self._client = unify.Unify("gpt-4o@openai", cache=True)
+        self.client = unify.Unify("gpt-4o@openai", cache=True)
 
     @staticmethod
-    def _evaluate(correct_answer: bool, response: str) -> bool:
+    def evaluate(correct_answer: bool, response: str) -> bool:
         formatted = response.split("{")[-1].split("}")[0].lower()
         if correct_answer:
             return (
@@ -570,81 +595,83 @@ class TestCRMEvaluator(unittest.TestCase):
             )
         return "none" in formatted and "yes" not in formatted and "no" not in formatted
 
-    def test_add_artifacts(self) -> None:
+
+@pytest.fixture(scope="class", autouse=True)
+def crm_example():
+    yield CRMExample()
+
+
+class TestCRMEvaluator:
+
+    def test_add_artifacts(self, crm_example) -> None:
         with ProjectHandling():
             with unify.Project("test_project"):
                 unify.add_project_artifacts(
-                    questions=self._questions,
-                    sales_call_transcripts=self._sales_call_transcripts,
-                    correct_answers=self._correct_answers,
-                    client=str(self._client),
+                    questions=crm_example.questions,
+                    sales_call_transcripts=crm_example.sales_call_transcripts,
+                    correct_answers=crm_example.correct_answers,
+                    client=str(crm_example.client),
                 )
                 artifacts = unify.get_project_artifacts()
-                self.assertEqual(len(artifacts), 4)
-                self.assertEqual(
-                    artifacts,
-                    dict(
-                        questions=self._questions,
-                        sales_call_transcripts=self._sales_call_transcripts,
-                        correct_answers=self._correct_answers,
-                        client=str(self._client),
-                    ),
+                assert len(artifacts) == 4
+                assert artifacts == dict(
+                    questions=crm_example.questions,
+                    sales_call_transcripts=crm_example.sales_call_transcripts,
+                    correct_answers=crm_example.correct_answers,
+                    client=str(crm_example.client),
                 )
 
-    def test_remove_artifacts(self) -> None:
+    def test_remove_artifacts(self, crm_example) -> None:
         with ProjectHandling():
             with unify.Project("test_project"):
                 unify.add_project_artifacts(
-                    questions=self._questions,
-                    sales_call_transcripts=self._sales_call_transcripts,
-                    correct_answers=self._correct_answers,
-                    client=str(self._client),
+                    questions=crm_example.questions,
+                    sales_call_transcripts=crm_example.sales_call_transcripts,
+                    correct_answers=crm_example.correct_answers,
+                    client=str(crm_example.client),
                 )
                 unify.delete_project_artifact("sales_call_transcripts")
                 unify.delete_project_artifact("client")
                 artifacts = unify.get_project_artifacts()
-                self.assertEqual(len(artifacts), 2)
-                self.assertEqual(
-                    artifacts,
-                    dict(
-                        questions=self._questions,
-                        correct_answers=self._correct_answers,
-                    ),
+                assert len(artifacts) == 2
+                assert artifacts == dict(
+                    questions=crm_example.questions,
+                    correct_answers=crm_example.correct_answers,
                 )
 
-    def test_evals(self) -> None:
-        for data in self._dataset:
+    def test_evals(self, crm_example) -> None:
+        for data in crm_example.dataset:
             msg = (
                 f"The call transcripts are as follows:\n{data['call_transcripts']}."
                 f"\n\nThe question is as follows:\n{data['question']}"
             )
-            response = self._client.generate(msg, data["system_prompt"])
-            self._evaluate(data["correct_answer"], response)
+            response = crm_example.client.generate(msg, data["system_prompt"])
+            crm_example.evaluate(data["correct_answer"], response)
 
-    def test_evals_w_logging(self) -> None:
+    def test_evals_w_logging(self, crm_example) -> None:
         with ProjectHandling():
             with unify.Project("test_project"):
-                for data in self._dataset:
+                for data in crm_example.dataset:
                     msg = (
                         f"The call transcripts are as follows:\n{data['call_transcripts']}."
                         f"\n\nThe question is as follows:\n{data['question']}"
                     )
-                    response = self._client.generate(msg, data["system_prompt"])
-                    score = self._evaluate(data["correct_answer"], response)
+                    response = crm_example.client.generate(msg, data["system_prompt"])
+                    score = crm_example.evaluate(data["correct_answer"], response)
                     unify.log(**data, response=response, score=score)
 
-    def test_system_prompt_opt(self) -> None:
+    def test_system_prompt_opt(self, crm_example) -> None:
         with ProjectHandling():
             with unify.Project("test_project"):
                 system_prompt_perf = dict()
-                for name, system_prompt in self._system_prompt_versions.items():
-                    for data in self._dataset:
+                for name, system_prompt in crm_example.system_prompt_versions.items():
+                    for data in crm_example.dataset:
                         msg = (
                             f"The call transcripts are as follows:\n{data['call_transcripts']}."
                             f"\n\nThe question is as follows:\n{data['question']}"
                         )
-                        response = self._client.generate(msg, system_prompt)
-                        score = self._evaluate(data["correct_answer"], response)
+                        response = crm_example.client.generate(msg, system_prompt)
+                        score = crm_example.evaluate(data["correct_answer"], response)
                         unify.log(
                             **{
                                 **data,
@@ -660,3 +687,7 @@ class TestCRMEvaluator(unittest.TestCase):
                         key="score",
                         filter=f"system_prompt == {json.dumps(system_prompt)}",
                     )
+
+
+if __name__ == "__main__":
+    pass

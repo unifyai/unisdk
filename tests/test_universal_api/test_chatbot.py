@@ -1,7 +1,5 @@
 import builtins
-import os
 import traceback
-import unittest
 
 from unify import ChatBot, MultiUnify, Unify
 
@@ -36,23 +34,16 @@ class SimulateInput:
         return True
 
 
-class TestChatbotUniLLM(unittest.TestCase):
-    def setUp(self) -> None:
-        self.valid_api_key = os.environ.get("UNIFY_KEY")
-
-    # Basic #
-    # ------#
+class TestChatbotUniLLM:
 
     def test_constructor(self) -> None:
         client = Unify(
-            api_key=self.valid_api_key,
             endpoint="llama-3-8b-chat@together-ai",
         )
         ChatBot(client)
 
     def test_simple_non_stream_chat_n_quit(self):
         client = Unify(
-            api_key=self.valid_api_key,
             endpoint="llama-3-8b-chat@together-ai",
         )
         chatbot = ChatBot(client)
@@ -61,7 +52,6 @@ class TestChatbotUniLLM(unittest.TestCase):
 
     def test_simple_stream_chat_n_quit(self):
         client = Unify(
-            api_key=self.valid_api_key,
             endpoint="llama-3-8b-chat@together-ai",
             stream=True,
         )
@@ -70,23 +60,16 @@ class TestChatbotUniLLM(unittest.TestCase):
             chatbot.run()
 
 
-class TestChatbotMultiUnify(unittest.TestCase):
-    def setUp(self) -> None:
-        self.valid_api_key = os.environ.get("UNIFY_KEY")
-
-    # Basic #
-    # ------#
+class TestChatbotMultiUnify:
 
     def test_constructor(self) -> None:
         client = MultiUnify(
-            api_key=self.valid_api_key,
             endpoints=["llama-3-8b-chat@together-ai", "gpt-4o@openai"],
         )
         ChatBot(client)
 
     def test_simple_non_stream_chat_n_quit(self):
         client = MultiUnify(
-            api_key=self.valid_api_key,
             endpoints=["llama-3-8b-chat@together-ai", "gpt-4o@openai"],
         )
         chatbot = ChatBot(client)
@@ -95,4 +78,4 @@ class TestChatbotMultiUnify(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()
+    pass

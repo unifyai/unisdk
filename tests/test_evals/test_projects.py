@@ -1,49 +1,55 @@
-import unittest
+import pytest
 
 import unify
 
 
-class TestProjectScope(unittest.TestCase):
+def test_set_project():
+    unify.deactivate()
+    assert unify.active_project is None
+    unify.activate("my_project")
+    assert unify.active_project == "my_project"
+    unify.deactivate()
 
-    def test_set_project(self):
-        unify.deactivate()
-        self.assertIs(unify.active_project, None)
-        unify.activate("my_project")
-        self.assertEqual(unify.active_project, "my_project")
-        unify.deactivate()
 
-    def test_unset_project(self):
-        unify.deactivate()
-        self.assertIs(unify.active_project, None)
-        unify.activate("my_project")
-        self.assertEqual(unify.active_project, "my_project")
-        unify.deactivate()
-        self.assertIs(unify.active_project, None)
+def test_unset_project():
+    unify.deactivate()
+    assert unify.active_project is None
+    unify.activate("my_project")
+    assert unify.active_project == "my_project"
+    unify.deactivate()
+    assert unify.active_project is None
 
-    def test_with_project(self):
-        unify.deactivate()
-        self.assertIs(unify.active_project, None)
-        with unify.Project("my_project"):
-            self.assertEqual(unify.active_project, "my_project")
-        self.assertIs(unify.active_project, None)
 
-    def test_set_project_then_log(self):
-        unify.deactivate()
-        self.assertIs(unify.active_project, None)
-        unify.activate("my_project")
-        self.assertEqual(unify.active_project, "my_project")
+def test_with_project():
+    unify.deactivate()
+    assert unify.active_project is None
+    with unify.Project("my_project"):
+        assert unify.active_project == "my_project"
+    assert unify.active_project is None
+
+
+def test_set_project_then_log():
+    unify.deactivate()
+    assert unify.active_project is None
+    unify.activate("my_project")
+    assert unify.active_project == "my_project"
+    unify.log(key=1.0)
+    unify.deactivate()
+    assert unify.active_project is None
+    with pytest.raises(Exception):
         unify.log(key=1.0)
-        unify.deactivate()
-        self.assertIs(unify.active_project, None)
-        with self.assertRaises(Exception):
-            unify.log(key=1.0)
 
-    def test_with_project_then_log(self):
-        unify.deactivate()
-        self.assertIs(unify.active_project, None)
-        with unify.Project("my_project"):
-            self.assertEqual(unify.active_project, "my_project")
-            unify.log(key=1.0)
-        self.assertIs(unify.active_project, None)
-        with self.assertRaises(Exception):
-            unify.log(key=1.0)
+
+def test_with_project_then_log():
+    unify.deactivate()
+    assert unify.active_project is None
+    with unify.Project("my_project"):
+        assert unify.active_project == "my_project"
+        unify.log(key=1.0)
+    assert unify.active_project is None
+    with pytest.raises(Exception):
+        unify.log(key=1.0)
+
+
+if __name__ == "__main__":
+    pass

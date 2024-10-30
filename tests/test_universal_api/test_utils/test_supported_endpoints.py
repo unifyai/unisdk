@@ -1,12 +1,9 @@
-import unittest
+import pytest
 
 import unify
 
 
-class TestSupportedModels(unittest.TestCase):
-
-    def setUp(self):
-        self._all_endpoints = unify.list_endpoints()
+class TestSupportedModels:
 
     def test_list_models(self) -> None:
         models = unify.list_models()
@@ -27,16 +24,15 @@ class TestSupportedModels(unittest.TestCase):
         assert len(models) == len(set(models)), "duplication detected: {}".format(
             models,
         )  # no duplication
-        assert len(models) == len([e for e in self._all_endpoints if "openai" in e]), (
+        assert len(models) == len(
+            [e for e in unify.list_endpoints() if "openai" in e],
+        ), (
             "number of models for the provider did not match the number of endpoints "
             "with the provider in the string"
         )
 
 
-class TestSupportedProviders(unittest.TestCase):
-
-    def setUp(self):
-        self._all_endpoints = unify.list_endpoints()
+class TestSupportedProviders:
 
     def test_list_providers(self) -> None:
         providers = unify.list_providers()
@@ -58,17 +54,14 @@ class TestSupportedProviders(unittest.TestCase):
             providers,
         )  # no duplication
         assert len(providers) == len(
-            [e for e in self._all_endpoints if "llama-3.2-90b-chat" in e],
+            [e for e in unify.list_endpoints() if "llama-3.2-90b-chat" in e],
         ), (
             "number of providers for the model did not match the number of endpoints "
             "with the model in the string"
         )
 
 
-class TestSupportedEndpoints(unittest.TestCase):
-
-    def setUp(self):
-        self._all_endpoints = unify.list_endpoints()
+class TestSupportedEndpoints:
 
     def test_list_endpoints(self) -> None:
         endpoints = unify.list_endpoints()
@@ -109,5 +102,9 @@ class TestSupportedEndpoints(unittest.TestCase):
         )
 
     def test_list_endpoints_w_model_w_provider(self) -> None:
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             unify.list_endpoints("gpt-4o", "openai")
+
+
+if __name__ == "__main__":
+    pass

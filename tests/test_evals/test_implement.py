@@ -3,7 +3,6 @@ import builtins
 import traceback
 
 import unify
-import unittest
 
 
 class ImplementHandler:
@@ -53,29 +52,32 @@ class SimulateInput:
         return True
 
 
-class TestZeroShotImplement(unittest.TestCase):
+@unify.implement
+def add_two_numbers(x: int, y: int):
+    """
+    Add two integers together.
 
-    @staticmethod
-    @unify.implement
-    def add_two_numbers(x: int, y: int):
-        """
-        Add two integers together.
+    Args:
+        x: First integer to add.
+        y: Second integer to add.
 
-        Args:
-            x: First integer to add.
-            y: Second integer to add.
+    Returns:
+        The sum of the two integers.
+    """
+    pass
 
-        Returns:
-            The sum of the two integers.
-        """
-        pass
 
-    def test_implement_non_interactive(self):
-        with ImplementHandler(), unify.Interactive(False):
-            assert self.add_two_numbers(1, 1) == 2
+def test_implement_non_interactive():
+    with ImplementHandler(), unify.Interactive(False):
+        assert add_two_numbers(1, 1) == 2
 
-    def test_implement_interactive(self):
-        simulate_input = SimulateInput()
-        with ImplementHandler(), unify.Interactive(True), simulate_input:
-            assert self.add_two_numbers(1, 1) == 2
-            assert simulate_input.num_interactions == 3
+
+def test_implement_interactive():
+    simulate_input = SimulateInput()
+    with ImplementHandler(), unify.Interactive(True), simulate_input:
+        assert add_two_numbers(1, 1) == 2
+        assert simulate_input.num_interactions == 3
+
+
+if __name__ == "__main__":
+    pass

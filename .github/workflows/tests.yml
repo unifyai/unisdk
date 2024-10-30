@@ -38,7 +38,7 @@ jobs:
         name: cache
         path: .cache.json
     - name: Run unit tests
-      run: poetry run python -m unittest discover
+      run: poetry run pytest -p no:warnings -vv --cov="unify" -n 4 .
       env:
         UNIFY_KEY: ${{ secrets.USER_API_KEY }}
     - name: Upload cache
