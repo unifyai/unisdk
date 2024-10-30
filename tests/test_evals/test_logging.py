@@ -356,20 +356,22 @@ class TestAsyncLogging(unittest.IsolatedAsyncioTestCase):
         unify.create_project(project)
         unify.activate(project)
 
-        async def inner_fn(data, st):
-            await asyncio.sleep(st)
+        async def inner_fn(data):
             unify.add_log_entries(d2=data)
 
         @unify.trace()
-        async def fn1(data1, data2, st):
+        async def fn1(data1, data2):
+            await asyncio.sleep(0.1)
             unify.add_log_entries(d1=data1)
-            await inner_fn(data2, st)
+            await inner_fn(data2)
 
-        await asyncio.gather(fn1("Task-1", "data1", 1), fn1("Task-2", "data2", 2))
+        fns = [fn1(f"Task-{i}", f"data{i}") for i in range(8)]
+
+        await asyncio.gather(*fns)
 
         logs = unify.get_logs(project="my_project")
         list1 = [log.entries for log in logs]
-        list2 = [{"d1": "Task-1", "d2": "data1"}, {"d1": "Task-2", "d2": "data2"}]
+        list2 = [{"d1": f"Task-{i}", "d2": f"data{i}"} for i in range(len(fns))]
 
         # Sort each dictionary by keys and then sort the list
         assert sorted([sorted(d.items()) for d in list1]) == sorted(
