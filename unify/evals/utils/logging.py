@@ -8,20 +8,20 @@ import unify
 from unify import BASE_URL
 from ...utils.helpers import _validate_api_key, _get_and_maybe_create_project
 
-# trace
-current_global_active_log = ContextVar("current_global_active_log", default=None)
+# log
+ACTIVE_LOG = ContextVar("active_log", default=None)
 
-# Context
-current_global_active_log_entries = ContextVar(
-    "current_global_active_kwargs",
+# entries
+ACTIVE_ENTRIES = ContextVar(
+    "active_entries",
     default={},
 )
-current_logged_logs = ContextVar("current_logged_logs_ids", default={})
-current_entries_nest_level = ContextVar("current_context_nest_level", default=0)
+LOGGED = ContextVar("logged", default={})
+ENTRIES_NEST_LEVEL = ContextVar("entries_nest_level", default=0)
 
 # span
-current_span = ContextVar("current_span", default={})
-running_time = ContextVar("running_time", default=0.0)
+SPAN = ContextVar("span", default={})
+RUNNING_TIME = ContextVar("running_time", default=0.0)
 
 
 def _handle_special_types(
@@ -43,7 +43,7 @@ def _to_log_ids(
     logs: Optional[Union[int, unify.Log, List[Union[int, unify.Log]]]] = None,
 ):
     if logs is None:
-        current_active_log: Optional[unify.Log] = current_global_active_log.get()
+        current_active_log: Optional[unify.Log] = ACTIVE_LOG.get()
         if current_active_log is None:
             raise Exception(
                 "If logs is unspecified, then current_global_active_log must be.",
@@ -104,7 +104,7 @@ def log(
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    kwargs = {**kwargs, **current_global_active_log_entries.get()}
+    kwargs = {**kwargs, **ACTIVE_ENTRIES.get()}
     kwargs = _handle_special_types(kwargs)
     project = _get_and_maybe_create_project(project, api_key=api_key)
     if skip_duplicates:
@@ -124,11 +124,11 @@ def log(
     response = requests.post(BASE_URL + "/log", headers=headers, json=body)
     response.raise_for_status()
     created_log = unify.Log(id=response.json(), api_key=api_key, **kwargs)
-    if current_entries_nest_level.get() > 0:
-        current_logged_logs.set(
+    if ENTRIES_NEST_LEVEL.get() > 0:
+        LOGGED.set(
             {
-                **current_logged_logs.get(),
-                created_log.id: list(current_global_active_log_entries.get().keys()),
+                **LOGGED.get(),
+                created_log.id: list(ACTIVE_ENTRIES.get().keys()),
             },
         )
     return created_log
@@ -162,14 +162,14 @@ def add_log_entries(
         "Authorization": f"Bearer {api_key}",
     }
     all_kwargs = list()
-    if current_entries_nest_level.get() > 0:
+    if ENTRIES_NEST_LEVEL.get() > 0:
         for log_id in log_ids:
             combined_kwargs = {
                 **kwargs,
                 **{
                     k: v
-                    for k, v in current_global_active_log_entries.get().items()
-                    if k not in current_logged_logs.get().get(log_id, {})
+                    for k, v in ACTIVE_ENTRIES.get().items()
+                    if k not in LOGGED.get().get(log_id, {})
                 },
             }
             all_kwargs.append(combined_kwargs)

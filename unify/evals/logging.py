@@ -126,19 +126,18 @@ class Log:
             api_key=self._api_key,
             **self._entries,
         )
-        self._current_global_active_log_set = False
-        current_active_log = current_global_active_log.get()
-        if current_active_log is not None:
-            self._current_global_active_log_set = True
+        self._active_log_set = False
+        if ACTIVE_LOG.get() is not None:
+            self._active_log_set = True
         else:
-            self._log_token = current_global_active_log.set(lg)
+            self._log_token = ACTIVE_LOG.set(lg)
         self._id = lg.id
         self._timestamp = lg.timestamp
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.download()
-        if not self._current_global_active_log_set:
-            current_global_active_log.reset(self._log_token)
+        if not self._active_log_set:
+            ACTIVE_LOG.reset(self._log_token)
 
 
 class Entries:
@@ -147,18 +146,18 @@ class Entries:
         self._entries = _handle_special_types(kwargs)
 
     def __enter__(self):
-        self.token = current_global_active_log_entries.set(
-            {**current_global_active_log_entries.get(), **self._entries},
+        self.token = ACTIVE_ENTRIES.set(
+            {**ACTIVE_ENTRIES.get(), **self._entries},
         )
-        self.nest_level_token = current_entries_nest_level.set(
-            current_entries_nest_level.get() + 1,
+        self.nest_level_token = ENTRIES_NEST_LEVEL.set(
+            ENTRIES_NEST_LEVEL.get() + 1,
         )
 
     def __exit__(self, *args, **kwargs):
-        current_global_active_log_entries.reset(self.token)
-        current_entries_nest_level.reset(self.nest_level_token)
-        if current_entries_nest_level.get() == 0:
-            current_logged_logs.set({})
+        ACTIVE_ENTRIES.reset(self.token)
+        ENTRIES_NEST_LEVEL.reset(self.nest_level_token)
+        if ENTRIES_NEST_LEVEL.get() == 0:
+            LOGGED.set({})
 
 
 # Tracing #
@@ -172,15 +171,15 @@ class trace:
 
     def __enter__(self):
         self._current_global_active_log_set = False
-        current_active_log = current_global_active_log.get()
+        current_active_log = ACTIVE_LOG.get()
         if current_active_log is not None:
             self._current_global_active_log_set = True
         else:
-            self._log_token = current_global_active_log.set(log(skip_duplicates=False))
+            self._log_token = ACTIVE_LOG.set(log(skip_duplicates=False))
 
     def __exit__(self, *args, **kwargs):
         if not self._current_global_active_log_set:
-            current_global_active_log.reset(self._log_token)
+            ACTIVE_LOG.reset(self._log_token)
 
     def __call__(self, fn):
         @functools.wraps(fn)
@@ -202,8 +201,8 @@ def span(io=True):
     def wrapper(fn):
         def wrapped(*args, **kwargs):
             t1 = time.perf_counter()
-            if not current_span.get():
-                running_time.set(t1)
+            if not SPAN.get():
+                RUNNING_TIME.set(t1)
             inputs = None
             if io:
                 signature = inspect.signature(fn)
@@ -212,13 +211,11 @@ def span(io=True):
                 inputs = bound_args.arguments
             new_span = {
                 "id": str(uuid.uuid4()),
-                "parent_span_id": (
-                    None if not current_span.get() else current_span.get()["id"]
-                ),
+                "parent_span_id": (None if not SPAN.get() else SPAN.get()["id"]),
                 "span_name": fn.__name__,
                 "exec_time": None,
                 "offset": round(
-                    0.0 if not current_span.get() else t1 - running_time.get(),
+                    0.0 if not SPAN.get() else t1 - RUNNING_TIME.get(),
                     2,
                 ),
                 "inputs": inputs,
@@ -226,7 +223,7 @@ def span(io=True):
                 "errors": None,
                 "child_spans": [],
             }
-            token = current_span.set(new_span)
+            token = SPAN.set(new_span)
             result = None
             try:
                 result = fn(*args, **kwargs)
@@ -237,21 +234,19 @@ def span(io=True):
             finally:
                 t2 = time.perf_counter()
                 exec_time = t2 - t1
-                current_span.get()["exec_time"] = round(exec_time, 2)
-                current_span.get()["outputs"] = (
-                    None if result is None or not io else result
-                )
+                SPAN.get()["exec_time"] = round(exec_time, 2)
+                SPAN.get()["outputs"] = None if result is None or not io else result
                 if token.old_value is token.MISSING:
-                    unify.log(trace=current_span.get(), skip_duplicates=False)
-                    current_span.reset(token)
+                    unify.log(trace=SPAN.get(), skip_duplicates=False)
+                    SPAN.reset(token)
                 else:
-                    current_span.reset(token)
-                    current_span.get()["child_spans"].append(new_span)
+                    SPAN.reset(token)
+                    SPAN.get()["child_spans"].append(new_span)
 
         async def async_wrapped(*args, **kwargs):
             t1 = time.perf_counter()
-            if not current_span.get():
-                running_time.set(t1)
+            if not SPAN.get():
+                RUNNING_TIME.set(t1)
             inputs = None
             if io:
                 signature = inspect.signature(fn)
@@ -260,13 +255,11 @@ def span(io=True):
                 inputs = bound_args.arguments
             new_span = {
                 "id": str(uuid.uuid4()),
-                "parent_span_id": (
-                    None if not current_span.get() else current_span.get()["id"]
-                ),
+                "parent_span_id": (None if not SPAN.get() else SPAN.get()["id"]),
                 "span_name": fn.__name__,
                 "exec_time": None,
                 "offset": round(
-                    0.0 if not current_span.get() else t1 - running_time.get(),
+                    0.0 if not SPAN.get() else t1 - RUNNING_TIME.get(),
                     2,
                 ),
                 "inputs": inputs,
@@ -274,7 +267,7 @@ def span(io=True):
                 "errors": None,
                 "child_spans": [],
             }
-            token = current_span.set(new_span)
+            token = SPAN.set(new_span)
             # capture the arguments here
             result = None
             try:
@@ -286,16 +279,14 @@ def span(io=True):
             finally:
                 t2 = time.perf_counter()
                 exec_time = t2 - t1
-                current_span.get()["exec_time"] = round(exec_time, 2)
-                current_span.get()["outputs"] = (
-                    None if result is None or not io else result
-                )
+                SPAN.get()["exec_time"] = round(exec_time, 2)
+                SPAN.get()["outputs"] = None if result is None or not io else result
                 if token.old_value is token.MISSING:
-                    unify.log(trace=current_span.get(), skip_duplicates=False)
-                    current_span.reset(token)
+                    unify.log(trace=SPAN.get(), skip_duplicates=False)
+                    SPAN.reset(token)
                 else:
-                    current_span.reset(token)
-                    current_span.get()["child_spans"].append(new_span)
+                    SPAN.reset(token)
+                    SPAN.get()["child_spans"].append(new_span)
 
         return wrapped if not inspect.iscoroutinefunction(fn) else async_wrapped
 
