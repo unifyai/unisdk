@@ -38,13 +38,15 @@ class TestChatbotUniLLM:
 
     def test_constructor(self) -> None:
         client = Unify(
-            endpoint="llama-3-8b-chat@together-ai",
+            endpoint="gpt-4o@openai",
+            cache=True,
         )
         ChatBot(client)
 
     def test_simple_non_stream_chat_n_quit(self):
         client = Unify(
-            endpoint="llama-3-8b-chat@together-ai",
+            endpoint="gpt-4o@openai",
+            cache=True,
         )
         chatbot = ChatBot(client)
         with SimulateInput():
@@ -52,7 +54,8 @@ class TestChatbotUniLLM:
 
     def test_simple_stream_chat_n_quit(self):
         client = Unify(
-            endpoint="llama-3-8b-chat@together-ai",
+            endpoint="gpt-4o@openai",
+            cache=True,
             stream=True,
         )
         chatbot = ChatBot(client)
@@ -64,13 +67,15 @@ class TestChatbotMultiUnify:
 
     def test_constructor(self) -> None:
         client = MultiUnify(
-            endpoints=["llama-3-8b-chat@together-ai", "gpt-4o@openai"],
+            endpoints=["gpt-4@openai", "gpt-4o@openai"],
+            cache=True,
         )
         ChatBot(client)
 
     def test_simple_non_stream_chat_n_quit(self):
         client = MultiUnify(
-            endpoints=["llama-3-8b-chat@together-ai", "gpt-4o@openai"],
+            endpoints=["gpt-4@openai", "gpt-4o@openai"],
+            cache=True,
         )
         chatbot = ChatBot(client)
         with SimulateInput():
