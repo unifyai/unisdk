@@ -364,25 +364,45 @@ def test_with_entries():
     unify.create_project(project)
     unify.activate(project)
 
-    with unify.Entries(context="random"):
-        log = unify.log(a="a")
-        with unify.Entries(sys="sys"):
-            unify.add_log_entries(logs=log.id, q="some q", r="some r")
-        with unify.Entries(tool="tool"):
-            unify.add_log_entries(logs=log.id, t="some t", b="some b")
-
-    expected = {
-        "context": "random",
-        "a": "a",
-        "q": "some q",
-        "t": "some t",
-        "b": "some b",
-        "r": "some r",
-        "sys": "sys",
-        "tool": "tool",
-    }
-    log = unify.get_logs()[0].entries
-    assert expected == log
+    with unify.Entries(a="a"):
+        logs = unify.get_logs()
+        assert len(logs) == 0
+        log = unify.log()
+        logs = unify.get_logs()
+        assert len(logs) == 1
+        assert logs[0].entries == {"a": "a"}
+        unify.add_log_entries(logs=log, b="b", c="c")
+        logs = unify.get_logs()
+        assert len(logs) == 1
+        assert logs[0].entries == {"a": "a", "b": "b", "c": "c"}
+        with unify.Entries(d="d"):
+            unify.add_log_entries(logs=log)
+            logs = unify.get_logs()
+            assert len(logs) == 1
+            assert logs[0].entries == {"a": "a", "b": "b", "c": "c", "d": "d"}
+            unify.add_log_entries(logs=log, e="e", f="f")
+            logs = unify.get_logs()
+            assert len(logs) == 1
+            assert logs[0].entries == {
+                "a": "a",
+                "b": "b",
+                "c": "c",
+                "d": "d",
+                "e": "e",
+                "f": "f",
+            }
+        unify.add_log_entries(logs=log, g="g")
+        logs = unify.get_logs()
+        assert len(logs) == 1
+        assert logs[0].entries == {
+            "a": "a",
+            "b": "b",
+            "c": "c",
+            "d": "d",
+            "e": "e",
+            "f": "f",
+            "g": "g",
+        }
 
 
 # ToDo: implement test_with_entries_threaded
