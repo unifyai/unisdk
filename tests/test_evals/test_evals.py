@@ -643,9 +643,18 @@ class TestCRMEvaluator(unittest.TestCase):
                             f"The call transcripts are as follows:\n{data['call_transcripts']}."
                             f"\n\nThe question is as follows:\n{data['question']}"
                         )
-                        response = self._client.generate(msg, data["system_prompt"])
+                        response = self._client.generate(msg, system_prompt)
                         score = self._evaluate(data["correct_answer"], response)
-                        unify.log(**data, response=response, score=score)
+                        unify.log(
+                            **{
+                                **data,
+                                **{
+                                    "system_prompt": system_prompt,
+                                    "response": response,
+                                    "score": score,
+                                },
+                            },
+                        )
                     system_prompt_perf[name] = unify.get_logs_metric(
                         metric="mean",
                         key="score",
