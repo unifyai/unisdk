@@ -186,6 +186,20 @@ def add_log_entries(
         json=body,
     )
     response.raise_for_status()
+    if ENTRIES_NEST_LEVEL.get() > 0:
+        logged = LOGGED.get()
+        new_logged = dict()
+        for log_id in log_ids:
+            if log_id in logged:
+                new_logged[log_id] = logged[log_id] + list(kwargs.keys())
+            else:
+                new_logged[log_id] = list(kwargs.keys())
+        LOGGED.set(
+            {
+                **logged,
+                **new_logged,
+            },
+        )
     return response.json()
 
 
