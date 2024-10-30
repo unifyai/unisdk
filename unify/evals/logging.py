@@ -148,7 +148,7 @@ class trace:
         if current_active_log is not None:
             self.current_global_active_log_already_set = True
         else:
-            self.token = current_global_active_log.set(log())
+            self.token = current_global_active_log.set(log(skip_duplicates=False))
 
     def __exit__(self, *args, **kwargs):
         if not self.current_global_active_log_already_set:
