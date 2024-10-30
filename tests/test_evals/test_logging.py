@@ -237,7 +237,7 @@ def test_group_logs_by_params():
                 dataset_version=dataset_version,
             )
             for q in qs:
-                logs.append(unify.Log(log_idx, q=q, parameters=params))
+                logs.append(unify.Log(id=log_idx, q=q, parameters=params))
                 log_idx += 1
     grouped_logs = unify.group_logs_by_params(logs=logs)
     assert len(grouped_logs) == 6
