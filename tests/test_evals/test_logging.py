@@ -284,6 +284,10 @@ def test_with_log():
             logs = unify.get_logs()
             assert len(logs) == 2
             assert logs[1].entries == {"d": "d"}
+            unify.add_log_entries(e="e", f="f")
+            logs = unify.get_logs()
+            assert len(logs) == 2
+            assert logs[1].entries == {"d": "d", "e": "e", "f": "f"}
 
 
 # ToDo: implement test_with_log_threaded
