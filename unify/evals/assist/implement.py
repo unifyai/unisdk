@@ -321,6 +321,11 @@ def implement(fn: callable, module_path: Optional[str] = None):
         with open(full_module_path, "w") as file:
             file.write(_formatted(new_content))
 
+    def _fn_exists_in_module(fn_name: str):
+        with open(full_module_path, "r") as file:
+            content = file.read()
+        return f"def {fn_name}(" in content
+
     def _remove_unify_decorator_if_present(fn_name: str):
         with open(full_module_path, "r") as file:
             content = file.read()
@@ -400,6 +405,8 @@ def implement(fn: callable, module_path: Optional[str] = None):
             if s.replace("_", "").isalnum() and s == s.lower() and s != name
         ]
         leaf = _get_fn_tree_leaf()
+        if leaf is True:
+            return
         for s in segments:
             leaf[s] = dict()
         if segments:
@@ -420,9 +427,14 @@ def implement(fn: callable, module_path: Optional[str] = None):
         global IMPLEMENTATIONS
         if name in IMPLEMENTATIONS:
             _create_module_if_not_exist()
-            _remove_unify_decorator_if_present(name)
-            _streamed_print(f"\n`{name}` is already implemented, stepping inside.\n")
-            return IMPLEMENTATIONS[name]
+            if not _fn_exists_in_module(name):
+                del IMPLEMENTATIONS[name]
+            else:
+                _remove_unify_decorator_if_present(name)
+                _streamed_print(
+                    f"\n`{name}` is already implemented, stepping inside.\n",
+                )
+                return IMPLEMENTATIONS[name]
         _streamed_print(
             f"We'll now work together to implement the function `{name}`.\n\n",
         )
