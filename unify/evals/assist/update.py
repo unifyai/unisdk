@@ -68,7 +68,7 @@ def update(
     # ToDo: add interactive support
     assert mode in ("maximize", "minimize"), "Mode must be 'maximize' or 'minimize'."
 
-    client = unify.Unify("gpt-4o@openai", cache=True)
+    client = unify.Unify("o1-preview@openai", cache=True)
 
     if not logs:
         logs = unify.get_logs()
@@ -98,10 +98,7 @@ def update(
             metric,
         )
     )
-    response = client.generate(
-        "please follow the instructions of the system message",
-        system_message=system_message,
-    )
+    response = client.generate(system_message)
     parameter = response.split("\nparameter:\n")[-1].split("\nvalue:\n")[0].strip("\n")
     value = (
         response.split(
