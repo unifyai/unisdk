@@ -1,4 +1,5 @@
 import time
+import math
 import asyncio
 import pytest
 
@@ -673,7 +674,68 @@ def test_with_all():
             }
 
 
-# ToDo: implement test_with_all_threaded
+def test_with_all_threaded():
+    project = "my_project"
+    if project in unify.list_projects():
+        unify.delete_project(project)
+    unify.create_project(project)
+    unify.activate(project)
+
+    def fn(a, b, c, d, e, f, g, h, i):
+        with unify.Params(a=a):
+            log = unify.log()
+            unify.add_log_params(logs=log, b=b, c=c)
+            with unify.Entries(d=d):
+                unify.add_log_entries(logs=log)
+                unify.add_log_entries(logs=log, e=e)
+                unify.add_log_params(logs=log, f=f)
+                with unify.Log():
+                    unify.add_log_params(g=g)
+                    unify.add_log_entries(h=h)
+                unify.add_log_entries(logs=log, i=i)
+
+    threads = [
+        threading.Thread(
+            target=fn,
+            args=[9 * i + j for j in range(9)],
+        )
+        for i in range(4)
+    ]
+    [t.start() for t in threads]
+    [t.join() for t in threads]
+
+    logs = unify.get_logs(project="my_project")
+
+    params = [log.params for log in logs]
+    observed = [sorted(d.items()) for d in sorted(params, key=lambda x: x["a"])]
+    for i, obs in enumerate(observed):
+        if i % 2 == 0:
+            assert obs == [
+                ("a", (i / 2) * 9),
+                ("b", (i / 2) * 9 + 1),
+                ("c", (i / 2) * 9 + 2),
+                ("f", (i / 2) * 9 + 5),
+            ]
+        else:
+            assert obs == [
+                ("a", math.floor(i / 2) * 9),
+                ("g", math.floor(i / 2) * 9 + 6),
+            ]
+    entries = [log.entries for log in logs]
+    observed = [sorted(d.items()) for d in sorted(entries, key=lambda x: x["d"])]
+    for i, obs in enumerate(observed):
+        if i % 2 == 0:
+            assert obs == [
+                ("d", (i / 2) * 9 + 3),
+                ("e", (i / 2) * 9 + 4),
+                ("i", (i / 2) * 9 + 8),
+            ]
+        else:
+            assert obs == [
+                ("d", math.floor(i / 2) * 9 + 3),
+                ("h", math.floor(i / 2) * 9 + 7),
+            ]
+
 
 # ToDo: implement test_with_all_async
 
