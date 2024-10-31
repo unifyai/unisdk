@@ -44,7 +44,7 @@ class _MultiClient(_Client, abc.ABC):
         logit_bias: Optional[Dict[str, int]] = None,
         logprobs: Optional[bool] = None,
         top_logprobs: Optional[int] = None,
-        max_completion_tokens: Optional[int] = 1024,
+        max_completion_tokens: Optional[int] = None,
         n: Optional[int] = None,
         presence_penalty: Optional[float] = None,
         response_format: Optional[ResponseFormat] = None,
@@ -555,7 +555,7 @@ class _MultiClient(_Client, abc.ABC):
 
             max_completion_tokens: The maximum number of tokens that can be generated in
             the chat completion. The total length of input tokens and generated tokens
-            is limited by the model's context length. Defaults value is 1024. Uses the
+            is limited by the model's context length. Defaults value is None. Uses the
             provider's default max_completion_tokens when None is explicitly passed.
 
             n: How many chat completion choices to generate for each input message. Note
@@ -766,7 +766,7 @@ class MultiUnify(_MultiClient):
         logit_bias: Optional[Dict[str, int]] = None,
         logprobs: Optional[bool] = None,
         top_logprobs: Optional[int] = None,
-        max_completion_tokens: Optional[int] = 1024,
+        max_completion_tokens: Optional[int] = None,
         n: Optional[int] = None,
         presence_penalty: Optional[float] = None,
         response_format: Optional[ResponseFormat] = None,
@@ -926,7 +926,7 @@ class AsyncMultiUnify(_MultiClient):
         logit_bias: Optional[Dict[str, int]] = None,
         logprobs: Optional[bool] = None,
         top_logprobs: Optional[int] = None,
-        max_completion_tokens: Optional[int] = 1024,
+        max_completion_tokens: Optional[int] = None,
         n: Optional[int] = None,
         presence_penalty: Optional[float] = None,
         response_format: Optional[ResponseFormat] = None,
