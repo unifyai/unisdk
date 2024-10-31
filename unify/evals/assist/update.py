@@ -23,7 +23,7 @@ def _print_table_from_dicts(dcts, col_list=None) -> str:
     return "\n".join(ret)
 
 
-def _format_evals(evals: Dict[str, List[Dict[str, Any]]]) -> str:
+def _format_evals(evals: Dict[str, List[unify.Log]]) -> str:
     ret = list()
     for config_str, logs in evals.items():
         ret.append(
@@ -37,7 +37,7 @@ def _format_evals(evals: Dict[str, List[Dict[str, Any]]]) -> str:
             "\n" "Logs:\n" "-----\n",
         )
         ret.append(
-            json.dumps(logs, indent=4),
+            json.dumps([lg.to_json() for lg in logs], indent=4),
         )
     return "\n".join(ret)
 
@@ -102,4 +102,17 @@ def update(
         "please follow the instructions of the system message",
         system_message=system_message,
     )
-    return response
+    parameter = response.split("\nparameter:\n")[-1].split("\nvalue:\n")[0].strip("\n")
+    value = (
+        response.split(
+            "\nvalue:\n",
+        )[-1]
+        .lstrip("```python")
+        .lstrip("```")
+        .rstrip("```")
+        .lstrip(
+            "\n",
+        )
+        .rstrip("\n")
+    )
+    return parameter, value

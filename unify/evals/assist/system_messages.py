@@ -127,10 +127,10 @@ a piece of Python code, a single numeric value, or dictionary, or any other type
 At the very end of your response, please respond as follows, filling in the placeholders
 {parameter_name} and {parameter_value}:
 
-"parameter":
+parameter:
 "{parameter_name}"
 
-"value":
+value:
 {parameter_value}
 
 """
