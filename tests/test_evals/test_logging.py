@@ -239,7 +239,7 @@ def test_group_logs_by_params():
             for q in qs:
                 logs.append(unify.Log(id=log_idx, q=q, parameters=params))
                 log_idx += 1
-    grouped_logs = unify.group_logs_by_params(logs=logs)
+    grouped_logs = unify.group_logs_by_parameters(logs=logs)
     assert len(grouped_logs) == 6
     assert list(grouped_logs.keys()) == [
         '{"system_prompt": "You are an expert.", ' '"dataset_version": "vanilla"}',
