@@ -487,7 +487,54 @@ async def test_with_entries_async():
 
 # Params
 
-# ToDo: implement test_with_params
+
+def test_with_params():
+    project = "my_project"
+    if project in unify.list_projects():
+        unify.delete_project(project)
+    unify.create_project(project)
+    unify.activate(project)
+
+    with unify.Params(a="a"):
+        logs = unify.get_logs()
+        assert len(logs) == 0
+        log = unify.log()
+        logs = unify.get_logs()
+        assert len(logs) == 1
+        assert logs[0].params == {"a": "a"}
+        unify.add_log_params(logs=log, b="b", c="c")
+        logs = unify.get_logs()
+        assert len(logs) == 1
+        assert logs[0].params == {"a": "a", "b": "b", "c": "c"}
+        with unify.Params(d="d"):
+            unify.add_log_params(logs=log)
+            logs = unify.get_logs()
+            assert len(logs) == 1
+            assert logs[0].params == {"a": "a", "b": "b", "c": "c", "d": "d"}
+            unify.add_log_params(logs=log, e="e", f="f")
+            logs = unify.get_logs()
+            assert len(logs) == 1
+            assert logs[0].params == {
+                "a": "a",
+                "b": "b",
+                "c": "c",
+                "d": "d",
+                "e": "e",
+                "f": "f",
+            }
+        unify.add_log_params(logs=log, g="g")
+        logs = unify.get_logs()
+        assert len(logs) == 1
+        assert logs[0].params == {
+            "a": "a",
+            "b": "b",
+            "c": "c",
+            "d": "d",
+            "e": "e",
+            "f": "f",
+            "g": "g",
+        }
+
 
 # ToDo: implement test_with_params_threaded
 
