@@ -163,17 +163,17 @@ class Parameters:
         self._params = _handle_special_types(params)
 
     def __enter__(self):
-        self._params_token = ACTIVE_PARAMETERS.set(
-            {**ACTIVE_PARAMETERS.get(), **self._params},
+        self._params_token = ACTIVE_PARAMS.set(
+            {**ACTIVE_PARAMS.get(), **self._params},
         )
-        self._nest_token = PARAMETERS_NEST_LEVEL.set(
-            PARAMETERS_NEST_LEVEL.get() + 1,
+        self._nest_token = PARAMS_NEST_LEVEL.set(
+            PARAMS_NEST_LEVEL.get() + 1,
         )
 
     def __exit__(self, *args, **kwargs):
-        ACTIVE_PARAMETERS.reset(self._params_token)
-        PARAMETERS_NEST_LEVEL.reset(self._nest_token)
-        if PARAMETERS_NEST_LEVEL.get() == 0:
+        ACTIVE_PARAMS.reset(self._params_token)
+        PARAMS_NEST_LEVEL.reset(self._nest_token)
+        if PARAMS_NEST_LEVEL.get() == 0:
             LOGGED.set({})
 
 

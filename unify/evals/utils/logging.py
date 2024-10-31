@@ -20,11 +20,11 @@ ACTIVE_ENTRIES = ContextVar(
 ENTRIES_NEST_LEVEL = ContextVar("entries_nest_level", default=0)
 
 # params
-ACTIVE_PARAMETERS = ContextVar(
+ACTIVE_PARAMS = ContextVar(
     "active_params",
     default={},
 )
-PARAMETERS_NEST_LEVEL = ContextVar("params_nest_level", default=0)
+PARAMS_NEST_LEVEL = ContextVar("params_nest_level", default=0)
 
 # span
 SPAN = ContextVar("span", default={})
@@ -158,11 +158,11 @@ def _add_to_log(
         "entries",
     ), "mode must be one of 'params', 'entries'"
     nest_level = {
-        "params": PARAMETERS_NEST_LEVEL,
+        "params": PARAMS_NEST_LEVEL,
         "entries": ENTRIES_NEST_LEVEL,
     }[mode]
     active = {
-        "params": ACTIVE_PARAMETERS,
+        "params": ACTIVE_PARAMS,
         "entries": ACTIVE_ENTRIES,
     }[mode]
     log_ids = _to_log_ids(logs)
