@@ -124,9 +124,9 @@ def log(
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    params = _apply_context(**params)
+    params = _apply_context(**(params if params else {}))
     entries = _apply_context(**entries)
-    params = {**(params if params else {}), **ACTIVE_PARAMS.get()}
+    params = {**params, **ACTIVE_PARAMS.get()}
     params = _handle_special_types(params)
     entries = {**entries, **ACTIVE_ENTRIES.get()}
     entries = _handle_special_types(entries)
