@@ -356,6 +356,8 @@ def get_logs(
     *,
     project: Optional[str] = None,
     filter: Optional[str] = None,
+    limit: Optional[int] = None,
+    offset: int = 0,
     api_key: Optional[str] = None,
 ) -> List[unify.Log]:
     """
@@ -366,6 +368,10 @@ def get_logs(
 
         filter: Boolean string to filter logs, for example:
         "(temperature > 0.5 and (len(system_msg) < 100 or 'no' in usr_response))"
+
+        limit: The maximum number of logs to return. Default is None (unlimited).
+
+        offset: The starting index of the logs to return. Default is 0.
 
         api_key: If specified, unify API key to be used. Defaults to the value in the
         `UNIFY_KEY` environment variable.
@@ -382,6 +388,8 @@ def get_logs(
     params = {
         "project": project,
         "filter_expr": filter,
+        "limit": limit,
+        "offset": offset,
     }
     response = requests.get(BASE_URL + "/logs", headers=headers, params=params)
     response.raise_for_status()
