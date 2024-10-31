@@ -382,12 +382,16 @@ def test_with_context():
             assert len(logs) == 1
             assert logs[0].entries == {"a": "a", "capitalized/b": "B"}
             unify.add_log_entries(logs=logs, e="E")
+            unify.add_log_params(logs=logs, u="U")
             logs = unify.get_logs()
             assert len(logs) == 1
             assert logs[0].entries == {
                 "a": "a",
                 "capitalized/b": "B",
                 "capitalized/vowels/e": "E",
+            }
+            assert logs[0].params == {
+                "capitalized/vowels/u": "U",
             }
             unify.log(project=project, a="A")
     logs = unify.get_logs()
