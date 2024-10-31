@@ -112,4 +112,4 @@ def update(
         )
         .rstrip("\n")
     )
-    return parameter, value
+    return parameter, value, response
