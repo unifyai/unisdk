@@ -186,7 +186,7 @@ def list_datasets(
     project = _get_and_maybe_create_project(required=False, api_key=api_key)
     if project is not None:
         return [
-            item["name"].lstrip(project + "/")
+            item["name"].lstrip(project)[1:]
             for item in response.json()
             if project in item["name"]
         ]
