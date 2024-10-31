@@ -157,7 +157,7 @@ class Entries:
             LOGGED.set({})
 
 
-class Parameters:
+class Params:
 
     def __init__(self, **params):
         self._params = _handle_special_types(params)
