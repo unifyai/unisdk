@@ -81,6 +81,37 @@ def _to_log_ids(
         )
 
 
+def _to_logs(
+    logs: Optional[Union[int, unify.Log, List[Union[int, unify.Log]]]] = None,
+):
+    if logs is None:
+        current_active_logs = ACTIVE_LOG.get()
+        if not current_active_logs:
+            raise Exception(
+                "If logs is unspecified, then current_global_active_log must be.",
+            )
+        return [current_active_logs[-1]]
+    elif isinstance(logs, int):
+        return [unify.Log(id=logs)]
+    elif isinstance(logs, unify.Log):
+        return [logs]
+    elif isinstance(logs, list):
+        if isinstance(logs[0], int):
+            return [unify.Log(id=lg) for lg in logs]
+        elif isinstance(logs[0], unify.Log):
+            return logs
+        else:
+            raise Exception(
+                f"list must contain int or unify.Log types, but found first entry "
+                f"{logs[0]} of type {type(logs[0])}",
+            )
+    else:
+        raise Exception(
+            f"logs argument must be of type int, unify.Log, or list, but found "
+            f"{logs} of type {type(logs)}",
+        )
+
+
 def _apply_context(**data):
     context = CONTEXT.get()
     return {os.path.join(context, k): v for k, v in data.items()}

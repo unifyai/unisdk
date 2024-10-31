@@ -2,7 +2,7 @@ from __future__ import annotations
 import json
 
 from ...utils.helpers import _validate_api_key, _get_and_maybe_create_project
-from .logging import _add_to_log
+from .logging import _add_to_log, _to_log_ids
 from .logging import *
 
 
@@ -21,17 +21,16 @@ def _replace_log_fields(
         "params",
         "entries",
     ), "mode must be one of 'params', 'entries'"
-    log_id = logs  # handle_multiple_logs decorator handles logs, returning a single id
     api_key = _validate_api_key(api_key)
     for k, v in data.items():
-        delete_log_fields(field=k, logs=log_id, api_key=api_key)
-    return _add_to_log(logs=log_id, mode=mode, api_key=api_key, **data)
+        delete_log_fields(field=k, logs=logs, api_key=api_key)
+    return _add_to_log(logs=logs, mode=mode, api_key=api_key, **data)
 
 
 def _update_log_fields(
     *,
     fn: Union[callable, Dict[str, callable]],
-    logs: Optional[Union[int, unify.Log, List[Union[int, unify.Log]]]] = None,
+    log: Optional[Union[int, unify.Log]] = None,
     mode: str = None,
     api_key: Optional[str] = None,
     **data,
@@ -40,13 +39,12 @@ def _update_log_fields(
         "params",
         "entries",
     ), "mode must be one of 'params', 'entries'"
-    log_id = logs  # handle_multiple_logs decorator handles logs, returning a single id
-    old_data = getattr(get_log_by_id(id=log_id, api_key=api_key), mode)
+    old_data = getattr(get_log_by_id(id=_to_log_ids(log)[0], api_key=api_key), mode)
     replacements = dict()
     for k, v in data.items():
         f = fn[k] if isinstance(fn, dict) else fn
         replacements[k] = f(old_data[k], v)
-    return _replace_log_fields(logs=log_id, mode=mode, api_key=api_key, **replacements)
+    return _replace_log_fields(logs=log, mode=mode, api_key=api_key, **replacements)
 
 
 def _rename_log_fields(
@@ -60,13 +58,11 @@ def _rename_log_fields(
         "params",
         "entries",
     ), "mode must be one of 'params', 'entries'"
-    log_id = logs  # handle_multiple_logs decorator handles logs, returning a single id
     api_key = _validate_api_key(api_key)
-    old_data = getattr(get_log_by_id(id=log_id, api_key=api_key), mode)
-    for old_name in old_data.keys():
-        delete_log_fields(field=old_name, logs=log_id, api_key=api_key)
+    for old_name in data.keys():
+        delete_log_fields(field=old_name, logs=logs, api_key=api_key)
     new_data = {new_name: data[old_name] for old_name, new_name in data.items()}
-    return _add_to_log(logs=log_id, mode=mode, api_key=api_key, **new_data)
+    return _add_to_log(logs=logs, mode=mode, api_key=api_key, **new_data)
 
 
 # Parameters #
@@ -105,7 +101,7 @@ def replace_log_params(
 def update_log_params(
     *,
     fn: Union[callable, Dict[str, callable]],
-    logs: Optional[Union[int, unify.Log, List[Union[int, unify.Log]]]] = None,
+    log: Optional[Union[int, unify.Log]] = None,
     api_key: Optional[str] = None,
     **params,
 ) -> Dict[str, str]:
@@ -115,7 +111,7 @@ def update_log_params(
     Args:
         fn: The function or set of functions to apply to each field in the log.
 
-        logs: The log(s) to update fields for. Looks for the current active log if not
+        log: The log to update fields for. Looks for the current active log if not
         provided.
 
         api_key: If specified, unify API key to be used. Defaults to the value in the
@@ -128,7 +124,7 @@ def update_log_params(
     """
     return _update_log_fields(
         fn=fn,
-        logs=logs,
+        log=log,
         mode="params",
         api_key=api_key,
         **params,
@@ -178,7 +174,7 @@ def group_logs_by_configs(
 
 def add_param(
     *,
-    logs: Optional[Union[int, unify.Log, List[Union[int, unify.Log]]]] = "all",
+    logs: Optional[Union[str, int, unify.Log, List[Union[int, unify.Log]]]] = "all",
     api_key: Optional[str] = None,
     **param,
 ) -> Dict[str, str]:
@@ -222,7 +218,7 @@ def replace_log_entries(
 def update_log_entries(
     *,
     fn: Union[callable, Dict[str, callable]],
-    logs: Optional[Union[int, unify.Log, List[Union[int, unify.Log]]]] = None,
+    log: Optional[Union[int, unify.Log]] = None,
     api_key: Optional[str] = None,
     **entries,
 ) -> Dict[str, str]:
@@ -232,7 +228,7 @@ def update_log_entries(
     Args:
         fn: The function or set of functions to apply to each field in the log.
 
-        logs: The log(s) to update fields for. Looks for the current active log if not
+        log: The log to update fields for. Looks for the current active log if not
         provided.
 
         api_key: If specified, unify API key to be used. Defaults to the value in the
@@ -245,7 +241,7 @@ def update_log_entries(
     """
     return _update_log_fields(
         fn=fn,
-        logs=logs,
+        log=log,
         mode="entries",
         api_key=api_key,
         **entries,
