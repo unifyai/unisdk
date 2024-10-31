@@ -355,6 +355,53 @@ async def test_with_log_async():
     ] + [[("d", i * 7 + 3), ("e", i * 7 + 4), ("f", i * 7 + 5)] for i in range(4)]
 
 
+# Context
+
+
+def test_with_context():
+    project = "my_project"
+    if project in unify.list_projects():
+        unify.delete_project(project)
+    unify.create_project(project)
+    unify.activate(project)
+
+    unify.log(project=project, a="a")
+    logs = unify.get_logs()
+    assert len(logs) == 1
+    assert logs[0].entries == {"a": "a"}
+    with unify.Context("capitalized"):
+        logs = unify.get_logs()
+        assert len(logs) == 1
+        assert logs[0].entries == {"a": "a"}
+        unify.add_log_entries(logs=logs, b="B")
+        logs = unify.get_logs()
+        assert len(logs) == 1
+        assert logs[0].entries == {"a": "a", "capitalized/b": "B"}
+        with unify.Context("vowels"):
+            logs = unify.get_logs()
+            assert len(logs) == 1
+            assert logs[0].entries == {"a": "a", "capitalized/b": "B"}
+            unify.add_log_entries(logs=logs, e="E")
+            logs = unify.get_logs()
+            assert len(logs) == 1
+            assert logs[0].entries == {
+                "a": "a",
+                "capitalized/b": "B",
+                "capitalized/vowels/e": "E",
+            }
+            unify.log(project=project, a="A")
+    logs = unify.get_logs()
+    assert len(logs) == 2
+    assert logs[0].entries == {
+        "a": "a",
+        "capitalized/b": "B",
+        "capitalized/vowels/e": "E",
+    }
+    assert logs[1].entries == {
+        "capitalized/vowels/a": "A",
+    }
+
+
 # Entries
 
 
