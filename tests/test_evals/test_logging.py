@@ -536,7 +536,48 @@ def test_with_params():
         }
 
 
-# ToDo: implement test_with_params_threaded
+def test_with_params_threaded():
+    project = "my_project"
+    if project in unify.list_projects():
+        unify.delete_project(project)
+    unify.create_project(project)
+    unify.activate(project)
+
+    def fn(a, b, c, d, e, f, g):
+        with unify.Params(a=a):
+            log = unify.log()
+            unify.add_log_params(logs=log, b=b, c=c)
+            with unify.Params(d=d):
+                unify.add_log_params(logs=log)
+                unify.add_log_params(logs=log, e=e, f=f)
+            unify.add_log_params(logs=log, g=g)
+
+    threads = [
+        threading.Thread(
+            target=fn,
+            args=[7 * i + j for j in range(7)],
+        )
+        for i in range(4)
+    ]
+    [t.start() for t in threads]
+    [t.join() for t in threads]
+
+    logs = unify.get_logs(project="my_project")
+    params = [log.params for log in logs]
+
+    assert sorted([sorted(d.items()) for d in params]) == [
+        [
+            ("a", i * 7),
+            ("b", i * 7 + 1),
+            ("c", i * 7 + 2),
+            ("d", i * 7 + 3),
+            ("e", i * 7 + 4),
+            ("f", i * 7 + 5),
+            ("g", i * 7 + 6),
+        ]
+        for i in range(4)
+    ]
+
 
 # ToDo: implement test_with_params_async
 
