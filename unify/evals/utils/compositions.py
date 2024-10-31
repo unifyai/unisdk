@@ -176,6 +176,21 @@ def group_logs_by_params(
     return ret_dict
 
 
+def add_param(
+    *,
+    logs: Optional[Union[int, unify.Log, List[Union[int, unify.Log]]]] = "all",
+    api_key: Optional[str] = None,
+    **param,
+) -> Dict[str, str]:
+    """
+    Adds a new parameter to the logs (defaults to all logs).
+    """
+    if logs == "all":
+        logs = get_logs()
+    assert len(param) == 1, "Only one parameter is allowed when calling add_param"
+    return add_log_params(logs=logs, api_key=api_key, **param)
+
+
 # Entries #
 # --------#
 
