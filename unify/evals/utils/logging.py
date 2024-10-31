@@ -115,32 +115,38 @@ def log(
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
+    params = {**(params if params else {}), **ACTIVE_PARAMS.get()}
+    params = _handle_special_types(params)
     entries = {**entries, **ACTIVE_ENTRIES.get()}
     entries = _handle_special_types(entries)
     project = _get_and_maybe_create_project(project, api_key=api_key)
     if skip_duplicates:
         retrieved_logs = unify.get_logs_by_value(
             project=project,
-            **entries,
+            **{**params, **entries},
             api_key=api_key,
         )
         if retrieved_logs:
             assert len(retrieved_logs) == 1, (
                 f"When skip_duplicates == True, then it's expected that each log "
-                f"entry is unique, but found {len(retrieved_logs)} entries with "
-                f"config {entries}"
+                f"column is unique, but found {len(retrieved_logs)} columns with: "
+                f"{params} and {entries} params and entries respectively."
             )
             return retrieved_logs[0]
-    params = params if params is not None else {}
     body = {"project": project, "params": params, "entries": entries}
     response = requests.post(BASE_URL + "/log", headers=headers, json=body)
     response.raise_for_status()
-    created_log = unify.Log(id=response.json(), api_key=api_key, **entries)
-    if ENTRIES_NEST_LEVEL.get() > 0:
+    created_log = unify.Log(
+        id=response.json(),
+        api_key=api_key,
+        **entries,
+        params=params,
+    )
+    if PARAMS_NEST_LEVEL.get() > 0 or ENTRIES_NEST_LEVEL.get() > 0:
         LOGGED.set(
             {
                 **LOGGED.get(),
-                created_log.id: list(entries.keys()),
+                created_log.id: list(params.keys()) + list(entries.keys()),
             },
         )
     return created_log
