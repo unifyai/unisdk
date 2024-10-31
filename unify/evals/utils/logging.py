@@ -83,7 +83,7 @@ def log(
     skip_duplicates: bool = True,
     parameters: Dict[str, Any] = None,
     api_key: Optional[str] = None,
-    **kwargs,
+    **entries,
 ) -> unify.Log:
     """
     Creates one or more logs associated to a project. unify.Logs are LLM-call-level data
@@ -104,43 +104,43 @@ def log(
         api_key: If specified, unify API key to be used. Defaults to the value in the
         `UNIFY_KEY` environment variable.
 
-        kwargs: Dictionary containing one or more key:value pairs that will be logged
+        entries: Dictionary containing one or more key:value pairs that will be logged
         into the platform as entries.
 
     Returns:
-        The unique id of newly created log entry.
+        The unique id of newly created log.
     """
     api_key = _validate_api_key(api_key)
     headers = {
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    kwargs = {**kwargs, **ACTIVE_ENTRIES.get()}
-    kwargs = _handle_special_types(kwargs)
+    entries = {**entries, **ACTIVE_ENTRIES.get()}
+    entries = _handle_special_types(entries)
     project = _get_and_maybe_create_project(project, api_key=api_key)
     if skip_duplicates:
         retrieved_logs = unify.get_logs_by_value(
             project=project,
-            **kwargs,
+            **entries,
             api_key=api_key,
         )
         if retrieved_logs:
             assert len(retrieved_logs) == 1, (
                 f"When skip_duplicates == True, then it's expected that each log "
                 f"entry is unique, but found {len(retrieved_logs)} entries with "
-                f"config {kwargs}"
+                f"config {entries}"
             )
             return retrieved_logs[0]
     parameters = parameters if parameters is not None else {}
-    body = {"project": project, "parameters": parameters, "entries": kwargs}
+    body = {"project": project, "parameters": parameters, "entries": entries}
     response = requests.post(BASE_URL + "/log", headers=headers, json=body)
     response.raise_for_status()
-    created_log = unify.Log(id=response.json(), api_key=api_key, **kwargs)
+    created_log = unify.Log(id=response.json(), api_key=api_key, **entries)
     if ENTRIES_NEST_LEVEL.get() > 0:
         LOGGED.set(
             {
                 **LOGGED.get(),
-                created_log.id: list(kwargs.keys()),
+                created_log.id: list(entries.keys()),
             },
         )
     return created_log
@@ -151,7 +151,7 @@ def _add_to_log(
     logs: Optional[Union[int, unify.Log, List[Union[int, unify.Log]]]] = None,
     mode: str = None,
     api_key: Optional[str] = None,
-    **kwargs,
+    **data,
 ) -> Dict[str, str]:
     assert mode in (
         "parameters",
@@ -175,7 +175,7 @@ def _add_to_log(
     if nest_level.get() > 0:
         for log_id in log_ids:
             combined_kwargs = {
-                **kwargs,
+                **data,
                 **{
                     k: v
                     for k, v in active.get().items()
@@ -187,11 +187,11 @@ def _add_to_log(
             "All logs must share the same context if they're all "
             "being updated at the same time."
         )
-        kwargs = all_kwargs[0]
-    kwargs = _handle_special_types(kwargs)
+        data = all_kwargs[0]
+    data = _handle_special_types(data)
     body = {
         "ids": log_ids,
-        mode: kwargs,
+        mode: data,
         "overwrite": False,
     }
     response = requests.put(
@@ -205,9 +205,9 @@ def _add_to_log(
         new_logged = dict()
         for log_id in log_ids:
             if log_id in logged:
-                new_logged[log_id] = logged[log_id] + list(kwargs.keys())
+                new_logged[log_id] = logged[log_id] + list(data.keys())
             else:
-                new_logged[log_id] = list(kwargs.keys())
+                new_logged[log_id] = list(data.keys())
         LOGGED.set(
             {
                 **logged,
@@ -221,7 +221,7 @@ def add_log_parameters(
     *,
     logs: Optional[Union[int, unify.Log, List[Union[int, unify.Log]]]] = None,
     api_key: Optional[str] = None,
-    **kwargs,
+    **parameters,
 ) -> Dict[str, str]:
     """
     Add extra entries into an existing log.
@@ -233,20 +233,20 @@ def add_log_parameters(
         api_key: If specified, unify API key to be used. Defaults to the value in the
         `UNIFY_KEY` environment variable.
 
-        kwargs: Dictionary containing one or more key:value pairs that will be logged
-        into the platform as parameters.
+        parameters: Dictionary containing one or more key:value pairs that will be
+        logged into the platform as parameters.
 
     Returns:
         A message indicating whether the log was successfully updated.
     """
-    return _add_to_log(logs=logs, mode="parameters", api_key=api_key, **kwargs)
+    return _add_to_log(logs=logs, mode="parameters", api_key=api_key, **parameters)
 
 
 def add_log_entries(
     *,
     logs: Optional[Union[int, unify.Log, List[Union[int, unify.Log]]]] = None,
     api_key: Optional[str] = None,
-    **kwargs,
+    **entries,
 ) -> Dict[str, str]:
     """
     Add extra entries into an existing log.
@@ -258,13 +258,13 @@ def add_log_entries(
         api_key: If specified, unify API key to be used. Defaults to the value in the
         `UNIFY_KEY` environment variable.
 
-        kwargs: Dictionary containing one or more key:value pairs that will be logged
+        entries: Dictionary containing one or more key:value pairs that will be logged
         into the platform as entries.
 
     Returns:
         A message indicating whether the log was successfully updated.
     """
-    return _add_to_log(logs=logs, mode="entries", api_key=api_key, **kwargs)
+    return _add_to_log(logs=logs, mode="entries", api_key=api_key, **entries)
 
 
 def delete_logs(

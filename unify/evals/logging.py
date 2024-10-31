@@ -25,13 +25,13 @@ class Log:
         skip_duplicates: bool = False,
         api_key: Optional[str] = None,
         parameters: Dict[str, Any] = None,
-        **kwargs,
+        **entries,
     ):
         self._id = id
         self._timestamp = timestamp
         self._project = project
         self._skip_duplicates = skip_duplicates
-        self._entries = kwargs
+        self._entries = entries
         self._parameters = parameters
         self._api_key = _validate_api_key(api_key)
 
@@ -71,23 +71,23 @@ class Log:
     def download(self):
         self._entries = get_log_by_id(id=self._id, api_key=self._api_key)._entries
 
-    def add_entries(self, **kwargs) -> None:
-        add_log_entries(logs=self._id, api_key=self._api_key, **kwargs)
-        self._entries = {**self._entries, **kwargs}
+    def add_entries(self, **entries) -> None:
+        add_log_entries(logs=self._id, api_key=self._api_key, **entries)
+        self._entries = {**self._entries, **entries}
 
-    def replace_entries(self, **kwargs) -> None:
-        replace_log_entries(logs=self._id, api_key=self._api_key, **kwargs)
-        self._entries = {**self._entries, **kwargs}
+    def replace_entries(self, **entries) -> None:
+        replace_log_entries(logs=self._id, api_key=self._api_key, **entries)
+        self._entries = {**self._entries, **entries}
 
-    def update_entries(self, fn, **kwargs) -> None:
-        update_log_entries(fn=fn, logs=self._id, api_key=self._api_key, **kwargs)
-        for k, v in kwargs.items():
+    def update_entries(self, fn, **entries) -> None:
+        update_log_entries(fn=fn, logs=self._id, api_key=self._api_key, **entries)
+        for k, v in entries.items():
             f = fn[k] if isinstance(fn, dict) else fn
             self._entries[k] = f(self._entries[k], v)
 
-    def rename_entries(self, **kwargs) -> None:
-        rename_log_entries(logs=self._id, api_key=self._api_key, **kwargs)
-        for old_name, new_name in kwargs.items():
+    def rename_entries(self, **entries) -> None:
+        rename_log_entries(logs=self._id, api_key=self._api_key, **entries)
+        for old_name, new_name in entries.items():
             self._entries[new_name] = self._entries[old_name]
             del self._entries[old_name]
 
@@ -139,8 +139,8 @@ class Log:
 
 class Entries:
 
-    def __init__(self, **kwargs):
-        self._entries = _handle_special_types(kwargs)
+    def __init__(self, **entries):
+        self._entries = _handle_special_types(entries)
 
     def __enter__(self):
         self._entries_token = ACTIVE_ENTRIES.set(
@@ -159,8 +159,8 @@ class Entries:
 
 class Parameters:
 
-    def __init__(self, **kwargs):
-        self._parameters = _handle_special_types(kwargs)
+    def __init__(self, **parameters):
+        self._parameters = _handle_special_types(parameters)
 
     def __enter__(self):
         self._parameters_token = ACTIVE_PARAMETERS.set(
