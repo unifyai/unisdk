@@ -618,7 +618,60 @@ async def test_with_params_async():
 
 # Combos
 
-# ToDo: implement test_with_all
+
+def test_with_all():
+    project = "my_project"
+    if project in unify.list_projects():
+        unify.delete_project(project)
+    unify.create_project(project)
+    unify.activate(project)
+
+    with unify.Params(a="a"):
+        logs = unify.get_logs()
+        assert len(logs) == 0
+        log = unify.log()
+        logs = unify.get_logs()
+        assert len(logs) == 1
+        assert logs[0].params == {"a": "a"}
+        unify.add_log_params(logs=log, b="b", c="c")
+        logs = unify.get_logs()
+        assert len(logs) == 1
+        assert logs[0].params == {"a": "a", "b": "b", "c": "c"}
+        with unify.Entries(d="d"):
+            unify.add_log_entries(logs=log)
+            logs = unify.get_logs()
+            assert len(logs) == 1
+            assert logs[0].entries == {"d": "d"}
+            assert logs[0].params == {"a": "a", "b": "b", "c": "c"}
+            unify.add_log_entries(logs=log, e="e")
+            unify.add_log_params(logs=log, f="f")
+            logs = unify.get_logs()
+            assert len(logs) == 1
+            assert logs[0].entries == {"d": "d", "e": "e"}
+            assert logs[0].params == {
+                "a": "a",
+                "b": "b",
+                "c": "c",
+                "f": "f",
+            }
+            with unify.Log():
+                unify.add_log_params(zero=0)
+                unify.add_log_entries(one=1)
+                logs = unify.get_logs()
+                assert len(logs) == 2
+                assert logs[1].params == {"a": "a", "zero": 0}
+                assert logs[1].entries == {"d": "d", "one": 1}
+            unify.add_log_entries(logs=log, g="g")
+            logs = unify.get_logs()
+            assert len(logs) == 2
+            assert logs[0].entries == {"d": "d", "e": "e", "g": "g"}
+            assert logs[0].params == {
+                "a": "a",
+                "b": "b",
+                "c": "c",
+                "f": "f",
+            }
+
 
 # ToDo: implement test_with_all_threaded
 
