@@ -4,27 +4,61 @@ from requests import HTTPError
 import unify
 
 
-def test_log():
+def test_log_parameter():
     project = "my_project"
     if project in unify.list_projects():
         unify.delete_project(project)
     unify.create_project(project)
     data = {
-        "system_prompt": "You are a weather assistant",
-        "user_prompt": "hello world",
+        "system_prompt": "You are a mathematician.",
+        "dataset": "maths questions",
+    }
+    assert len(unify.get_logs(project=project)) == 0
+    log_id = unify.log(project=project, parameters=data).id
+    project_logs = unify.get_logs(project=project)
+    assert len(project_logs) and project_logs[0].id == log_id
+    id_log = unify.get_log_by_id(log_id)
+    assert len(id_log) and "system_prompt" in id_log.parameters
+    unify.delete_log_fields(field="system_prompt", logs=log_id)
+    id_log = unify.get_log_by_id(log_id)
+    assert len(id_log) and "system_prompt" not in id_log.parameters
+    unify.add_log_entries(
+        logs=log_id,
+        parameters={"system_prompt": data["system_prompt"]},
+    )
+
+    id_log = unify.get_log_by_id(log_id)
+    assert len(id_log) and "system_prompt" in id_log.parameters
+    unify.delete_logs(logs=log_id)
+    assert len(unify.get_logs(project=project)) == 0
+    try:
+        unify.get_log_by_id(log_id)
+        assert False
+    except HTTPError as e:
+        assert e.response.status_code == 404
+
+
+def test_log_entry():
+    project = "my_project"
+    if project in unify.list_projects():
+        unify.delete_project(project)
+    unify.create_project(project)
+    data = {
+        "question": "What is 1 + 1?",
+        "answer": "It's 2",
     }
     assert len(unify.get_logs(project=project)) == 0
     log_id = unify.log(project=project, **data).id
     project_logs = unify.get_logs(project=project)
     assert len(project_logs) and project_logs[0].id == log_id
     id_log = unify.get_log_by_id(log_id)
-    assert len(id_log) and "user_prompt" in id_log.entries
-    unify.delete_log_fields(field="user_prompt", logs=log_id)
+    assert len(id_log) and "question" in id_log.entries
+    unify.delete_log_fields(field="question", logs=log_id)
     id_log = unify.get_log_by_id(log_id)
-    assert len(id_log) and "user_prompt" not in id_log.entries
-    unify.add_log_entries(logs=log_id, user_prompt=data["user_prompt"])
+    assert len(id_log) and "question" not in id_log.entries
+    unify.add_log_entries(logs=log_id, question=data["question"])
     id_log = unify.get_log_by_id(log_id)
-    assert len(id_log) and "user_prompt" in id_log.entries
+    assert len(id_log) and "question" in id_log.entries
     unify.delete_logs(logs=log_id)
     assert len(unify.get_logs(project=project)) == 0
     try:
