@@ -137,6 +137,20 @@ class Log:
         ACTIVE_LOG.reset(self._log_token)
 
 
+class Context:
+
+    def __init__(self, context: str):
+        self._context = context
+
+    def __enter__(self):
+        self._context_token = CONTEXT.set(
+            os.path.join(CONTEXT.get(), self._context),
+        )
+
+    def __exit__(self, *args, **kwargs):
+        CONTEXT.reset(self._context_token)
+
+
 class Entries:
 
     def __init__(self, **entries):

@@ -1,4 +1,5 @@
 from __future__ import annotations
+import os
 import inspect
 from contextvars import ContextVar
 from typing import Any, Dict, List, Optional, Union
@@ -11,6 +12,9 @@ from ...utils.helpers import _validate_api_key, _get_and_maybe_create_project
 # log
 ACTIVE_LOG = ContextVar("active_log", default=[])
 LOGGED = ContextVar("logged", default={})
+
+# context
+CONTEXT = ContextVar("context", default="")
 
 # entries
 ACTIVE_ENTRIES = ContextVar(
@@ -77,6 +81,11 @@ def _to_log_ids(
         )
 
 
+def _apply_context(**data):
+    context = CONTEXT.get()
+    return {os.path.join(context, k): v for k, v in data.items()}
+
+
 def log(
     *,
     project: Optional[str] = None,
@@ -115,6 +124,8 @@ def log(
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
+    params = _apply_context(**params)
+    entries = _apply_context(**entries)
     params = {**(params if params else {}), **ACTIVE_PARAMS.get()}
     params = _handle_special_types(params)
     entries = {**entries, **ACTIVE_ENTRIES.get()}
@@ -163,6 +174,7 @@ def _add_to_log(
         "params",
         "entries",
     ), "mode must be one of 'params', 'entries'"
+    data = _apply_context(**data)
     nest_level = {
         "params": PARAMS_NEST_LEVEL,
         "entries": ENTRIES_NEST_LEVEL,
