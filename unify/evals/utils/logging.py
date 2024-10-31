@@ -146,32 +146,25 @@ def log(
     return created_log
 
 
-def add_log_entries(
+def _add_to_log(
     *,
     logs: Optional[Union[int, unify.Log, List[Union[int, unify.Log]]]] = None,
-    parameters: Dict[str, Any] = None,
+    mode: str = None,
     api_key: Optional[str] = None,
     **kwargs,
 ) -> Dict[str, str]:
-    """
-    Add extra entries into an existing log.
-
-    Args:
-        logs: The log(s) to update with extra data. Looks for the current active log if
-        no id is provided.
-
-        parameters: Dictionary containing one or more key:value pairs that will be
-        logged into the platform as parameters.
-
-        api_key: If specified, unify API key to be used. Defaults to the value in the
-        `UNIFY_KEY` environment variable.
-
-        kwargs: Dictionary containing one or more key:value pairs that will be logged
-        into the platform as entries.
-
-    Returns:
-        A message indicating whether the log was successfully updated.
-    """
+    assert mode in (
+        "parameters",
+        "entries",
+    ), "mode must be one of 'parameters', 'entries'"
+    nest_level = {
+        "parameters": PARAMETERS_NEST_LEVEL,
+        "entries": ENTRIES_NEST_LEVEL,
+    }[mode]
+    active = {
+        "parameters": ACTIVE_PARAMETERS,
+        "entries": ACTIVE_ENTRIES,
+    }[mode]
     log_ids = _to_log_ids(logs)
     api_key = _validate_api_key(api_key)
     headers = {
@@ -179,13 +172,13 @@ def add_log_entries(
         "Authorization": f"Bearer {api_key}",
     }
     all_kwargs = list()
-    if ENTRIES_NEST_LEVEL.get() > 0:
+    if nest_level.get() > 0:
         for log_id in log_ids:
             combined_kwargs = {
                 **kwargs,
                 **{
                     k: v
-                    for k, v in ACTIVE_ENTRIES.get().items()
+                    for k, v in active.get().items()
                     if k not in LOGGED.get().get(log_id, {})
                 },
             }
@@ -196,11 +189,9 @@ def add_log_entries(
         )
         kwargs = all_kwargs[0]
     kwargs = _handle_special_types(kwargs)
-    parameters = parameters if parameters is not None else {}
     body = {
         "ids": log_ids,
-        "parameters": parameters,
-        "entries": kwargs,
+        mode: kwargs,
         "overwrite": False,
     }
     response = requests.put(
@@ -209,7 +200,7 @@ def add_log_entries(
         json=body,
     )
     response.raise_for_status()
-    if ENTRIES_NEST_LEVEL.get() > 0:
+    if nest_level.get() > 0:
         logged = LOGGED.get()
         new_logged = dict()
         for log_id in log_ids:
@@ -224,6 +215,56 @@ def add_log_entries(
             },
         )
     return response.json()
+
+
+def add_log_parameters(
+    *,
+    logs: Optional[Union[int, unify.Log, List[Union[int, unify.Log]]]] = None,
+    api_key: Optional[str] = None,
+    **kwargs,
+) -> Dict[str, str]:
+    """
+    Add extra entries into an existing log.
+
+    Args:
+        logs: The log(s) to update with extra data. Looks for the current active log if
+        no id is provided.
+
+        api_key: If specified, unify API key to be used. Defaults to the value in the
+        `UNIFY_KEY` environment variable.
+
+        kwargs: Dictionary containing one or more key:value pairs that will be logged
+        into the platform as parameters.
+
+    Returns:
+        A message indicating whether the log was successfully updated.
+    """
+    return _add_to_log(logs=logs, mode="parameters", api_key=api_key, **kwargs)
+
+
+def add_log_entries(
+    *,
+    logs: Optional[Union[int, unify.Log, List[Union[int, unify.Log]]]] = None,
+    api_key: Optional[str] = None,
+    **kwargs,
+) -> Dict[str, str]:
+    """
+    Add extra entries into an existing log.
+
+    Args:
+        logs: The log(s) to update with extra data. Looks for the current active log if
+        no id is provided.
+
+        api_key: If specified, unify API key to be used. Defaults to the value in the
+        `UNIFY_KEY` environment variable.
+
+        kwargs: Dictionary containing one or more key:value pairs that will be logged
+        into the platform as entries.
+
+    Returns:
+        A message indicating whether the log was successfully updated.
+    """
+    return _add_to_log(logs=logs, mode="entries", api_key=api_key, **kwargs)
 
 
 def delete_logs(
