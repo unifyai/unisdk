@@ -61,7 +61,7 @@ class Log:
         return self._id == other._id
 
     def __len__(self):
-        return len(self._entries)
+        return len(self._entries) + len(self._parameters)
 
     def __repr__(self) -> str:
         return f"Log(id={self._id})"
