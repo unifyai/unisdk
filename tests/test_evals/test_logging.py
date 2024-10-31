@@ -655,16 +655,16 @@ def test_with_all():
                 "f": "f",
             }
             with unify.Log():
-                unify.add_log_params(zero=0)
-                unify.add_log_entries(one=1)
+                unify.add_log_params(g="g")
+                unify.add_log_entries(h="h")
                 logs = unify.get_logs()
                 assert len(logs) == 2
-                assert logs[1].params == {"a": "a", "zero": 0}
-                assert logs[1].entries == {"d": "d", "one": 1}
-            unify.add_log_entries(logs=log, g="g")
+                assert logs[1].params == {"a": "a", "g": "g"}
+                assert logs[1].entries == {"d": "d", "h": "h"}
+            unify.add_log_entries(logs=log, i="i")
             logs = unify.get_logs()
             assert len(logs) == 2
-            assert logs[0].entries == {"d": "d", "e": "e", "g": "g"}
+            assert logs[0].entries == {"d": "d", "e": "e", "i": "i"}
             assert logs[0].params == {
                 "a": "a",
                 "b": "b",
