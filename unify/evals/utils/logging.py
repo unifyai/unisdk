@@ -124,6 +124,7 @@ def log(
                 f"config {kwargs}"
             )
             return retrieved_logs[0]
+    parameters = parameters if parameters is not None else {}
     body = {"project": project, "parameters": parameters, "entries": kwargs}
     response = requests.post(BASE_URL + "/log", headers=headers, json=body)
     response.raise_for_status()
@@ -188,6 +189,7 @@ def add_log_entries(
         )
         kwargs = all_kwargs[0]
     kwargs = _handle_special_types(kwargs)
+    parameters = parameters if parameters is not None else {}
     body = {
         "ids": log_ids,
         "parameters": parameters,
