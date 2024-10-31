@@ -45,6 +45,7 @@ def _format_evals(evals: Dict[str, List[Dict[str, Any]]]) -> str:
 def update(
     metric: str,
     mode: str = "maximize",
+    interactive: bool = True,
     logs: Optional[List[unify.Log]] = None,
 ):
     """
@@ -56,11 +57,15 @@ def update(
 
         mode: The optimization mode, either maximize or minimize for the metric.
 
+        interactive: Whether to run in interactive mode, with a human in the loop.
+        Default is True.
+
         logs: The logs to parse and use for the suggestion.
 
     Returns:
           The suggested parameter name to update, and the suggested new value.
     """
+    # ToDo: add interactive support
     assert mode in ("maximize", "minimize"), "Mode must be 'maximize' or 'minimize'."
 
     client = unify.Unify("gpt-4o@openai", cache=True)
@@ -68,38 +73,13 @@ def update(
     if not logs:
         logs = unify.get_logs()
 
-    # ToDo: remove hard-coding once REST API is complete
-    config = unify.Params(
-        evaluator_code="'def evaluate_response(question: str, response: str) -> float:\n    correct_answer = eval(question)\n    try:\n        response_int = int(\n            "
-        ".join([c for c in response.split("
-        ")[-1] if c.isdigit()]),\n        )\n        return float(correct_answer == response_int)\n    except ValueError:\n        return 0.\n'",
-    )
-    for lg in logs:
-        if "evaluator_code" in lg.entries:
-            del lg.entries["evaluator_code"]
-        lg._params = config
-    # End ToDo
-
-    evals = unify.group_logs_by_config(logs)
-    # ToDo: fix this hack once ordering is correctly preserved
-    evals = {
-        k: [
-            {
-                "question": lg.entries["question"],
-                "response": lg.entries["response"],
-                "score": lg.entries["score"],
-            }
-            for lg in logs
-        ]
-        for k, logs in evals.items()
-    }
-    # End ToDo
+    evals = unify.group_logs_by_configs(logs=logs)
     evals_str = _format_evals(evals)
 
     system_message = (
         SUGGEST_SYS_MESSAGE.replace(
             "{configs}",
-            str(list(config.params.keys()))[1:-1],
+            str(unify.get_params())[1:-1],
         )
         .replace(
             "{evals}",
