@@ -22,11 +22,10 @@ def test_log_parameter():
     unify.delete_log_fields(field="system_prompt", logs=log_id)
     id_log = unify.get_log_by_id(log_id)
     assert len(id_log) and "system_prompt" not in id_log.parameters
-    unify.add_log_entries(
+    unify.add_log_parameters(
         logs=log_id,
-        parameters={"system_prompt": data["system_prompt"]},
+        system_prompt=data["system_prompt"],
     )
-
     id_log = unify.get_log_by_id(log_id)
     assert len(id_log) and "system_prompt" in id_log.parameters
     unify.delete_logs(logs=log_id)
