@@ -165,7 +165,7 @@ def rename_log_params(
     )
 
 
-def group_logs_by_params(
+def group_logs_by_configs(
     *,
     logs: List[unify.Log],
 ) -> Dict:
