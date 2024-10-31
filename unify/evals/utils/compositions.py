@@ -18,9 +18,9 @@ def _replace_log_fields(
     **data,
 ) -> Dict[str, str]:
     assert mode in (
-        "parameters",
+        "params",
         "entries",
-    ), "mode must be one of 'parameters', 'entries'"
+    ), "mode must be one of 'params', 'entries'"
     log_id = logs  # handle_multiple_logs decorator handles logs, returning a single id
     api_key = _validate_api_key(api_key)
     for k, v in data.items():
@@ -37,9 +37,9 @@ def _update_log_fields(
     **data,
 ) -> Dict[str, str]:
     assert mode in (
-        "parameters",
+        "params",
         "entries",
-    ), "mode must be one of 'parameters', 'entries'"
+    ), "mode must be one of 'params', 'entries'"
     log_id = logs  # handle_multiple_logs decorator handles logs, returning a single id
     data = getattr(get_log_by_id(id=log_id, api_key=api_key), mode)
     replacements = dict()
@@ -57,9 +57,9 @@ def _rename_log_fields(
     **data,
 ) -> Dict[str, str]:
     assert mode in (
-        "parameters",
+        "params",
         "entries",
-    ), "mode must be one of 'parameters', 'entries'"
+    ), "mode must be one of 'params', 'entries'"
     log_id = logs  # handle_multiple_logs decorator handles logs, returning a single id
     api_key = _validate_api_key(api_key)
     data = getattr(get_log_by_id(id=log_id, api_key=api_key), mode)
@@ -73,14 +73,14 @@ def _rename_log_fields(
 # -----------#
 
 
-def replace_log_parameters(
+def replace_log_params(
     *,
     logs: Optional[Union[int, unify.Log, List[Union[int, unify.Log]]]] = None,
     api_key: Optional[str] = None,
-    **parameters,
+    **params,
 ) -> Dict[str, str]:
     """
-    Replaces existing parameters in an existing log.
+    Replaces existing params in an existing log.
 
     Args:
         logs: The log(s) to replace fields for. Looks for the current active log if none
@@ -89,28 +89,28 @@ def replace_log_parameters(
         api_key: If specified, unify API key to be used. Defaults to the value in the
         `UNIFY_KEY` environment variable.
 
-        parameters: The data to update in the log.
+        params: The data to update in the log.
 
     Returns:
         A message indicating whether the log was successfully updated.
     """
     return _replace_log_fields(
         logs=logs,
-        mode="parameters",
+        mode="params",
         api_key=api_key,
-        **parameters,
+        **params,
     )
 
 
-def update_log_parameters(
+def update_log_params(
     *,
     fn: Union[callable, Dict[str, callable]],
     logs: Optional[Union[int, unify.Log, List[Union[int, unify.Log]]]] = None,
     api_key: Optional[str] = None,
-    **parameters,
+    **params,
 ) -> Dict[str, str]:
     """
-    Updates existing parameters in an existing log.
+    Updates existing params in an existing log.
 
     Args:
         fn: The function or set of functions to apply to each field in the log.
@@ -121,7 +121,7 @@ def update_log_parameters(
         api_key: If specified, unify API key to be used. Defaults to the value in the
         `UNIFY_KEY` environment variable.
 
-        parameters: The data to update in the log.
+        params: The data to update in the log.
 
     Returns:
         A message indicating whether the log was successfully updated.
@@ -129,20 +129,20 @@ def update_log_parameters(
     return _update_log_fields(
         fn=fn,
         logs=logs,
-        mode="parameters",
+        mode="params",
         api_key=api_key,
-        **parameters,
+        **params,
     )
 
 
-def rename_log_parameters(
+def rename_log_params(
     *,
     logs: Optional[Union[int, unify.Log, List[Union[int, unify.Log]]]] = None,
     api_key: Optional[str] = None,
-    **parameters,
+    **params,
 ) -> Dict[str, str]:
     """
-    Renames the set of log parameters.
+    Renames the set of log params.
 
     Args:
         logs: The log(s) to update the field names for. Looks for the current active log
@@ -151,7 +151,7 @@ def rename_log_parameters(
         api_key: If specified, unify API key to be used. Defaults to the value in the
         `UNIFY_KEY` environment variable.
 
-        parameters: The field names to update in the log, with keys as old names and values
+        params: The field names to update in the log, with keys as old names and values
         as new names.
 
     Returns:
@@ -159,20 +159,20 @@ def rename_log_parameters(
     """
     return _rename_log_fields(
         logs=logs,
-        mode="parameters",
+        mode="params",
         api_key=api_key,
-        **parameters,
+        **params,
     )
 
 
-def group_logs_by_parameters(
+def group_logs_by_params(
     *,
     logs: List[unify.Log],
 ) -> Dict:
-    configs = list(dict.fromkeys([json.dumps(lg.parameters) for lg in logs]))
+    configs = list(dict.fromkeys([json.dumps(lg.params) for lg in logs]))
     ret_dict = dict()
     for conf in configs:
-        ret_dict[conf] = [lg for lg in logs if json.dumps(lg.parameters) == conf]
+        ret_dict[conf] = [lg for lg in logs if json.dumps(lg.params) == conf]
     return ret_dict
 
 

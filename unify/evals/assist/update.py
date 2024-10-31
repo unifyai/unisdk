@@ -77,7 +77,7 @@ def update(
     for lg in logs:
         if "evaluator_code" in lg.entries:
             del lg.entries["evaluator_code"]
-        lg._parameters = config
+        lg._params = config
     # End ToDo
 
     evals = unify.group_logs_by_config(logs)
@@ -99,7 +99,7 @@ def update(
     system_message = (
         SUGGEST_SYS_MESSAGE.replace(
             "{configs}",
-            str(list(config.parameters.keys()))[1:-1],
+            str(list(config.params.keys()))[1:-1],
         )
         .replace(
             "{evals}",

@@ -14,20 +14,20 @@ def test_log_parameter():
         "dataset": "maths questions",
     }
     assert len(unify.get_logs(project=project)) == 0
-    log_id = unify.log(project=project, parameters=data).id
+    log_id = unify.log(project=project, params=data).id
     project_logs = unify.get_logs(project=project)
     assert len(project_logs) and project_logs[0].id == log_id
     id_log = unify.get_log_by_id(log_id)
-    assert len(id_log) and "system_prompt" in id_log.parameters
+    assert len(id_log) and "system_prompt" in id_log.params
     unify.delete_log_fields(field="system_prompt", logs=log_id)
     id_log = unify.get_log_by_id(log_id)
-    assert len(id_log) and "system_prompt" not in id_log.parameters
-    unify.add_log_parameters(
+    assert len(id_log) and "system_prompt" not in id_log.params
+    unify.add_log_params(
         logs=log_id,
         system_prompt=data["system_prompt"],
     )
     id_log = unify.get_log_by_id(log_id)
-    assert len(id_log) and "system_prompt" in id_log.parameters
+    assert len(id_log) and "system_prompt" in id_log.params
     unify.delete_logs(logs=log_id)
     assert len(unify.get_logs(project=project)) == 0
     try:

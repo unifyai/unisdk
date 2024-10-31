@@ -19,12 +19,12 @@ ACTIVE_ENTRIES = ContextVar(
 )
 ENTRIES_NEST_LEVEL = ContextVar("entries_nest_level", default=0)
 
-# parameters
+# params
 ACTIVE_PARAMETERS = ContextVar(
-    "active_parameters",
+    "active_params",
     default={},
 )
-PARAMETERS_NEST_LEVEL = ContextVar("parameters_nest_level", default=0)
+PARAMETERS_NEST_LEVEL = ContextVar("params_nest_level", default=0)
 
 # span
 SPAN = ContextVar("span", default={})
@@ -81,7 +81,7 @@ def log(
     *,
     project: Optional[str] = None,
     skip_duplicates: bool = True,
-    parameters: Dict[str, Any] = None,
+    params: Dict[str, Any] = None,
     api_key: Optional[str] = None,
     **entries,
 ) -> unify.Log:
@@ -98,8 +98,8 @@ def log(
         without duplicating the logged data every time. If False, then repeat entries
         will be added with identical data, but unique timestamps.
 
-        parameters: Dictionary containing one or more key:value pairs that will be
-        logged into the platform as parameters.
+        params: Dictionary containing one or more key:value pairs that will be
+        logged into the platform as params.
 
         api_key: If specified, unify API key to be used. Defaults to the value in the
         `UNIFY_KEY` environment variable.
@@ -131,8 +131,8 @@ def log(
                 f"config {entries}"
             )
             return retrieved_logs[0]
-    parameters = parameters if parameters is not None else {}
-    body = {"project": project, "parameters": parameters, "entries": entries}
+    params = params if params is not None else {}
+    body = {"project": project, "params": params, "entries": entries}
     response = requests.post(BASE_URL + "/log", headers=headers, json=body)
     response.raise_for_status()
     created_log = unify.Log(id=response.json(), api_key=api_key, **entries)
@@ -154,15 +154,15 @@ def _add_to_log(
     **data,
 ) -> Dict[str, str]:
     assert mode in (
-        "parameters",
+        "params",
         "entries",
-    ), "mode must be one of 'parameters', 'entries'"
+    ), "mode must be one of 'params', 'entries'"
     nest_level = {
-        "parameters": PARAMETERS_NEST_LEVEL,
+        "params": PARAMETERS_NEST_LEVEL,
         "entries": ENTRIES_NEST_LEVEL,
     }[mode]
     active = {
-        "parameters": ACTIVE_PARAMETERS,
+        "params": ACTIVE_PARAMETERS,
         "entries": ACTIVE_ENTRIES,
     }[mode]
     log_ids = _to_log_ids(logs)
@@ -217,11 +217,11 @@ def _add_to_log(
     return response.json()
 
 
-def add_log_parameters(
+def add_log_params(
     *,
     logs: Optional[Union[int, unify.Log, List[Union[int, unify.Log]]]] = None,
     api_key: Optional[str] = None,
-    **parameters,
+    **params,
 ) -> Dict[str, str]:
     """
     Add extra entries into an existing log.
@@ -233,13 +233,13 @@ def add_log_parameters(
         api_key: If specified, unify API key to be used. Defaults to the value in the
         `UNIFY_KEY` environment variable.
 
-        parameters: Dictionary containing one or more key:value pairs that will be
-        logged into the platform as parameters.
+        params: Dictionary containing one or more key:value pairs that will be
+        logged into the platform as params.
 
     Returns:
         A message indicating whether the log was successfully updated.
     """
-    return _add_to_log(logs=logs, mode="parameters", api_key=api_key, **parameters)
+    return _add_to_log(logs=logs, mode="params", api_key=api_key, **params)
 
 
 def add_log_entries(
@@ -373,7 +373,7 @@ def get_logs(
             id=dct["id"],
             timestamp=dct["ts"],
             **dct["entries"],
-            parameters={k: params[k][v] for k, v in dct["params"].items()},
+            params={k: params[k][v] for k, v in dct["params"].items()},
             api_key=api_key,
         )
         for dct in logs
@@ -410,7 +410,7 @@ def get_log_by_id(
         id=lg["id"],
         timestamp=lg["ts"],
         **lg["entries"],
-        parameters={k: params[k][v] for k, v in lg["params"].items()},
+        params={k: params[k][v] for k, v in lg["params"].items()},
         api_key=api_key,
     )
 

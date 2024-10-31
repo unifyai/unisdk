@@ -17,7 +17,7 @@ def test_openai_tool_use() -> None:
             "function": {
                 "name": "get_n_day_weather_forecast",
                 "description": "Get an N-day weather forecast",
-                "parameters": {
+                "params": {
                     "type": "object",
                     "properties": {
                         "location": {

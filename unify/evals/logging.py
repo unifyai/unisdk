@@ -24,7 +24,7 @@ class Log:
         project: Optional[str] = None,
         skip_duplicates: bool = False,
         api_key: Optional[str] = None,
-        parameters: Dict[str, Any] = None,
+        params: Dict[str, Any] = None,
         **entries,
     ):
         self._id = id
@@ -32,7 +32,7 @@ class Log:
         self._project = project
         self._skip_duplicates = skip_duplicates
         self._entries = entries
-        self._parameters = parameters
+        self._params = params
         self._api_key = _validate_api_key(api_key)
 
     # Properties
@@ -50,8 +50,8 @@ class Log:
         return self._entries
 
     @property
-    def parameters(self) -> Dict[str, Any]:
-        return self._parameters
+    def params(self) -> Dict[str, Any]:
+        return self._params
 
     # Dunders
 
@@ -61,7 +61,7 @@ class Log:
         return self._id == other._id
 
     def __len__(self):
-        return len(self._entries) + len(self._parameters)
+        return len(self._entries) + len(self._params)
 
     def __repr__(self) -> str:
         return f"Log(id={self._id})"
@@ -107,7 +107,7 @@ class Log:
             "id": self._id,
             "timestamp": self._timestamp,
             "entries": self._entries,
-            "parameters": self._parameters,
+            "params": self._params,
             "api_key": self._api_key,
         }
 
@@ -159,19 +159,19 @@ class Entries:
 
 class Parameters:
 
-    def __init__(self, **parameters):
-        self._parameters = _handle_special_types(parameters)
+    def __init__(self, **params):
+        self._params = _handle_special_types(params)
 
     def __enter__(self):
-        self._parameters_token = ACTIVE_PARAMETERS.set(
-            {**ACTIVE_PARAMETERS.get(), **self._parameters},
+        self._params_token = ACTIVE_PARAMETERS.set(
+            {**ACTIVE_PARAMETERS.get(), **self._params},
         )
         self._nest_token = PARAMETERS_NEST_LEVEL.set(
             PARAMETERS_NEST_LEVEL.get() + 1,
         )
 
     def __exit__(self, *args, **kwargs):
-        ACTIVE_PARAMETERS.reset(self._parameters_token)
+        ACTIVE_PARAMETERS.reset(self._params_token)
         PARAMETERS_NEST_LEVEL.reset(self._nest_token)
         if PARAMETERS_NEST_LEVEL.get() == 0:
             LOGGED.set({})
