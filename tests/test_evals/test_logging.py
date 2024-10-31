@@ -442,6 +442,40 @@ def test_with_context_threaded():
         assert entry == {"capitalized/vowels/a": i * 3}
 
 
+@pytest.mark.asyncio
+async def test_with_context_async():
+    project = "my_project"
+    if project in unify.list_projects():
+        unify.delete_project(project)
+    unify.create_project(project)
+    unify.activate(project)
+
+    async def fn(a, b, e):
+        log = unify.log(project=project, a=a)
+        with unify.Context("capitalized"):
+            log.add_entries(b=b)
+            with unify.Context("vowels"):
+                log.add_entries(e=e)
+                unify.log(project=project, a=a)
+
+    fns = [fn(*[3 * i + j for j in range(3)]) for i in range(4)]
+    await asyncio.gather(*fns)
+
+    logs = unify.get_logs(project="my_project")
+    entries = sorted(
+        [log.entries for log in logs],
+        key=lambda dct: list(dct.values())[0],
+    )
+    for i, entry in enumerate(entries[0::2]):
+        assert entry == {
+            "a": i * 3,
+            "capitalized/b": i * 3 + 1,
+            "capitalized/vowels/e": i * 3 + 2,
+        }
+    for i, entry in enumerate(entries[1::2]):
+        assert entry == {"capitalized/vowels/a": i * 3}
+
+
 # Entries
 
 
