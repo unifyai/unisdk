@@ -41,11 +41,11 @@ def _update_log_fields(
         "entries",
     ), "mode must be one of 'params', 'entries'"
     log_id = logs  # handle_multiple_logs decorator handles logs, returning a single id
-    data = getattr(get_log_by_id(id=log_id, api_key=api_key), mode)
+    old_data = getattr(get_log_by_id(id=log_id, api_key=api_key), mode)
     replacements = dict()
     for k, v in data.items():
         f = fn[k] if isinstance(fn, dict) else fn
-        replacements[k] = f(data[k], v)
+        replacements[k] = f(old_data[k], v)
     return _replace_log_fields(logs=log_id, mode=mode, api_key=api_key, **replacements)
 
 
@@ -62,8 +62,8 @@ def _rename_log_fields(
     ), "mode must be one of 'params', 'entries'"
     log_id = logs  # handle_multiple_logs decorator handles logs, returning a single id
     api_key = _validate_api_key(api_key)
-    data = getattr(get_log_by_id(id=log_id, api_key=api_key), mode)
-    for old_name in data.keys():
+    old_data = getattr(get_log_by_id(id=log_id, api_key=api_key), mode)
+    for old_name in old_data.keys():
         delete_log_fields(field=old_name, logs=log_id, api_key=api_key)
     new_data = {new_name: data[old_name] for old_name, new_name in data.items()}
     return _add_to_log(logs=log_id, mode=mode, api_key=api_key, **new_data)
