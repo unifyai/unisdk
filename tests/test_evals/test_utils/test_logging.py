@@ -4,7 +4,7 @@ from requests import HTTPError
 import unify
 
 
-def test_log_parameter():
+def test_log_param():
     project = "my_project"
     if project in unify.list_projects():
         unify.delete_project(project)
@@ -35,6 +35,35 @@ def test_log_parameter():
         assert False
     except HTTPError as e:
         assert e.response.status_code == 404
+
+
+def test_add_param():
+    project = "my_project"
+    if project in unify.list_projects():
+        unify.delete_project(project)
+    unify.create_project(project)
+    unify.activate(project)
+    unify.log(a="a")
+    unify.log(b="b")
+    unify.log(c="c")
+    logs = unify.get_logs()
+    assert len(logs) == 3
+    assert logs[0].entries == {"a": "a"}
+    assert logs[0].params == {}
+    assert logs[1].entries == {"b": "b"}
+    assert logs[1].params == {}
+    assert logs[2].entries == {"c": "c"}
+    assert logs[2].params == {}
+    unify.add_param(system_prompt="You know the alphabet.")
+    logs = unify.get_logs()
+    assert len(logs) == 3
+    assert logs[0].entries == {"a": "a"}
+    assert logs[0].params == {"system_prompt": "You know the alphabet."}
+    assert logs[1].entries == {"b": "b"}
+    assert logs[1].params == {"system_prompt": "You know the alphabet."}
+    assert logs[2].entries == {"c": "c"}
+    assert logs[2].params == {"system_prompt": "You know the alphabet."}
+    unify.deactivate()
 
 
 def test_log_entry():
