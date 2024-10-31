@@ -355,7 +355,14 @@ def get_log_by_id(
     }
     response = requests.get(BASE_URL + f"/log/{id}", headers=headers)
     response.raise_for_status()
-    return unify.Log(id=id, **response.json()["entries"])
+    params, lg = response.json().values()
+    return unify.Log(
+        id=lg["id"],
+        timestamp=lg["ts"],
+        **lg["entries"],
+        parameters={k: params[k][v] for k, v in lg["params"].items()},
+        api_key=api_key,
+    )
 
 
 # noinspection PyShadowingBuiltins
