@@ -2,7 +2,7 @@ from __future__ import annotations
 import json
 
 from ...utils.helpers import _validate_api_key, _get_and_maybe_create_project
-from .logging import _add_to_log, _to_log_ids
+from .logging import _add_to_log, _to_log_ids, _to_logs
 from .logging import *
 
 
@@ -185,6 +185,21 @@ def add_param(
         logs = get_logs()
     assert len(param) == 1, "Only one parameter is allowed when calling add_param"
     return add_log_params(logs=logs, api_key=api_key, **param)
+
+
+def get_params(
+    *,
+    logs: Optional[Union[int, unify.Log, List[Union[int, unify.Log]]]] = "all",
+    api_key: Optional[str] = None,
+) -> List[str]:
+    """
+    Gets all parameter names within the collection of logs (default to all logs).
+    """
+    if logs == "all":
+        logs = get_logs(api_key=api_key)
+    else:
+        logs = _to_logs(logs)
+    return list(dict.fromkeys([p for lg in logs for p in lg.params.keys()]))
 
 
 # Entries #

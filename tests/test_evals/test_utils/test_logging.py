@@ -66,6 +66,21 @@ def test_add_param():
     unify.deactivate()
 
 
+def test_get_params():
+    project = "my_project"
+    if project in unify.list_projects():
+        unify.delete_project(project)
+    unify.create_project(project)
+    unify.activate(project)
+    with unify.Params(system_prompt="You know the alphabet"):
+        unify.log(a="a")
+        with unify.Params(tools="internet"):
+            unify.log(b="b")
+            unify.log(c="c")
+    assert unify.get_params() == ["system_prompt", "tools"]
+    unify.deactivate()
+
+
 def test_log_entry():
     project = "my_project"
     if project in unify.list_projects():
