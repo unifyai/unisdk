@@ -29,7 +29,8 @@ class Dataset:
             data: The data for populating the dataset.
             This needs to be a list of JSON serializable objects.
 
-            name: The name of the dataset.
+            name: The name of the dataset. To create a dataset for a specific project
+            with name {project_name}, then prefix the name with {project_name}/{name}.
 
             artifacts: Dataset metadata. This is an optional dict.
 
