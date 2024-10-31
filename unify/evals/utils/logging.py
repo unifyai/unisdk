@@ -19,6 +19,13 @@ ACTIVE_ENTRIES = ContextVar(
 )
 ENTRIES_NEST_LEVEL = ContextVar("entries_nest_level", default=0)
 
+# parameters
+ACTIVE_PARAMETERS = ContextVar(
+    "active_parameters",
+    default={},
+)
+PARAMETERS_NEST_LEVEL = ContextVar("parameters_nest_level", default=0)
+
 # span
 SPAN = ContextVar("span", default={})
 RUNNING_TIME = ContextVar("running_time", default=0.0)

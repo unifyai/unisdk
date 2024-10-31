@@ -143,17 +143,37 @@ class Entries:
         self._entries = _handle_special_types(kwargs)
 
     def __enter__(self):
-        self.token = ACTIVE_ENTRIES.set(
+        self._entries_token = ACTIVE_ENTRIES.set(
             {**ACTIVE_ENTRIES.get(), **self._entries},
         )
-        self.nest_level_token = ENTRIES_NEST_LEVEL.set(
+        self._nest_token = ENTRIES_NEST_LEVEL.set(
             ENTRIES_NEST_LEVEL.get() + 1,
         )
 
     def __exit__(self, *args, **kwargs):
-        ACTIVE_ENTRIES.reset(self.token)
-        ENTRIES_NEST_LEVEL.reset(self.nest_level_token)
+        ACTIVE_ENTRIES.reset(self._entries_token)
+        ENTRIES_NEST_LEVEL.reset(self._nest_token)
         if ENTRIES_NEST_LEVEL.get() == 0:
+            LOGGED.set({})
+
+
+class Parameters:
+
+    def __init__(self, **kwargs):
+        self._parameters = _handle_special_types(kwargs)
+
+    def __enter__(self):
+        self._parameters_token = ACTIVE_PARAMETERS.set(
+            {**ACTIVE_PARAMETERS.get(), **self._parameters},
+        )
+        self._nest_token = PARAMETERS_NEST_LEVEL.set(
+            PARAMETERS_NEST_LEVEL.get() + 1,
+        )
+
+    def __exit__(self, *args, **kwargs):
+        ACTIVE_PARAMETERS.reset(self._parameters_token)
+        PARAMETERS_NEST_LEVEL.reset(self._nest_token)
+        if PARAMETERS_NEST_LEVEL.get() == 0:
             LOGGED.set({})
 
 
