@@ -32,7 +32,7 @@ def _format_evals(evals: Dict[str, List[unify.Log]]) -> str:
         config = json.loads(config_str)
         for param_name, param_value in config.items():
             ret.append(param_name + ":\n")
-            ret.append(param_value)
+            ret.append(json.dumps(param_value))
         ret.append(
             "\n" "Logs:\n" "-----\n",
         )
