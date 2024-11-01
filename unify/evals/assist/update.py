@@ -32,16 +32,16 @@ def _get_evals(logs: List[unify.Log], metric: str) -> str:
             key=lambda item: sum([lg.entries[metric] for lg in item[1]]) / len(item[1]),
         )
     }
-
-    observed_entries = set()
+    highest_performing_entries = set(
+        [json.dumps(entry) for entry in list(evals.values())[-1]],
+    )
     evals_pruned = dict()
-    for config_str, entries in reversed(evals.items()):
+    for i, (config_str, entries) in enumerate(reversed(evals.items())):
         evals_pruned[config_str] = list()
         for entry in entries:
             entry_str = json.dumps(entry)
-            if entry_str in observed_entries:
+            if i > 0 and entry_str in highest_performing_entries:
                 continue
-            observed_entries.add(entry_str)
             evals_pruned[config_str].append(entry)
     evals_pruned = {k: v for k, v in reversed(evals_pruned.items())}
 

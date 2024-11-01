@@ -106,14 +106,19 @@ in order to try and {relation} the metric `{metric}`. Your task is to try and be
 highest performing experiment, based on the historical experiments presented. Don't pay
 attention to improving the poorest performing experiments, your task is to improve upon
 the highest performing, using all of the historical context to make sense of all the
-failure modes observed thus far across all experiments.
+failure modes observed thus far across all experiments. The highest performing
+experiment (shown last) presents *all* of the log data, whereas all other experiments
+only present the logs which are *different* to the highest performing. Therefore, if a
+log is missing, then this means the result was the *same* as the highest performing.
 
 You should not *cheat* to improve the `{metric}`. For example, making the questions in
-the test set much easier is not a good proposal. However, fixing issues in how the
-questions are formatted or the data is presented in the test dataset *might* be a valid
-improvement. The overall intention is to improve the genuine performance and capability
-of the system, with `{metric}` being a good proxy to this, provided that we are striving
-to {relation} the metric `{metric}` *in good faith* (without *shortcuts* or *cheating*).
+the test set much easier is not a good proposal. Neither is hacking the evaluator
+function to always return a high score. However, fixing issues in how the questions are
+formatted or how the data is presented in the test dataset *might* be a valid
+improvement, as might making the evaluator code more robust. The overall intention is to
+improve the genuine performance and capability of the system, with `{metric}` being a
+good proxy for this, provided that we are striving to {relation} the metric `{metric}`
+*in good faith* (without *shortcuts* or *cheating*).
 
 You should pay attention to the highest performing experiments, and pay special
 attention to examples in these experiments where `{metric}` has a {low|high} value.
