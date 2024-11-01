@@ -136,10 +136,10 @@ The parameters that can be changed are as follows:
 
 If you believe that we should introduce a *new* parameter, then please respond with
 this proposal and a full explanation. For example, if it seems as though something is
-going wrong with the system prompt or some evaluator function, but neither of these are
-included in the experiment parameters, then you can suggest that it should added for the
-next experiment. There is no need to suggest a *value* for this unseen parameter. You
-can leave {parameter_value} empty (see below).
+going wrong with a system prompt, evaluator function, document loading, parsing, or any
+other issue not captured by the current parameters, then you can suggest to add this
+parameter for the next experiment. You should also still suggest a value as usual, even
+if this is difficult without the context of other example values for guidance.
 
 The full set of evaluation logs for different experiments, ordered from the lowest
 performing to highest performing, are as follows:
