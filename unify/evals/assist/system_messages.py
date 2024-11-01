@@ -103,28 +103,27 @@ SUGGEST_SYS_MESSAGE = """
 
 Your task is to propose new changes to one parameter in the experiment configuration
 in order to try and {relation} the metric `{metric}`. Your task is to try and beat the
-highest performing configuration, based on the historical experiments. Don't pay
-attention to improving the poorest performing runs, your task is to improve upon the
-highest performing run, using all of the historical context to make sense of all the
-failure modes observed thus far.
+highest performing experiment, based on the historical experiments presented. Don't pay
+attention to improving the poorest performing experiments, your task is to improve upon
+the highest performing, using all of the historical context to make sense of all the
+failure modes observed thus far across all experiments.
 
 You should not *cheat* to improve the `{metric}`. For example, making the questions in
 the test set much easier is not a good proposal. However, fixing issues in how the
 questions are formatted or the data is presented in the test dataset *might* be a valid
-improvement. The overall intention is to improve the performance of the system, with
-`{metric}` being a good proxy to this, provided that we are striving to {relation} the
-metric `{metric}` *in good faith* (without *shortcuts* or *cheating*).
-
+improvement. The overall intention is to improve the genuine performance and capability
+of the system, with `{metric}` being a good proxy to this, provided that we are striving
+to {relation} the metric `{metric}` *in good faith* (without *shortcuts* or *cheating*).
 
 You should pay attention to the highest performing experiments, and pay special
 attention to examples in these experiments where `{metric}` has a {low|high} value.
-Low performing experiments might provide some helpful context, but likely
-will not be as useful, given that we're trying to further improve upon the *best*
-experiment so far.
+Lower performing experiments might provide some additional helpful context, but likely
+will not be as useful as the highest performing experiments, given that we're trying to
+further improve upon the *best* experiment so far.
 
 Try to work out why some examples are still failing. You should then choose the
 parameter you'd like to change (if there is more than one), and suggest a sensible new
-value to try for the next experiment.
+value to try for the next experiment, in an attempt to beat all prior results.
 
 The parameters that can be changed are as follows:
 

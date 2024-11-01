@@ -23,21 +23,48 @@ def _print_table_from_dicts(dcts, col_list=None) -> str:
     return "\n".join(ret)
 
 
-def _format_evals(evals: Dict[str, List[unify.Log]]) -> str:
+def _get_evals(logs: List[unify.Log], metric: str) -> str:
+
+    evals = {
+        k: v
+        for k, v in sorted(
+            unify.group_logs_by_configs(logs=logs).items(),
+            key=lambda item: sum([lg.entries[metric] for lg in item[1]]) / len(item[1]),
+        )
+    }
+
     ret = list()
-    for config_str, logs in evals.items():
+    for i, (config_str, logs) in enumerate(evals.items()):
         ret.append(
-            "Configuration:\n" "--------------\n",
+            f"Experiment {i}:\n" + len(str(i)) * "=" + "============\n",
+        )
+        ret.append(
+            " " * 4 + "Parameters:\n" "    -----------",
         )
         config = json.loads(config_str)
         for param_name, param_value in config.items():
-            ret.append(param_name + ":\n")
-            ret.append(json.dumps(param_value))
+            ret.append("\n    **" + param_name + "**:")
+            ret.append(" " * 4 + json.dumps(param_value))
         ret.append(
-            "\n" "Logs:\n" "-----\n",
+            "\n" "    Logs:\n" "    -----",
         )
         ret.append(
-            json.dumps([lg.to_json() for lg in logs], indent=4),
+            " " * 4
+            + json.dumps(
+                [lg.to_json()["entries"] for lg in logs],
+                indent=4,
+            )
+            .replace("[", "")
+            .replace("]", ""),
+        )
+        ret.append(
+            "\n"
+            f"    Mean {metric.capitalize()}:\n    " + "-" * len(metric) + "------",
+        )
+        ret.append(
+            " " * 4
+            + json.dumps(sum([lg.entries[metric] for lg in logs]) / len(logs))
+            + "\n",
         )
     return "\n".join(ret)
 
@@ -73,9 +100,6 @@ def update(
     if not logs:
         logs = unify.get_logs()
 
-    evals = unify.group_logs_by_configs(logs=logs)
-    evals_str = _format_evals(evals)
-
     system_message = (
         SUGGEST_SYS_MESSAGE.replace(
             "{configs}",
@@ -83,7 +107,7 @@ def update(
         )
         .replace(
             "{evals}",
-            evals_str,
+            _get_evals(logs, metric),
         )
         .replace(
             "{relation}",
