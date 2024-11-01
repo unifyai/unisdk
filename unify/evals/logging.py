@@ -194,7 +194,7 @@ class Params:
 # --------#
 
 
-def trace(fn):
+def traced(fn):
     def wrapped(*args, **kwargs):
         t1 = time.perf_counter()
         if not SPAN.get():
