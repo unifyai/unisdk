@@ -74,7 +74,7 @@ def _get_evals(logs: List[unify.Log], metric: str) -> str:
         )
         ret.append(
             " " * 4
-            + json.dumps(sum([lg.entries[metric] for lg in logs]) / len(logs))
+            + json.dumps(sum([entry[metric] for entry in entries]) / len(entries))
             + "\n",
         )
     return "\n".join(ret)
