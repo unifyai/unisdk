@@ -134,6 +134,13 @@ The parameters that can be changed are as follows:
 
 {configs}
 
+If you believe that we should introduce a *new* parameter, then please respond with
+this proposal and a full explanation. For example, if it seems as though something is
+going wrong with the system prompt or some evaluator function, but neither of these are
+included in the experiment parameters, then you can suggest that it should added for the
+next experiment. There is no need to suggest a *value* for this unseen parameter. You
+can leave {parameter_value} empty (see below).
+
 The full set of evaluation logs for different experiments, ordered from the lowest
 performing to highest performing, are as follows:
 
