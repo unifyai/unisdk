@@ -48,10 +48,11 @@ def _get_evals(logs: List[unify.Log], metric: str) -> str:
         ret.append(
             "\n" "    Logs:\n" "    -----",
         )
+        entries = [lg.to_json()["entries"] for lg in logs]
         ret.append(
             " " * 4
             + json.dumps(
-                [lg.to_json()["entries"] for lg in logs],
+                sorted(entries, key=lambda entry: entry[metric]),
                 indent=4,
             )
             .replace("[", "")
