@@ -103,13 +103,14 @@ SUGGEST_SYS_MESSAGE = """
 
 Your task is to propose new changes to one parameter in the experiment configuration
 in order to try and {relation} the metric `{metric}`. Your task is to try and beat the
-highest performing experiment, based on the historical experiments presented. Don't pay
-attention to improving the poorest performing experiments, your task is to improve upon
-the highest performing, using all of the historical context to make sense of all the
-failure modes observed thus far across all experiments. The highest performing
-experiment (shown last) presents *all* of the log data, whereas all other experiments
-only present the logs which are *different* to the highest performing. Therefore, if a
-log is missing, then this means the result was the *same* as the highest performing.
+highest performing experiment, using all of the historical experiments as context.
+Don't pay attention to improving the poorest performing experiments, your task is to
+specifically improve upon the *highest* performing, using all of the historical context
+to make sense of all the failure modes observed thus far across all experiments.
+The highest performing experiment (shown last) presents *all* of the log data,
+whereas all other experiments only present the logs which have a *different* value of
+`{metric}` to the highest performing. Therefore, if a log is missing, then this means
+the resultant value of `{metric}` was the *same* as the highest performing.
 
 You should not *cheat* to improve the `{metric}`. For example, making the questions in
 the test set much easier is not a good proposal. Neither is hacking the evaluator
@@ -140,6 +141,13 @@ going wrong with a system prompt, evaluator function, document loading, parsing,
 other issue not captured by the current parameters, then you can suggest to add this
 parameter for the next experiment. You should also still suggest a value as usual, even
 if this is difficult without the context of other example values for guidance.
+
+Similarly, if we appear to be at or close to 100% success on the current data, then you
+should suggest more example inputs to test the system on, especially thinking about more
+challenging examples to test. If that's the case, then then either suggest to expand an
+existing dataset (or similarly named) parameter, or suggest a new parameter called
+`{dataset}` if the dataset is not captured in the existing parameters (and is only
+visible via the log entries).
 
 The full set of evaluation logs for different experiments, ordered from the lowest
 performing to highest performing, are as follows:
