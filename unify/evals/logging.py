@@ -190,6 +190,26 @@ class Params:
             LOGGED.set({})
 
 
+class Experiment:
+
+    def __init__(self, name: str):
+        self._name = name
+
+    def __enter__(self):
+        self._params_token = ACTIVE_PARAMS.set(
+            {**ACTIVE_PARAMS.get(), **{"experiment": self._name}},
+        )
+        self._nest_token = PARAMS_NEST_LEVEL.set(
+            PARAMS_NEST_LEVEL.get() + 1,
+        )
+
+    def __exit__(self, *args, **kwargs):
+        ACTIVE_PARAMS.reset(self._params_token)
+        PARAMS_NEST_LEVEL.reset(self._nest_token)
+        if PARAMS_NEST_LEVEL.get() == 0:
+            LOGGED.set({})
+
+
 # Tracing #
 # --------#
 
