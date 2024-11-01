@@ -2,7 +2,6 @@ from __future__ import annotations
 import time
 import uuid
 import datetime
-import functools
 
 from ..utils.helpers import _validate_api_key
 from .utils.logging import _handle_special_types
@@ -195,97 +194,90 @@ class Params:
 # --------#
 
 
-def span(io=True):
-    def wrapper(fn):
-        def wrapped(*args, **kwargs):
-            t1 = time.perf_counter()
-            if not SPAN.get():
-                RUNNING_TIME.set(t1)
-            inputs = None
-            if io:
-                signature = inspect.signature(fn)
-                bound_args = signature.bind(*args, **kwargs)
-                bound_args.apply_defaults()
-                inputs = bound_args.arguments
-            new_span = {
-                "id": str(uuid.uuid4()),
-                "parent_span_id": (None if not SPAN.get() else SPAN.get()["id"]),
-                "span_name": fn.__name__,
-                "exec_time": None,
-                "offset": round(
-                    0.0 if not SPAN.get() else t1 - RUNNING_TIME.get(),
-                    2,
-                ),
-                "inputs": inputs,
-                "outputs": None,
-                "errors": None,
-                "child_spans": [],
-            }
-            token = SPAN.set(new_span)
-            result = None
-            try:
-                result = fn(*args, **kwargs)
-                return result
-            except Exception as e:
-                new_span["errors"] = str(e)
-                raise e
-            finally:
-                t2 = time.perf_counter()
-                exec_time = t2 - t1
-                SPAN.get()["exec_time"] = round(exec_time, 2)
-                SPAN.get()["outputs"] = None if result is None or not io else result
-                if token.old_value is token.MISSING:
-                    unify.log(trace=SPAN.get(), skip_duplicates=False)
-                    SPAN.reset(token)
-                else:
-                    SPAN.reset(token)
-                    SPAN.get()["child_spans"].append(new_span)
+def trace(fn):
+    def wrapped(*args, **kwargs):
+        t1 = time.perf_counter()
+        if not SPAN.get():
+            RUNNING_TIME.set(t1)
+        signature = inspect.signature(fn)
+        bound_args = signature.bind(*args, **kwargs)
+        bound_args.apply_defaults()
+        inputs = bound_args.arguments
+        new_span = {
+            "id": str(uuid.uuid4()),
+            "parent_span_id": (None if not SPAN.get() else SPAN.get()["id"]),
+            "span_name": fn.__name__,
+            "exec_time": None,
+            "offset": round(
+                0.0 if not SPAN.get() else t1 - RUNNING_TIME.get(),
+                2,
+            ),
+            "inputs": inputs,
+            "outputs": None,
+            "errors": None,
+            "child_spans": [],
+        }
+        token = SPAN.set(new_span)
+        result = None
+        try:
+            result = fn(*args, **kwargs)
+            return result
+        except Exception as e:
+            new_span["errors"] = str(e)
+            raise e
+        finally:
+            t2 = time.perf_counter()
+            exec_time = t2 - t1
+            SPAN.get()["exec_time"] = round(exec_time, 2)
+            SPAN.get()["outputs"] = None if result is None else result
+            if token.old_value is token.MISSING:
+                unify.log(trace=SPAN.get(), skip_duplicates=False)
+                SPAN.reset(token)
+            else:
+                SPAN.reset(token)
+                SPAN.get()["child_spans"].append(new_span)
 
-        async def async_wrapped(*args, **kwargs):
-            t1 = time.perf_counter()
-            if not SPAN.get():
-                RUNNING_TIME.set(t1)
-            inputs = None
-            if io:
-                signature = inspect.signature(fn)
-                bound_args = signature.bind(*args, **kwargs)
-                bound_args.apply_defaults()
-                inputs = bound_args.arguments
-            new_span = {
-                "id": str(uuid.uuid4()),
-                "parent_span_id": (None if not SPAN.get() else SPAN.get()["id"]),
-                "span_name": fn.__name__,
-                "exec_time": None,
-                "offset": round(
-                    0.0 if not SPAN.get() else t1 - RUNNING_TIME.get(),
-                    2,
-                ),
-                "inputs": inputs,
-                "outputs": None,
-                "errors": None,
-                "child_spans": [],
-            }
-            token = SPAN.set(new_span)
-            # capture the arguments here
-            result = None
-            try:
-                result = await fn(*args, **kwargs)
-                return result
-            except Exception as e:
-                new_span["errors"] = str(e)
-                raise e
-            finally:
-                t2 = time.perf_counter()
-                exec_time = t2 - t1
-                SPAN.get()["exec_time"] = round(exec_time, 2)
-                SPAN.get()["outputs"] = None if result is None or not io else result
-                if token.old_value is token.MISSING:
-                    unify.log(trace=SPAN.get(), skip_duplicates=False)
-                    SPAN.reset(token)
-                else:
-                    SPAN.reset(token)
-                    SPAN.get()["child_spans"].append(new_span)
+    async def async_wrapped(*args, **kwargs):
+        t1 = time.perf_counter()
+        if not SPAN.get():
+            RUNNING_TIME.set(t1)
+        signature = inspect.signature(fn)
+        bound_args = signature.bind(*args, **kwargs)
+        bound_args.apply_defaults()
+        inputs = bound_args.arguments
+        new_span = {
+            "id": str(uuid.uuid4()),
+            "parent_span_id": (None if not SPAN.get() else SPAN.get()["id"]),
+            "span_name": fn.__name__,
+            "exec_time": None,
+            "offset": round(
+                0.0 if not SPAN.get() else t1 - RUNNING_TIME.get(),
+                2,
+            ),
+            "inputs": inputs,
+            "outputs": None,
+            "errors": None,
+            "child_spans": [],
+        }
+        token = SPAN.set(new_span)
+        # capture the arguments here
+        result = None
+        try:
+            result = await fn(*args, **kwargs)
+            return result
+        except Exception as e:
+            new_span["errors"] = str(e)
+            raise e
+        finally:
+            t2 = time.perf_counter()
+            exec_time = t2 - t1
+            SPAN.get()["exec_time"] = round(exec_time, 2)
+            SPAN.get()["outputs"] = None if result is None else result
+            if token.old_value is token.MISSING:
+                unify.log(trace=SPAN.get(), skip_duplicates=False)
+                SPAN.reset(token)
+            else:
+                SPAN.reset(token)
+                SPAN.get()["child_spans"].append(new_span)
 
-        return wrapped if not inspect.iscoroutinefunction(fn) else async_wrapped
-
-    return wrapper
+    return wrapped if not inspect.iscoroutinefunction(fn) else async_wrapped

@@ -919,29 +919,29 @@ async def test_with_all_async():
             ]
 
 
-# Span #
-# -----#
+# Trace #
+# ------#
 
 
-def test_span():
+def test_trace():
     project = "my_project"
     if project in unify.list_projects():
         unify.delete_project(project)
     unify.create_project(project)
     unify.activate(project)
 
-    @unify.span()
+    @unify.trace
     def deeper_fn():
         time.sleep(1)
         return 3
 
-    @unify.span()
+    @unify.trace
     def inner_fn():
         time.sleep(1)
         deeper_fn()
         return 2
 
-    @unify.span()
+    @unify.trace
     def some_func(st):
         time.sleep(st)
         inner_fn()
@@ -959,25 +959,25 @@ def test_span():
     assert log["trace"]["child_spans"][0]["child_spans"][0]["span_name"] == "deeper_fn"
 
 
-def test_span_threaded():
+def test_trace_threaded():
     project = "my_project"
     if project in unify.list_projects():
         unify.delete_project(project)
     unify.create_project(project)
     unify.activate(project)
 
-    @unify.span()
+    @unify.trace
     def deeper_fn():
         time.sleep(1)
         return 3
 
-    @unify.span()
+    @unify.trace
     def inner_fn():
         time.sleep(1)
         deeper_fn()
         return 2
 
-    @unify.span()
+    @unify.trace
     def some_func(st):
         time.sleep(st)
         inner_fn()
@@ -1007,25 +1007,25 @@ def test_span_threaded():
 
 
 @pytest.mark.asyncio
-async def test_span_async():
+async def test_trace_async():
     project = "my_project"
     if project in unify.list_projects():
         unify.delete_project(project)
     unify.create_project(project)
     unify.activate(project)
 
-    @unify.span()
+    @unify.trace
     async def deeper_fn():
         time.sleep(1)
         return 3
 
-    @unify.span()
+    @unify.trace
     async def inner_fn():
         time.sleep(1)
         await deeper_fn()
         return 2
 
-    @unify.span()
+    @unify.trace
     async def some_func(st):
         time.sleep(st)
         await inner_fn()
