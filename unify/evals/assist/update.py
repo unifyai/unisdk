@@ -1,7 +1,7 @@
 import json
 
 import unify
-from typing import Optional, List, Dict, Any
+from typing import Optional, List
 
 from .system_messages import SUGGEST_SYS_MESSAGE
 
@@ -32,15 +32,14 @@ def _get_evals(logs: List[unify.Log], metric: str) -> str:
             key=lambda item: sum([lg.entries[metric] for lg in item[1]]) / len(item[1]),
         )
     }
-    highest_performing_entries = set(
-        [json.dumps(entry) for entry in list(evals.values())[-1]],
+    highest_performing_entry_metrics = set(
+        [entry[metric] for entry in list(evals.values())[-1]],
     )
     evals_pruned = dict()
     for i, (config_str, entries) in enumerate(reversed(evals.items())):
         evals_pruned[config_str] = list()
         for entry in entries:
-            entry_str = json.dumps(entry)
-            if i > 0 and entry_str in highest_performing_entries:
+            if i > 0 and entry[metric] in highest_performing_entry_metrics:
                 continue
             evals_pruned[config_str].append(entry)
     evals_pruned = {k: v for k, v in reversed(evals_pruned.items())}
