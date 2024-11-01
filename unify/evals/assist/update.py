@@ -26,15 +26,27 @@ def _print_table_from_dicts(dcts, col_list=None) -> str:
 def _get_evals(logs: List[unify.Log], metric: str) -> str:
 
     evals = {
-        k: v
+        k: [lg.to_json()["entries"] for lg in v]
         for k, v in sorted(
             unify.group_logs_by_configs(logs=logs).items(),
             key=lambda item: sum([lg.entries[metric] for lg in item[1]]) / len(item[1]),
         )
     }
 
+    observed_entries = set()
+    evals_pruned = dict()
+    for config_str, entries in reversed(evals.items()):
+        evals_pruned[config_str] = list()
+        for entry in entries:
+            entry_str = json.dumps(entry)
+            if entry_str in observed_entries:
+                continue
+            observed_entries.add(entry_str)
+            evals_pruned[config_str].append(entry)
+    evals_pruned = {k: v for k, v in reversed(evals_pruned.items())}
+
     ret = list()
-    for i, (config_str, logs) in enumerate(evals.items()):
+    for i, (config_str, entries) in enumerate(evals_pruned.items()):
         ret.append(
             f"Experiment {i}:\n" + len(str(i)) * "=" + "============\n",
         )
@@ -48,7 +60,6 @@ def _get_evals(logs: List[unify.Log], metric: str) -> str:
         ret.append(
             "\n" "    Logs:\n" "    -----",
         )
-        entries = [lg.to_json()["entries"] for lg in logs]
         ret.append(
             " " * 4
             + json.dumps(
