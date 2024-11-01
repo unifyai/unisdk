@@ -257,9 +257,6 @@ def test_group_logs_by_params():
     ]
 
 
-# ToDo: implement test unify.add_param
-
-
 # Context Handlers #
 # -----------------#
 
