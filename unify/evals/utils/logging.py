@@ -120,7 +120,7 @@ def _apply_context(**data):
 def log(
     *,
     project: Optional[str] = None,
-    skip_duplicates: bool = True,
+    skip_duplicates: bool = False,
     params: Dict[str, Any] = None,
     api_key: Optional[str] = None,
     **entries,
