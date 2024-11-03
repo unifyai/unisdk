@@ -102,14 +102,20 @@ def __getattr__(name):
 class Project:
 
     # noinspection PyShadowingNames
-    def __init__(self, project: str, api_key: Optional[str] = None) -> None:
+    def __init__(
+        self,
+        project: str,
+        overwrite: bool = False,
+        api_key: Optional[str] = None,
+    ) -> None:
         self._project = project
+        self._overwrite = overwrite
         # noinspection PyProtectedMember
         self._api_key = helpers._validate_api_key(api_key)
         self._entered = False
 
-    def create(self, overwrite: bool = False) -> None:
-        create_project(self._project, overwrite=overwrite, api_key=self._api_key)
+    def create(self) -> None:
+        create_project(self._project, overwrite=self._overwrite, api_key=self._api_key)
 
     def delete(self):
         delete_project(self._project, api_key=self._api_key)
