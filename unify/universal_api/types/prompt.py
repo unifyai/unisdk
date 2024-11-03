@@ -11,7 +11,6 @@ from pydantic import BaseModel, ConfigDict
 
 
 class Prompt(BaseModel):
-    model_config = ConfigDict(extra="forbid")
     messages: Optional[List[Dict]] = None
     frequency_penalty: Optional[float] = None
     logit_bias: Optional[Dict[str, int]] = None
