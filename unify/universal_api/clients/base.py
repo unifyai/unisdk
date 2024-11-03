@@ -523,6 +523,8 @@ class _Client(ABC):
         Returns:
             This client, useful for chaining inplace calls.
         """
+        if self._messages is None:
+            self._messages = []
         self._messages += value
         return self
 
