@@ -4,6 +4,14 @@ import contextvars
 from typing import Any, List
 
 
+def _is_iterable(item: Any) -> bool:
+    try:
+        iter(item)
+        return True
+    except TypeError:
+        return False
+
+
 # noinspection PyShadowingBuiltins
 def map(fn: callable, *args, mode="threading", **kwargs) -> Any:
 
@@ -11,6 +19,11 @@ def map(fn: callable, *args, mode="threading", **kwargs) -> Any:
         "threading",
         "asyncio",
     ), "map mode must be one of threading or asyncio."
+
+    args = list(args)
+    for i, a in enumerate(args):
+        if _is_iterable(a):
+            args[i] = list(a)
 
     if args:
         num_calls = len(args[0])
