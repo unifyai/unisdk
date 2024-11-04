@@ -251,7 +251,10 @@ def traced(fn):
             SPAN.get()["exec_time"] = round(exec_time, 2)
             SPAN.get()["outputs"] = None if result is None else result
             if token.old_value is token.MISSING:
-                unify.log(trace=SPAN.get(), skip_duplicates=False)
+                if ACTIVE_LOG.get():
+                    unify.add_log_entries(trace=SPAN.get())
+                else:
+                    unify.log(trace=SPAN.get())
                 SPAN.reset(token)
             else:
                 SPAN.reset(token)
@@ -294,7 +297,10 @@ def traced(fn):
             SPAN.get()["exec_time"] = round(exec_time, 2)
             SPAN.get()["outputs"] = None if result is None else result
             if token.old_value is token.MISSING:
-                unify.log(trace=SPAN.get(), skip_duplicates=False)
+                if ACTIVE_LOG.get():
+                    unify.add_log_entries(trace=SPAN.get())
+                else:
+                    unify.log(trace=SPAN.get())
                 SPAN.reset(token)
             else:
                 SPAN.reset(token)

@@ -964,8 +964,21 @@ def test_traced_within_log_context():
     unify.activate(project)
 
     @unify.traced
+    def deeper_fn():
+        time.sleep(1)
+        return 3
+
+    @unify.traced
+    def inner_fn():
+        time.sleep(1)
+        deeper_fn()
+        return 2
+
+    @unify.traced
     def some_func(st):
         time.sleep(st)
+        inner_fn()
+        inner_fn()
         return 1
 
     with unify.Log(a="a", b="b"):
