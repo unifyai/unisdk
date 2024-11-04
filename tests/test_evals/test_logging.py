@@ -956,6 +956,35 @@ def test_traced():
     assert log["trace"]["child_spans"][0]["child_spans"][0]["span_name"] == "deeper_fn"
 
 
+def test_traced_within_log_context():
+    project = "my_project"
+    if project in unify.list_projects():
+        unify.delete_project(project)
+    unify.create_project(project)
+    unify.activate(project)
+
+    @unify.traced
+    def some_func(st):
+        time.sleep(st)
+        return 1
+
+    with unify.Log(a="a", b="b"):
+        some_func(0.5)
+    logs = unify.get_logs(project="my_project")
+    assert len(logs) == 1
+    entries = logs[0].entries
+    assert entries["a"] == "a"
+    assert entries["b"] == "b"
+    assert entries["trace"]["inputs"] == {"st": 0.5}
+    assert entries["trace"]["span_name"] == "some_func"
+    assert len(entries["trace"]["child_spans"]) == 2
+    assert entries["trace"]["child_spans"][0]["span_name"] == "inner_fn"
+    assert len(entries["trace"]["child_spans"][0]["child_spans"]) == 1
+    assert (
+        entries["trace"]["child_spans"][0]["child_spans"][0]["span_name"] == "deeper_fn"
+    )
+
+
 def test_traced_threaded():
     project = "my_project"
     if project in unify.list_projects():
