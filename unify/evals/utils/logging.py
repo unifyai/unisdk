@@ -198,6 +198,7 @@ def _add_to_log(
     *,
     logs: Optional[Union[int, unify.Log, List[Union[int, unify.Log]]]] = None,
     mode: str = None,
+    overwrite: bool = False,
     api_key: Optional[str] = None,
     **data,
 ) -> Dict[str, str]:
@@ -241,7 +242,7 @@ def _add_to_log(
     body = {
         "ids": log_ids,
         mode: data,
-        "overwrite": False,
+        "overwrite": overwrite,
     }
     response = requests.put(
         BASE_URL + f"/logs",
@@ -294,6 +295,7 @@ def add_log_params(
 def add_log_entries(
     *,
     logs: Optional[Union[int, unify.Log, List[Union[int, unify.Log]]]] = None,
+    overwrite: bool = False,
     api_key: Optional[str] = None,
     **entries,
 ) -> Dict[str, str]:
@@ -304,6 +306,8 @@ def add_log_entries(
         logs: The log(s) to update with extra data. Looks for the current active log if
         no id is provided.
 
+        overwrite: Whether or not to overwrite an entry pre-existing with the same name.
+
         api_key: If specified, unify API key to be used. Defaults to the value in the
         `UNIFY_KEY` environment variable.
 
@@ -313,7 +317,13 @@ def add_log_entries(
     Returns:
         A message indicating whether the log was successfully updated.
     """
-    return _add_to_log(logs=logs, mode="entries", api_key=api_key, **entries)
+    return _add_to_log(
+        logs=logs,
+        mode="entries",
+        overwrite=overwrite,
+        api_key=api_key,
+        **entries,
+    )
 
 
 def delete_logs(
