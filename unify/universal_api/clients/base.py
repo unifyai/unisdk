@@ -128,6 +128,7 @@ class _Client(ABC):
         self.set_stateful(stateful)
         self._return_full_completion = None
         self.set_return_full_completion(return_full_completion)
+        self._generate_raw = self._generate
         self._traced = None
         self.set_traced(traced)
         self._cache = None
@@ -879,7 +880,10 @@ class _Client(ABC):
             This client, useful for chaining inplace calls.
         """
         self._traced = value
-        self._generate = unify.traced(self._generate)
+        if value is True:
+            self._generate = unify.traced(self._generate_raw)
+        else:
+            self._generate = self._generate_raw
         return self
 
     def set_cache(self, value: bool) -> Self:
