@@ -71,74 +71,78 @@ class _Client(ABC):
         extra_query: Optional[Query],
         **kwargs,
     ) -> None:  # noqa: DAR101, DAR401
+
+        # initial values
         self._api_key = _validate_api_key(api_key)
         self._system_message = None
-        self.set_system_message(system_message)
         self._messages = None
-        self.set_messages(messages)
         self._frequency_penalty = None
-        self.set_frequency_penalty(frequency_penalty)
         self._logit_bias = None
-        self.set_logit_bias(logit_bias)
         self._logprobs = None
-        self.set_logprobs(logprobs)
         self._top_logprobs = None
-        self.set_top_logprobs(top_logprobs)
         self._max_completion_tokens = None
-        self.set_max_completion_tokens(max_completion_tokens)
         self._n = None
-        self.set_n(n)
         self._presence_penalty = None
-        self.set_presence_penalty(presence_penalty)
         self._response_format = None
-        self.set_response_format(response_format)
         self._seed = None
-        self.set_seed(seed)
         self._stop = None
-        self.set_stop(stop)
         self._stream = None
-        self.set_stream(stream)
         self._stream_options = None
-        self.set_stream_options(stream_options)
         self._temperature = None
-        self.set_temperature(temperature)
         self._top_p = None
-        self.set_top_p(top_p)
         self._tools = None
-        self.set_tools(tools)
         self._tool_choice = None
-        self.set_tool_choice(tool_choice)
         self._parallel_tool_calls = None
+        self._use_custom_keys = None
+        self._tags = None
+        self._drop_params = None
+        self._region = None
+        self._log_query_body = None
+        self._log_response_body = None
+        self._stateful = None
+        self._return_full_completion = None
+        self._traced = None
+        self._cache = None
+        self._extra_headers = None
+        self._extra_query = None
+        self._extra_body = None
+
+        # set based on arguments
+        self.set_system_message(system_message)
+        self.set_messages(messages)
+        self.set_frequency_penalty(frequency_penalty)
+        self.set_logit_bias(logit_bias)
+        self.set_logprobs(logprobs)
+        self.set_top_logprobs(top_logprobs)
+        self.set_max_completion_tokens(max_completion_tokens)
+        self.set_n(n)
+        self.set_presence_penalty(presence_penalty)
+        self.set_response_format(response_format)
+        self.set_seed(seed)
+        self.set_stop(stop)
+        self.set_stream(stream)
+        self.set_stream_options(stream_options)
+        self.set_temperature(temperature)
+        self.set_top_p(top_p)
+        self.set_tools(tools)
+        self.set_tool_choice(tool_choice)
         self.set_parallel_tool_calls(parallel_tool_calls)
         # platform arguments
-        self._use_custom_keys = None
         self.set_use_custom_keys(use_custom_keys)
-        self._tags = None
         self.set_tags(tags)
-        self._drop_params = None
         self.set_drop_params(drop_params)
-        self._region = None
         self.set_region(region)
-        self._log_query_body = None
         self.set_log_query_body(log_query_body)
-        self._log_response_body = None
         self.set_log_response_body(log_response_body)
         # python client arguments
-        self._stateful = None
         self.set_stateful(stateful)
-        self._return_full_completion = None
         self.set_return_full_completion(return_full_completion)
         self._generate_raw = self._generate
-        self._traced = None
         self.set_traced(traced)
-        self._cache = None
         self.set_cache(cache)
         # passthrough arguments
-        self._extra_headers = None
         self.set_extra_headers(extra_headers)
-        self._extra_query = None
         self.set_extra_query(extra_query)
-        self._extra_body = None
         self.set_extra_body(kwargs)
 
     # Properties #
@@ -501,6 +505,20 @@ class _Client(ABC):
             This client, useful for chaining inplace calls.
         """
         self._system_message = value
+        if self._messages is None or self._messages == []:
+            self._messages = [
+                {
+                    "role": "system",
+                    "content": value,
+                },
+            ]
+        elif self._messages[0]["role"] != "system":
+            self._messages = [
+                {
+                    "role": "system",
+                    "content": value,
+                },
+            ] + self._messages
         return self
 
     def set_messages(
@@ -520,6 +538,8 @@ class _Client(ABC):
             This client, useful for chaining inplace calls.
         """
         self._messages = value
+        if isinstance(value, list) and value and value[0]["role"] == "system":
+            self.set_system_message(value[0]["content"])
         return self
 
     def append_messages(
