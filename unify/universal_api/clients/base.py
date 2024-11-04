@@ -15,6 +15,7 @@ from openai.types.chat.completion_create_params import ResponseFormat
 from typing_extensions import Self
 
 # local
+import unify
 from unify import BASE_URL
 from ..types import Prompt
 
@@ -63,6 +64,7 @@ class _Client(ABC):
         # python client arguments
         stateful: bool,
         return_full_completion: bool,
+        traced: bool,
         cache: bool,
         # passthrough arguments
         extra_headers: Optional[Headers],
@@ -126,6 +128,8 @@ class _Client(ABC):
         self.set_stateful(stateful)
         self._return_full_completion = None
         self.set_return_full_completion(return_full_completion)
+        self._traced = None
+        self.set_traced(traced)
         self._cache = None
         self.set_cache(cache)
         # passthrough arguments
@@ -415,6 +419,16 @@ class _Client(ABC):
             The default return full completion bool.
         """
         return self._return_full_completion
+
+    @property
+    def traced(self) -> bool:
+        """
+        Get the default traced bool.
+
+        Returns:
+            The default traced bool.
+        """
+        return self._traced
 
     @property
     def cache(self) -> bool:
@@ -851,6 +865,21 @@ class _Client(ABC):
             This client, useful for chaining inplace calls.
         """
         self._return_full_completion = value
+        return self
+
+    # noinspection PyAttributeOutsideInit
+    def set_traced(self, value: bool) -> Self:
+        """
+        Set the default traced bool.  # noqa: DAR101.
+
+        Args:
+            value: The default traced bool.
+
+        Returns:
+            This client, useful for chaining inplace calls.
+        """
+        self._traced = value
+        self._generate = unify.traced(self._generate)
         return self
 
     def set_cache(self, value: bool) -> Self:

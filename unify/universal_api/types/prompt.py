@@ -7,7 +7,7 @@ from openai.types.chat import (
     ChatCompletionToolParam,
 )
 from openai.types.chat.completion_create_params import ResponseFormat
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel
 
 
 class Prompt(BaseModel):

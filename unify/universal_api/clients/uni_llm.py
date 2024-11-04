@@ -63,6 +63,7 @@ class _UniClient(_Client, abc.ABC):
         # python client arguments
         stateful: bool = False,
         return_full_completion: bool = False,
+        traced: bool = False,
         cache: bool = False,
         # passthrough arguments
         extra_headers: Optional[Headers] = None,
@@ -198,6 +199,8 @@ class _UniClient(_Client, abc.ABC):
             return. Otherwise, the full response chat_completion is returned.
             Defaults to False.
 
+            traced: Whether to trace the generate method.
+
             cache: If True, then the arguments will be stored in a local cache file, and
             any future calls with identical arguments will read from the cache instead
             of running the LLM query. This can help to save costs and also debug
@@ -250,6 +253,7 @@ class _UniClient(_Client, abc.ABC):
             # python client arguments
             stateful=stateful,
             return_full_completion=return_full_completion,
+            traced=traced,
             cache=cache,
             # passthrough arguments
             extra_headers=extra_headers,
