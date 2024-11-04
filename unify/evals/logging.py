@@ -216,6 +216,7 @@ class Experiment:
 
 def traced(fn):
     def wrapped(*args, **kwargs):
+        log_token = None if ACTIVE_LOG.get() else ACTIVE_LOG.set([unify.log()])
         t1 = time.perf_counter()
         if not SPAN.get():
             RUNNING_TIME.set(t1)
@@ -250,15 +251,16 @@ def traced(fn):
             exec_time = t2 - t1
             SPAN.get()["exec_time"] = round(exec_time, 2)
             SPAN.get()["outputs"] = None if result is None else result
+            # ToDo: ensure there is a global log set upon the first trace,
+            #  and removed on the last
+            unify.add_log_entries(trace=SPAN.get(), overwrite=True)
             if token.old_value is token.MISSING:
-                if ACTIVE_LOG.get():
-                    unify.add_log_entries(trace=SPAN.get())
-                else:
-                    unify.log(trace=SPAN.get())
                 SPAN.reset(token)
             else:
                 SPAN.reset(token)
                 SPAN.get()["child_spans"].append(new_span)
+            if log_token:
+                ACTIVE_LOG.set([])
 
     async def async_wrapped(*args, **kwargs):
         t1 = time.perf_counter()
