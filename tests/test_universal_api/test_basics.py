@@ -63,7 +63,9 @@ class TestUnifyBasics:
         assert client.n == 2
 
     def test_stateful(self):
-        client = Unify("gpt-4o@openai", stateful=True, return_full_completion=True)
+
+        # via generate
+        client = Unify("gpt-4o@openai", stateful=True)
         client.set_system_message("you are a good mathematician.")
         client.generate("What is 1 + 1?")
         client.generate("How do you know?")
@@ -73,6 +75,27 @@ class TestUnifyBasics:
         assert client.messages[2]["role"] == "assistant"
         assert client.messages[3]["role"] == "user"
         assert client.messages[4]["role"] == "assistant"
+
+        # via append
+        client = Unify("gpt-4o@openai", return_full_completion=True)
+        client.set_stateful(True)
+        client.set_system_message("You are an expert.")
+        client.append_messages(
+            [
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": "Hello",
+                        },
+                    ],
+                },
+            ],
+        )
+        assert len(client.messages) == 2
+        assert client.messages[0]["role"] == "system"
+        assert client.messages[1]["role"] == "user"
 
     def test_seed(self):
         client = Unify("gpt-4@openai")
