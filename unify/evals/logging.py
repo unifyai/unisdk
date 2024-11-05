@@ -21,7 +21,6 @@ class Log:
         id: int = None,
         timestamp: Optional[datetime] = None,
         project: Optional[str] = None,
-        skip_duplicates: bool = False,
         api_key: Optional[str] = None,
         params: Dict[str, Any] = None,
         **entries,
@@ -29,7 +28,6 @@ class Log:
         self._id = id
         self._timestamp = timestamp
         self._project = project
-        self._skip_duplicates = skip_duplicates
         self._entries = entries
         self._params = params
         self._api_key = _validate_api_key(api_key)
@@ -122,7 +120,7 @@ class Log:
     def __enter__(self):
         lg = unify.log(
             project=self._project,
-            skip_duplicates=self._skip_duplicates,
+            new=True,
             api_key=self._api_key,
             **self._entries,
         )
