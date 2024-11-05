@@ -154,8 +154,18 @@ def log(
     """
     api_key = _validate_api_key(api_key)
     if not new and ACTIVE_LOG.get():
-        _add_to_log(mode="entries", overwrite=overwrite, api_key=api_key, **entries)
-        _add_to_log(mode="params", overwrite=overwrite, api_key=api_key, **params)
+        _add_to_log(
+            mode="entries",
+            overwrite=overwrite,
+            api_key=api_key,
+            **entries,
+        )
+        _add_to_log(
+            mode="params",
+            overwrite=overwrite,
+            api_key=api_key,
+            **(params if params is not None else {}),
+        )
         return ACTIVE_LOG.get()[-1]
     headers = {
         "accept": "application/json",

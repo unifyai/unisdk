@@ -292,6 +292,35 @@ def test_with_log():
         assert logs[0].entries == {"a": "a", "b": "b", "c": "c", "g": "g"}
 
 
+def test_global_logging():
+    project = "my_project"
+    if project in unify.list_projects():
+        unify.delete_project(project)
+    unify.create_project(project)
+    unify.activate(project)
+
+    with unify.Log(a="a"):
+        logs = unify.get_logs()
+        assert len(logs) == 1
+        assert logs[0].entries == {"a": "a"}
+        unify.log(b="b", c="c")
+        logs = unify.get_logs()
+        assert len(logs) == 1
+        assert logs[0].entries == {"a": "a", "b": "b", "c": "c"}
+        with unify.Log(d="d"):
+            logs = unify.get_logs()
+            assert len(logs) == 2
+            assert logs[1].entries == {"d": "d"}
+            unify.log(e="e", f="f")
+            logs = unify.get_logs()
+            assert len(logs) == 2
+            assert logs[1].entries == {"d": "d", "e": "e", "f": "f"}
+        unify.log(g="g")
+        logs = unify.get_logs()
+        assert len(logs) == 2
+        assert logs[0].entries == {"a": "a", "b": "b", "c": "c", "g": "g"}
+
+
 def test_with_log_threaded():
     project = "my_project"
     if project in unify.list_projects():
