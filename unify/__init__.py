@@ -10,6 +10,7 @@ else:
     BASE_URL = "https://api.unify.ai/v0"
 
 
+CLIENT_LOGGING = False
 LOCAL_MODELS = dict()
 SEED = None
 
