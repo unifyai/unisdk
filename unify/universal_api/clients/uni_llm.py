@@ -1,10 +1,5 @@
 # global
 import abc
-import logging
-
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("client")
-logger.setLevel(logging.INFO)
 import random
 from typing import AsyncGenerator, Dict, Generator, Iterable, List, Optional, Union
 
@@ -806,14 +801,10 @@ class Unify(_UniClient):
                 chat_completion = LOCAL_MODELS[endpoint](**kw)
             else:
                 if unify.CLIENT_LOGGING:
-                    logger.info(
-                        f"calling {kw['model']}... (id{random.randint(0, 1000)})",
-                    )
+                    print(f"calling {kw['model']}... (id{random.randint(0, 1000)})")
                 chat_completion = self._client.chat.completions.create(**kw)
                 if unify.CLIENT_LOGGING:
-                    logger.info(
-                        f"done (id{random.randint(0, 1000)})",
-                    )
+                    print(f"done (id{random.randint(0, 1000)})")
             for chunk in chat_completion:
                 if return_full_completion:
                     content = ChatCompletion(**chunk.model_dump())
@@ -863,14 +854,10 @@ class Unify(_UniClient):
                     chat_completion = LOCAL_MODELS[endpoint](**kw)
                 else:
                     if unify.CLIENT_LOGGING:
-                        logger.info(
-                            f"calling {kw['model']}... (id{random.randint(0, 1000)})",
-                        )
+                        print(f"calling {kw['model']}... (id{random.randint(0, 1000)})")
                     chat_completion = self._client.chat.completions.create(**kw)
                     if unify.CLIENT_LOGGING:
-                        logger.info(
-                            f"done (id{random.randint(0, 1000)})",
-                        )
+                        print(f"done (id{random.randint(0, 1000)})")
                 chat_completion = ChatCompletion(**chat_completion.model_dump())
             except openai.APIStatusError as e:
                 raise Exception(e.message)
@@ -1043,14 +1030,10 @@ class AsyncUnify(_UniClient):
                 async_stream = await LOCAL_MODELS[endpoint](**kw)
             else:
                 if unify.CLIENT_LOGGING:
-                    logger.info(
-                        f"calling {kw['model']}... (id{random.randint(0, 1000)})",
-                    )
+                    print(f"calling {kw['model']}... (id{random.randint(0, 1000)})")
                 async_stream = await self._client.chat.completions.create(**kw)
                 if unify.CLIENT_LOGGING:
-                    logger.info(
-                        f"done (id{random.randint(0, 1000)})",
-                    )
+                    print(f"done (id{random.randint(0, 1000)})")
             async for chunk in async_stream:  # type: ignore[union-attr]
                 if return_full_completion:
                     yield ChatCompletion(**chunk.model_dump())
@@ -1096,14 +1079,10 @@ class AsyncUnify(_UniClient):
                     async_response = await LOCAL_MODELS[endpoint](**kw)
                 else:
                     if unify.CLIENT_LOGGING:
-                        logger.info(
-                            f"calling {kw['model']}... (id{random.randint(0, 1000)})",
-                        )
+                        print(f"calling {kw['model']}... (id{random.randint(0, 1000)})")
                     async_response = await self._client.chat.completions.create(**kw)
                     if unify.CLIENT_LOGGING:
-                        logger.info(
-                            f"done (id{random.randint(0, 1000)})",
-                        )
+                        print(f"done (id{random.randint(0, 1000)})")
                 chat_completion = ChatCompletion(**async_response.model_dump())
             except openai.APIStatusError as e:
                 raise Exception(e.message)
