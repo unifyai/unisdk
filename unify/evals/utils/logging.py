@@ -120,8 +120,9 @@ def _apply_context(**data):
 def log(
     *,
     project: Optional[str] = None,
-    skip_duplicates: bool = False,
     params: Dict[str, Any] = None,
+    new: bool = False,
+    overwrite: bool = False,
     api_key: Optional[str] = None,
     **entries,
 ) -> unify.Log:
@@ -133,13 +134,14 @@ def log(
     Args:
         project: Name of the project the stored logs will be associated to.
 
-        skip_duplicates: Whether to skip creating new log entries for identical log
-        data. If True (default), then the same eval Python script can be repeatedly run
-        without duplicating the logged data every time. If False, then repeat entries
-        will be added with identical data, but unique timestamps.
-
         params: Dictionary containing one or more key:value pairs that will be
         logged into the platform as params.
+
+        new: Whether to create a new log if there is a currently active global lob.
+        Defaults to False, in which case log will add to the existing log.
+
+        overwrite: If adding to an existing log, dictates whether or not to overwrite
+        fields with the same name.
 
         api_key: If specified, unify API key to be used. Defaults to the value in the
         `UNIFY_KEY` environment variable.
@@ -151,6 +153,10 @@ def log(
         The unique id of newly created log.
     """
     api_key = _validate_api_key(api_key)
+    if not new and ACTIVE_LOG.get():
+        _add_to_log(mode="entries", overwrite=overwrite, api_key=api_key, **entries)
+        _add_to_log(mode="params", overwrite=overwrite, api_key=api_key, **params)
+        return ACTIVE_LOG.get()[-1]
     headers = {
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
@@ -162,19 +168,6 @@ def log(
     entries = {**entries, **ACTIVE_ENTRIES.get()}
     entries = _handle_special_types(entries)
     project = _get_and_maybe_create_project(project, api_key=api_key)
-    if skip_duplicates:
-        retrieved_logs = unify.get_logs_by_value(
-            project=project,
-            **{**params, **entries},
-            api_key=api_key,
-        )
-        if retrieved_logs:
-            assert len(retrieved_logs) == 1, (
-                f"When skip_duplicates == True, then it's expected that each log "
-                f"column is unique, but found {len(retrieved_logs)} columns with: "
-                f"{params} and {entries} params and entries respectively."
-            )
-            return retrieved_logs[0]
     body = {"project": project, "params": params, "entries": entries}
     response = requests.post(BASE_URL + "/log", headers=headers, json=body)
     response.raise_for_status()
