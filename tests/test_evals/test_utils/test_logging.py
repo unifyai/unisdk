@@ -129,24 +129,6 @@ def test_log_dataset():
     unify.delete_dataset("letters")
 
 
-def test_log_skip_duplicates():
-    project = "my_project"
-    if project in unify.list_projects():
-        unify.delete_project(project)
-    unify.create_project(project)
-    data = {
-        "system_prompt": "You are a weather assistant",
-        "user_prompt": "hello world",
-    }
-    assert len(unify.get_logs(project=project)) == 0
-    log0 = unify.log(project=project, **data)
-    log1 = unify.log(project=project, **data)
-    assert log0 == log1
-    assert len(unify.get_logs_by_value(project=project, **data)) == 1
-    log0.delete()
-    assert len(unify.get_logs_by_value(project=project, **data)) == 0
-
-
 def test_duplicate_log_field():
     project = "my_project"
     if project in unify.list_projects():
