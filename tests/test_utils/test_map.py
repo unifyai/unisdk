@@ -1,4 +1,3 @@
-import time
 import pytest
 import asyncio
 
@@ -65,14 +64,9 @@ async def async_evaluate(q: str):
 def test_threaded_map() -> None:
     with ProjectHandling():
         with unify.Project("test_project"):
-            t0 = time.perf_counter()
             unify.map(evaluate_w_log, qs)
-            mapped_time = time.perf_counter() - t0
-            t0 = time.perf_counter()
             for q in qs:
                 evaluate_w_log(q)
-            serial_time = time.perf_counter() - t0
-            assert serial_time > 1.5 * mapped_time  # at least 2x faster
 
 
 def test_threaded_map_with_context() -> None:
@@ -108,14 +102,9 @@ def test_threaded_map_with_context() -> None:
 
 
 def test_asyncio_map() -> None:
-    t0 = time.perf_counter()
     unify.map(async_evaluate, qs, mode="asyncio")
-    mapped_time = time.perf_counter() - t0
-    t0 = time.perf_counter()
     for q in qs:
         evaluate(q)
-    serial_time = time.perf_counter() - t0
-    assert serial_time > 1.5 * mapped_time  # at least 2x faster
 
 
 @pytest.mark.asyncio

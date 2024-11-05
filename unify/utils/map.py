@@ -1,6 +1,7 @@
 import asyncio
 import threading
 import contextvars
+from tqdm import tqdm
 from typing import Any, List
 
 
@@ -38,13 +39,18 @@ def map(fn: callable, *args, mode="threading", **kwargs) -> Any:
                 "which is to be mapped across the threads",
             )
 
+    pbar = tqdm(total=num_calls)
+
     if mode == "threading":
+
+        pbar.set_description("Threads Completed")
 
         def fn_w_indexing(rets: List[None], thread_idx: int, *a, **kw):
             for var, value in kw["context"].items():
                 var.set(value)
             del kw["context"]
             ret = fn(*a, **kw)
+            pbar.update(1)
             rets[thread_idx] = ret
 
         threads = list()
@@ -64,9 +70,15 @@ def map(fn: callable, *args, mode="threading", **kwargs) -> Any:
             thread.start()
             threads.append(thread)
         [thread.join() for thread in threads]
+        pbar.close()
         return returns
 
-    # noinspection PyShadowingNames
+    pbar.set_description("Coroutines Completed")
+
+    async def _wrapped(*a, **kw):
+        ret = await fn(*a, **kw)
+        pbar.update(1)
+        return ret
 
     fns = []
     for i in range(num_calls):
@@ -75,9 +87,11 @@ def map(fn: callable, *args, mode="threading", **kwargs) -> Any:
             k: v[i] if (isinstance(v, list) or isinstance(v, tuple)) else v
             for k, v in kwargs.items()
         }
-        fns.append(fn(*a, **kw))
+        fns.append(_wrapped(*a, **kw))
 
     async def main():
-        return await asyncio.gather(*fns)
+        ret = await asyncio.gather(*fns)
+        pbar.close()
+        return ret
 
     return asyncio.run(main())
