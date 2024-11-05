@@ -975,14 +975,48 @@ def test_traced():
         return 1
 
     some_func(0.5)
-    log = unify.get_logs(project="my_project")[0].entries
+    entries = unify.get_logs(project="my_project")[0].entries
 
-    assert log["trace"]["inputs"] == {"st": 0.5}
-    assert log["trace"]["span_name"] == "some_func"
-    assert len(log["trace"]["child_spans"]) == 2
-    assert log["trace"]["child_spans"][0]["span_name"] == "inner_fn"
-    assert len(log["trace"]["child_spans"][0]["child_spans"]) == 1
-    assert log["trace"]["child_spans"][0]["child_spans"][0]["span_name"] == "deeper_fn"
+    assert entries["trace"]["inputs"] == {"st": 0.5}
+    assert entries["trace"]["span_name"] == "some_func"
+    assert len(entries["trace"]["child_spans"]) == 2
+    assert entries["trace"]["child_spans"][0]["span_name"] == "inner_fn"
+    assert len(entries["trace"]["child_spans"][0]["child_spans"]) == 1
+    assert (
+        entries["trace"]["child_spans"][0]["child_spans"][0]["span_name"] == "deeper_fn"
+    )
+
+
+def test_traced_none_handling():
+    project = "my_project"
+    if project in unify.list_projects():
+        unify.delete_project(project)
+    unify.create_project(project)
+    unify.activate(project)
+
+    @unify.traced(prune_empty=False)
+    def some_func(a, b, c, d):
+        return [a, b, c, d]
+
+    some_func(1, 2, None, 4)
+    logs = unify.get_logs(project="my_project")
+    assert len(logs) == 1
+    entries = logs[0].entries
+    assert entries["trace"]["inputs"] == {"a": 1, "b": 2, "c": None, "d": 4}
+    assert entries["trace"]["span_name"] == "some_func"
+    assert len(entries["trace"]["child_spans"]) == 0
+
+    @unify.traced(prune_empty=True)
+    def some_func(a, b, c, d):
+        return [a, b, c, d]
+
+    some_func(1, 2, None, 4)
+    logs = unify.get_logs(project="my_project")
+    assert len(logs) == 2
+    entries = logs[1].entries
+    assert entries["trace"]["inputs"] == {"a": 1, "b": 2, "d": 4}
+    assert entries["trace"]["span_name"] == "some_func"
+    assert "child_spans" not in entries["trace"]
 
 
 def test_traced_within_log_context():

@@ -75,7 +75,7 @@ def _prune_dict(val):
     ):
         return val
     elif isinstance(val, dict):
-        return {k: v for k, v in val.items() if keep(v)}
+        return {k: _prune_dict(v) for k, v in val.items() if keep(v)}
     elif isinstance(val, list):
         return [_prune_dict(v) for i, v in enumerate(val) if keep(v)]
     else:
