@@ -58,3 +58,25 @@ def _get_and_maybe_create_project(
         unify.create_project(project, api_key=api_key)
     PROJECT_LOCK.release()
     return project
+
+
+def _prune_dict(val):
+
+    def keep(v):
+        if v is None:
+            return False
+        else:
+            return bool(_prune_dict(v))
+
+    if (
+        not isinstance(val, dict)
+        and not isinstance(val, list)
+        and not isinstance(val, tuple)
+    ):
+        return val
+    elif isinstance(val, dict):
+        return {k: v for k, v in val.items() if keep(v)}
+    elif isinstance(val, list):
+        return [_prune_dict(v) for i, v in enumerate(val) if keep(v)]
+    else:
+        return (_prune_dict(v) for i, v in enumerate(val) if keep(v))

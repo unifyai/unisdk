@@ -3,7 +3,7 @@ import time
 import uuid
 import datetime
 
-from ..utils.helpers import _validate_api_key
+from ..utils.helpers import _validate_api_key, _prune_dict
 from .utils.logging import _handle_special_types
 from .utils.compositions import *
 
@@ -212,7 +212,11 @@ class Experiment:
 # --------#
 
 
-def traced(fn):
+def traced(fn: callable = None, *, prune_empty: bool = True):
+
+    if fn is None:
+        return lambda f: traced(f, prune_empty=prune_empty)
+
     def wrapped(*args, **kwargs):
         log_token = None if ACTIVE_LOG.get() else ACTIVE_LOG.set([unify.log()])
         t1 = time.perf_counter()
@@ -251,7 +255,10 @@ def traced(fn):
             SPAN.get()["outputs"] = None if result is None else result
             # ToDo: ensure there is a global log set upon the first trace,
             #  and removed on the last
-            unify.add_log_entries(trace=SPAN.get(), overwrite=True)
+            trace = SPAN.get()
+            if prune_empty:
+                trace = _prune_dict(trace)
+            unify.add_log_entries(trace=trace, overwrite=True)
             if token.old_value is token.MISSING:
                 SPAN.reset(token)
             else:
@@ -298,7 +305,10 @@ def traced(fn):
             SPAN.get()["outputs"] = None if result is None else result
             if token.old_value is token.MISSING:
                 if ACTIVE_LOG.get():
-                    unify.add_log_entries(trace=SPAN.get())
+                    trace = SPAN.get()
+                    if prune_empty:
+                        trace = _prune_dict(trace)
+                    unify.add_log_entries(trace=trace, overwrite=True)
                 else:
                     unify.log(trace=SPAN.get())
                 SPAN.reset(token)
