@@ -759,6 +759,7 @@ class Unify(_UniClient):
             return openai.OpenAI(
                 base_url=f"{BASE_URL}",
                 api_key=self._api_key,
+                timeout=3600.0,  # one hour
             )
         except openai.OpenAIError as e:
             raise Exception(f"Failed to initialize Unify client: {str(e)}")
@@ -979,6 +980,7 @@ class AsyncUnify(_UniClient):
             return openai.AsyncOpenAI(
                 base_url=f"{BASE_URL}",
                 api_key=self._api_key,
+                timeout=3600.0,  # one hour
             )
         except openai.APIStatusError as e:
             raise Exception(f"Failed to initialize Unify client: {str(e)}")
