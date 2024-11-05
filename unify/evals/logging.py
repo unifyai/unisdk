@@ -79,7 +79,7 @@ class Log:
         self._entries = {**self._entries, **entries}
 
     def update_entries(self, fn, **entries) -> None:
-        update_log_entries(fn=fn, logs=self._id, api_key=self._api_key, **entries)
+        update_log_entries(fn=fn, log=self._id, api_key=self._api_key, **entries)
         for k, v in entries.items():
             f = fn[k] if isinstance(fn, dict) else fn
             self._entries[k] = f(self._entries[k], v)
