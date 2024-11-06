@@ -14,6 +14,21 @@ def _is_local_endpoint(endpoint: str):
     return provider == "local"
 
 
+def _is_fallback_provider(provider: str, api_key: str = None):
+    public_providers = unify.list_providers(api_key=api_key)
+    return all(p in public_providers for p in provider.split("->"))
+
+
+def _is_fallback_model(model: str, api_key: str = None):
+    public_models = unify.list_models(api_key=api_key)
+    return all(p in public_models for p in model.split("->"))
+
+
+def _is_fallback_endpoint(endpoint: str, api_key: str = None):
+    public_endpoints = unify.list_endpoints(api_key=api_key)
+    return all(e in public_endpoints for e in endpoint.split("->"))
+
+
 def _is_meta_provider(provider: str, api_key: str = None):
     public_providers = unify.list_providers(api_key=api_key)
     if "skip_providers:" in provider:
@@ -80,8 +95,10 @@ def _is_meta_provider(provider: str, api_key: str = None):
 
 
 def _is_valid_endpoint(endpoint: str, api_key: str = None):
+    if _is_fallback_endpoint(endpoint, api_key):
+        return True
     model, provider = endpoint.split("@")
-    if _is_meta_provider(provider) and _is_valid_model(model):
+    if _is_valid_provider(provider) and _is_valid_model(model):
         return True
     if endpoint in unify.list_endpoints(api_key=api_key):
         return True
@@ -95,6 +112,8 @@ def _is_valid_provider(provider: str, api_key: str = None):
         return True
     if provider in unify.list_providers(api_key=api_key):
         return True
+    if _is_fallback_provider(provider):
+        return True
     if provider == "local" or "custom" in provider:
         return True
     return False
@@ -104,6 +123,8 @@ def _is_valid_model(model: str, custom_or_local: bool = False, api_key: str = No
     if custom_or_local:
         return True
     if model in unify.list_models(api_key=api_key):
+        return True
+    if _is_fallback_model(model):
         return True
     if model == "router":
         return True
