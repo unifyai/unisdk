@@ -1,16 +1,13 @@
 from typing import List, Type, Union
+from openai.types.chat import ChatCompletion
 
-from unify.universal_api.types import ChatCompletion, Prompt
+from unify.universal_api.types import Prompt
 
 # Upcasting
 
 
 def _usr_msg_to_prompt(user_message: str) -> Prompt:
     return Prompt(user_message)
-
-
-def _assis_msg_to_chat_completion(assistant_message: str) -> ChatCompletion:
-    return ChatCompletion(assistant_message)
 
 
 def _bool_to_float(boolean: bool) -> float:
@@ -35,7 +32,7 @@ def _float_to_bool(float_in: float) -> bool:
 # Cast Dict
 
 _CAST_DICT = {
-    str: {Prompt: _usr_msg_to_prompt, ChatCompletion: _assis_msg_to_chat_completion},
+    str: {Prompt: _usr_msg_to_prompt},
     Prompt: {
         str: _prompt_to_usr_msg,
     },

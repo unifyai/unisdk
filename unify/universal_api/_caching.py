@@ -2,8 +2,7 @@ import json
 import os
 import threading
 from typing import Dict, Optional, Union, Any
-
-from unify.universal_api.types import ChatCompletion
+from openai.types.chat import ChatCompletion
 
 _cache: Optional[Dict] = None
 _cache_dir = (

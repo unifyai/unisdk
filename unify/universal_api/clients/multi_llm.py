@@ -15,12 +15,12 @@ from openai.types.chat import (
     ChatCompletionStreamOptionsParam,
     ChatCompletionToolChoiceOptionParam,
     ChatCompletionToolParam,
+    ChatCompletion,
 )
 from openai.types.chat.completion_create_params import ResponseFormat
 from typing_extensions import Self
 from unify import BASE_URL
 from ..clients import AsyncUnify, _Client, _UniClient
-from ..types import ChatCompletion
 from ..utils.endpoint_metrics import Metrics
 
 # noinspection PyProtectedMember
