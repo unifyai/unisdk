@@ -48,7 +48,7 @@ data = {
             },
         ],
     },
-    "timestamp": (start_time + timedelta(seconds=0.01)),
+    "timestamp": str(start_time + timedelta(seconds=0.01)),
     "tags": [tag],
 }
 
