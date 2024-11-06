@@ -77,7 +77,12 @@ def test_routing_w_providers():
     unify.Unify(
         "llama-3.1-405b-chat@itl|providers:groq,fireworks-ai,together-ai",
     ).generate("Hello.")
-    unify.Unify("router@q:1|i:0.5").generate("Hello.")
+
+
+def test_routing_skip_providers():
+    unify.Unify(
+        "llama-3.1-405b-chat@itl|skip_providers:azure-ai,aws-bedrock",
+    ).generate("Hello.")
 
 
 if __name__ == "__main__":
