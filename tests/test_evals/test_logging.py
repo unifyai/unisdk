@@ -979,6 +979,23 @@ def test_traced():
 
     assert entries["trace"]["inputs"] == {"st": 0.5}
     assert entries["trace"]["span_name"] == "some_func"
+    assert (
+        entries["trace"]["code"].replace(" ", "").replace("\n", "")
+        == """
+            @unify.traced
+                def some_func(st):
+                    time.sleep(st)
+                    inner_fn()
+                    inner_fn()
+                    return 1
+            """.replace(
+            " ",
+            "",
+        ).replace(
+            "\n",
+            "",
+        )
+    )
     assert len(entries["trace"]["child_spans"]) == 2
     assert entries["trace"]["child_spans"][0]["span_name"] == "inner_fn"
     assert len(entries["trace"]["child_spans"][0]["child_spans"]) == 1
@@ -1004,6 +1021,20 @@ def test_traced_none_handling():
     entries = logs[0].entries
     assert entries["trace"]["inputs"] == {"a": 1, "b": 2, "c": None, "d": 4}
     assert entries["trace"]["span_name"] == "some_func"
+    assert (
+        entries["trace"]["code"].replace(" ", "").replace("\n", "")
+        == """
+            @unify.traced(prune_empty=False)
+            def some_func(a, b, c, d):
+                return [a, b, c, d]
+            """.replace(
+            " ",
+            "",
+        ).replace(
+            "\n",
+            "",
+        )
+    )
     assert len(entries["trace"]["child_spans"]) == 0
 
     @unify.traced(prune_empty=True)
@@ -1016,6 +1047,20 @@ def test_traced_none_handling():
     entries = logs[1].entries
     assert entries["trace"]["inputs"] == {"a": 1, "b": 2, "d": 4}
     assert entries["trace"]["span_name"] == "some_func"
+    assert (
+        entries["trace"]["code"].replace(" ", "").replace("\n", "")
+        == """
+            @unify.traced(prune_empty=True)
+            def some_func(a, b, c, d):
+                return [a, b, c, d]
+            """.replace(
+            " ",
+            "",
+        ).replace(
+            "\n",
+            "",
+        )
+    )
     assert "child_spans" not in entries["trace"]
 
 

@@ -235,6 +235,7 @@ def traced(fn: callable = None, *, prune_empty: bool = True):
                 0.0 if not SPAN.get() else t1 - RUNNING_TIME.get(),
                 2,
             ),
+            "code": inspect.getsource(fn),
             "inputs": inputs,
             "outputs": None,
             "errors": None,
