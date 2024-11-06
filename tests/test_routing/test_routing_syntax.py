@@ -1,5 +1,8 @@
 import unify
 
+# Meta Providers #
+# ---------------#
+
 
 def test_quality():
     for pre in ("", "highest-"):
@@ -38,6 +41,17 @@ def test_output_cost():
     for pre in ("", "lowest-"):
         unify.Unify(f"claude-3-opus@{pre}output-cost").generate("Hello.")
         unify.Unify(f"mixtral-8x22b-instruct-v0.1@{pre}oc").generate("Hello.")
+
+
+# Thresholds #
+# -----------#
+
+
+def test_thresholds():
+    unify.Unify("llama-3.1-405b-chat@inter-token-latency|c<5").generate("Hello.")
+    unify.Unify(
+        "llama-3.1-70b-chat@quality|input-cost<=0.8|output-cost<=0.8|itl>1|itl<20",
+    ).generate("Hello.")
 
 
 if __name__ == "__main__":
