@@ -381,6 +381,28 @@ def get_logs_without_fields(
     return get_logs(project=project, filter=filter_exp, api_key=api_key)
 
 
+def get_logs_by_id(
+    ids: Union[int, List[int]],
+    *,
+    api_key: Optional[str] = None,
+) -> List[unify.Log]:
+    """
+    Returns the logs associated with a given ids.
+
+    Args:
+        ids: IDs of the logs to fetch.
+
+        api_key: If specified, unify API key to be used. Defaults to the value in the
+        `UNIFY_KEY` environment variable.
+
+    Returns:
+        The full set of logs matching the given ids.
+    """
+    if isinstance(ids, int):
+        ids = [ids]
+    return [get_log_by_id(id=i, api_key=api_key) for i in ids]
+
+
 def get_logs_by_value(
     *,
     project: str,
