@@ -333,5 +333,14 @@ def test_delete_logs():
     assert len(unify.get_logs(project=project)) == 0
 
 
+def test_get_source():
+    project = "my_project"
+    if project in unify.list_projects():
+        unify.delete_project(project)
+    unify.create_project(project)
+    source = unify.get_source()
+    assert "source = unify.get_source()" in source
+
+
 if __name__ == "__main__":
     pass

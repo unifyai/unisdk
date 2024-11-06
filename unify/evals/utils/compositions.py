@@ -1,5 +1,6 @@
 from __future__ import annotations
 import json
+import inspect
 
 from ...utils.helpers import _validate_api_key, _get_and_maybe_create_project
 from .logging import _add_to_log, _to_log_ids, _to_logs
@@ -200,6 +201,13 @@ def get_params(
     else:
         logs = _to_logs(logs)
     return list(dict.fromkeys([p for lg in logs for p in lg.params.keys()]))
+
+
+def get_source():
+    frame = inspect.getouterframes(inspect.currentframe())[1]
+    with open(frame.filename, "r") as file:
+        source = file.read()
+    return source
 
 
 # Entries #
