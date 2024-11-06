@@ -1,11 +1,13 @@
 from __future__ import annotations
 import os
-import unify
 import inspect
 import requests
 from contextvars import ContextVar
+from typing import Any, Dict, List, Optional, Union, Callable
+
+import unify
 from unify import BASE_URL
-from typing import Any, Dict, List, Optional, Union
+from ...utils._caching import _get_cache, _write_to_cache
 from ...utils.helpers import _validate_api_key, _get_and_maybe_create_project
 
 # log
@@ -32,6 +34,30 @@ PARAMS_NEST_LEVEL = ContextVar("params_nest_level", default=0)
 # span
 SPAN = ContextVar("span", default={})
 RUNNING_TIME = ContextVar("running_time", default=0.0)
+
+
+# cache
+LOG_CACHING = False
+
+
+def set_log_caching(value: bool) -> None:
+    global LOG_CACHING
+    LOG_CACHING = value
+
+
+def _handle_cache(fn: Callable) -> Callable:
+    def wrapped(*args, **kwargs):
+        if not LOG_CACHING:
+            return fn(*args, **kwargs)
+        combined_kw = {**{f"arg{i}": a for i, a in enumerate(args)}, **kwargs}
+        ret = _get_cache(combined_kw)
+        if ret is not None:
+            return ret
+        ret = fn(*args, **kwargs)
+        _write_to_cache(combined_kw, ret)
+        return ret
+
+    return wrapped
 
 
 def _handle_special_types(
@@ -116,6 +142,7 @@ def _apply_context(**data):
     return {os.path.join(context, k): v for k, v in data.items()}
 
 
+@_handle_cache
 def log(
     *,
     project: Optional[str] = None,
@@ -196,6 +223,7 @@ def log(
     return created_log
 
 
+@_handle_cache
 def _add_to_log(
     *,
     logs: Optional[Union[int, unify.Log, List[Union[int, unify.Log]]]] = None,
@@ -269,6 +297,7 @@ def _add_to_log(
     return response.json()
 
 
+@_handle_cache
 def add_log_params(
     *,
     logs: Optional[Union[int, unify.Log, List[Union[int, unify.Log]]]] = None,
@@ -294,6 +323,7 @@ def add_log_params(
     return _add_to_log(logs=logs, mode="params", api_key=api_key, **params)
 
 
+@_handle_cache
 def add_log_entries(
     *,
     logs: Optional[Union[int, unify.Log, List[Union[int, unify.Log]]]] = None,
@@ -328,6 +358,7 @@ def add_log_entries(
     )
 
 
+@_handle_cache
 def delete_logs(
     *,
     logs: Optional[Union[int, unify.Log, List[Union[int, unify.Log]]]] = None,
@@ -357,6 +388,7 @@ def delete_logs(
     return response.json()
 
 
+@_handle_cache
 def delete_log_fields(
     *,
     field: str,
@@ -395,6 +427,7 @@ def delete_log_fields(
 
 
 # noinspection PyShadowingBuiltins
+@_handle_cache
 def get_logs(
     *,
     project: Optional[str] = None,
@@ -450,6 +483,7 @@ def get_logs(
 
 
 # noinspection PyShadowingBuiltins
+@_handle_cache
 def get_log_by_id(
     id: int,
     *,
@@ -485,6 +519,7 @@ def get_log_by_id(
 
 
 # noinspection PyShadowingBuiltins
+@_handle_cache
 def get_logs_metric(
     *,
     metric: str,
@@ -531,6 +566,7 @@ def get_logs_metric(
     return response.json()
 
 
+@_handle_cache
 def get_groups(
     *,
     key: str,
