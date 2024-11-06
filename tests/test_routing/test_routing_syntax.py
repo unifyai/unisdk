@@ -54,5 +54,15 @@ def test_thresholds():
     ).generate("Hello.")
 
 
+# Routing #
+# --------#
+
+
+def test_routing():
+    unify.Unify(
+        "router@quality|input-cost<0.8|output-cost<0.6|itl<20",
+    ).generate("Hello.")
+
+
 if __name__ == "__main__":
     pass
