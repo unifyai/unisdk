@@ -1,6 +1,12 @@
 import unify
 
 
+def test_quality():
+    for pre in ("", "highest-"):
+        unify.Unify(f"claude-3-opus@{pre}quality").generate("Hello.")
+        unify.Unify(f"mixtral-8x22b-instruct-v0.1@{pre}q").generate("Hello.")
+
+
 def test_time_to_first_token():
     for pre in ("", "lowest-"):
         unify.Unify(f"claude-3-opus@{pre}time-to-first-token").generate("Hello.")
