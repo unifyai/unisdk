@@ -1,6 +1,6 @@
 # global
 import abc
-import random
+import threading
 from typing import AsyncGenerator, Dict, Generator, Iterable, List, Optional, Union
 
 import openai
@@ -772,10 +772,10 @@ class Unify(_UniClient):
                 chat_completion = LOCAL_MODELS[endpoint](**kw)
             else:
                 if unify.CLIENT_LOGGING:
-                    print(f"calling {kw['model']}... (id{random.randint(0, 1000)})")
+                    print(f"calling {kw['model']}... (id{threading.get_ident()})")
                 chat_completion = self._client.chat.completions.create(**kw)
                 if unify.CLIENT_LOGGING:
-                    print(f"done (id{random.randint(0, 1000)})")
+                    print(f"done (id{threading.get_ident()})")
             for chunk in chat_completion:
                 if return_full_completion:
                     content = chunk
@@ -825,10 +825,10 @@ class Unify(_UniClient):
                     chat_completion = LOCAL_MODELS[endpoint](**kw)
                 else:
                     if unify.CLIENT_LOGGING:
-                        print(f"calling {kw['model']}... (id{random.randint(0, 1000)})")
+                        print(f"calling {kw['model']}... (id{threading.get_ident()})")
                     chat_completion = self._client.chat.completions.create(**kw)
                     if unify.CLIENT_LOGGING:
-                        print(f"done (id{random.randint(0, 1000)})")
+                        print(f"done (id{threading.get_ident()})")
             except openai.APIStatusError as e:
                 raise Exception(e.message)
             if cache:
@@ -1000,10 +1000,10 @@ class AsyncUnify(_UniClient):
                 async_stream = await LOCAL_MODELS[endpoint](**kw)
             else:
                 if unify.CLIENT_LOGGING:
-                    print(f"calling {kw['model']}... (id{random.randint(0, 1000)})")
+                    print(f"calling {kw['model']}... (id{threading.get_ident()})")
                 async_stream = await self._client.chat.completions.create(**kw)
                 if unify.CLIENT_LOGGING:
-                    print(f"done (id{random.randint(0, 1000)})")
+                    print(f"done (id{threading.get_ident()})")
             async for chunk in async_stream:  # type: ignore[union-attr]
                 if return_full_completion:
                     yield chunk
@@ -1049,10 +1049,10 @@ class AsyncUnify(_UniClient):
                     chat_completion = await LOCAL_MODELS[endpoint](**kw)
                 else:
                     if unify.CLIENT_LOGGING:
-                        print(f"calling {kw['model']}... (id{random.randint(0, 1000)})")
+                        print(f"calling {kw['model']}... (id{threading.get_ident()})")
                     chat_completion = await self._client.chat.completions.create(**kw)
                     if unify.CLIENT_LOGGING:
-                        print(f"done (id{random.randint(0, 1000)})")
+                        print(f"done (id{threading.get_ident()})")
             except openai.APIStatusError as e:
                 raise Exception(e.message)
             if cache:
