@@ -49,6 +49,23 @@ def _is_meta_provider(provider: str, api_key: str = None):
         provider = "".join([chnk0, chnk2])
         if provider[-1] == "|":
             provider = provider[:-1]
+    public_models = unify.list_models(api_key=api_key)
+    if "skip_models:" in provider:
+        skip_mods = provider.split("skip_models:")[-1].split("|")[0]
+        for md in skip_mods.split(","):
+            if md.strip() not in public_models:
+                return False
+        chnk0, chnk1 = provider.split("skip_models:")
+        chnk2 = "|".join(chnk1.split("|")[1:])
+        provider = "".join([chnk0, chnk2])
+    if "models:" in provider:
+        mods = provider.split("models:")[-1].split("|")[0]
+        for md in mods.split(","):
+            if md.strip() not in public_models:
+                return False
+        chnk0, chnk1 = provider.split("models:")
+        chnk2 = "|".join(chnk1.split("|")[1:])
+        provider = "".join([chnk0, chnk2])
     meta_providers = (
         (
             "highest-quality",
