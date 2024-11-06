@@ -69,5 +69,16 @@ def test_routing_w_custom_metric():
     unify.Unify("router@q:1|i:0.5").generate("Hello.")
 
 
+# Search Space #
+# -------------#
+
+
+def test_routing_w_providers():
+    unify.Unify(
+        "llama-3.1-405b-chat@itl|providers:groq,fireworks-ai,together-ai",
+    ).generate("Hello.")
+    unify.Unify("router@q:1|i:0.5").generate("Hello.")
+
+
 if __name__ == "__main__":
     pass

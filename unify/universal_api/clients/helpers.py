@@ -14,7 +14,26 @@ def _is_local_endpoint(endpoint: str):
     return provider == "local"
 
 
-def _is_meta_provider(provider: str):
+def _is_meta_provider(provider: str, api_key: str = None):
+    public_providers = unify.list_providers(api_key=api_key)
+    if "skip_providers:" in provider:
+        skip_provs = provider.split("skip_providers:")[-1].split("|")[0]
+        for prov in skip_provs.split(","):
+            if prov.strip() not in public_providers:
+                return False
+        chnk0, chnk1 = provider.split("skip_providers:")
+        chnk2 = "|".join(chnk1.split("|")[1:])
+        provider = "".join([chnk0, chnk2])
+    if "providers:" in provider:
+        provs = provider.split("providers:")[-1].split("|")[0]
+        for prov in provs.split(","):
+            if prov.strip() not in public_providers:
+                return False
+        chnk0, chnk1 = provider.split("providers:")
+        chnk2 = "|".join(chnk1.split("|")[1:])
+        provider = "".join([chnk0, chnk2])
+        if provider[-1] == "|":
+            provider = provider[:-1]
     meta_providers = (
         (
             "highest-quality",
