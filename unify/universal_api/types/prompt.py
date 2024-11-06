@@ -7,10 +7,10 @@ from openai.types.chat import (
     ChatCompletionToolParam,
 )
 from openai.types.chat.completion_create_params import ResponseFormat
-from pydantic import BaseModel
+from pydantic import BaseModel, Extra
 
 
-class Prompt(BaseModel):
+class Prompt(BaseModel, extra=Extra.allow):
     messages: Optional[List[Dict]] = None
     frequency_penalty: Optional[float] = None
     logit_bias: Optional[Dict[str, int]] = None
