@@ -51,7 +51,7 @@ def _is_meta_provider(provider: str):
             "c",
         )
     )
-    operators = ("<", ">", "=", "|", ".")
+    operators = ("<", ">", "=", "|", ".", ":")
     for s in meta_providers + operators:
         provider = provider.replace(s, "")
     return all(c.isnumeric() for c in provider)

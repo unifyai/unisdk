@@ -64,5 +64,10 @@ def test_routing():
     ).generate("Hello.")
 
 
+def test_routing_w_custom_metric():
+    unify.Unify("router@q:1|i:0.5|t:2|c:0.7").generate("Hello.")
+    unify.Unify("router@q:1|i:0.5").generate("Hello.")
+
+
 if __name__ == "__main__":
     pass
