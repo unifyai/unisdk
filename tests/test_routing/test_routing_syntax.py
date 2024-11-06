@@ -104,5 +104,11 @@ def test_routing_w_models_skip_providers():
     ).generate("Hello.")
 
 
+def test_routing_w_providers_skip_models():
+    unify.Unify(
+        "router@q:1|i:0.5|providers:aws-bedrock|skip_models:claude-3-haiku",
+    ).generate("Hello.")
+
+
 if __name__ == "__main__":
     pass
