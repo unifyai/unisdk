@@ -15,13 +15,14 @@ from openai.types.chat import (
     ChatCompletionStreamOptionsParam,
     ChatCompletionToolChoiceOptionParam,
     ChatCompletionToolParam,
+    ChatCompletion,
 )
 from openai.types.chat.completion_create_params import ResponseFormat
 from typing_extensions import Self
 from unify import BASE_URL, LOCAL_MODELS
 from .._caching import _get_cache, _write_to_cache
 from ..clients.base import _Client
-from ..types import ChatCompletion, Prompt
+from ..types import Prompt
 from ..utils.endpoint_metrics import Metrics
 from ...utils.helpers import _default
 
@@ -807,7 +808,7 @@ class Unify(_UniClient):
                     print(f"done (id{random.randint(0, 1000)})")
             for chunk in chat_completion:
                 if return_full_completion:
-                    content = ChatCompletion(**chunk.model_dump())
+                    content = chunk
                 else:
                     content = chunk.choices[0].delta.content  # type: ignore[union-attr]    # noqa: E501
                 if content is not None:
@@ -858,7 +859,6 @@ class Unify(_UniClient):
                     chat_completion = self._client.chat.completions.create(**kw)
                     if unify.CLIENT_LOGGING:
                         print(f"done (id{random.randint(0, 1000)})")
-                chat_completion = ChatCompletion(**chat_completion.model_dump())
             except openai.APIStatusError as e:
                 raise Exception(e.message)
             if cache:
@@ -1036,7 +1036,7 @@ class AsyncUnify(_UniClient):
                     print(f"done (id{random.randint(0, 1000)})")
             async for chunk in async_stream:  # type: ignore[union-attr]
                 if return_full_completion:
-                    yield ChatCompletion(**chunk.model_dump())
+                    yield chunk
                 else:
                     yield chunk.choices[0].delta.content or ""
         except openai.APIStatusError as e:
@@ -1076,14 +1076,13 @@ class AsyncUnify(_UniClient):
                     kw.pop("extra_body")
                     kw.pop("model")
                     kw.pop("max_completion_tokens")
-                    async_response = await LOCAL_MODELS[endpoint](**kw)
+                    chat_completion = await LOCAL_MODELS[endpoint](**kw)
                 else:
                     if unify.CLIENT_LOGGING:
                         print(f"calling {kw['model']}... (id{random.randint(0, 1000)})")
-                    async_response = await self._client.chat.completions.create(**kw)
+                    chat_completion = await self._client.chat.completions.create(**kw)
                     if unify.CLIENT_LOGGING:
                         print(f"done (id{random.randint(0, 1000)})")
-                chat_completion = ChatCompletion(**async_response.model_dump())
             except openai.APIStatusError as e:
                 raise Exception(e.message)
             if cache:
