@@ -7,6 +7,11 @@ import openai
 
 # local
 import unify
+from unify.universal_api.clients.helpers import (
+    _assert_is_valid_provider,
+    _assert_is_valid_model,
+    _assert_is_valid_endpoint,
+)
 
 # noinspection PyProtectedMember
 from openai._types import Headers, Query
@@ -347,14 +352,7 @@ class _UniClient(_Client, abc.ABC):
         Returns:
             This client, useful for chaining inplace calls.
         """
-        valid_endpoints = unify.list_endpoints(api_key=self._api_key)
-        if value not in valid_endpoints and (
-            "@custom" not in value and "@local" not in value
-        ):
-            raise Exception(
-                "The specified endpoint {} is not one of the endpoints supported by "
-                "Unify: {}".format(value, valid_endpoints),
-            )
+        _assert_is_valid_endpoint(value, api_key=self._api_key)
         self._endpoint = value
         self._model, self._provider = value.split("@")  # noqa: WPS414
         return self
@@ -369,24 +367,12 @@ class _UniClient(_Client, abc.ABC):
         Returns:
             This client, useful for chaining inplace calls.
         """
-        valid_models = unify.list_models(self._provider, api_key=self._api_key)
-        if value not in valid_models and (
-            "custom" not in self._provider and self._provider != "local"
-        ):
-            if self._provider:
-                raise Exception(
-                    "Current provider {} does not support the specified model {},"
-                    "please select one of: {}".format(
-                        self._provider,
-                        value,
-                        valid_models,
-                    ),
-                )
-            raise Exception(
-                "The specified model {} is not one of the models supported by Unify: "
-                "{}".format(value, valid_models),
-            )
-        self._model = value
+        custom_or_local = self._provider == "local" or "custom" in self._provider
+        _assert_is_valid_model(
+            value,
+            custom_or_local=custom_or_local,
+            api_key=self._api_key,
+        )
         if self._provider:
             self._endpoint = "@".join([value, self._provider])
         return self
@@ -401,23 +387,7 @@ class _UniClient(_Client, abc.ABC):
         Returns:
             This client, useful for chaining inplace calls.
         """
-        valid_providers = unify.list_providers(self._model, api_key=self._api_key)
-        if value not in valid_providers and (
-            "custom" not in self._provider and self._provider != "local"
-        ):
-            if self._model:
-                raise Exception(
-                    "Current model {} does not support the specified provider {}, "
-                    "please select one of: {}".format(
-                        self._model,
-                        value,
-                        valid_providers,
-                    ),
-                )
-            raise Exception(
-                "The specified provider {} is not one of the providers supported by "
-                "Unify: {}".format(value, valid_providers),
-            )
+        _assert_is_valid_provider(value, api_key=self._api_key)
         self._provider = value
         if self._model:
             self._endpoint = "@".join([self._model, value])
