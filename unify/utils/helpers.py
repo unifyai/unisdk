@@ -79,4 +79,4 @@ def _prune_dict(val):
     elif isinstance(val, list):
         return [_prune_dict(v) for i, v in enumerate(val) if keep(v)]
     else:
-        return (_prune_dict(v) for i, v in enumerate(val) if keep(v))
+        return tuple(_prune_dict(v) for i, v in enumerate(val) if keep(v))
