@@ -1,9 +1,8 @@
 # global
 import abc
+import openai
 import threading
 from typing import AsyncGenerator, Dict, Generator, Iterable, List, Optional, Union
-
-import openai
 
 # local
 import unify
@@ -25,7 +24,7 @@ from openai.types.chat import (
 from openai.types.chat.completion_create_params import ResponseFormat
 from typing_extensions import Self
 from unify import BASE_URL, LOCAL_MODELS
-from .._caching import _get_cache, _write_to_cache
+from ...utils._caching import _get_cache, _write_to_cache
 from ..clients.base import _Client
 from ..types import Prompt
 from ..utils.endpoint_metrics import Metrics

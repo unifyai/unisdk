@@ -3,12 +3,12 @@ import time
 
 import unify
 from unify import Unify
-from unify.universal_api._caching import _cache_fpath
+from unify.utils._caching import _cache_fpath
 
 
 def test_basic_caching() -> None:
     local_cache_path = _cache_fpath.replace(".cache.json", ".test_cache.json")
-    unify.universal_api._caching._cache_fpath = local_cache_path
+    unify.utils._caching._cache_fpath = local_cache_path
     if os.path.exists(local_cache_path):
         os.remove(local_cache_path)
     client = Unify(
@@ -25,7 +25,7 @@ def test_basic_caching() -> None:
     assert r0 == r1
     os.remove(local_cache_path)
     global_cache_path = local_cache_path.replace(".test_cache.json", ".cache.json")
-    unify.universal_api._caching._cache_fpath = global_cache_path
+    unify.utils._caching._cache_fpath = global_cache_path
 
 
 if __name__ == "__main__":

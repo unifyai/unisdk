@@ -1,12 +1,11 @@
 from __future__ import annotations
 import os
-import inspect
-from contextvars import ContextVar
-from typing import Any, Dict, List, Optional, Union
-
-import requests
 import unify
+import inspect
+import requests
+from contextvars import ContextVar
 from unify import BASE_URL
+from typing import Any, Dict, List, Optional, Union
 from ...utils.helpers import _validate_api_key, _get_and_maybe_create_project
 
 # log
