@@ -2,7 +2,7 @@ import json
 import os
 import threading
 from pydantic import BaseModel
-from typing import Dict, Optional, Union, Any
+from typing import Dict, Optional, Union, Any, List, Type
 from openai.types.chat import ChatCompletion
 
 _cache: Optional[Dict] = None
@@ -38,17 +38,31 @@ def _get_cache(kw: Dict[str, Any]) -> Union[None, Dict]:
     CACHE_LOCK.release()
 
 
-def _dumps(obj: Any) -> Any:
+def _dumps(
+    obj: Any,
+    cached_types: Dict[str, str],
+    idx: List[Union[str, int]] = None,
+) -> Any:
+    if idx is None:
+        idx = list()
     if isinstance(obj, BaseModel):
+        cached_types[json.dumps(idx)] = obj.__class__.__name__
         return obj.model_dump()
     elif hasattr(obj, "to_json"):
+        cached_types[json.dumps(idx)] = obj.__class__.__name__
         return obj.to_json()
     elif isinstance(obj, dict):
-        return json.dumps({k: _dumps(v) for k, v in obj.items()})
+        return json.dumps(
+            {k: _dumps(v, cached_types, idx + ["k"]) for k, v in obj.items()},
+        )
     elif isinstance(obj, list):
-        return json.dumps([_dumps(v) for v in obj])
+        return json.dumps(
+            [_dumps(v, cached_types, idx + [i]) for i, v in enumerate(obj)],
+        )
     elif isinstance(obj, tuple):
-        return json.dumps(tuple(_dumps(v) for v in obj))
+        return json.dumps(
+            tuple(_dumps(v, cached_types, idx + [i]) for i, v in enumerate(obj)),
+        )
     else:
         return obj
 
@@ -59,8 +73,14 @@ def _write_to_cache(kw, response):
     CACHE_LOCK.acquire()
     _create_cache_if_none()
     kw = {k: v for k, v in kw.items() if v is not None}
-    kw_str = _dumps(kw)
-    response_str = _dumps(response)
+    _kw_types = {}
+    kw_str = _dumps(kw, _kw_types)
+    if _kw_types:
+        _cache[kw_str + "_kw_types"] = _kw_cached_types
+    _res_types = {}
+    response_str = _dumps(response, _res_types)
+    if _res_types:
+        _cache[kw_str + "_res_types"] = _res_types
     _cache[kw_str] = response_str
     with open(_cache_fpath, "w") as outfile:
         json.dump(_cache, outfile)
