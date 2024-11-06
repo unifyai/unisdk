@@ -91,5 +91,11 @@ def test_routing_w_models():
     ).generate("Hello.")
 
 
+def test_routing_skip_models():
+    unify.Unify(
+        "router@q:1|i:0.5|skip_models:gpt-4o,o1-preview,claude-3-sonnet",
+    ).generate("Hello.")
+
+
 if __name__ == "__main__":
     pass
