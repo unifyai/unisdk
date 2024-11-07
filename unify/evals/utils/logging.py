@@ -38,11 +38,20 @@ RUNNING_TIME = ContextVar("running_time", default=0.0)
 
 # cache
 LOG_CACHING = False
+LOG_CACHE_FNAME = ".cache.json"
 
 
 def set_log_caching(value: bool) -> None:
-    global LOG_CACHING
+    global LOG_CACHING, LOG_CACHE_FNAME
     LOG_CACHING = value
+
+
+def set_log_caching_fname(value: Optional[str] = None) -> None:
+    global LOG_CACHE_FNAME
+    if value is not None:
+        LOG_CACHE_FNAME = value
+    else:
+        LOG_CACHE_FNAME = ".cache.json"
 
 
 def _handle_cache(fn: Callable) -> Callable:
@@ -50,11 +59,16 @@ def _handle_cache(fn: Callable) -> Callable:
         if not LOG_CACHING:
             return fn(*args, **kwargs)
         combined_kw = {**{f"arg{i}": a for i, a in enumerate(args)}, **kwargs}
-        ret = _get_cache(fn.__name__, combined_kw)
+        ret = _get_cache(fn_name=fn.__name__, kw=combined_kw, filename=LOG_CACHE_FNAME)
         if ret is not None:
             return ret
         ret = fn(*args, **kwargs)
-        _write_to_cache(fn_name=fn.__name__, kw=combined_kw, response=ret)
+        _write_to_cache(
+            fn_name=fn.__name__,
+            kw=combined_kw,
+            response=ret,
+            filename=LOG_CACHE_FNAME,
+        )
         return ret
 
     return wrapped

@@ -14,18 +14,22 @@ _cache_fpath: str = os.path.join(_cache_dir, ".cache.json")
 CACHE_LOCK = threading.Lock()
 
 
-def _create_cache_if_none():
-    global _cache
+def _create_cache_if_none(filename: str = None):
+    global _cache, _cache_fpath, _cache_dir
+    if filename is None:
+        cache_fpath = _cache_fpath
+    else:
+        cache_fpath = os.path.join(_cache_dir, filename)
     if _cache is None:
-        if not os.path.exists(_cache_fpath):
-            with open(_cache_fpath, "w") as outfile:
+        if not os.path.exists(cache_fpath):
+            with open(cache_fpath, "w") as outfile:
                 json.dump({}, outfile)
-        with open(_cache_fpath) as outfile:
+        with open(cache_fpath) as outfile:
             _cache = json.load(outfile)
 
 
 # noinspection PyTypeChecker,PyUnboundLocalVariable
-def _get_cache(fn_name: str, kw: Dict[str, Any]) -> Optional[Any]:
+def _get_cache(fn_name: str, kw: Dict[str, Any], filename: str = None) -> Optional[Any]:
     global CACHE_LOCK
     # prevents circular import
     from unify.evals.logging import Log
@@ -35,7 +39,7 @@ def _get_cache(fn_name: str, kw: Dict[str, Any]) -> Optional[Any]:
         "Log": Log,
     }
     CACHE_LOCK.acquire()
-    _create_cache_if_none()
+    _create_cache_if_none(filename)
     kw = {k: v for k, v in kw.items() if v is not None}
     kw_str = _dumps(kw)
     cache_str = fn_name + "_" + kw_str
@@ -104,10 +108,11 @@ def _write_to_cache(
     fn_name: str,
     kw: Dict[str, Any],
     response: Any,
+    filename: str = None,
 ):
     global CACHE_LOCK
     CACHE_LOCK.acquire()
-    _create_cache_if_none()
+    _create_cache_if_none(filename)
     kw = {k: v for k, v in kw.items() if v is not None}
     kw_str = _dumps(kw)
     cache_str = fn_name + "_" + kw_str
@@ -116,6 +121,10 @@ def _write_to_cache(
     if _res_types:
         _cache[cache_str + "_res_types"] = _res_types
     _cache[cache_str] = response_str
-    with open(_cache_fpath, "w") as outfile:
+    if filename is None:
+        cache_fpath = _cache_fpath
+    else:
+        cache_fpath = os.path.join(_cache_dir, filename)
+    with open(cache_fpath, "w") as outfile:
         json.dump(_cache, outfile)
     CACHE_LOCK.release()
