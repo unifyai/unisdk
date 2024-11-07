@@ -25,7 +25,7 @@ def _create_cache_if_none():
 
 
 # noinspection PyTypeChecker,PyUnboundLocalVariable
-def _get_cache(kw: Dict[str, Any]) -> Union[None, Dict]:
+def _get_cache(fn_name: str, kw: Dict[str, Any]) -> Optional[Any]:
     global CACHE_LOCK
     # prevents circular import
     from unify.evals.logging import Log
@@ -38,14 +38,15 @@ def _get_cache(kw: Dict[str, Any]) -> Union[None, Dict]:
     _create_cache_if_none()
     kw = {k: v for k, v in kw.items() if v is not None}
     kw_str = _dumps(kw)
-    if kw_str not in _cache:
+    cache_str = fn_name + "_" + kw_str
+    if cache_str not in _cache:
         CACHE_LOCK.release()
         return
-    ret = json.loads(_cache[kw_str])
-    if kw_str + "_res_types" not in _cache:
+    ret = json.loads(_cache[cache_str])
+    if cache_str + "_res_types" not in _cache:
         CACHE_LOCK.release()
         return ret
-    for idx_str, type_str in _cache[kw_str + "_res_types"].items():
+    for idx_str, type_str in _cache[cache_str + "_res_types"].items():
         idx_list = json.loads(idx_str)
         if len(idx_list) == 0:
             CACHE_LOCK.release()
@@ -99,17 +100,22 @@ def _dumps(
 
 
 # noinspection PyTypeChecker,PyUnresolvedReferences
-def _write_to_cache(kw, response):
+def _write_to_cache(
+    fn_name: str,
+    kw: Dict[str, Any],
+    response: Any,
+):
     global CACHE_LOCK
     CACHE_LOCK.acquire()
     _create_cache_if_none()
     kw = {k: v for k, v in kw.items() if v is not None}
     kw_str = _dumps(kw)
+    cache_str = fn_name + "_" + kw_str
     _res_types = {}
     response_str = _dumps(response, _res_types)
     if _res_types:
-        _cache[kw_str + "_res_types"] = _res_types
-    _cache[kw_str] = response_str
+        _cache[cache_str + "_res_types"] = _res_types
+    _cache[cache_str] = response_str
     with open(_cache_fpath, "w") as outfile:
         json.dump(_cache, outfile)
     CACHE_LOCK.release()

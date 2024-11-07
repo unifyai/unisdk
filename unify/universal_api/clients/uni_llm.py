@@ -814,7 +814,7 @@ class Unify(_UniClient):
         )
         chat_completion = None
         if cache:
-            chat_completion = _get_cache(kw)
+            chat_completion = _get_cache(fn_name="chat.completions.create", kw=kw)
         if chat_completion is None:
             try:
                 if endpoint in LOCAL_MODELS:
@@ -833,7 +833,11 @@ class Unify(_UniClient):
             except openai.APIStatusError as e:
                 raise Exception(e.message)
             if cache:
-                _write_to_cache(kw, chat_completion)
+                _write_to_cache(
+                    fn_name="chat.completions.create",
+                    kw=kw,
+                    response=chat_completion,
+                )
         if return_full_completion:
             return chat_completion
         content = chat_completion.choices[0].message.content
@@ -1040,7 +1044,14 @@ class AsyncUnify(_UniClient):
             log_query_body=log_query_body,
             log_response_body=log_response_body,
         )
-        chat_completion = _get_cache(kw) if cache else None
+        chat_completion = (
+            _get_cache(
+                fn_name="chat.completions.create",
+                kw=kw,
+            )
+            if cache
+            else None
+        )
         if chat_completion is None:
             try:
                 if endpoint in LOCAL_MODELS:
@@ -1061,7 +1072,11 @@ class AsyncUnify(_UniClient):
             except openai.APIStatusError as e:
                 raise Exception(e.message)
             if cache:
-                _write_to_cache(kw, chat_completion)
+                _write_to_cache(
+                    fn_name="chat.completions.create",
+                    kw=kw,
+                    response=chat_completion,
+                )
         if return_full_completion:
             return chat_completion
         content = chat_completion.choices[0].message.content

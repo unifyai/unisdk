@@ -50,11 +50,11 @@ def _handle_cache(fn: Callable) -> Callable:
         if not LOG_CACHING:
             return fn(*args, **kwargs)
         combined_kw = {**{f"arg{i}": a for i, a in enumerate(args)}, **kwargs}
-        ret = _get_cache(combined_kw)
+        ret = _get_cache(fn.__name__, combined_kw)
         if ret is not None:
             return ret
         ret = fn(*args, **kwargs)
-        _write_to_cache(combined_kw, ret)
+        _write_to_cache(fn_name="log", kw=combined_kw, response=ret)
         return ret
 
     return wrapped

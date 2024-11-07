@@ -351,8 +351,15 @@ def test_log_caching():
     unify.set_log_caching(True)
     # log
     unify.log(project=project, a=0, b=1)
-    assert _get_cache({"project": project, "a": 0, "b": 1}) is not None
-    assert isinstance(unify.log(project=project, a=0, b=1), unify.Log)
+    assert (
+        _get_cache(
+            fn_name="log",
+            kw={"project": project, "a": 0, "b": 1},
+        )
+        is not None
+    )
+    log = unify.log(project=project, a=0, b=1)
+    assert isinstance(log, unify.Log)
 
 
 if __name__ == "__main__":
