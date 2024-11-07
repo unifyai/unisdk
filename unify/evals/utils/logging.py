@@ -56,14 +56,25 @@ def set_log_caching_fname(value: Optional[str] = None) -> None:
         LOG_CACHE_FNAME = ".cache.json"
 
 
+def _removes_unique_trace_values(kw: Dict[str, Any]) -> Dict[str, Any]:
+    del kw["id"]
+    del kw["exec_time"]
+    if "parent_span_id" in kw:
+        del kw["parent_span_id"]
+    if "child_spans" in kw:
+        kw["child_spans"] = [
+            _removes_unique_trace_values(cs) for cs in kw["child_spans"]
+        ]
+    return kw
+
+
 def _handle_cache(fn: Callable) -> Callable:
     def wrapped(*args, **kwargs):
         if not LOG_CACHING:
             return fn(*args, **kwargs)
         kw_for_key = copy.deepcopy(kwargs)
         if fn.__name__ == "add_log_entries" and "trace" in kwargs:
-            del kw_for_key["trace"]["id"]
-            del kw_for_key["trace"]["exec_time"]
+            kw_for_key["trace"] = _removes_unique_trace_values(kw_for_key["trace"])
         combined_kw = {**{f"arg{i}": a for i, a in enumerate(args)}, **kw_for_key}
         ret = _get_cache(fn_name=fn.__name__, kw=combined_kw, filename=LOG_CACHE_FNAME)
         if ret is not None:
