@@ -438,6 +438,18 @@ def test_log_caching():
     assert len(logs) == 1
     assert isinstance(logs[0], unify.Log)
 
+    # get_log_by_id
+    unify.get_log_by_id(log.id)
+    assert (
+        _get_cache(
+            fn_name="get_log_by_id",
+            kw={"arg0": log.id},
+        )
+        is not None
+    )
+    log = unify.get_log_by_id(log.id)
+    assert isinstance(log, unify.Log)
+
 
 if __name__ == "__main__":
     pass
