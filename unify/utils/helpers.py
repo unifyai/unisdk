@@ -66,7 +66,10 @@ def _prune_dict(val):
         if v is None:
             return False
         else:
-            return bool(_prune_dict(v))
+            ret = _prune_dict(v)
+            if isinstance(ret, dict) or isinstance(ret, list) or isinstance(ret, tuple):
+                return bool(ret)
+            return True
 
     if (
         not isinstance(val, dict)
