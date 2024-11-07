@@ -1,4 +1,5 @@
 import pytest
+from unify.utils._caching import _get_cache
 from requests import HTTPError
 
 import unify
@@ -340,6 +341,18 @@ def test_get_source():
     unify.create_project(project)
     source = unify.get_source()
     assert "source = unify.get_source()" in source
+
+
+def test_log_caching():
+    project = "my_project"
+    if project in unify.list_projects():
+        unify.delete_project(project)
+    unify.create_project(project)
+    unify.set_log_caching(True)
+    # log
+    unify.log(project=project, a=0, b=1)
+    assert _get_cache({"project": project, "a": 0, "b": 1}) is not None
+    assert isinstance(unify.log(project=project, a=0, b=1), unify.Log)
 
 
 if __name__ == "__main__":

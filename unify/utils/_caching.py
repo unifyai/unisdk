@@ -12,9 +12,6 @@ _cache_dir = (
 _cache_fpath: str = os.path.join(_cache_dir, ".cache.json")
 
 CACHE_LOCK = threading.Lock()
-TYPE_STR_TO_TYPE = {
-    "ChatCompletion": ChatCompletion,
-}
 
 
 def _create_cache_if_none():
@@ -30,6 +27,13 @@ def _create_cache_if_none():
 # noinspection PyTypeChecker,PyUnboundLocalVariable
 def _get_cache(kw: Dict[str, Any]) -> Union[None, Dict]:
     global CACHE_LOCK
+    # prevents circular import
+    from unify.evals.logging import Log
+
+    type_str_to_type = {
+        "ChatCompletion": ChatCompletion,
+        "Log": Log,
+    }
     CACHE_LOCK.acquire()
     _create_cache_if_none()
     kw = {k: v for k, v in kw.items() if v is not None}
@@ -45,13 +49,18 @@ def _get_cache(kw: Dict[str, Any]) -> Union[None, Dict]:
         idx_list = json.loads(idx_str)
         if len(idx_list) == 0:
             CACHE_LOCK.release()
-            if type_str == "ChatCompletion":
-                return TYPE_STR_TO_TYPE[type_str](**ret)
-            return TYPE_STR_TO_TYPE[type_str](ret)
+            typ = type_str_to_type[type_str]
+            if issubclass(typ, BaseModel) or issubclass(typ, Log):
+                return type_str_to_type[type_str](**ret)
+            raise Exception(f"Cache indexing found for unsupported type: {typ}")
         item = ret
         for i, idx in enumerate(idx_list):
             if i == len(idx_list) - 1:
-                item[idx] = TYPE_STR_TO_TYPE[type_str](item[idx][-1])
+                typ = type_str_to_type[type_str]
+                if issubclass(typ, BaseModel) or issubclass(typ, Log):
+                    item[idx] = type_str_to_type[type_str](**item[idx][-1])
+                else:
+                    raise Exception(f"Cache indexing found for unsupported type: {typ}")
                 break
             item = item[idx]
     CACHE_LOCK.release()
@@ -63,6 +72,9 @@ def _dumps(
     cached_types: Dict[str, str] = None,
     idx: List[Union[str, int]] = None,
 ) -> Any:
+    # prevents circular import
+    from unify.evals.logging import Log
+
     base = False
     if idx is None:
         base = True
@@ -71,7 +83,7 @@ def _dumps(
         if cached_types is not None:
             cached_types[json.dumps(idx)] = obj.__class__.__name__
         ret = obj.model_dump()
-    elif hasattr(obj, "to_json"):
+    elif isinstance(obj, Log):
         if cached_types is not None:
             cached_types[json.dumps(idx)] = obj.__class__.__name__
         ret = obj.to_json()

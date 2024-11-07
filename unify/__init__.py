@@ -57,7 +57,7 @@ from .evals.utils.datasets import *
 from .evals.utils.logging import *
 from .evals.utils.projects import *
 
-from .utils import helpers, map
+from .utils import helpers, map, _caching
 
 from .universal_api import chatbot, clients, logging
 from .universal_api.clients import multi_llm
