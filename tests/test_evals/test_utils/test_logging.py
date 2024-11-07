@@ -450,6 +450,19 @@ def test_log_caching():
     log = unify.get_log_by_id(log.id)
     assert isinstance(log, unify.Log)
 
+    # get_logs_metric
+    unify.log(project=project, b=3)
+    unify.get_logs_metric(project=project, metric="mean", key="b")
+    assert (
+        _get_cache(
+            fn_name="get_logs_metric",
+            kw={"project": project, "metric": "mean", "key": "b"},
+        )
+        is not None
+    )
+    metric = unify.get_logs_metric(project=project, metric="mean", key="b")
+    assert metric == 2.5
+
 
 if __name__ == "__main__":
     pass
