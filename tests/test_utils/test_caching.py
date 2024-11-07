@@ -12,7 +12,7 @@ def test_basic_caching() -> None:
     if os.path.exists(local_cache_path):
         os.remove(local_cache_path)
     client = Unify(
-        endpoint="llama-3-8b-chat@together-ai",
+        endpoint="gpt-4o@openai",
     )
     t = time.perf_counter()
     r0 = client.generate(user_message="hello", cache=True)
