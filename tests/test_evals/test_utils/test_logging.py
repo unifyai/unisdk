@@ -449,56 +449,6 @@ def test_log_caching():
     msg = unify.delete_log_fields(field="a", logs=log)
     assert msg == {"info": "Log field deleted successfully from all logs!"}
 
-    # get_logs
-    unify.get_logs(project=project, filter="b==2")
-    assert (
-        _get_cache(
-            fn_name="get_logs",
-            kw={"project": project, "filter": "b==2"},
-        )
-        is not None
-    )
-    logs = unify.get_logs(project=project, filter="b==2")
-    assert len(logs) == 1
-    assert isinstance(logs[0], unify.Log)
-
-    # get_log_by_id
-    unify.get_log_by_id(log.id)
-    assert (
-        _get_cache(
-            fn_name="get_log_by_id",
-            kw={"arg0": log.id},
-        )
-        is not None
-    )
-    log = unify.get_log_by_id(log.id)
-    assert isinstance(log, unify.Log)
-
-    # get_logs_metric
-    unify.log(project=project, b=3)
-    unify.get_logs_metric(project=project, metric="mean", key="b")
-    assert (
-        _get_cache(
-            fn_name="get_logs_metric",
-            kw={"project": project, "metric": "mean", "key": "b"},
-        )
-        is not None
-    )
-    metric = unify.get_logs_metric(project=project, metric="mean", key="b")
-    assert metric == 2.5
-
-    # get_groups
-    unify.get_groups(project=project, key="b")
-    assert (
-        _get_cache(
-            fn_name="get_groups",
-            kw={"project": project, "key": "b"},
-        )
-        is not None
-    )
-    groups = unify.get_groups(project=project, key="b")
-    assert groups == {"0": 2, "1": 3}
-
     # cleanup
     os.remove(cache_fname)
     unify.delete_project(project)

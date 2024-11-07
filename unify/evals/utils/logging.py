@@ -458,7 +458,6 @@ def delete_log_fields(
 
 
 # noinspection PyShadowingBuiltins
-@_handle_cache
 def get_logs(
     *,
     project: Optional[str] = None,
@@ -514,7 +513,6 @@ def get_logs(
 
 
 # noinspection PyShadowingBuiltins
-@_handle_cache
 def get_log_by_id(
     id: int,
     *,
@@ -550,7 +548,6 @@ def get_log_by_id(
 
 
 # noinspection PyShadowingBuiltins
-@_handle_cache
 def get_logs_metric(
     *,
     metric: str,
@@ -597,7 +594,6 @@ def get_logs_metric(
     return response.json()
 
 
-@_handle_cache
 def get_groups(
     *,
     key: str,
