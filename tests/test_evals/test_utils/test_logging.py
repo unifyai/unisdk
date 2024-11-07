@@ -1,3 +1,4 @@
+import os
 import pytest
 from unify.utils._caching import _get_cache
 from requests import HTTPError
@@ -348,6 +349,7 @@ def test_log_caching():
     if project in unify.list_projects():
         unify.delete_project(project)
     unify.create_project(project)
+    os.remove(".cache.json")
     unify.set_log_caching(True)
     # log
     unify.log(project=project, a=0, b=1)
