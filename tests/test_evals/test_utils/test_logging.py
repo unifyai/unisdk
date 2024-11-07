@@ -349,8 +349,11 @@ def test_log_caching():
     if project in unify.list_projects():
         unify.delete_project(project)
     unify.create_project(project)
-    os.remove(".cache.json")
+    cache_fname = ".test_log_caching.cache.json"
+    if os.path.exists(cache_fname):
+        os.remove(cache_fname)
     unify.set_log_caching(True)
+    unify.set_log_caching_fname(cache_fname)
 
     # log
     unify.log(project=project, a=0, b=1)
@@ -474,6 +477,9 @@ def test_log_caching():
     )
     groups = unify.get_groups(project=project, key="b")
     assert groups == {"0": 2, "1": 3}
+
+    # cleanup
+    os.remove(cache_fname)
 
 
 if __name__ == "__main__":
