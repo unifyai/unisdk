@@ -96,7 +96,7 @@ def _dumps(
         ret = tuple(_dumps(v, cached_types, idx + [i]) for i, v in enumerate(obj))
     else:
         ret = obj
-    return json.dumps(ret) if base else base
+    return json.dumps(ret) if base else ret
 
 
 # noinspection PyTypeChecker,PyUnresolvedReferences
