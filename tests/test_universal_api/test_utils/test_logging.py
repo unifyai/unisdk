@@ -1,10 +1,11 @@
+import threading
 from datetime import datetime, timedelta, timezone
-
+from typing import Callable
 import pytest
-
 import unify
 
-start_time = datetime.now(timezone.utc)
+THREAD_LOCK = threading.Lock()
+
 tag = "test_tag"
 data = {
     "endpoint": "local_model_test@external",
@@ -48,11 +49,26 @@ data = {
             },
         ],
     },
-    "timestamp": str(start_time + timedelta(seconds=0.01)),
+    "timestamp": str(datetime.now(timezone.utc) + timedelta(seconds=0.01)),
     "tags": [tag],
 }
 
 
+def _thread_locked(fn: Callable) -> Callable:
+    # noinspection PyBroadException
+    def wrapped(*args, **kwargs):
+        THREAD_LOCK.acquire()
+        try:
+            ret = fn(*args, **kwargs)
+            THREAD_LOCK.release()
+            return ret
+        except:
+            THREAD_LOCK.release()
+
+    return wrapped
+
+
+@_thread_locked
 def test_log_query_manually():
     result = unify.log_query(**data)
     assert isinstance(result, dict)
@@ -60,6 +76,7 @@ def test_log_query_manually():
     assert result["info"] == "Query logged successfully"
 
 
+@_thread_locked
 def test_log_query_via_chat_completion():
     client = unify.Unify("gpt-4o@openai")
     response = client.generate(
@@ -70,7 +87,9 @@ def test_log_query_via_chat_completion():
     assert isinstance(response, str)
 
 
+@_thread_locked
 def test_get_queries_from_manual():
+    start_time = datetime.now(timezone.utc)
     unify.log_query(**data)
     history = unify.get_queries(
         endpoints="local_model_test@external",
@@ -84,7 +103,9 @@ def test_get_queries_from_manual():
     assert len(history) == 0
 
 
+@_thread_locked
 def test_get_queries_from_chat_completion():
+    start_time = datetime.now(timezone.utc)
     unify.Unify("gpt-4o@openai").generate(
         "hello",
         log_query_body=True,
@@ -102,7 +123,9 @@ def test_get_queries_from_chat_completion():
     assert len(history) == 0
 
 
+@_thread_locked
 def test_get_query_failures():
+    start_time = datetime.now(timezone.utc)
     client = unify.Unify("gpt-4o@openai")
     client.generate(
         "hello",
@@ -159,6 +182,7 @@ def test_get_query_failures():
     assert len(history_only_success) == 0
 
 
+@_thread_locked
 def test_get_query_tags():
     unify.log_query(**data)
     tags = unify.get_query_tags()
