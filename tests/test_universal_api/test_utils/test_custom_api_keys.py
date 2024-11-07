@@ -19,8 +19,8 @@ class CustomAPIKeyHandler:
         # should if other keys have wrongly been created
         try:
             custom_keys = unify.list_custom_api_keys()
-            for name, val in custom_keys:
-                unify.delete_custom_api_key(name)
+            for dct in custom_keys:
+                unify.delete_custom_api_key(dct["name"])
         except:
             pass
 
