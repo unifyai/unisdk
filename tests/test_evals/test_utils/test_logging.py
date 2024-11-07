@@ -411,6 +411,19 @@ def test_log_caching():
     msg = unify.delete_logs(logs=log)
     assert msg == {"info": "Logs deleted successfully!"}
 
+    # delete_log_fields
+    log = unify.log(project=project, a=1, b=2)
+    unify.delete_log_fields(field="a", logs=log)
+    assert (
+        _get_cache(
+            fn_name="delete_log_fields",
+            kw={"field": "a", "logs": log},
+        )
+        is not None
+    )
+    msg = unify.delete_log_fields(field="a", logs=log)
+    assert msg == {"info": "Log field deleted successfully from all logs!"}
+
 
 if __name__ == "__main__":
     pass
