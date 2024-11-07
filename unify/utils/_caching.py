@@ -63,7 +63,7 @@ def _get_cache(fn_name: str, kw: Dict[str, Any], filename: str = None) -> Option
             if i == len(idx_list) - 1:
                 typ = type_str_to_type[type_str]
                 if issubclass(typ, BaseModel) or issubclass(typ, Log):
-                    item[idx] = type_str_to_type[type_str](**item[idx])
+                    item[idx] = type_str_to_type[type_str].from_json(item[idx])
                 else:
                     raise Exception(f"Cache indexing found for unsupported type: {typ}")
                 break
