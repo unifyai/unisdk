@@ -54,7 +54,7 @@ def _handle_cache(fn: Callable) -> Callable:
         if ret is not None:
             return ret
         ret = fn(*args, **kwargs)
-        _write_to_cache(fn_name="log", kw=combined_kw, response=ret)
+        _write_to_cache(fn_name=fn.__name__, kw=combined_kw, response=ret)
         return ret
 
     return wrapped
