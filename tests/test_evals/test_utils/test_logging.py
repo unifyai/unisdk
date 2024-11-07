@@ -209,7 +209,7 @@ def test_atomic_functions():
         metric="mean",
         key="score",
         filter="'hello' in user_prompt",
-        project="my_project",
+        project=project,
     )
     assert logs_metric == 0.25
     unify.deactivate()
