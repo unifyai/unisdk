@@ -362,6 +362,17 @@ def test_log_caching():
     )
     log = unify.log(project=project, a=0, b=1)
     assert isinstance(log, unify.Log)
+    # add_log_params
+    unify.add_log_params(logs=log, p="p")
+    assert (
+        _get_cache(
+            fn_name="add_log_params",
+            kw={"logs": log, "p": "p"},
+        )
+        is not None
+    )
+    msg = unify.add_log_params(logs=log, p="p")
+    assert msg == {"info": "Logs updated successfully!"}
 
 
 if __name__ == "__main__":
