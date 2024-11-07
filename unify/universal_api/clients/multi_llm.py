@@ -67,7 +67,7 @@ class _MultiClient(_Client, abc.ABC):
         stateful: bool = False,
         return_full_completion: bool = False,
         traced: bool = False,
-        cache: bool = False,
+        cache: bool = None,
         # passthrough arguments
         extra_headers: Optional[Headers] = None,
         extra_query: Optional[Query] = None,

@@ -24,7 +24,7 @@ from openai.types.chat import (
 from openai.types.chat.completion_create_params import ResponseFormat
 from typing_extensions import Self
 from unify import BASE_URL, LOCAL_MODELS
-from ...utils._caching import _get_cache, _write_to_cache
+from ...utils._caching import _get_cache, _write_to_cache, _get_caching
 from ..clients.base import _Client
 from ..types import Prompt
 from ..utils.endpoint_metrics import Metrics
@@ -70,7 +70,7 @@ class _UniClient(_Client, abc.ABC):
         stateful: bool = False,
         return_full_completion: bool = False,
         traced: bool = False,
-        cache: bool = False,
+        cache: Optional[bool] = None,
         # passthrough arguments
         extra_headers: Optional[Headers] = None,
         extra_query: Optional[Query] = None,
@@ -813,7 +813,7 @@ class Unify(_UniClient):
             log_response_body=log_response_body,
         )
         chat_completion = None
-        if cache:
+        if cache is True or _get_caching() and cache is None:
             chat_completion = _get_cache(fn_name="chat.completions.create", kw=kw)
         if chat_completion is None:
             try:
@@ -832,7 +832,7 @@ class Unify(_UniClient):
                         print(f"done (thread {threading.get_ident()})")
             except openai.APIStatusError as e:
                 raise Exception(e.message)
-            if cache:
+            if cache is True or _get_caching() and cache is None:
                 _write_to_cache(
                     fn_name="chat.completions.create",
                     kw=kw,
@@ -1044,14 +1044,10 @@ class AsyncUnify(_UniClient):
             log_query_body=log_query_body,
             log_response_body=log_response_body,
         )
-        chat_completion = (
-            _get_cache(
-                fn_name="chat.completions.create",
-                kw=kw,
-            )
-            if cache
-            else None
-        )
+        if cache is True or _get_caching() and cache is None:
+            chat_completion = _get_cache(fn_name="chat.completions.create", kw=kw)
+        else:
+            chat_completion = None
         if chat_completion is None:
             try:
                 if endpoint in LOCAL_MODELS:
@@ -1071,7 +1067,7 @@ class AsyncUnify(_UniClient):
                         )
             except openai.APIStatusError as e:
                 raise Exception(e.message)
-            if cache:
+            if cache is True or _get_caching() and cache is None:
                 _write_to_cache(
                     fn_name="chat.completions.create",
                     kw=kw,
