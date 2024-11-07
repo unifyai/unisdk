@@ -351,6 +351,7 @@ def test_log_caching():
     unify.create_project(project)
     os.remove(".cache.json")
     unify.set_log_caching(True)
+
     # log
     unify.log(project=project, a=0, b=1)
     assert (
@@ -423,6 +424,19 @@ def test_log_caching():
     )
     msg = unify.delete_log_fields(field="a", logs=log)
     assert msg == {"info": "Log field deleted successfully from all logs!"}
+
+    # get_logs
+    unify.get_logs(project=project, filter="b==2")
+    assert (
+        _get_cache(
+            fn_name="get_logs",
+            kw={"project": project, "filter": "b==2"},
+        )
+        is not None
+    )
+    logs = unify.get_logs(project=project, filter="b==2")
+    assert len(logs) == 1
+    assert isinstance(logs[0], unify.Log)
 
 
 if __name__ == "__main__":
