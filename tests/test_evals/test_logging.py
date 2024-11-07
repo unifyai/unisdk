@@ -1,3 +1,4 @@
+import os
 import time
 import math
 import asyncio
@@ -1002,6 +1003,52 @@ def test_traced():
     assert (
         entries["trace"]["child_spans"][0]["child_spans"][0]["span_name"] == "deeper_fn"
     )
+
+
+def test_traced_w_caching():
+    project = "my_project"
+    if project in unify.list_projects():
+        unify.delete_project(project)
+    unify.create_project(project)
+    unify.activate(project)
+    if os.path.exists(".test_traced_w_cached.cache.json"):
+        os.remove(".test_traced_w_cached.cache.json")
+    unify.set_log_caching(True)
+    unify.set_log_caching_fname(".test_traced_w_cached.cache.json")
+
+    @unify.traced
+    def some_func(a, b, c):
+        return [a, b, c]
+
+    some_func(0, 1, 2)
+    logs = unify.get_logs(project="my_project")
+    assert len(logs) == 1
+    trace = logs[0].entries["trace"]
+    idx = trace["id"]
+    assert isinstance(idx, str)
+    assert trace["span_name"] == "some_func"
+    exec_time = trace["exec_time"]
+    assert isinstance(exec_time, float)
+    assert (
+        trace["code"].replace(" ", "")
+        == "@unify.traced\ndefsome_func(a,b,c):\nreturn[a,b,c]\n"
+    )
+    assert trace["inputs"] == {"a": 0, "b": 1, "c": 2}
+    assert trace["outputs"] == [0, 1, 2]
+
+    some_func(0, 1, 2)
+    logs = unify.get_logs(project="my_project")
+    assert len(logs) == 1
+    trace = logs[0].entries["trace"]
+    assert trace["id"] == idx
+    assert trace["span_name"] == "some_func"
+    assert trace["exec_time"] == exec_time
+    assert (
+        trace["code"].replace(" ", "")
+        == "@unify.traced\ndefsome_func(a,b,c):\nreturn[a,b,c]\n"
+    )
+    assert trace["inputs"] == {"a": 0, "b": 1, "c": 2}
+    assert trace["outputs"] == [0, 1, 2]
 
 
 def test_traced_none_handling():

@@ -1,4 +1,6 @@
 from __future__ import annotations
+
+import copy
 import os
 import inspect
 import requests
@@ -58,7 +60,11 @@ def _handle_cache(fn: Callable) -> Callable:
     def wrapped(*args, **kwargs):
         if not LOG_CACHING:
             return fn(*args, **kwargs)
-        combined_kw = {**{f"arg{i}": a for i, a in enumerate(args)}, **kwargs}
+        kw_for_key = copy.deepcopy(kwargs)
+        if fn.__name__ == "add_log_entries" and "trace" in kwargs:
+            del kw_for_key["trace"]["id"]
+            del kw_for_key["trace"]["exec_time"]
+        combined_kw = {**{f"arg{i}": a for i, a in enumerate(args)}, **kw_for_key}
         ret = _get_cache(fn_name=fn.__name__, kw=combined_kw, filename=LOG_CACHE_FNAME)
         if ret is not None:
             return ret
