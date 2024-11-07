@@ -373,6 +373,28 @@ def test_log_caching():
     )
     msg = unify.add_log_params(logs=log, p="p")
     assert msg == {"info": "Logs updated successfully!"}
+    # add_log_params
+    unify.add_log_params(logs=log, p="p")
+    assert (
+        _get_cache(
+            fn_name="add_log_params",
+            kw={"logs": log, "p": "p"},
+        )
+        is not None
+    )
+    msg = unify.add_log_params(logs=log, p="p")
+    assert msg == {"info": "Logs updated successfully!"}
+    # add_log_entries
+    unify.add_log_entries(logs=log, e="e")
+    assert (
+        _get_cache(
+            fn_name="add_log_entries",
+            kw={"logs": log, "e": "e"},
+        )
+        is not None
+    )
+    msg = unify.add_log_entries(logs=log, e="e")
+    assert msg == {"info": "Logs updated successfully!"}
 
 
 if __name__ == "__main__":
