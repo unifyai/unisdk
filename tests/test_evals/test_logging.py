@@ -1013,8 +1013,8 @@ def test_traced_w_caching():
     unify.activate(project)
     if os.path.exists(".test_traced_w_cached.cache.json"):
         os.remove(".test_traced_w_cached.cache.json")
-    unify.set_log_caching(True)
-    unify.set_log_caching_fname(".test_traced_w_cached.cache.json")
+    unify.set_caching(True)
+    unify.set_caching_fname(".test_traced_w_cached.cache.json")
 
     @unify.traced
     def some_func(a, b, c):
