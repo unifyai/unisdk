@@ -463,6 +463,18 @@ def test_log_caching():
     metric = unify.get_logs_metric(project=project, metric="mean", key="b")
     assert metric == 2.5
 
+    # get_groups
+    unify.get_groups(project=project, key="b")
+    assert (
+        _get_cache(
+            fn_name="get_groups",
+            kw={"project": project, "key": "b"},
+        )
+        is not None
+    )
+    groups = unify.get_groups(project=project, key="b")
+    assert groups == {"0": 2, "1": 3}
+
 
 if __name__ == "__main__":
     pass
