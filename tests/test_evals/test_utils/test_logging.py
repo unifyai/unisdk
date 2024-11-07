@@ -362,6 +362,7 @@ def test_log_caching():
     )
     log = unify.log(project=project, a=0, b=1)
     assert isinstance(log, unify.Log)
+
     # add_log_params
     unify.add_log_params(logs=log, p="p")
     assert (
@@ -373,6 +374,7 @@ def test_log_caching():
     )
     msg = unify.add_log_params(logs=log, p="p")
     assert msg == {"info": "Logs updated successfully!"}
+
     # add_log_params
     unify.add_log_params(logs=log, p="p")
     assert (
@@ -384,6 +386,7 @@ def test_log_caching():
     )
     msg = unify.add_log_params(logs=log, p="p")
     assert msg == {"info": "Logs updated successfully!"}
+
     # add_log_entries
     unify.add_log_entries(logs=log, e="e")
     assert (
@@ -395,6 +398,18 @@ def test_log_caching():
     )
     msg = unify.add_log_entries(logs=log, e="e")
     assert msg == {"info": "Logs updated successfully!"}
+
+    # delete_logs
+    unify.delete_logs(logs=log)
+    assert (
+        _get_cache(
+            fn_name="delete_logs",
+            kw={"logs": log},
+        )
+        is not None
+    )
+    msg = unify.delete_logs(logs=log)
+    assert msg == {"info": "Logs deleted successfully!"}
 
 
 if __name__ == "__main__":
