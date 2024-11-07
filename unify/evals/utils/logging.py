@@ -9,7 +9,12 @@ from typing import Any, Dict, List, Optional, Union, Callable
 
 import unify
 from unify import BASE_URL
-from ...utils._caching import _get_cache, _write_to_cache
+from ...utils._caching import (
+    _get_cache,
+    _write_to_cache,
+    _get_caching,
+    _get_caching_fname,
+)
 from ...utils.helpers import _validate_api_key, _get_and_maybe_create_project
 
 # log
@@ -38,24 +43,6 @@ SPAN = ContextVar("span", default={})
 RUNNING_TIME = ContextVar("running_time", default=0.0)
 
 
-# cache
-LOG_CACHING = False
-LOG_CACHE_FNAME = ".cache.json"
-
-
-def set_log_caching(value: bool) -> None:
-    global LOG_CACHING, LOG_CACHE_FNAME
-    LOG_CACHING = value
-
-
-def set_log_caching_fname(value: Optional[str] = None) -> None:
-    global LOG_CACHE_FNAME
-    if value is not None:
-        LOG_CACHE_FNAME = value
-    else:
-        LOG_CACHE_FNAME = ".cache.json"
-
-
 def _removes_unique_trace_values(kw: Dict[str, Any]) -> Dict[str, Any]:
     del kw["id"]
     del kw["exec_time"]
@@ -70,13 +57,17 @@ def _removes_unique_trace_values(kw: Dict[str, Any]) -> Dict[str, Any]:
 
 def _handle_cache(fn: Callable) -> Callable:
     def wrapped(*args, **kwargs):
-        if not LOG_CACHING:
+        if not _get_caching():
             return fn(*args, **kwargs)
         kw_for_key = copy.deepcopy(kwargs)
         if fn.__name__ == "add_log_entries" and "trace" in kwargs:
             kw_for_key["trace"] = _removes_unique_trace_values(kw_for_key["trace"])
         combined_kw = {**{f"arg{i}": a for i, a in enumerate(args)}, **kw_for_key}
-        ret = _get_cache(fn_name=fn.__name__, kw=combined_kw, filename=LOG_CACHE_FNAME)
+        ret = _get_cache(
+            fn_name=fn.__name__,
+            kw=combined_kw,
+            filename=_get_caching_fname(),
+        )
         if ret is not None:
             return ret
         ret = fn(*args, **kwargs)
@@ -84,7 +75,7 @@ def _handle_cache(fn: Callable) -> Callable:
             fn_name=fn.__name__,
             kw=combined_kw,
             response=ret,
-            filename=LOG_CACHE_FNAME,
+            filename=_get_caching_fname(),
         )
         return ret
 

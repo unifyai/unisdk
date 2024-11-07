@@ -58,6 +58,7 @@ from .evals.utils.logging import *
 from .evals.utils.projects import *
 
 from .utils import helpers, map, _caching
+from .utils._caching import set_caching, set_caching_fname
 
 from .universal_api import chatbot, clients, logging
 from .universal_api.clients import multi_llm

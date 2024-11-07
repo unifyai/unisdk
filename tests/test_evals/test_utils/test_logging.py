@@ -373,8 +373,8 @@ def test_log_caching():
     cache_fname = ".test_log_caching.cache.json"
     if os.path.exists(cache_fname):
         os.remove(cache_fname)
-    unify.set_log_caching(True)
-    unify.set_log_caching_fname(cache_fname)
+    unify.set_caching(True)
+    unify.set_caching_fname(cache_fname)
 
     # log
     unify.log(project=project, a=0, b=1)

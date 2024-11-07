@@ -13,6 +13,30 @@ _cache_fpath: str = os.path.join(_cache_dir, ".cache.json")
 
 CACHE_LOCK = threading.Lock()
 
+CACHING = False
+CACHE_FNAME = ".cache.json"
+
+
+def set_caching(value: bool) -> None:
+    global CACHING, CACHE_FNAME
+    CACHING = value
+
+
+def set_caching_fname(value: Optional[str] = None) -> None:
+    global CACHE_FNAME
+    if value is not None:
+        CACHE_FNAME = value
+    else:
+        CACHE_FNAME = ".cache.json"
+
+
+def _get_caching():
+    return CACHING
+
+
+def _get_caching_fname():
+    return CACHE_FNAME
+
 
 def _create_cache_if_none(filename: str = None):
     global _cache, _cache_fpath, _cache_dir
