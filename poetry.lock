@@ -1170,13 +1170,13 @@ typing-extensions = ">=3.0.0"
 
 [[package]]
 name = "openai"
-version = "1.54.1"
+version = "1.54.3"
 description = "The official Python library for the openai API"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "openai-1.54.1-py3-none-any.whl", hash = "sha256:3cb49ccb6bfdc724ad01cc397d323ef8314fc7d45e19e9de2afdd6484a533324"},
-    {file = "openai-1.54.1.tar.gz", hash = "sha256:5b832bf82002ba8c4f6e5e25c1c0f5d468c22f043711544c716eaffdb30dd6f1"},
+    {file = "openai-1.54.3-py3-none-any.whl", hash = "sha256:f18dbaf09c50d70c4185b892a2a553f80681d1d866323a2da7f7be2f688615d5"},
+    {file = "openai-1.54.3.tar.gz", hash = "sha256:7511b74eeb894ac0b0253dc71f087a15d2e4d71d22d0088767205143d880cca6"},
 ]
 
 [package.dependencies]
@@ -1532,6 +1532,20 @@ docs = ["sphinx (>=5.3)", "sphinx-rtd-theme (>=1.0)"]
 testing = ["coverage (>=6.2)", "hypothesis (>=5.7.1)"]
 
 [[package]]
+name = "pytest-timeout"
+version = "2.3.1"
+description = "pytest plugin to abort hanging tests"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "pytest-timeout-2.3.1.tar.gz", hash = "sha256:12397729125c6ecbdaca01035b9e5239d4db97352320af155b3f5de1ba5165d9"},
+    {file = "pytest_timeout-2.3.1-py3-none-any.whl", hash = "sha256:68188cb703edfc6a18fad98dc25a3c61e9f24d644b0b70f33af545219fc7813e"},
+]
+
+[package.dependencies]
+pytest = ">=7.0.0"
+
+[[package]]
 name = "pyyaml"
 version = "6.0.2"
 description = "YAML parser and emitter for Python"
@@ -1726,13 +1740,13 @@ files = [
 
 [[package]]
 name = "tqdm"
-version = "4.66.6"
+version = "4.67.0"
 description = "Fast, Extensible Progress Meter"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "tqdm-4.66.6-py3-none-any.whl", hash = "sha256:223e8b5359c2efc4b30555531f09e9f2f3589bcd7fdd389271191031b49b7a63"},
-    {file = "tqdm-4.66.6.tar.gz", hash = "sha256:4bdd694238bef1485ce839d67967ab50af8f9272aab687c0d7702a01da0be090"},
+    {file = "tqdm-4.67.0-py3-none-any.whl", hash = "sha256:0cd8af9d56911acab92182e88d763100d4788bdf421d251616040cc4d44863be"},
+    {file = "tqdm-4.67.0.tar.gz", hash = "sha256:fe5a6f95e6fe0b9755e9469b77b9c3cf850048224ecaa8293d7d2d31f97d869a"},
 ]
 
 [package.dependencies]
@@ -1740,6 +1754,7 @@ colorama = {version = "*", markers = "platform_system == \"Windows\""}
 
 [package.extras]
 dev = ["pytest (>=6)", "pytest-cov", "pytest-timeout", "pytest-xdist"]
+discord = ["requests"]
 notebook = ["ipywidgets (>=6)"]
 slack = ["slack-sdk"]
 telegram = ["requests"]
@@ -1997,4 +2012,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "0159071e38b0f88bad9684ade4dc37898f2d72afea21e741a6d890cab1bb785e"
+content-hash = "add0a8d3e96ef27383e59aaa71d7a52aa9e99e667528e0e3de2ae56f86c6f547"
