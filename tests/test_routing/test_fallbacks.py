@@ -13,3 +13,7 @@ def test_endpoint_fallback():
     unify.Unify(
         "llama-3.1-405b-chat@together-ai->llama-3.1-70b-chat@groq",
     ).generate("Hello.")
+
+
+if __name__ == "__main__":
+    pass

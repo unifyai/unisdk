@@ -353,7 +353,12 @@ class _UniClient(_Client, abc.ABC):
         """
         _assert_is_valid_endpoint(value, api_key=self._api_key)
         self._endpoint = value
-        self._model, self._provider = value.split("->")[0].split("@")  # noqa: WPS414
+        lhs = value.split("->")[0]
+        if "@" in lhs:
+            self._model, self._provider = lhs.split("@")
+        else:
+            self._model = lhs
+            self._provider = value.split("->")[1]
         return self
 
     def set_model(self, value: str) -> Self:
