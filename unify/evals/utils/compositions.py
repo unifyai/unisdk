@@ -76,7 +76,7 @@ def replace_log_params(
     **params,
 ) -> Dict[str, str]:
     """
-    Replaces existing params in an existing log.
+    Replaces existing params in existing logs.
 
     Args:
         logs: The log(s) to replace fields for. Looks for the current active log if none
@@ -85,10 +85,10 @@ def replace_log_params(
         api_key: If specified, unify API key to be used. Defaults to the value in the
         `UNIFY_KEY` environment variable.
 
-        params: The data to update in the log.
+        params: The params to update in the log.
 
     Returns:
-        A message indicating whether the log was successfully updated.
+        A message indicating whether the log(s) were successfully updated.
     """
     return _replace_log_fields(
         logs=logs,
@@ -117,7 +117,7 @@ def update_log_params(
         api_key: If specified, unify API key to be used. Defaults to the value in the
         `UNIFY_KEY` environment variable.
 
-        params: The data to update in the log.
+        params: The params to update in the log.
 
     Returns:
         A message indicating whether the log was successfully updated.
@@ -135,7 +135,7 @@ def rename_log_params(
     *,
     logs: Optional[Union[int, unify.Log, List[Union[int, unify.Log]]]] = None,
     api_key: Optional[str] = None,
-    **params,
+    **names,
 ) -> Dict[str, str]:
     """
     Renames the set of log params.
@@ -147,7 +147,7 @@ def rename_log_params(
         api_key: If specified, unify API key to be used. Defaults to the value in the
         `UNIFY_KEY` environment variable.
 
-        params: The field names to update in the log, with keys as old names and values
+        names: The field names to update in the log, with keys as old names and values
         as new names.
 
     Returns:
@@ -157,7 +157,7 @@ def rename_log_params(
         logs=logs,
         mode="params",
         api_key=api_key,
-        **params,
+        **names,
     )
 
 
@@ -165,6 +165,16 @@ def group_logs_by_configs(
     *,
     logs: List[unify.Log],
 ) -> Dict:
+    """
+    Groups logs based on their unique parameter configurations.
+
+    Args:
+        logs: The logs to group into their unique parameter configurations.
+
+    Returns:
+        The grouped logs, with flattened string representation of the parameters
+        (the config) as keys, and the list of logs as values.
+    """
     configs = list(dict.fromkeys([json.dumps(lg.params) for lg in logs]))
     ret_dict = dict()
     for conf in configs:
@@ -172,19 +182,30 @@ def group_logs_by_configs(
     return ret_dict
 
 
-def add_param(
+def add_params(
     *,
     logs: Optional[Union[str, int, unify.Log, List[Union[int, unify.Log]]]] = "all",
     api_key: Optional[str] = None,
-    **param,
+    **params,
 ) -> Dict[str, str]:
     """
-    Adds a new parameter to the logs (defaults to all logs).
+    Adds new parameters to the logs (defaults to all logs).
+
+    Args:
+        logs: The logs to add new parameters to. Looks for the current active log
+        if none are provided. Defaults to "all" where all project logs are updated.
+
+        api_key: If specified, unify API key to be used. Defaults to the value in the
+        `UNIFY_KEY` environment variable.
+
+        params: The params to add to the logs.
+
+    Returns:
+        A message indicating whether the logs were successfully updated.
     """
     if logs == "all":
         logs = get_logs()
-    assert len(param) == 1, "Only one parameter is allowed when calling add_param"
-    return add_log_params(logs=logs, api_key=api_key, **param)
+    return add_log_params(logs=logs, api_key=api_key, **params)
 
 
 def get_params(
@@ -194,6 +215,16 @@ def get_params(
 ) -> List[str]:
     """
     Gets all parameter names within the collection of logs (default to all logs).
+
+    Args:
+        logs: The logs to get all parameters from. Looks for the current active log
+        if none are provided. Defaults to "all" where all project logs are searched.
+
+        api_key: If specified, unify API key to be used. Defaults to the value in the
+        `UNIFY_KEY` environment variable.
+
+    Returns:
+        A list of all parameter names.
     """
     if logs == "all":
         logs = get_logs(api_key=api_key)
@@ -202,7 +233,13 @@ def get_params(
     return list(dict.fromkeys([p for lg in logs for p in lg.params.keys()]))
 
 
-def get_source():
+def get_source() -> str:
+    """
+    Extracts the source code for the file from where this function was called.
+
+    Returns:
+        The source code for the file, as a string.
+    """
     frame = inspect.getouterframes(inspect.currentframe())[1]
     with open(frame.filename, "r") as file:
         source = file.read()
@@ -220,7 +257,7 @@ def replace_log_entries(
     **entries,
 ) -> Dict[str, str]:
     """
-    Replaces existing entries in an existing log.
+    Replaces existing entries in existing logs.
 
     Args:
         logs: The log(s) to replace fields for. Looks for the current active log if none
@@ -229,10 +266,10 @@ def replace_log_entries(
         api_key: If specified, unify API key to be used. Defaults to the value in the
         `UNIFY_KEY` environment variable.
 
-        entries: The data to update in the log.
+        entries: The entries to replace in the log.
 
     Returns:
-        A message indicating whether the log was successfully updated.
+        A message indicating whether the logs were successfully updated.
     """
     return _replace_log_fields(logs=logs, mode="entries", api_key=api_key, **entries)
 
@@ -256,7 +293,7 @@ def update_log_entries(
         api_key: If specified, unify API key to be used. Defaults to the value in the
         `UNIFY_KEY` environment variable.
 
-        entries: The data to update in the log.
+        entries: The entries to update in the log.
 
     Returns:
         A message indicating whether the log was successfully updated.
@@ -286,8 +323,8 @@ def rename_log_entries(
         api_key: If specified, unify API key to be used. Defaults to the value in the
         `UNIFY_KEY` environment variable.
 
-        entries: The field names to update in the log, with keys as old names and values
-        as new names.
+        entries: The field names to update in the logs, with keys as old names and
+        values as new names.
 
     Returns:
         A message indicating whether the log field names were successfully updated.
@@ -307,7 +344,7 @@ def delete_logs_by_value(
     api_key: Optional[str] = None,
 ):
     """
-    Returns a list of filtered logs from a project.
+    Delete logs by value within a project.
 
     Args:
         project: Name of the project to delete logs from.
@@ -426,13 +463,10 @@ def get_logs_by_value(
         api_key: If specified, unify API key to be used. Defaults to the value in the
         `UNIFY_KEY` environment variable.
 
-        Whether or not to include logs which contain identical key-value pairs to all
-        kwargs passed which are present in the log, but
-
         data: The data to search the upstream logs for.
 
     Returns:
-        The list of unify.Logs which match the data, if any exist.
+        The list of logs which match the data, if any exist.
     """
     filter_str = " and ".join(
         [
@@ -462,7 +496,7 @@ def get_log_by_value(
         data: The data to search the upstream logs for.
 
     Returns:
-        The single unify.Log which matches the data, if it exists.
+        The single log which matches the data, if it exists.
     """
     logs = get_logs_by_value(project=project, **data, api_key=api_key)
     assert len(logs) in (
