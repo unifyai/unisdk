@@ -19,7 +19,7 @@ def upload_dataset(
     content: list,
     *,
     api_key: Optional[str] = None,
-) -> str:
+) -> Dict[str, str]:
     """
     Uploads a dataset to the platform
 
@@ -30,6 +30,8 @@ def upload_dataset(
 
         api_key: If specified, unify API key to be used. Defaults to the value in the
         `UNIFY_KEY` environment variable.
+    Returns:
+        Message indicating whether the dataset was uploaded successfully.
     """
     api_key = _validate_api_key(api_key)
     name = _maybe_prepend_project_name(name, api_key)
@@ -75,8 +77,6 @@ def download_dataset(
     Returns:
         If path is not specified, returns the dataset content, if specified, returns
         None.
-    Raises:
-        ValueError: If there was an HTTP error.
     """
     api_key = _validate_api_key(api_key)
     name = _maybe_prepend_project_name(name, api_key)
@@ -99,7 +99,7 @@ def delete_dataset(
     name: str,
     *,
     api_key: Optional[str] = None,
-) -> str:
+) -> Dict[str, str]:
     """
     Deletes a dataset from the platform.
 
@@ -111,8 +111,6 @@ def delete_dataset(
 
     Returns:
         str: Info msg with the response from the HTTP endpoint.
-    Raises:
-        ValueError: If there was an HTTP error.
     """
     api_key = _validate_api_key(api_key)
     name = _maybe_prepend_project_name(name, api_key)
@@ -122,7 +120,7 @@ def delete_dataset(
     }
     response = requests.delete(BASE_URL + f"/dataset/{name}", headers=headers)
     response.raise_for_status()
-    return response.json()["info"]
+    return response.json()
 
 
 def rename_dataset(
@@ -130,9 +128,9 @@ def rename_dataset(
     new_name: str,
     *,
     api_key: Optional[str] = None,
-):
+) -> Dict[str, str]:
     """
-    Renames a dataset.
+    Renames a dataset in the platform.
 
     Args:
         name: Current dataset name

@@ -58,7 +58,7 @@ def test_add_param():
     assert logs[1].params == {}
     assert logs[2].entries == {"c": "c"}
     assert logs[2].params == {}
-    unify.add_param(system_prompt="You know the alphabet.")
+    unify.add_params(system_prompt="You know the alphabet.")
     logs = unify.get_logs()
     assert len(logs) == 3
     assert logs[0].entries == {"a": "a"}

@@ -340,7 +340,7 @@ def add_log_params(
         logged into the platform as params.
 
     Returns:
-        A message indicating whether the log was successfully updated.
+        A message indicating whether the logs were successfully updated.
     """
     return _add_to_log(logs=logs, mode="params", api_key=api_key, **params)
 
@@ -369,7 +369,7 @@ def add_log_entries(
         into the platform as entries.
 
     Returns:
-        A message indicating whether the log was successfully updated.
+        A message indicating whether the logs were successfully updated.
     """
     return _add_to_log(
         logs=logs,
