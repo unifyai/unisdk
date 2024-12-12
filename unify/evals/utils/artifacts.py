@@ -65,7 +65,7 @@ def delete_project_artifact(
         `UNIFY_KEY` environment variable.
 
     Returns:
-        Whether the artifacts were successfully deleted.
+        Whether the artifact was successfully deleted.
     """
     api_key = _validate_api_key(api_key)
     headers = {
@@ -87,7 +87,7 @@ def get_project_artifacts(
     api_key: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
-    Returns the key-value pairs of all artifacts in a project.
+    Returns the key-value pairs for all artifacts in a project.
 
     Args:
         project: Name of the project to delete an artifact from.
