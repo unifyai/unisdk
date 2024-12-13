@@ -1,5 +1,9 @@
 # Unify
 
+<a href="https://www.ycombinator.com/companies/unify">![Static Badge](https://img.shields.io/badge/Y%20Combinator-W23-orange)</a>
+<a href="https://x.com/letsunifyai">![X (formerly Twitter) Follow](https://img.shields.io/twitter/follow/letsunifyai)</a>
+<a href="https://discord.gg/sXyFF8tDtm"> ![Static Badge](https://img.shields.io/badge/Join_Discord-464646?&logo=discord&logoColor=5865F2) </a>
+
 <div style="display: block;" align="center">
     <img class="dark-light" width="100%" src="https://github.com/unifyai/unifyai.github.io/blob/main/img/externally_linked/github_header.gif?raw=true"/>
 </div>
