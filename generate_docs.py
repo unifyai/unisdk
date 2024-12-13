@@ -304,14 +304,17 @@ def write_function_and_class_jsons(details, private_modules):
             # separate the members into properties, setters,
             # dunders and methods
             properties, setters, dunders, methods = dict(), dict(), dict(), dict()
+            init_method = None
             member_names = list(members.keys())
             for member_name in member_names:
                 if members[member_name]["source_code"].strip().startswith("@property"):
                     properties[member_name] = members[member_name]
                 elif member_name.startswith("set_"):
                     setters[member_name] = members[member_name]
-                elif member_name.startswith("__"):
+                elif member_name.startswith("__") and member_name != "__init__":
                     dunders[member_name] = members[member_name]
+                elif member_name == "__init__":
+                    init_method = members[member_name]
                 else:
                     methods[member_name] = members[member_name]
 
@@ -325,6 +328,11 @@ def write_function_and_class_jsons(details, private_modules):
                 "lineno": class_lineno,
                 "module_path": class_module.replace(".", "/") + ".py",
             }
+            if init_method:
+                classes[class_name] = {
+                    "": {"__init__": init_method},
+                    **classes[class_name],
+                }
 
         # write all the functions to separate files
         for function_name in functions:
@@ -379,7 +387,7 @@ def write_docs(latest_hash: str):
             f.write("---\n" f"title: '{name}'\n" "---")
 
             # if the module is a class
-            sections = ["properties", "setters", "methods", "dunder_methods"]
+            sections = ["", "properties", "setters", "methods", "dunder_methods"]
             if any(member in module_data for member in sections):
                 # add class def python block
                 github_path = github_url + python_file_path + f"#L{class_lineno}"
@@ -396,12 +404,13 @@ def write_docs(latest_hash: str):
                 # add details for each instance method/property
                 for section in sections:
                     # skip the section if no members under it
-                    if len(module_data[section]) == 0:
+                    if section not in module_data or len(module_data[section]) == 0:
                         continue
 
                     # add section header
-                    new_line(f)
-                    f.write(f"## {section}")
+                    if section != "":
+                        new_line(f)
+                        f.write(f"## {section}")
 
                     for member_name in module_data[section]:
                         # get member details
@@ -417,8 +426,9 @@ def write_docs(latest_hash: str):
                             docstring = docstring.replace(key, value)
 
                         # add method info
-                        new_line(f)
-                        f.write("---")
+                        if section != "":
+                            new_line(f)
+                            f.write("---")
                         new_line(f)
                         f.write(f"### {escaped_member_name}")
                         new_line(f)
