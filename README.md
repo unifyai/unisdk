@@ -28,7 +28,27 @@ While True:
 
 ## Quickstart
 
-[Sign up](https://console.unify.ai/), `pip install unifyai`, run this toy evaluation ⬇️, check out the logs in your [dashboard](https://console.unify.ai/evals), and then iterate 🔁 on your parameters to quickly get your application flying! 🪁
+[Sign up](https://console.unify.ai/), `pip install unifyai`, and make your first LLM query:
+
+```python
+import unify
+client = unify.Unify("gpt-4o@openai", api_key="UNIFY_KEY")
+client.generate("hello world!")
+```
+
+> [!NOTE]
+> We recommend using [python-dotenv](https://pypi.org/project/python-dotenv/)
+> to add `UNIFY_KEY="My API Key"` to your `.env` file, avoiding the need to use the `api_key` argument as above.
+
+You can list all available LLM endpoints, models and providers like so:
+
+```python
+unify.list_models()
+unify.list_providers()
+unify.list_endpoints()
+```
+
+Now you can run this toy evaluation ⬇️, check out the logs in your [dashboard](https://console.unify.ai/evals), and iterate 🔁 on your parameters to quickly get your application flying! 🪁
 
 ```python
 import unify
@@ -72,8 +92,10 @@ with unify.Project("Maths Assistant"):
     <img class="dark-light" width="100%" src="https://media.githubusercontent.com/media/unifyai/unifyai.github.io/refs/heads/main/img/externally_linked/evals_console.gif"/>
 </div>
 
-A *complete* example of this Maths Assistant problem can be found here.
+A *complete* example of this Maths Assistant problem can be found [here](https://docs.unify.ai/data_flywheel/teaching_assistant).
 
 ## Learn More
 
-Check out our docs (especially our walkthrough) to get through the major concepts quickly. Happy prompting! 🧑‍💻
+Check out our [docs](https://docs.unify.ai/) (especially our [Walkthrough](https://docs.unify.ai/basics/welcome)) to get through the major concepts quickly. If you have any questions, feel free to reach out to us on [discord](https://discord.com/invite/sXyFF8tDtm) 👾
+
+Happy prompting! 🧑‍💻
