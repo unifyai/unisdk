@@ -4,10 +4,6 @@
 <a href="https://x.com/letsunifyai">![X (formerly Twitter) Follow](https://img.shields.io/twitter/follow/letsunifyai)</a>
 <a href="https://discord.gg/sXyFF8tDtm"> ![Static Badge](https://img.shields.io/badge/Join_Discord-464646?&logo=discord&logoColor=5865F2) </a>
 
-<div style="display: block;" align="center">
-    <img class="dark-light" width="100%" src="https://github.com/unifyai/unifyai.github.io/blob/main/img/externally_linked/github_header.gif?raw=true"/>
-</div>
-
 Unify is a fully **hackable LLMOps platform**, which you can use to build *personalized* pipelines for: logging, evaluations, guardrails, human labelling, agentic workflows, self-optimization, and more.
 
 simply `unify.log` your data, and then compose your own custom interface using the four core building blocks: (1) **tables**, (2) **plots**, (3) **visualizations**, and (4) **terminals**.
@@ -101,10 +97,6 @@ with unify.Project("Maths Assistant"):
     with unify.Params(system_message=client.system_message):
         unify.map(evaluate, qs)
 ```
-
-<div style="display: block;" align="center">
-    <img class="dark-light" width="100%" src="https://media.githubusercontent.com/media/unifyai/unifyai.github.io/refs/heads/main/img/externally_linked/evals_console.gif"/>
-</div>
 
 A *complete* example of this Maths Assistant problem can be found [here](https://docs.unify.ai/data_flywheel/teaching_assistant).
 
