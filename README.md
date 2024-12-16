@@ -4,7 +4,7 @@
 <a href="https://x.com/letsunifyai">![X (formerly Twitter) Follow](https://img.shields.io/twitter/follow/letsunifyai)</a>
 <a href="https://discord.gg/sXyFF8tDtm"> ![Static Badge](https://img.shields.io/badge/Join_Discord-464646?&logo=discord&logoColor=5865F2) </a>
 
-Unify is a fully **hackable LLMOps platform**, which you can use to build *personalized* pipelines for: logging, evaluations, guardrails, human labelling, agentic workflows, self-optimization, and more.
+Unify is a **fully hackable** LLMOps platform, which you can use to build *personalized* pipelines for: logging, evaluations, guardrails, human labelling, agentic workflows, self-optimization, and more.
 
 simply `unify.log` your data, and then compose your own custom interface using the four core building blocks: (1) **tables**, (2) **plots**, (3) **visualizations**, and (4) **terminals**.
 
