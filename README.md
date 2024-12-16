@@ -8,9 +8,13 @@
     <img class="dark-light" width="100%" src="https://github.com/unifyai/unifyai.github.io/blob/main/img/externally_linked/github_header.gif?raw=true"/>
 </div>
 
-There has been an explosion of LLM tools 💥, but many of these are inflexible and complex.
+Unify is a fully **hackable LLMOps platform**, which you can use to build *personalized* pipelines for: logging, evaluations, guardrails, human labelling, agentic workflows, self-optimization, and more.
 
-Tooling requirements change across *projects*, across *teams*, and across *time*. Unify is a simple, modular and fully **hackable** LLMOps platform, so you can spin up and iterate on the *exact* AI platform that **you** need, in **seconds** ⚡
+simply `unify.log` your data, and then compose your own custom interface using the four core building blocks: (1) **tables**, (2) **plots**, (3) **visualizations**, and (4) **terminals**.
+
+Despite the explosion of LLM tools, many of these are inflexible, overly abstracted, and complex to navigate.
+
+Tooling requirements constantly change across *projects*, across *teams*, and across *time*. We've therefore made Unify as simple, modular and hackable as possible, so you can spin up and iterate on the *exact* AI platform that **you** need, in **seconds** ⚡
 
 ## Why LLMOps?
 
