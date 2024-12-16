@@ -8,6 +8,12 @@
     <img class="dark-light" width="100%" src="https://github.com/unifyai/unifyai.github.io/blob/main/img/externally_linked/github_header.gif?raw=true"/>
 </div>
 
+There has been an explosion of LLM tools 💥, but many of these are inflexible and complex.
+
+Tooling requirements change across *projects*, across *teams*, and across *time*. Unify is a simple, modular and fully **hackable** LLMOps platform, so you can spin up and iterate on the *exact* AI platform that **you** need, in **seconds** ⚡
+
+## Why LLMOps?
+
 **Software 1.0:** Human-written source code, deterministic unit tests, etc. 🧑‍💻
 
 **Software 2.0:** Neural networks, validation losses, etc. 📉
@@ -20,7 +26,7 @@ Building an effective LLMOps pipeline requires taking **both of these perspectiv
 
 ## LLM Flywheel
 
-Despite all of the recent hype, the overly complex abstractions, and the jargon, building LLM application is **remarkably simple**. In pseudo-code:
+Despite all of the recent hype, the overly complex abstractions, and the jargon, the *process* for building high-performing LLM application is **remarkably simple**. In pseudo-code:
 
 ```
 While True:
