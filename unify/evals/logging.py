@@ -220,101 +220,103 @@ def traced(fn: callable = None, *, prune_empty: bool = True):
     def wrapped(*args, **kwargs):
         log_token = None if ACTIVE_LOG.get() else ACTIVE_LOG.set([unify.log()])
         t1 = time.perf_counter()
-        if not SPAN.get():
+        ts = datetime.datetime.utcnow().isoformat()
+        if not TRACE.get():
             RUNNING_TIME.set(t1)
         signature = inspect.signature(fn)
         bound_args = signature.bind(*args, **kwargs)
         bound_args.apply_defaults()
         inputs = bound_args.arguments
-        new_span = {
+        new_trace = {
             "id": str(uuid.uuid4()),
-            "parent_span_id": (None if not SPAN.get() else SPAN.get()["id"]),
-            "span_name": fn.__name__,
+            "parent_trace_id": (None if not TRACE.get() else TRACE.get()["id"]),
+            "trace_name": fn.__name__,
             "exec_time": None,
+            "timestamp": ts,
             "offset": round(
-                0.0 if not SPAN.get() else t1 - RUNNING_TIME.get(),
+                0.0 if not TRACE.get() else t1 - RUNNING_TIME.get(),
                 2,
             ),
             "code": inspect.getsource(fn),
             "inputs": inputs,
             "outputs": None,
             "errors": None,
-            "child_spans": [],
+            "child_traces": [],
         }
-        token = SPAN.set(new_span)
+        token = TRACE.set(new_trace)
         result = None
         try:
             result = fn(*args, **kwargs)
             return result
         except Exception as e:
-            new_span["errors"] = str(e)
+            new_trace["errors"] = str(e)
             raise e
         finally:
             t2 = time.perf_counter()
             exec_time = t2 - t1
-            SPAN.get()["exec_time"] = round(exec_time, 2)
-            SPAN.get()["outputs"] = None if result is None else result
+            TRACE.get()["exec_time"] = round(exec_time, 2)
+            TRACE.get()["outputs"] = None if result is None else result
             # ToDo: ensure there is a global log set upon the first trace,
             #  and removed on the last
-            trace = SPAN.get()
+            trace = TRACE.get()
             if prune_empty:
                 trace = _prune_dict(trace)
             unify.add_log_entries(trace=trace, overwrite=True)
             if token.old_value is token.MISSING:
-                SPAN.reset(token)
+                TRACE.reset(token)
             else:
-                SPAN.reset(token)
-                SPAN.get()["child_spans"].append(new_span)
+                TRACE.reset(token)
+                TRACE.get()["child_traces"].append(new_trace)
             if log_token:
                 ACTIVE_LOG.set([])
 
     async def async_wrapped(*args, **kwargs):
         t1 = time.perf_counter()
-        if not SPAN.get():
+        if not TRACE.get():
             RUNNING_TIME.set(t1)
         signature = inspect.signature(fn)
         bound_args = signature.bind(*args, **kwargs)
         bound_args.apply_defaults()
         inputs = bound_args.arguments
-        new_span = {
+        new_trace = {
             "id": str(uuid.uuid4()),
-            "parent_span_id": (None if not SPAN.get() else SPAN.get()["id"]),
-            "span_name": fn.__name__,
+            "parent_trace_id": (None if not TRACE.get() else TRACE.get()["id"]),
+            "trace_name": fn.__name__,
             "exec_time": None,
             "offset": round(
-                0.0 if not SPAN.get() else t1 - RUNNING_TIME.get(),
+                0.0 if not TRACE.get() else t1 - RUNNING_TIME.get(),
                 2,
             ),
             "inputs": inputs,
             "outputs": None,
             "errors": None,
-            "child_spans": [],
+            "child_traces": [],
         }
-        token = SPAN.set(new_span)
+        token = TRACE.set(new_trace)
         # capture the arguments here
         result = None
         try:
             result = await fn(*args, **kwargs)
             return result
         except Exception as e:
-            new_span["errors"] = str(e)
+            new_trace["errors"] = str(e)
             raise e
         finally:
             t2 = time.perf_counter()
             exec_time = t2 - t1
-            SPAN.get()["exec_time"] = round(exec_time, 2)
-            SPAN.get()["outputs"] = None if result is None else result
+            TRACE.get()["exec_time"] = round(exec_time, 2)
+            TRACE.get()["outputs"] = None if result is None else result
             if token.old_value is token.MISSING:
                 if ACTIVE_LOG.get():
-                    trace = SPAN.get()
+                    trace = TRACE.get()
                     if prune_empty:
                         trace = _prune_dict(trace)
                     unify.add_log_entries(trace=trace, overwrite=True)
                 else:
-                    unify.log(trace=SPAN.get())
-                SPAN.reset(token)
+                    unify.log(trace=TRACE.get())
+                TRACE.reset(token)
             else:
-                SPAN.reset(token)
-                SPAN.get()["child_spans"].append(new_span)
+                TRACE.reset(token)
+                TRACE.get()["child_traces"].append(new_trace)
 
     return wrapped if not inspect.iscoroutinefunction(fn) else async_wrapped
