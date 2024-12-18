@@ -31,6 +31,8 @@ class Log:
         self._timestamp = timestamp
         self._project = project
         self._entries = entries
+        if timestamp is not None:
+            self._entries["timestamp"] = timestamp
         self._params = params
         self._api_key = _validate_api_key(api_key)
 
