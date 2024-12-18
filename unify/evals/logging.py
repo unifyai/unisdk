@@ -1,4 +1,6 @@
 from __future__ import annotations
+
+import inspect
 import time
 import uuid
 import datetime
@@ -243,6 +245,8 @@ def traced(fn: callable = None, *, prune_empty: bool = True):
             "errors": None,
             "child_traces": [],
         }
+        if inspect.ismethod(fn) and hasattr(fn.__self__, "endpoint"):
+            new_trace["endpoint"] = fn.__self__.endpoint
         token = TRACE.set(new_trace)
         result = None
         try:
