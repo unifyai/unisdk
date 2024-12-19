@@ -979,7 +979,7 @@ def test_traced():
     entries = unify.get_logs(project="my_project")[0].entries
 
     assert entries["trace"]["inputs"] == {"st": 0.5}
-    assert entries["trace"]["trace_name"] == "some_func"
+    assert entries["trace"]["span_name"] == "some_func"
     assert (
         entries["trace"]["code"].replace(" ", "").replace("\n", "")
         == """
@@ -997,12 +997,11 @@ def test_traced():
             "",
         )
     )
-    assert len(entries["trace"]["child_traces"]) == 2
-    assert entries["trace"]["child_traces"][0]["trace_name"] == "inner_fn"
-    assert len(entries["trace"]["child_traces"][0]["child_traces"]) == 1
+    assert len(entries["trace"]["child_spans"]) == 2
+    assert entries["trace"]["child_spans"][0]["span_name"] == "inner_fn"
+    assert len(entries["trace"]["child_spans"][0]["child_spans"]) == 1
     assert (
-        entries["trace"]["child_traces"][0]["child_traces"][0]["trace_name"]
-        == "deeper_fn"
+        entries["trace"]["child_spans"][0]["child_spans"][0]["span_name"] == "deeper_fn"
     )
 
 
@@ -1027,7 +1026,7 @@ def test_traced_w_caching():
     trace = logs[0].entries["trace"]
     idx = trace["id"]
     assert isinstance(idx, str)
-    assert trace["trace_name"] == "some_func"
+    assert trace["span_name"] == "some_func"
     exec_time = trace["exec_time"]
     assert isinstance(exec_time, float)
     assert (
@@ -1042,7 +1041,7 @@ def test_traced_w_caching():
     assert len(logs) == 1
     trace = logs[0].entries["trace"]
     assert trace["id"] == idx
-    assert trace["trace_name"] == "some_func"
+    assert trace["span_name"] == "some_func"
     assert trace["exec_time"] == exec_time
     assert (
         trace["code"].replace(" ", "")
@@ -1068,7 +1067,7 @@ def test_traced_none_handling():
     assert len(logs) == 1
     entries = logs[0].entries
     assert entries["trace"]["inputs"] == {"a": 1, "b": 2, "c": None, "d": 4}
-    assert entries["trace"]["trace_name"] == "some_func"
+    assert entries["trace"]["span_name"] == "some_func"
     assert (
         entries["trace"]["code"].replace(" ", "").replace("\n", "")
         == """
@@ -1083,7 +1082,7 @@ def test_traced_none_handling():
             "",
         )
     )
-    assert len(entries["trace"]["child_traces"]) == 0
+    assert len(entries["trace"]["child_spans"]) == 0
 
     @unify.traced(prune_empty=True)
     def some_func(a, b, c, d):
@@ -1094,7 +1093,7 @@ def test_traced_none_handling():
     assert len(logs) == 2
     entries = logs[1].entries
     assert entries["trace"]["inputs"] == {"a": 1, "b": 2, "d": 4}
-    assert entries["trace"]["trace_name"] == "some_func"
+    assert entries["trace"]["span_name"] == "some_func"
     assert (
         entries["trace"]["code"].replace(" ", "").replace("\n", "")
         == """
@@ -1109,7 +1108,7 @@ def test_traced_none_handling():
             "",
         )
     )
-    assert "child_traces" not in entries["trace"]
+    assert "child_spans" not in entries["trace"]
 
 
 def test_traced_within_log_context():
@@ -1145,13 +1144,12 @@ def test_traced_within_log_context():
     assert entries["a"] == "a"
     assert entries["b"] == "b"
     assert entries["trace"]["inputs"] == {"st": 0.5}
-    assert entries["trace"]["trace_name"] == "some_func"
-    assert len(entries["trace"]["child_traces"]) == 2
-    assert entries["trace"]["child_traces"][0]["trace_name"] == "inner_fn"
-    assert len(entries["trace"]["child_traces"][0]["child_traces"]) == 1
+    assert entries["trace"]["span_name"] == "some_func"
+    assert len(entries["trace"]["child_spans"]) == 2
+    assert entries["trace"]["child_spans"][0]["span_name"] == "inner_fn"
+    assert len(entries["trace"]["child_spans"][0]["child_spans"]) == 1
     assert (
-        entries["trace"]["child_traces"][0]["child_traces"][0]["trace_name"]
-        == "deeper_fn"
+        entries["trace"]["child_spans"][0]["child_spans"][0]["span_name"] == "deeper_fn"
     )
 
 
@@ -1195,11 +1193,11 @@ def test_traced_threaded():
     for i, log in enumerate(logs):
         trace = log.entries["trace"]
         assert trace["inputs"] == {"st": i / 100}
-        assert trace["trace_name"] == "some_func"
-        assert len(trace["child_traces"]) == 2
-        assert trace["child_traces"][0]["trace_name"] == "inner_fn"
-        assert len(trace["child_traces"][0]["child_traces"]) == 1
-        assert trace["child_traces"][0]["child_traces"][0]["trace_name"] == "deeper_fn"
+        assert trace["span_name"] == "some_func"
+        assert len(trace["child_spans"]) == 2
+        assert trace["child_spans"][0]["span_name"] == "inner_fn"
+        assert len(trace["child_spans"][0]["child_spans"]) == 1
+        assert trace["child_spans"][0]["child_spans"][0]["span_name"] == "deeper_fn"
 
 
 @pytest.mark.asyncio
@@ -1235,11 +1233,11 @@ async def test_traced_async():
     for i, log in enumerate(logs):
         trace = log.entries["trace"]
         assert trace["inputs"] == {"st": i / 100}
-        assert trace["trace_name"] == "some_func"
-        assert len(trace["child_traces"]) == 2
-        assert trace["child_traces"][0]["trace_name"] == "inner_fn"
-        assert len(trace["child_traces"][0]["child_traces"]) == 1
-        assert trace["child_traces"][0]["child_traces"][0]["trace_name"] == "deeper_fn"
+        assert trace["span_name"] == "some_func"
+        assert len(trace["child_spans"]) == 2
+        assert trace["child_spans"][0]["span_name"] == "inner_fn"
+        assert len(trace["child_spans"][0]["child_spans"]) == 1
+        assert trace["child_spans"][0]["child_spans"][0]["span_name"] == "deeper_fn"
 
 
 if __name__ == "__main__":

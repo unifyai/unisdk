@@ -39,7 +39,7 @@ ACTIVE_PARAMS = ContextVar(
 PARAMS_NEST_LEVEL = ContextVar("params_nest_level", default=0)
 
 # span
-TRACE = ContextVar("span", default={})
+SPAN = ContextVar("span", default={})
 RUNNING_TIME = ContextVar("running_time", default=0.0)
 
 
