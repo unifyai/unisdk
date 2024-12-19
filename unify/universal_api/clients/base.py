@@ -519,6 +519,11 @@ class _Client(ABC):
                     "content": value,
                 },
             ] + self._messages
+        else:
+            self._messages[0] = {
+                "role": "system",
+                "content": value,
+            }
         return self
 
     def set_messages(
