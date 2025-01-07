@@ -998,6 +998,8 @@ def test_traced_w_caching():
     assert trace["inputs"] == {"a": 0, "b": 1, "c": 2}
     assert trace["outputs"] == [0, 1, 2]
 
+    os.remove(".test_traced_w_cached.cache.json")
+
 
 @_handle_project
 def test_traced_none_handling():

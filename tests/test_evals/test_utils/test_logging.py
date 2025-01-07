@@ -1,23 +1,38 @@
 import os
 import pytest
+import functools
 from unify.utils._caching import _get_cache
 from requests import HTTPError
 
 import unify
 
 
+def _handle_project(test_fn):
+    # noinspection PyBroadException
+    @functools.wraps(test_fn)
+    def wrapper(*args, **kwargs):
+        project = test_fn.__name__
+        if project in unify.list_projects():
+            unify.delete_project(project)
+        try:
+            with unify.Project(project):
+                test_fn(*args, **kwargs)
+            unify.delete_project(project)
+        except:
+            unify.delete_project(project)
+
+    return wrapper
+
+
+@_handle_project
 def test_log_param():
-    project = "test_log_param"
-    if project in unify.list_projects():
-        unify.delete_project(project)
-    unify.create_project(project)
     data = {
         "system_prompt": "You are a mathematician.",
         "dataset": "maths questions",
     }
-    assert len(unify.get_logs(project=project)) == 0
-    log_id = unify.log(project=project, params=data).id
-    project_logs = unify.get_logs(project=project)
+    assert len(unify.get_logs()) == 0
+    log_id = unify.log(params=data).id
+    project_logs = unify.get_logs()
     assert len(project_logs) and project_logs[0].id == log_id
     id_log = unify.get_log_by_id(log_id)
     assert len(id_log) and "system_prompt" in id_log.params
@@ -31,22 +46,16 @@ def test_log_param():
     id_log = unify.get_log_by_id(log_id)
     assert len(id_log) and "system_prompt" in id_log.params
     unify.delete_logs(logs=log_id)
-    assert len(unify.get_logs(project=project)) == 0
+    assert len(unify.get_logs()) == 0
     try:
         unify.get_log_by_id(log_id)
         assert False
     except HTTPError as e:
         assert e.response.status_code == 404
-    unify.deactivate()
-    unify.delete_project(project)
 
 
+@_handle_project
 def test_add_param():
-    project = "test_add_param"
-    if project in unify.list_projects():
-        unify.delete_project(project)
-    unify.create_project(project)
-    unify.activate(project)
     unify.log(a="a")
     unify.log(b="b")
     unify.log(c="c")
@@ -67,38 +76,27 @@ def test_add_param():
     assert logs[1].params == {"system_prompt": "You know the alphabet."}
     assert logs[2].entries == {"c": "c"}
     assert logs[2].params == {"system_prompt": "You know the alphabet."}
-    unify.deactivate()
-    unify.delete_project(project)
 
 
+@_handle_project
 def test_get_params():
-    project = "test_get_params"
-    if project in unify.list_projects():
-        unify.delete_project(project)
-    unify.create_project(project)
-    unify.activate(project)
     with unify.Params(system_prompt="You know the alphabet"):
         unify.log(a="a")
         with unify.Params(tools="internet"):
             unify.log(b="b")
             unify.log(c="c")
     assert unify.get_params() == ["system_prompt", "tools"]
-    unify.deactivate()
-    unify.delete_project(project)
 
 
+@_handle_project
 def test_log_entry():
-    project = "test_log_entry"
-    if project in unify.list_projects():
-        unify.delete_project(project)
-    unify.create_project(project)
     data = {
         "question": "What is 1 + 1?",
         "answer": "It's 2",
     }
-    assert len(unify.get_logs(project=project)) == 0
-    log_id = unify.log(project=project, **data).id
-    project_logs = unify.get_logs(project=project)
+    assert len(unify.get_logs()) == 0
+    log_id = unify.log(**data).id
+    project_logs = unify.get_logs()
     assert len(project_logs) and project_logs[0].id == log_id
     id_log = unify.get_log_by_id(log_id)
     assert len(id_log) and "question" in id_log.entries
@@ -109,80 +107,59 @@ def test_log_entry():
     id_log = unify.get_log_by_id(log_id)
     assert len(id_log) and "question" in id_log.entries
     unify.delete_logs(logs=log_id)
-    assert len(unify.get_logs(project=project)) == 0
+    assert len(unify.get_logs()) == 0
     try:
         unify.get_log_by_id(log_id)
         assert False
     except HTTPError as e:
         assert e.response.status_code == 404
-    unify.deactivate()
-    unify.delete_project(project)
 
 
+@_handle_project
 def test_log_dataset():
-    project = "test_log_dataset"
-    if project in unify.list_projects():
-        unify.delete_project(project)
-    unify.create_project(project)
     unify.log(
-        project=project,
         dataset=unify.Dataset(["a", "b", "c"], name="letters"),
     )
-    logs = unify.get_logs(project=project)
+    logs = unify.get_logs()
     assert len(logs) == 1
     assert logs[0].entries == {"dataset": "letters"}
     downloaded = unify.download_dataset("letters")
     assert len(downloaded) == 3
     logs[0].delete()
     unify.delete_dataset("letters")
-    unify.deactivate()
-    unify.delete_project(project)
 
 
+@_handle_project
 def test_duplicate_log_field():
-    project = "test_duplicate_log_field"
-    if project in unify.list_projects():
-        unify.delete_project(project)
-    unify.create_project(project)
     data = {
         "system_prompt": "You are a weather assistant",
         "user_prompt": "hello world",
     }
-    assert len(unify.get_logs(project=project)) == 0
-    log = unify.log(project=project, **data)
-    assert len(unify.get_logs(project=project)) == 1
+    assert len(unify.get_logs()) == 0
+    log = unify.log(**data)
+    assert len(unify.get_logs()) == 1
     new_data = {
         "system_prompt": "You are a maths assistant",
         "user_prompt": "hi earth",
     }
     with pytest.raises(Exception):
         log.add_entries(**new_data)
-    unify.deactivate()
-    unify.delete_project(project)
 
 
+@_handle_project
 def test_log_function_logs_code():
 
     def my_func(a):
         return a + 1
 
-    project = "test_log_function_logs_code"
-    if project in unify.list_projects():
-        unify.delete_project(project)
-    unify.create_project(project)
-    unify.log(project=project, my_func=my_func)
-    logs = unify.get_logs(project=project)
+    unify.log(my_func=my_func)
+    logs = unify.get_logs()
     assert len(logs) == 1
     assert logs[0].entries["my_func"] == "    def my_func(a):\n        return a + 1\n"
-    unify.deactivate()
-    unify.delete_project(project)
 
 
+@_handle_project
 def test_atomic_functions():
-    project = "test_atomic_functions"
-    if project in unify.list_projects():
-        unify.delete_project(project)
-    unify.create_project(project)
     log1 = {
         "system_prompt": "You are a weather assistant",
         "user_prompt": "hello world",
@@ -198,10 +175,10 @@ def test_atomic_functions():
         "user_prompt": "nothing",
         "score": 0.8,
     }
-    unify.log(project=project, **log1)
-    unify.log(project=project, **log2)
-    unify.log(project=project, **log3)
-    grouped_logs = unify.group_logs(key="system_prompt", project=project)
+    unify.log(**log1)
+    unify.log(**log2)
+    unify.log(**log3)
+    grouped_logs = unify.group_logs(key="system_prompt")
     assert len(grouped_logs) == 2
     assert sorted([version for version in grouped_logs]) == ["0", "1"]
 
@@ -209,62 +186,49 @@ def test_atomic_functions():
         metric="mean",
         key="score",
         filter="'hello' in user_prompt",
-        project=project,
     )
     assert logs_metric == 0.25
-    unify.deactivate()
-    unify.delete_project(project)
 
 
+@_handle_project
 def test_log_ordering():
-    project = "test_log_ordering"
-    if project in unify.list_projects():
-        unify.delete_project(project)
-    unify.create_project(project)
     for i in range(25):
         unify.log(
-            project=project,
             a=i,
             b=i + 1,
             c=i + 2,
         )
-    logs = unify.get_logs(project=project)
+    logs = unify.get_logs()
     for lg in logs:
         assert list(lg.entries.keys()) == ["a", "b", "c"]
-    unify.deactivate()
-    unify.delete_project(project)
 
 
+@_handle_project
 def test_get_logs():
-    project = "test_get_logs"
-    if project in unify.list_projects():
-        unify.delete_project(project)
-    unify.create_project(project)
-    logs = unify.get_logs(project=project)
+    logs = unify.get_logs()
     assert len(logs) == 0, "There should be no logs initially."
     log_data1 = {
         "system_prompt": "You are a weather assistant",
         "user_prompt": "What is the weather today?",
         "score": 0.9,
     }
-    unify.log(project=project, **log_data1)
+    unify.log(**log_data1)
     log_data2 = {
         "system_prompt": "You are a travel assistant",
         "user_prompt": "What is the best route to the airport?",
         "score": 0.7,
     }
-    unify.log(project=project, **log_data2)
+    unify.log(**log_data2)
     log_data3 = {
         "system_prompt": "You are a travel assistant",
         "user_prompt": "What is the best route to the airport?",
         "score": 0.2,
     }
-    unify.log(project=project, **log_data3)
+    unify.log(**log_data3)
 
-    logs = unify.get_logs(project=project)
+    logs = unify.get_logs()
     assert len(logs) == 3, "There should be 3 logs in the project."
     filtered_logs = unify.get_logs(
-        project=project,
         filter="'weather' in user_prompt",
     )
     assert (
@@ -274,21 +238,18 @@ def test_get_logs():
         filtered_logs[0].entries.get("user_prompt") == log_data1["user_prompt"]
     ), "The filtered log should be the one that asks about the weather."
     nonexistent_logs = unify.get_logs(
-        project=project,
         filter="'nonexistent' in user_prompt",
     )
     assert (
         len(nonexistent_logs) == 0
     ), "There should be no logs matching the nonexistent filter."
     multiple_filtered_logs = unify.get_logs(
-        project=project,
         filter="'travel' in system_prompt and score < 0.5",
     )
     assert (
         len(multiple_filtered_logs) == 1
     ), "There should be 1 log with 'travel' in the user prompt and score > 0.5."
     bracket_logs = unify.get_logs(
-        project=project,
         filter="('weather' in user_prompt) and ('weather' in system_prompt)",
     )
     assert (
@@ -297,47 +258,38 @@ def test_get_logs():
     assert (
         bracket_logs[0].entries.get("user_prompt") == log_data1["user_prompt"]
     ), "The filtered log should be the one that asks about the weather."
-    comparison_logs = unify.get_logs(project=project, filter="score > 0.5")
+    comparison_logs = unify.get_logs(filter="score > 0.5")
     assert len(comparison_logs) == 2, "There should be 2 logs with score > 0.5."
-    comparison_logs = unify.get_logs(project=project, filter="score == 0.9")
+    comparison_logs = unify.get_logs(filter="score == 0.9")
     assert len(comparison_logs) == 1, "There should be 1 log with score == 0.9."
     logical_logs = unify.get_logs(
-        project=project,
         filter="score > 0.5 and score < 0.8",
     )
     assert (
         len(logical_logs) == 1
     ), "There should be 1 log with score > 0.5 and score < 0.8."
     logical_logs = unify.get_logs(
-        project=project,
         filter="score < 0.5 or score > 0.8",
     )
     assert (
         len(logical_logs) == 2
     ), "There should be 2 logs with score < 0.5 or score > 0.8."
     string_comparison_logs = unify.get_logs(
-        project=project,
         filter="user_prompt == 'What is the weather today?'",
     )
     assert (
         len(string_comparison_logs) == 1
     ), "There should be 1 log with user_prompt == 'What is the weather today?'."
-    unify.deactivate()
-    unify.delete_project(project)
 
 
+@_handle_project
 def test_delete_logs():
-    project = "test_delete_logs"
-    if project in unify.list_projects():
-        unify.delete_project(project)
-    unify.create_project(project)
-    assert len(unify.get_logs(project=project)) == 0
-    unify.log(project=project, customer="John Smith")
-    unify.log(project=project, customer="Maggie Smith")
-    unify.log(project=project, customer="John Terry")
-    assert len(unify.get_logs(project=project)) == 3
+    assert len(unify.get_logs()) == 0
+    unify.log(customer="John Smith")
+    unify.log(customer="Maggie Smith")
+    unify.log(customer="John Terry")
+    assert len(unify.get_logs()) == 3
     deleted_logs = unify.delete_logs_by_value(
-        project=project,
         filter="'Smith' in customer",
     )
     assert len(deleted_logs) == 2
@@ -345,31 +297,21 @@ def test_delete_logs():
         "John Smith",
         "Maggie Smith",
     }
-    assert len(unify.get_logs(project=project)) == 1
-    deleted_logs = unify.delete_logs_by_value(project=project)
+    assert len(unify.get_logs()) == 1
+    deleted_logs = unify.delete_logs_by_value()
     assert len(deleted_logs) == 1
     assert deleted_logs[0].entries["customer"] == "John Terry"
-    assert len(unify.get_logs(project=project)) == 0
-    unify.deactivate()
-    unify.delete_project(project)
+    assert len(unify.get_logs()) == 0
 
 
+@_handle_project
 def test_get_source():
-    project = "test_get_source"
-    if project in unify.list_projects():
-        unify.delete_project(project)
-    unify.create_project(project)
     source = unify.get_source()
     assert "source = unify.get_source()" in source
-    unify.deactivate()
-    unify.delete_project(project)
 
 
+@_handle_project
 def test_log_caching():
-    project = "test_log_caching"
-    if project in unify.list_projects():
-        unify.delete_project(project)
-    unify.create_project(project)
     cache_fname = ".test_log_caching.cache.json"
     if os.path.exists(cache_fname):
         os.remove(cache_fname)
@@ -377,7 +319,7 @@ def test_log_caching():
     unify.set_caching_fname(cache_fname)
 
     # log
-    unify.log(project=project, a=0, b=1)
+    unify.log(a=0, b=1)
     assert (
         _get_cache(
             fn_name="log",
@@ -385,7 +327,7 @@ def test_log_caching():
         )
         is not None
     )
-    log = unify.log(project=project, a=0, b=1)
+    log = unify.log(a=0, b=1)
     assert isinstance(log, unify.Log)
 
     # add_log_params
@@ -437,7 +379,7 @@ def test_log_caching():
     assert msg == {"info": "Logs deleted successfully!"}
 
     # delete_log_fields
-    log = unify.log(project=project, a=1, b=2)
+    log = unify.log(a=1, b=2)
     unify.delete_log_fields(field="a", logs=log)
     assert (
         _get_cache(
@@ -451,7 +393,6 @@ def test_log_caching():
 
     # cleanup
     os.remove(cache_fname)
-    unify.delete_project(project)
 
 
 if __name__ == "__main__":
