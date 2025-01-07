@@ -98,7 +98,7 @@ class TestUnifyBasics:
         assert client.messages[1]["role"] == "user"
 
     def test_seed(self):
-        client = Unify("gpt-4@openai")
+        client = Unify("gpt-4o@openai")
 
         correct = client.generate("tell me a random number between 0-10", seed=0)
 

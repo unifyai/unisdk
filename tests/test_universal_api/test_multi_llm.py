@@ -51,7 +51,6 @@ class TestMultiUnify:
 
     def test_generate(self):
         endpoints = (
-            "llama-3-8b-chat@together-ai",
             "gpt-4o@openai",
             "claude-3.5-sonnet@anthropic",
         )
@@ -82,16 +81,16 @@ class TestMultiUnify:
             assert len(response.choices) == 2
 
     def test_multi_message_histories(self):
-        endpoints = ("llama-3-8b-chat@together-ai", "gpt-4o@openai")
+        endpoints = ("claude-3.5-sonnet@anthropic", "gpt-4o@openai")
         messages = {
-            "llama-3-8b-chat@together-ai": [
+            "claude-3.5-sonnet@anthropic": [
                 {"role": "assistant", "content": "Let's talk about cats"},
             ],
             "gpt-4o@openai": [
                 {"role": "assistant", "content": "Let's talk about dogs"},
             ],
         }
-        animals = {"llama-3-8b-chat@together-ai": "cat", "gpt-4o@openai": "dog"}
+        animals = {"claude-3.5-sonnet@anthropic": "cat", "gpt-4o@openai": "dog"}
         client = MultiUnify(
             endpoints=endpoints,
             messages=messages,
@@ -130,7 +129,6 @@ class TestAsyncMultiUnify:
 
     async def test_async_generate(self):
         endpoints = (
-            "llama-3-8b-chat@together-ai",
             "gpt-4o@openai",
             "claude-3.5-sonnet@anthropic",
         )
