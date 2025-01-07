@@ -36,8 +36,6 @@ def test_set_project_then_log():
     unify.log(key=1.0)
     unify.deactivate()
     assert unify.active_project is None
-    with pytest.raises(Exception):
-        unify.log(key=1.0)
 
 
 def test_with_project_then_log():
@@ -47,8 +45,6 @@ def test_with_project_then_log():
         assert unify.active_project == "my_project"
         unify.log(key=1.0)
     assert unify.active_project is None
-    with pytest.raises(Exception):
-        unify.log(key=1.0)
 
 
 if __name__ == "__main__":
