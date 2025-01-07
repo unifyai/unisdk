@@ -12,6 +12,22 @@ import threading
 # ------------------------#
 
 
+def test_get_log_by_value_no_project():
+    project = "_"
+    if project in unify.list_projects():
+        unify.delete_project(project)
+    data = {
+        "system_prompt": "You are a weather assistant",
+        "user_prompt": "hello world",
+    }
+    assert len(unify.get_logs()) == 0
+    log = unify.log(**data)
+    retrieved_log = unify.get_log_by_value(**data)
+    assert log == retrieved_log
+    log.delete()
+    assert unify.get_log_by_value(**data) is None
+
+
 def test_get_log_by_value():
     project = "my_project"
     if project in unify.list_projects():
@@ -431,6 +447,25 @@ def test_with_context():
     assert logs[1].entries == {
         "capitalized/vowels/a": "A",
     }
+
+
+def test_with_context_default_project():
+    project = "_"
+    if project in unify.list_projects():
+        unify.delete_project(project)
+    with unify.Log():
+        with unify.Context("science"):
+            with unify.Context("physics"):
+                unify.log(score=1.0)
+            with unify.Context("chemistry"):
+                unify.log(score=0.5)
+            with unify.Context("biology"):
+                unify.log(score=0.0)
+
+    entries = unify.get_logs()[0].entries
+    assert entries["science/physics/score"] == 1.0
+    assert entries["science/chemistry/score"] == 0.5
+    assert entries["science/biology/score"] == 0.0
 
 
 def test_with_context_threaded():

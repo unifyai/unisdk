@@ -449,7 +449,7 @@ def get_logs_by_id(
 
 def get_logs_by_value(
     *,
-    project: str,
+    project: Optional[str] = None,
     api_key: Optional[str] = None,
     **data,
 ) -> List[unify.Log]:
@@ -479,7 +479,7 @@ def get_logs_by_value(
 
 def get_log_by_value(
     *,
-    project: str,
+    project: Optional[str] = None,
     api_key: Optional[str] = None,
     **data,
 ) -> Optional[unify.Log]:

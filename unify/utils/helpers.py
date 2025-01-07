@@ -46,13 +46,9 @@ def _get_and_maybe_create_project(
         project = unify.active_project
         if project is None:
             if required:
-                raise Exception(
-                    "No project specified in the arguments, and no globally set "
-                    "project either, with required=True was passed. A project must be "
-                    "passed in the argument, or set globally via "
-                    "unify.activate('project_name')",
-                )
-            return None
+                project = "_"
+            else:
+                return None
     PROJECT_LOCK.acquire()
     if project not in unify.list_projects(api_key=api_key):
         unify.create_project(project, api_key=api_key)
