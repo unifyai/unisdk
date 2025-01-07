@@ -12,7 +12,7 @@ class TestUnifyBasics:
         with pytest.raises(Exception):
             client = Unify(
                 api_key="invalid_api_key",
-                endpoint="llama-3-8b-chat@together-ai",
+                endpoint="gpt-4o@openai",
             )
             client.generate(user_message="hello")
 
@@ -22,14 +22,14 @@ class TestUnifyBasics:
 
     def test_generate_returns_string_when_stream_false(self) -> None:
         client = Unify(
-            endpoint="llama-3-8b-chat@together-ai",
+            endpoint="gpt-4o@openai",
         )
         result = client.generate(user_message="hello", stream=False)
         assert isinstance(result, str)
 
     def test_generate_returns_generator_when_stream_true(self) -> None:
         client = Unify(
-            endpoint="llama-3-8b-chat@together-ai",
+            endpoint="gpt-4o@openai",
         )
         result = client.generate(user_message="hello", stream=True)
         assert isinstance(result, GeneratorType)
@@ -128,7 +128,7 @@ class TestAsyncUnifyBasics:
         with pytest.raises(Exception):
             async_client = AsyncUnify(
                 api_key="invalid_api_key",
-                endpoint="llama-3-8b-chat@together-ai",
+                endpoint="gpt-4o@openai",
             )
             await async_client.generate(user_message="hello")
 
@@ -138,14 +138,14 @@ class TestAsyncUnifyBasics:
 
     async def test_generate_returns_string_when_stream_false(self) -> None:
         async_client = AsyncUnify(
-            endpoint="llama-3-8b-chat@together-ai",
+            endpoint="gpt-4o@openai",
         )
         result = await async_client.generate(user_message="hello", stream=False)
         assert isinstance(result, str)
 
     async def test_generate_returns_generator_when_stream_true(self) -> None:
         async_client = AsyncUnify(
-            endpoint="llama-3-8b-chat@together-ai",
+            endpoint="gpt-4o@openai",
         )
         result = await async_client.generate(user_message="hello", stream=True)
         assert isinstance(result, AsyncGeneratorType)
