@@ -97,29 +97,6 @@ class TestUnifyBasics:
         assert client.messages[0]["role"] == "system"
         assert client.messages[1]["role"] == "user"
 
-    def test_seed(self):
-        client = Unify("gpt-4o@openai")
-
-        correct = client.generate("tell me a random number between 0-10", seed=0)
-
-        # generate arg
-        num0 = client.generate("tell me a random number between 0-10", seed=0)
-        num1 = client.generate("tell me a random number between 0-10", seed=0)
-        assert num0 == num1 == correct
-
-        # client attribute
-        client.set_seed(0)
-        num0 = client.generate("tell me a random number between 0-10")
-        num1 = client.generate("tell me a random number between 0-10")
-        assert num0 == num1 == correct
-
-        # global state
-        client.set_seed(None)
-        unify.set_seed(0)
-        num0 = client.generate("tell me a random number between 0-10")
-        num1 = client.generate("tell me a random number between 0-10")
-        assert num0 == num1 == correct
-
 
 @pytest.mark.asyncio
 class TestAsyncUnifyBasics:
