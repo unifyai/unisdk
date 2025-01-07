@@ -3,9 +3,27 @@ import time
 import math
 import asyncio
 import pytest
+import functools
 
 import unify
 import threading
+
+
+def _handle_project(test_fn):
+    # noinspection PyBroadException
+    @functools.wraps(test_fn)
+    def wrapper(*args, **kwargs):
+        project = test_fn.__name__
+        if project in unify.list_projects():
+            unify.delete_project(project)
+        try:
+            with unify.Project(project):
+                test_fn(*args, **kwargs)
+            unify.delete_project(project)
+        except:
+            unify.delete_project(project)
+
+    return wrapper
 
 
 # Functional Compositions #
@@ -13,9 +31,6 @@ import threading
 
 
 def test_get_log_by_value_no_project():
-    project = "_"
-    if project in unify.list_projects():
-        unify.delete_project(project)
     data = {
         "system_prompt": "You are a weather assistant",
         "user_prompt": "hello world",
@@ -28,84 +43,72 @@ def test_get_log_by_value_no_project():
     assert unify.get_log_by_value(**data) is None
 
 
+@_handle_project
 def test_get_log_by_value():
-    project = "my_project"
-    if project in unify.list_projects():
-        unify.delete_project(project)
-    unify.create_project(project)
     data = {
         "system_prompt": "You are a weather assistant",
         "user_prompt": "hello world",
     }
-    assert len(unify.get_logs(project=project)) == 0
-    log = unify.log(project=project, **data)
-    retrieved_log = unify.get_log_by_value(project=project, **data)
+    assert len(unify.get_logs()) == 0
+    log = unify.log(**data)
+    retrieved_log = unify.get_log_by_value(**data)
     assert log == retrieved_log
     log.delete()
-    assert unify.get_log_by_value(project=project, **data) is None
+    assert unify.get_log_by_value(**data) is None
 
 
+@_handle_project
 def test_get_logs_by_value():
-    project = "my_project"
-    if project in unify.list_projects():
-        unify.delete_project(project)
-    unify.create_project(project)
     data = {
         "system_prompt": "You are a weather assistant",
         "user_prompt": "hello world",
     }
-    assert len(unify.get_logs(project=project)) == 0
-    log0 = unify.log(project=project, **data, skip_duplicates=False)
-    log1 = unify.log(project=project, **data, skip_duplicates=False)
-    retrieved_logs = unify.get_logs_by_value(project=project, **data)
+    assert len(unify.get_logs()) == 0
+    log0 = unify.log(**data, skip_duplicates=False)
+    log1 = unify.log(**data, skip_duplicates=False)
+    retrieved_logs = unify.get_logs_by_value(**data)
     assert len(retrieved_logs) == 2
     for log, retrieved_log in zip((log0, log1), retrieved_logs):
         assert log == retrieved_log
     log0.delete()
-    retrieved_logs = unify.get_logs_by_value(project=project, **data)
+    retrieved_logs = unify.get_logs_by_value(**data)
     assert len(retrieved_logs) == 1
     assert log1 == retrieved_logs[0]
     log1.delete()
-    assert unify.get_logs_by_value(project=project, **data) == []
+    assert unify.get_logs_by_value(**data) == []
 
 
+@_handle_project
 def test_replace_log_entries():
-    project = "my_project"
-    if project in unify.list_projects():
-        unify.delete_project(project)
-    unify.create_project(project)
     data = {
         "system_prompt": "You are a weather assistant",
         "user_prompt": "hello world",
     }
-    assert len(unify.get_logs(project=project)) == 0
-    log = unify.log(project=project, **data)
+    assert len(unify.get_logs()) == 0
+    log = unify.log(**data)
     assert unify.get_log_by_id(log.id).entries == data
-    assert len(unify.get_logs(project=project)) == 1
+    assert len(unify.get_logs()) == 1
     new_data = {
         "system_prompt": "You are a maths assistant",
         "user_prompt": "hi earth",
     }
     log.replace_entries(**new_data)
     assert log.entries == new_data
-    assert len(unify.get_logs(project=project)) == 1
+    assert len(unify.get_logs()) == 1
     assert unify.get_log_by_id(log.id).entries == new_data
 
 
+@_handle_project
 def test_update_log_entries():
-    project = "my_project"
-    if project in unify.list_projects():
-        unify.delete_project(project)
-    unify.create_project(project)
     messages = [
         {
             "role": "assistant",
             "context": "you are a helpful assistant",
         },
     ]
-    assert len(unify.get_logs(project=project)) == 0
-    log = unify.log(project=project, messages=messages)
-    assert len(unify.get_logs(project=project)) == 1
+    assert len(unify.get_logs()) == 0
+    log = unify.log(messages=messages)
+    assert len(unify.get_logs()) == 1
     assert unify.get_log_by_id(log.id).entries["messages"] == messages
     new_messages = [
         {
@@ -116,15 +119,12 @@ def test_update_log_entries():
     log.update_entries(lambda x, y: x + y, messages=new_messages)
     combined_messages = messages + new_messages
     assert log.entries["messages"] == combined_messages
-    assert len(unify.get_logs(project=project)) == 1
+    assert len(unify.get_logs()) == 1
     assert unify.get_log_by_id(log.id).entries["messages"] == combined_messages
 
 
+@_handle_project
 def test_update_log_entries_w_dict():
-    project = "my_project"
-    if project in unify.list_projects():
-        unify.delete_project(project)
-    unify.create_project(project)
     messages = [
         {
             "role": "assistant",
@@ -132,9 +132,9 @@ def test_update_log_entries_w_dict():
         },
     ]
     name = "John"
-    assert len(unify.get_logs(project=project)) == 0
-    log = unify.log(project=project, messages=messages, name=name)
-    assert len(unify.get_logs(project=project)) == 1
+    assert len(unify.get_logs()) == 0
+    log = unify.log(messages=messages, name=name)
+    assert len(unify.get_logs()) == 1
     assert unify.get_log_by_id(log.id).entries["messages"] == messages
     new_messages = [
         {
@@ -153,46 +153,39 @@ def test_update_log_entries_w_dict():
     )
     combined_messages = messages + new_messages
     assert log.entries["messages"] == combined_messages
-    assert len(unify.get_logs(project=project)) == 1
+    assert len(unify.get_logs()) == 1
     assert unify.get_log_by_id(log.id).entries["messages"] == combined_messages
 
 
+@_handle_project
 def test_rename_log_entries():
-    project = "my_project"
-    if project in unify.list_projects():
-        unify.delete_project(project)
-    unify.create_project(project)
     customer = "John Smith"
-    assert len(unify.get_logs(project=project)) == 0
-    log = unify.log(project=project, customer=customer)
-    assert len(unify.get_logs(project=project)) == 1
+    assert len(unify.get_logs()) == 0
+    log = unify.log(customer=customer)
+    assert len(unify.get_logs()) == 1
     assert unify.get_log_by_id(log.id).entries["customer"] == customer
     log.rename_entries(customer="customer_name")
     assert "customer" not in log.entries
     assert "customer_name" in log.entries
-    assert len(unify.get_logs(project=project)) == 1
+    assert len(unify.get_logs()) == 1
     retrieved_log = unify.get_log_by_id(log.id)
     assert "customer" not in retrieved_log.entries
     assert "customer_name" in retrieved_log.entries
 
 
+@_handle_project
 def test_get_logs_with_fields():
-    project = "my_project"
-    if project in unify.list_projects():
-        unify.delete_project(project)
-    unify.create_project(project)
-    assert len(unify.get_logs(project=project)) == 0
-    unify.log(project=project, customer="John Smith")
-    assert len(unify.get_logs_with_fields("customer", project=project)) == 1
-    assert len(unify.get_logs_with_fields("dummy", project=project)) == 0
-    unify.log(project=project, seller="Maggie Jones")
+    assert len(unify.get_logs()) == 0
+    unify.log(customer="John Smith")
+    assert len(unify.get_logs_with_fields("customer")) == 1
+    assert len(unify.get_logs_with_fields("dummy")) == 0
+    unify.log(seller="Maggie Jones")
     assert (
         len(
             unify.get_logs_with_fields(
                 "customer",
                 "seller",
                 mode="all",
-                project=project,
             ),
         )
         == 0
@@ -203,30 +196,25 @@ def test_get_logs_with_fields():
                 "customer",
                 "seller",
                 mode="any",
-                project=project,
             ),
         )
         == 2
     )
 
 
+@_handle_project
 def test_get_logs_without_fields():
-    project = "my_project"
-    if project in unify.list_projects():
-        unify.delete_project(project)
-    unify.create_project(project)
-    assert len(unify.get_logs(project=project)) == 0
-    unify.log(project=project, customer="John Smith")
-    assert len(unify.get_logs_without_fields("customer", project=project)) == 0
-    assert len(unify.get_logs_without_fields("dummy", project=project)) == 1
-    unify.log(project=project, seller="Maggie Jones")
+    assert len(unify.get_logs()) == 0
+    unify.log(customer="John Smith")
+    assert len(unify.get_logs_without_fields("customer")) == 0
+    assert len(unify.get_logs_without_fields("dummy")) == 1
+    unify.log(seller="Maggie Jones")
     assert (
         len(
             unify.get_logs_without_fields(
                 "customer",
                 "seller",
                 mode="all",
-                project=project,
             ),
         )
         == 2
@@ -237,13 +225,13 @@ def test_get_logs_without_fields():
                 "customer",
                 "seller",
                 mode="any",
-                project=project,
             ),
         )
         == 0
     )
 
 
+@_handle_project
 def test_group_logs_by_params():
     logs = list()
     log_idx = 0
@@ -280,12 +268,8 @@ def test_group_logs_by_params():
 # Log
 
 
+@_handle_project
 def test_with_log():
-    project = "my_project"
-    if project in unify.list_projects():
-        unify.delete_project(project)
-    unify.create_project(project)
-    unify.activate(project)
 
     with unify.Log(a="a"):
         logs = unify.get_logs()
@@ -309,12 +293,8 @@ def test_with_log():
         assert logs[0].entries == {"a": "a", "b": "b", "c": "c", "g": "g"}
 
 
+@_handle_project
 def test_global_logging():
-    project = "my_project"
-    if project in unify.list_projects():
-        unify.delete_project(project)
-    unify.create_project(project)
-    unify.activate(project)
 
     with unify.Log(a="a"):
         logs = unify.get_logs()
@@ -338,12 +318,8 @@ def test_global_logging():
         assert logs[0].entries == {"a": "a", "b": "b", "c": "c", "g": "g"}
 
 
+@_handle_project
 def test_with_log_threaded():
-    project = "my_project"
-    if project in unify.list_projects():
-        unify.delete_project(project)
-    unify.create_project(project)
-    unify.activate(project)
 
     def fn(a, b, c, d, e, f, g):
         with unify.Log(a=a):
@@ -362,7 +338,7 @@ def test_with_log_threaded():
     [t.start() for t in threads]
     [t.join() for t in threads]
 
-    logs = unify.get_logs(project="my_project")
+    logs = unify.get_logs()
     entries = [log.entries for log in logs]
 
     assert sorted([sorted(d.items()) for d in entries]) == [
@@ -371,13 +347,9 @@ def test_with_log_threaded():
     ] + [[("d", i * 7 + 3), ("e", i * 7 + 4), ("f", i * 7 + 5)] for i in range(4)]
 
 
+@_handle_project
 @pytest.mark.asyncio
 async def test_with_log_async():
-    project = "my_project"
-    if project in unify.list_projects():
-        unify.delete_project(project)
-    unify.create_project(project)
-    unify.activate(project)
 
     async def fn(a, b, c, d, e, f, g):
         with unify.Log(a=a):
@@ -389,7 +361,7 @@ async def test_with_log_async():
     fns = [fn(*[7 * i + j for j in range(7)]) for i in range(4)]
     await asyncio.gather(*fns)
 
-    logs = unify.get_logs(project="my_project")
+    logs = unify.get_logs()
     entries = [log.entries for log in logs]
 
     assert sorted([sorted(d.items()) for d in entries]) == [
@@ -401,14 +373,10 @@ async def test_with_log_async():
 # Context
 
 
+@_handle_project
 def test_with_context():
-    project = "my_project"
-    if project in unify.list_projects():
-        unify.delete_project(project)
-    unify.create_project(project)
-    unify.activate(project)
 
-    unify.log(project=project, a="a")
+    unify.log(a="a")
     logs = unify.get_logs()
     assert len(logs) == 1
     assert logs[0].entries == {"a": "a"}
@@ -436,7 +404,7 @@ def test_with_context():
             assert logs[0].params == {
                 "capitalized/vowels/u": "U",
             }
-            unify.log(project=project, a="A")
+            unify.log(a="A")
     logs = unify.get_logs()
     assert len(logs) == 2
     assert logs[0].entries == {
@@ -449,10 +417,8 @@ def test_with_context():
     }
 
 
+@_handle_project
 def test_with_context_default_project():
-    project = "_"
-    if project in unify.list_projects():
-        unify.delete_project(project)
     with unify.Log():
         with unify.Context("science"):
             with unify.Context("physics"):
@@ -468,20 +434,16 @@ def test_with_context_default_project():
     assert entries["science/biology/score"] == 0.0
 
 
+@_handle_project
 def test_with_context_threaded():
-    project = "my_project"
-    if project in unify.list_projects():
-        unify.delete_project(project)
-    unify.create_project(project)
-    unify.activate(project)
 
     def fn(a, b, e):
-        log = unify.log(project=project, a=a)
+        log = unify.log(a=a)
         with unify.Context("capitalized"):
             log.add_entries(b=b)
             with unify.Context("vowels"):
                 log.add_entries(e=e)
-                unify.log(project=project, a=a)
+                unify.log(a=a)
 
     threads = [
         threading.Thread(
@@ -493,7 +455,7 @@ def test_with_context_threaded():
     [t.start() for t in threads]
     [t.join() for t in threads]
 
-    logs = unify.get_logs(project="my_project")
+    logs = unify.get_logs()
     entries = sorted(
         [log.entries for log in logs],
         key=lambda dct: list(dct.values())[0],
@@ -508,26 +470,22 @@ def test_with_context_threaded():
         assert entry == {"capitalized/vowels/a": i * 3}
 
 
+@_handle_project
 @pytest.mark.asyncio
 async def test_with_context_async():
-    project = "my_project"
-    if project in unify.list_projects():
-        unify.delete_project(project)
-    unify.create_project(project)
-    unify.activate(project)
 
     async def fn(a, b, e):
-        log = unify.log(project=project, a=a)
+        log = unify.log(a=a)
         with unify.Context("capitalized"):
             log.add_entries(b=b)
             with unify.Context("vowels"):
                 log.add_entries(e=e)
-                unify.log(project=project, a=a)
+                unify.log(a=a)
 
     fns = [fn(*[3 * i + j for j in range(3)]) for i in range(4)]
     await asyncio.gather(*fns)
 
-    logs = unify.get_logs(project="my_project")
+    logs = unify.get_logs()
     entries = sorted(
         [log.entries for log in logs],
         key=lambda dct: list(dct.values())[0],
@@ -545,12 +503,8 @@ async def test_with_context_async():
 # Entries
 
 
+@_handle_project
 def test_with_entries():
-    project = "my_project"
-    if project in unify.list_projects():
-        unify.delete_project(project)
-    unify.create_project(project)
-    unify.activate(project)
 
     with unify.Entries(a="a"):
         logs = unify.get_logs()
@@ -593,12 +547,8 @@ def test_with_entries():
         }
 
 
+@_handle_project
 def test_with_entries_threaded():
-    project = "my_project"
-    if project in unify.list_projects():
-        unify.delete_project(project)
-    unify.create_project(project)
-    unify.activate(project)
 
     def fn(a, b, c, d, e, f, g):
         with unify.Entries(a=a):
@@ -619,7 +569,7 @@ def test_with_entries_threaded():
     [t.start() for t in threads]
     [t.join() for t in threads]
 
-    logs = unify.get_logs(project="my_project")
+    logs = unify.get_logs()
     entries = [log.entries for log in logs]
 
     assert sorted([sorted(d.items()) for d in entries]) == [
@@ -636,13 +586,9 @@ def test_with_entries_threaded():
     ]
 
 
+@_handle_project
 @pytest.mark.asyncio
 async def test_with_entries_async():
-    project = "my_project"
-    if project in unify.list_projects():
-        unify.delete_project(project)
-    unify.create_project(project)
-    unify.activate(project)
 
     async def fn(a, b, c, d, e, f, g):
         with unify.Entries(a=a):
@@ -656,7 +602,7 @@ async def test_with_entries_async():
     fns = [fn(*[7 * i + j for j in range(7)]) for i in range(4)]
     await asyncio.gather(*fns)
 
-    logs = unify.get_logs(project="my_project")
+    logs = unify.get_logs()
     entries = [log.entries for log in logs]
 
     assert sorted([sorted(d.items()) for d in entries]) == [
@@ -676,12 +622,8 @@ async def test_with_entries_async():
 # Params
 
 
+@_handle_project
 def test_with_params():
-    project = "my_project"
-    if project in unify.list_projects():
-        unify.delete_project(project)
-    unify.create_project(project)
-    unify.activate(project)
 
     with unify.Params(a="a"):
         logs = unify.get_logs()
@@ -724,12 +666,8 @@ def test_with_params():
         }
 
 
+@_handle_project
 def test_with_params_threaded():
-    project = "my_project"
-    if project in unify.list_projects():
-        unify.delete_project(project)
-    unify.create_project(project)
-    unify.activate(project)
 
     def fn(a, b, c, d, e, f, g):
         with unify.Params(a=a):
@@ -750,7 +688,7 @@ def test_with_params_threaded():
     [t.start() for t in threads]
     [t.join() for t in threads]
 
-    logs = unify.get_logs(project="my_project")
+    logs = unify.get_logs()
     params = [log.params for log in logs]
 
     assert sorted([sorted(d.items()) for d in params]) == [
@@ -767,13 +705,9 @@ def test_with_params_threaded():
     ]
 
 
+@_handle_project
 @pytest.mark.asyncio
 async def test_with_params_async():
-    project = "my_project"
-    if project in unify.list_projects():
-        unify.delete_project(project)
-    unify.create_project(project)
-    unify.activate(project)
 
     async def fn(a, b, c, d, e, f, g):
         with unify.Params(a=a):
@@ -787,7 +721,7 @@ async def test_with_params_async():
     fns = [fn(*[7 * i + j for j in range(7)]) for i in range(4)]
     await asyncio.gather(*fns)
 
-    logs = unify.get_logs(project="my_project")
+    logs = unify.get_logs()
     params = [log.params for log in logs]
 
     assert sorted([sorted(d.items()) for d in params]) == [
@@ -807,12 +741,8 @@ async def test_with_params_async():
 # Combos
 
 
+@_handle_project
 def test_with_all():
-    project = "my_project"
-    if project in unify.list_projects():
-        unify.delete_project(project)
-    unify.create_project(project)
-    unify.activate(project)
 
     with unify.Params(a="a"):
         logs = unify.get_logs()
@@ -861,13 +791,8 @@ def test_with_all():
             }
 
 
+@_handle_project
 def test_with_all_threaded():
-    project = "my_project"
-    if project in unify.list_projects():
-        unify.delete_project(project)
-    unify.create_project(project)
-    unify.activate(project)
-
     def fn(a, b, c, d, e, f, g, h, i):
         with unify.Params(a=a):
             log = unify.log()
@@ -891,7 +816,7 @@ def test_with_all_threaded():
     [t.start() for t in threads]
     [t.join() for t in threads]
 
-    logs = unify.get_logs(project="my_project")
+    logs = unify.get_logs()
 
     params = [log.params for log in logs]
     observed = [sorted(d.items()) for d in sorted(params, key=lambda x: x["a"])]
@@ -924,13 +849,9 @@ def test_with_all_threaded():
             ]
 
 
+@_handle_project
 @pytest.mark.asyncio
 async def test_with_all_async():
-    project = "my_project"
-    if project in unify.list_projects():
-        unify.delete_project(project)
-    unify.create_project(project)
-    unify.activate(project)
 
     async def fn(a, b, c, d, e, f, g, h, i):
         with unify.Params(a=a):
@@ -948,7 +869,7 @@ async def test_with_all_async():
     fns = [fn(*[9 * i + j for j in range(9)]) for i in range(4)]
     await asyncio.gather(*fns)
 
-    logs = unify.get_logs(project="my_project")
+    logs = unify.get_logs()
 
     params = [log.params for log in logs]
     observed = [sorted(d.items()) for d in sorted(params, key=lambda x: x["a"])]
@@ -985,12 +906,8 @@ async def test_with_all_async():
 # ------#
 
 
+@_handle_project
 def test_traced():
-    project = "my_project"
-    if project in unify.list_projects():
-        unify.delete_project(project)
-    unify.create_project(project)
-    unify.activate(project)
 
     @unify.traced
     def deeper_fn():
@@ -1011,7 +928,7 @@ def test_traced():
         return 1
 
     some_func(0.5)
-    entries = unify.get_logs(project="my_project")[0].entries
+    entries = unify.get_logs()[0].entries
 
     assert entries["trace"]["inputs"] == {"st": 0.5}
     assert entries["trace"]["span_name"] == "some_func"
@@ -1040,12 +957,8 @@ def test_traced():
     )
 
 
+@_handle_project
 def test_traced_w_caching():
-    project = "my_project"
-    if project in unify.list_projects():
-        unify.delete_project(project)
-    unify.create_project(project)
-    unify.activate(project)
     if os.path.exists(".test_traced_w_cached.cache.json"):
         os.remove(".test_traced_w_cached.cache.json")
     unify.set_caching(True)
@@ -1056,7 +969,7 @@ def test_traced_w_caching():
         return [a, b, c]
 
     some_func(0, 1, 2)
-    logs = unify.get_logs(project="my_project")
+    logs = unify.get_logs()
     assert len(logs) == 1
     trace = logs[0].entries["trace"]
     idx = trace["id"]
@@ -1072,7 +985,7 @@ def test_traced_w_caching():
     assert trace["outputs"] == [0, 1, 2]
 
     some_func(0, 1, 2)
-    logs = unify.get_logs(project="my_project")
+    logs = unify.get_logs()
     assert len(logs) == 1
     trace = logs[0].entries["trace"]
     assert trace["id"] == idx
@@ -1086,19 +999,15 @@ def test_traced_w_caching():
     assert trace["outputs"] == [0, 1, 2]
 
 
+@_handle_project
 def test_traced_none_handling():
-    project = "my_project"
-    if project in unify.list_projects():
-        unify.delete_project(project)
-    unify.create_project(project)
-    unify.activate(project)
 
     @unify.traced(prune_empty=False)
     def some_func(a, b, c, d):
         return [a, b, c, d]
 
     some_func(1, 2, None, 4)
-    logs = unify.get_logs(project="my_project")
+    logs = unify.get_logs()
     assert len(logs) == 1
     entries = logs[0].entries
     assert entries["trace"]["inputs"] == {"a": 1, "b": 2, "c": None, "d": 4}
@@ -1124,7 +1033,7 @@ def test_traced_none_handling():
         return [a, b, c, d]
 
     some_func(1, 2, None, 4)
-    logs = unify.get_logs(project="my_project")
+    logs = unify.get_logs()
     assert len(logs) == 2
     entries = logs[1].entries
     assert entries["trace"]["inputs"] == {"a": 1, "b": 2, "d": 4}
@@ -1146,12 +1055,8 @@ def test_traced_none_handling():
     assert "child_spans" not in entries["trace"]
 
 
+@_handle_project
 def test_traced_within_log_context():
-    project = "my_project"
-    if project in unify.list_projects():
-        unify.delete_project(project)
-    unify.create_project(project)
-    unify.activate(project)
 
     @unify.traced
     def deeper_fn():
@@ -1173,7 +1078,7 @@ def test_traced_within_log_context():
 
     with unify.Log(a="a", b="b"):
         some_func(0.5)
-    logs = unify.get_logs(project="my_project")
+    logs = unify.get_logs()
     assert len(logs) == 1
     entries = logs[0].entries
     assert entries["a"] == "a"
@@ -1188,12 +1093,8 @@ def test_traced_within_log_context():
     )
 
 
+@_handle_project
 def test_traced_threaded():
-    project = "my_project"
-    if project in unify.list_projects():
-        unify.delete_project(project)
-    unify.create_project(project)
-    unify.activate(project)
 
     @unify.traced
     def deeper_fn():
@@ -1223,7 +1124,7 @@ def test_traced_threaded():
     [t.start() for t in threads]
     [t.join() for t in threads]
 
-    logs = unify.get_logs(project="my_project")
+    logs = unify.get_logs()
 
     for i, log in enumerate(logs):
         trace = log.entries["trace"]
@@ -1235,13 +1136,9 @@ def test_traced_threaded():
         assert trace["child_spans"][0]["child_spans"][0]["span_name"] == "deeper_fn"
 
 
+@_handle_project
 @pytest.mark.asyncio
 async def test_traced_async():
-    project = "my_project"
-    if project in unify.list_projects():
-        unify.delete_project(project)
-    unify.create_project(project)
-    unify.activate(project)
 
     @unify.traced
     async def deeper_fn():
@@ -1263,7 +1160,7 @@ async def test_traced_async():
 
     await asyncio.gather(*[some_func(i / 100) for i in range(8)])
 
-    logs = unify.get_logs(project="my_project")
+    logs = unify.get_logs()
 
     for i, log in enumerate(logs):
         trace = log.entries["trace"]
