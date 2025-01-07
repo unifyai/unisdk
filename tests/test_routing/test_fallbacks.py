@@ -11,7 +11,7 @@ def test_model_fallback():
 
 def test_endpoint_fallback():
     unify.Unify(
-        "llama-3.1-405b-chat@together-ai->llama-3.1-70b-chat@groq",
+        "llama-3.1-405b-chat@together-ai->gpt-4o@openai",
     ).generate("Hello.")
 
 
