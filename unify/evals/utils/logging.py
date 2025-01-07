@@ -575,9 +575,9 @@ def get_logs_metric(
         "Authorization": f"Bearer {api_key}",
     }
     project = _get_and_maybe_create_project(project, api_key=api_key)
-    params = {"project": project, "filter_expr": filter}
+    params = {"project": project, "filter_expr": filter, "key": key}
     response = requests.get(
-        BASE_URL + f"/logs/metric/{metric}/{key}",
+        BASE_URL + f"/logs/metric/{metric}",
         headers=headers,
         params=params,
     )
