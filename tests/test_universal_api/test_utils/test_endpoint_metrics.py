@@ -59,10 +59,10 @@ def test_get_public_endpoint_metrics():
     assert len(metrics) == 1
     metrics = metrics[0]
     assert isinstance(metrics, Metrics)
-    assert hasattr(metrics, "time_to_first_token")
-    assert isinstance(metrics.time_to_first_token, float)
-    assert hasattr(metrics, "inter_token_latency")
-    assert isinstance(metrics.inter_token_latency, float)
+    assert hasattr(metrics, "ttft")
+    assert isinstance(metrics.ttft, float)
+    assert hasattr(metrics, "itl")
+    assert isinstance(metrics.itl, float)
     assert hasattr(metrics, "input_cost")
     assert isinstance(metrics.input_cost, float)
     assert hasattr(metrics, "output_cost")
@@ -75,8 +75,8 @@ def test_client_metric_properties():
     client = unify.Unify("gpt-4o@openai", cache=True)
     assert isinstance(client.input_cost, float)
     assert isinstance(client.output_cost, float)
-    assert isinstance(client.time_to_first_token, float)
-    assert isinstance(client.inter_token_latency, float)
+    assert isinstance(client.ttft, float)
+    assert isinstance(client.itl, float)
     client = unify.MultiUnify(
         ["gpt-4o@openai", "claude-3-haiku@anthropic"],
         cache=True,
@@ -87,19 +87,19 @@ def test_client_metric_properties():
     assert isinstance(client.output_cost, dict)
     assert isinstance(client.output_cost["gpt-4o@openai"], float)
     assert isinstance(client.output_cost["claude-3-haiku@anthropic"], float)
-    assert isinstance(client.time_to_first_token, dict)
-    assert isinstance(client.time_to_first_token["gpt-4o@openai"], float)
-    assert isinstance(client.time_to_first_token["claude-3-haiku@anthropic"], float)
-    assert isinstance(client.inter_token_latency, dict)
-    assert isinstance(client.inter_token_latency["gpt-4o@openai"], float)
-    assert isinstance(client.inter_token_latency["claude-3-haiku@anthropic"], float)
+    assert isinstance(client.ttft, dict)
+    assert isinstance(client.ttft["gpt-4o@openai"], float)
+    assert isinstance(client.ttft["claude-3-haiku@anthropic"], float)
+    assert isinstance(client.itl, dict)
+    assert isinstance(client.itl["gpt-4o@openai"], float)
+    assert isinstance(client.itl["claude-3-haiku@anthropic"], float)
 
 
 def test_log_endpoint_metric():
     with handler:
         unify.log_endpoint_metric(
             endpoint_name,
-            metric_name="inter_token_latency",
+            metric_name="itl",
             value=1.23,
         )
 
@@ -109,16 +109,16 @@ def test_log_and_get_endpoint_metric():
         now = datetime.now(timezone.utc)
         unify.log_endpoint_metric(
             endpoint_name,
-            metric_name="inter_token_latency",
+            metric_name="itl",
             value=1.23,
         )
         metrics = unify.get_endpoint_metrics(endpoint_name, start_time=now)
         assert isinstance(metrics, list)
         assert len(metrics) == 1
         metrics = metrics[0]
-        assert hasattr(metrics, "inter_token_latency")
-        assert isinstance(metrics.inter_token_latency, float)
-        assert metrics.inter_token_latency == 1.23
+        assert hasattr(metrics, "itl")
+        assert isinstance(metrics.itl, float)
+        assert metrics.itl == 1.23
 
 
 def test_log_and_get_endpoint_metric_with_time_windows():
@@ -126,48 +126,48 @@ def test_log_and_get_endpoint_metric_with_time_windows():
         t0 = datetime.now(timezone.utc)
         unify.log_endpoint_metric(
             endpoint_name,
-            metric_name="inter_token_latency",
+            metric_name="itl",
             value=1.23,
         )
         unify.log_endpoint_metric(
             endpoint_name,
-            metric_name="time_to_first_token",
+            metric_name="ttft",
             value=4.56,
         )
         time.sleep(0.5)
         t1 = datetime.now(timezone.utc)
         unify.log_endpoint_metric(
             endpoint_name,
-            metric_name="inter_token_latency",
+            metric_name="itl",
             value=7.89,
         )
         all_metrics = unify.get_endpoint_metrics(endpoint_name, start_time=t0)
-        # two log events detected, due to double inter_token_latency logging
+        # two log events detected, due to double itl logging
         assert len(all_metrics) == 2
         # Data all accumulates at the latest entry (top of the stack)
-        assert isinstance(all_metrics[0].inter_token_latency, float)
-        assert all_metrics[0].time_to_first_token is None
-        assert isinstance(all_metrics[1].inter_token_latency, float)
-        assert isinstance(all_metrics[1].time_to_first_token, float)
-        assert all_metrics[0].inter_token_latency == 1.23
-        assert all_metrics[1].time_to_first_token == 4.56
-        assert all_metrics[1].inter_token_latency == 7.89
+        assert isinstance(all_metrics[0].itl, float)
+        assert all_metrics[0].ttft is None
+        assert isinstance(all_metrics[1].itl, float)
+        assert isinstance(all_metrics[1].ttft, float)
+        assert all_metrics[0].itl == 1.23
+        assert all_metrics[1].ttft == 4.56
+        assert all_metrics[1].itl == 7.89
         # The original two logs are not retrieved
         limited_metrics = unify.get_endpoint_metrics(
             endpoint_name,
             start_time=t1,
         )
         assert len(limited_metrics) == 1
-        assert limited_metrics[0].time_to_first_token is None
-        assert isinstance(limited_metrics[0].inter_token_latency, float)
-        assert limited_metrics[0].inter_token_latency == 7.89
-        # The time_to_first_token is now retrieved due to 'latest' mode
+        assert limited_metrics[0].ttft is None
+        assert isinstance(limited_metrics[0].itl, float)
+        assert limited_metrics[0].itl == 7.89
+        # The ttft is now retrieved due to 'latest' mode
         latest_metrics = unify.get_endpoint_metrics(endpoint_name)
         assert len(latest_metrics) == 1
-        assert isinstance(latest_metrics[0].time_to_first_token, float)
-        assert isinstance(latest_metrics[0].inter_token_latency, float)
-        assert latest_metrics[0].time_to_first_token == 4.56
-        assert latest_metrics[0].inter_token_latency == 7.89
+        assert isinstance(latest_metrics[0].ttft, float)
+        assert isinstance(latest_metrics[0].itl, float)
+        assert latest_metrics[0].ttft == 4.56
+        assert latest_metrics[0].itl == 7.89
 
 
 def test_delete_all_metrics_for_endpoint():
@@ -175,7 +175,7 @@ def test_delete_all_metrics_for_endpoint():
         # log metric
         unify.log_endpoint_metric(
             endpoint_name,
-            metric_name="inter_token_latency",
+            metric_name="itl",
             value=1.23,
         )
         # verify it exists
@@ -196,19 +196,19 @@ def test_delete_some_metrics_for_endpoint():
         t0 = datetime.now(timezone.utc)
         unify.log_endpoint_metric(
             endpoint_name,
-            metric_name="inter_token_latency",
+            metric_name="itl",
             value=1.23,
         )
         unify.log_endpoint_metric(
             endpoint_name,
-            metric_name="time_to_first_token",
+            metric_name="ttft",
             value=4.56,
         )
         time.sleep(0.5)
         # log metric at t1
         unify.log_endpoint_metric(
             endpoint_name,
-            metric_name="inter_token_latency",
+            metric_name="itl",
             value=7.89,
         )
         # verify both exist
@@ -217,27 +217,27 @@ def test_delete_some_metrics_for_endpoint():
         # delete the first itl entry
         unify.delete_endpoint_metrics(
             endpoint_name,
-            timestamps=metrics[0].measured_at["inter_token_latency"],
+            timestamps=metrics[0].measured_at["itl"],
         )
         # verify only the latest entry exists, with both itl and ttft
         metrics = unify.get_endpoint_metrics(endpoint_name, start_time=t0)
         assert len(metrics) == 1
-        assert isinstance(metrics[0].inter_token_latency, float)
-        assert isinstance(metrics[0].time_to_first_token, float)
+        assert isinstance(metrics[0].itl, float)
+        assert isinstance(metrics[0].ttft, float)
         # delete the ttft entry
         unify.delete_endpoint_metrics(
             endpoint_name,
-            timestamps=metrics[0].measured_at["time_to_first_token"],
+            timestamps=metrics[0].measured_at["ttft"],
         )
         # verify only the latest entry exists, with only the itl
         metrics = unify.get_endpoint_metrics(endpoint_name, start_time=t0)
         assert len(metrics) == 1
-        assert isinstance(metrics[0].inter_token_latency, float)
-        assert metrics[0].time_to_first_token is None
+        assert isinstance(metrics[0].itl, float)
+        assert metrics[0].ttft is None
         # delete the final itl entry
         unify.delete_endpoint_metrics(
             endpoint_name,
-            timestamps=metrics[0].measured_at["inter_token_latency"],
+            timestamps=metrics[0].measured_at["itl"],
         )
         # verify no metrics exist
         metrics = unify.get_endpoint_metrics(endpoint_name, start_time=t0)

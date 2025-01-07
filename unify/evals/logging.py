@@ -21,18 +21,16 @@ class Log:
         self,
         *,
         id: int = None,
-        timestamp: Optional[datetime] = None,
+        ts: Optional[datetime] = None,
         project: Optional[str] = None,
         api_key: Optional[str] = None,
         params: Dict[str, Any] = None,
         **entries,
     ):
         self._id = id
-        self._timestamp = timestamp
+        self._ts = ts
         self._project = project
         self._entries = entries
-        if timestamp is not None:
-            self._entries["timestamp"] = timestamp
         self._params = params
         self._api_key = _validate_api_key(api_key)
 
@@ -43,8 +41,8 @@ class Log:
         return self._id
 
     @property
-    def timestamp(self) -> Optional[datetime]:
-        return self._timestamp
+    def ts(self) -> Optional[datetime]:
+        return self._ts
 
     @property
     def entries(self) -> Dict[str, Any]:
@@ -106,7 +104,7 @@ class Log:
     def to_json(self):
         return {
             "id": self._id,
-            "timestamp": self._timestamp,
+            "ts": self._ts,
             "entries": self._entries,
             "params": self._params,
             "api_key": self._api_key,
@@ -131,7 +129,7 @@ class Log:
         self._active_log_set = False
         self._log_token = ACTIVE_LOG.set(ACTIVE_LOG.get() + [lg])
         self._id = lg.id
-        self._timestamp = lg.timestamp
+        self._ts = lg.ts
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.download()

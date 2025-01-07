@@ -9,8 +9,8 @@ from ...utils.helpers import _validate_api_key
 
 
 class Metrics(BaseModel, extra="allow"):
-    time_to_first_token: Optional[float]
-    inter_token_latency: Optional[float]
+    ttft: Optional[float]
+    itl: Optional[float]
     input_cost: Optional[float]
     output_cost: Optional[float]
     measured_at: Union[datetime.datetime, str, Dict[str, Union[datetime.datetime, str]]]
@@ -60,8 +60,8 @@ def get_endpoint_metrics(
     response.raise_for_status()
     return [
         Metrics(
-            time_to_first_token=metrics_dct["ttft"],
-            inter_token_latency=metrics_dct["itl"],
+            ttft=metrics_dct["ttft"],
+            itl=metrics_dct["itl"],
             input_cost=metrics_dct["input_cost"],
             output_cost=metrics_dct["output_cost"],
             measured_at=metrics_dct["measured_at"],
@@ -86,7 +86,7 @@ def log_endpoint_metric(
         endpoint_name: Name of the custom endpoint to append benchmark data for.
 
         metric_name: Name of the metric to submit. Allowed metrics are: “input_cost”,
-        “output_cost”, “time_to_first_token”, “inter_token_latency”.
+        “output_cost”, “ttft”, “itl”.
 
         value: Value of the metric to submit.
 

@@ -10,14 +10,14 @@ def test_quality():
         unify.Unify(f"mixtral-8x22b-instruct-v0.1@{pre}q").generate("Hello.")
 
 
-def test_time_to_first_token():
+def test_ttft():
     for pre in ("", "lowest-"):
         unify.Unify(f"claude-3-opus@{pre}time-to-first-token").generate("Hello.")
         unify.Unify(f"gpt-4o@{pre}ttft").generate("Hello.")
         unify.Unify(f"mixtral-8x22b-instruct-v0.1@{pre}t").generate("Hello.")
 
 
-def test_inter_token_latency():
+def test_itl():
     for pre in ("", "lowest-"):
         unify.Unify(f"claude-3-opus@{pre}inter-token-latency").generate("Hello.")
         unify.Unify(f"gpt-4o@{pre}itl").generate("Hello.")

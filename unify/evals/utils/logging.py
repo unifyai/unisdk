@@ -494,7 +494,7 @@ def get_logs(
     return [
         unify.Log(
             id=dct["id"],
-            timestamp=dct["ts"],
+            ts=dct["ts"],
             **dct["entries"],
             params={k: params[k][v] for k, v in dct["params"].items()},
             api_key=api_key,
@@ -531,7 +531,7 @@ def get_log_by_id(
     params, lg = response.json().values()
     return unify.Log(
         id=lg["id"],
-        timestamp=lg["ts"],
+        ts=lg["ts"],
         **lg["entries"],
         params={k: params[k][v] for k, v in lg["params"].items()},
         api_key=api_key,

@@ -423,18 +423,12 @@ class _MultiClient(_Client, abc.ABC):
         return {ep: metrics.output_cost for ep, metrics in self._get_metrics().items()}
 
     @property
-    def time_to_first_token(self) -> Dict[str, float]:
-        return {
-            ep: metrics.time_to_first_token
-            for ep, metrics in self._get_metrics().items()
-        }
+    def ttft(self) -> Dict[str, float]:
+        return {ep: metrics.ttft for ep, metrics in self._get_metrics().items()}
 
     @property
-    def inter_token_latency(self) -> Dict[str, float]:
-        return {
-            ep: metrics.inter_token_latency
-            for ep, metrics in self._get_metrics().items()
-        }
+    def itl(self) -> Dict[str, float]:
+        return {ep: metrics.itl for ep, metrics in self._get_metrics().items()}
 
     # Settable Properties #
     # --------------------#

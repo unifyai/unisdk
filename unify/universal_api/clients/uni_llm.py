@@ -298,12 +298,12 @@ class _UniClient(_Client, abc.ABC):
         return self._get_metric().output_cost
 
     @property
-    def time_to_first_token(self) -> float:
-        return self._get_metric().time_to_first_token
+    def ttft(self) -> float:
+        return self._get_metric().ttft
 
     @property
-    def inter_token_latency(self) -> float:
-        return self._get_metric().inter_token_latency
+    def itl(self) -> float:
+        return self._get_metric().itl
 
     # Settable Properties #
     # --------------------#
