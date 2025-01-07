@@ -60,8 +60,8 @@ def get_endpoint_metrics(
     response.raise_for_status()
     return [
         Metrics(
-            time_to_first_token=metrics_dct["time_to_first_token"],
-            inter_token_latency=metrics_dct["inter_token_latency"],
+            time_to_first_token=metrics_dct["ttft"],
+            inter_token_latency=metrics_dct["itl"],
             input_cost=metrics_dct["input_cost"],
             output_cost=metrics_dct["output_cost"],
             measured_at=metrics_dct["measured_at"],

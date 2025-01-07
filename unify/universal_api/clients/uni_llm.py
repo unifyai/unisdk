@@ -291,19 +291,19 @@ class _UniClient(_Client, abc.ABC):
 
     @property
     def input_cost(self) -> float:
-        return self._get_metric()["input_cost"]
+        return self._get_metric().input_cost
 
     @property
     def output_cost(self) -> float:
-        return self._get_metric()["output_cost"]
+        return self._get_metric().output_cost
 
     @property
     def time_to_first_token(self) -> float:
-        return self._get_metric()["time_to_first_token"]
+        return self._get_metric().time_to_first_token
 
     @property
     def inter_token_latency(self) -> float:
-        return self._get_metric()["inter_token_latency"]
+        return self._get_metric().inter_token_latency
 
     # Settable Properties #
     # --------------------#
