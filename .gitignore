@@ -153,7 +153,6 @@ google-cloud-cli-*.tar.gz
 bin/
 
 # Tests
-*.cache.json
 new_module.py
 test.py
 implementations.py
