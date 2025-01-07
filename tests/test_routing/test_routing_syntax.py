@@ -81,7 +81,7 @@ def test_routing_w_providers():
 
 def test_routing_skip_providers():
     unify.Unify(
-        "llama-3.1-405b-chat@itl|skip_providers:azure-ai,aws-bedrock",
+        "llama-3.1-405b-chat@itl|skip_providers:vertex-ai,aws-bedrock",
     ).generate("Hello.")
 
 
