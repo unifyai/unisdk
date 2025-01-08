@@ -1009,7 +1009,6 @@ def test_traced_w_caching():
         assert trace["inputs"] == {"a": 0, "b": 1, "c": 2}
         assert trace["outputs"] == [0, 1, 2]
 
-        breakpoint()
         if os.path.exists(local_cache_path):
             os.remove(local_cache_path)
     except:
