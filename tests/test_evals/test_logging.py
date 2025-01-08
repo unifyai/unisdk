@@ -41,6 +41,7 @@ def test_get_log_by_value_no_project():
     assert log == retrieved_log
     log.delete()
     assert unify.get_log_by_value(**data) is None
+    unify.delete_project("_")
 
 
 @_handle_project
