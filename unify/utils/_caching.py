@@ -63,39 +63,45 @@ def _get_cache(fn_name: str, kw: Dict[str, Any], filename: str = None) -> Option
         "Log": Log,
     }
     CACHE_LOCK.acquire()
-    _create_cache_if_none(filename)
-    kw = {k: v for k, v in kw.items() if v is not None}
-    kw_str = _dumps(kw)
-    cache_str = fn_name + "_" + kw_str
-    if cache_str not in _cache:
-        CACHE_LOCK.release()
-        return
-    ret = json.loads(_cache[cache_str])
-    if cache_str + "_res_types" not in _cache:
+    # noinspection PyBroadException
+    try:
+        _create_cache_if_none(filename)
+        kw = {k: v for k, v in kw.items() if v is not None}
+        kw_str = _dumps(kw)
+        cache_str = fn_name + "_" + kw_str
+        if cache_str not in _cache:
+            CACHE_LOCK.release()
+            return
+        ret = json.loads(_cache[cache_str])
+        if cache_str + "_res_types" not in _cache:
+            CACHE_LOCK.release()
+            return ret
+        for idx_str, type_str in _cache[cache_str + "_res_types"].items():
+            idx_list = json.loads(idx_str)
+            if len(idx_list) == 0:
+                CACHE_LOCK.release()
+                typ = type_str_to_type[type_str]
+                if issubclass(typ, BaseModel):
+                    return type_str_to_type[type_str](**ret)
+                elif issubclass(typ, Log):
+                    return type_str_to_type[type_str].from_json(ret)
+                raise Exception(f"Cache indexing found for unsupported type: {typ}")
+            item = ret
+            for i, idx in enumerate(idx_list):
+                if i == len(idx_list) - 1:
+                    typ = type_str_to_type[type_str]
+                    if issubclass(typ, BaseModel) or issubclass(typ, Log):
+                        item[idx] = type_str_to_type[type_str].from_json(item[idx])
+                    else:
+                        raise Exception(
+                            f"Cache indexing found for unsupported type: {typ}",
+                        )
+                    break
+                item = item[idx]
         CACHE_LOCK.release()
         return ret
-    for idx_str, type_str in _cache[cache_str + "_res_types"].items():
-        idx_list = json.loads(idx_str)
-        if len(idx_list) == 0:
-            CACHE_LOCK.release()
-            typ = type_str_to_type[type_str]
-            if issubclass(typ, BaseModel):
-                return type_str_to_type[type_str](**ret)
-            elif issubclass(typ, Log):
-                return type_str_to_type[type_str].from_json(ret)
-            raise Exception(f"Cache indexing found for unsupported type: {typ}")
-        item = ret
-        for i, idx in enumerate(idx_list):
-            if i == len(idx_list) - 1:
-                typ = type_str_to_type[type_str]
-                if issubclass(typ, BaseModel) or issubclass(typ, Log):
-                    item[idx] = type_str_to_type[type_str].from_json(item[idx])
-                else:
-                    raise Exception(f"Cache indexing found for unsupported type: {typ}")
-                break
-            item = item[idx]
-    CACHE_LOCK.release()
-    return ret
+    except:
+        CACHE_LOCK.release()
 
 
 def _dumps(
@@ -138,19 +144,23 @@ def _write_to_cache(
 ):
     global CACHE_LOCK
     CACHE_LOCK.acquire()
-    _create_cache_if_none(filename)
-    kw = {k: v for k, v in kw.items() if v is not None}
-    kw_str = _dumps(kw)
-    cache_str = fn_name + "_" + kw_str
-    _res_types = {}
-    response_str = _dumps(response, _res_types)
-    if _res_types:
-        _cache[cache_str + "_res_types"] = _res_types
-    _cache[cache_str] = response_str
-    if filename is None:
-        cache_fpath = _cache_fpath
-    else:
-        cache_fpath = os.path.join(_cache_dir, filename)
-    with open(cache_fpath, "w") as outfile:
-        json.dump(_cache, outfile)
-    CACHE_LOCK.release()
+    # noinspection PyBroadException
+    try:
+        _create_cache_if_none(filename)
+        kw = {k: v for k, v in kw.items() if v is not None}
+        kw_str = _dumps(kw)
+        cache_str = fn_name + "_" + kw_str
+        _res_types = {}
+        response_str = _dumps(response, _res_types)
+        if _res_types:
+            _cache[cache_str + "_res_types"] = _res_types
+        _cache[cache_str] = response_str
+        if filename is None:
+            cache_fpath = _cache_fpath
+        else:
+            cache_fpath = os.path.join(_cache_dir, filename)
+        with open(cache_fpath, "w") as outfile:
+            json.dump(_cache, outfile)
+        CACHE_LOCK.release()
+    except:
+        CACHE_LOCK.release()
