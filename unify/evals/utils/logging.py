@@ -404,7 +404,7 @@ def delete_logs(
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    body = {"ids": log_ids}
+    body = {"ids_and_fields": [(log_ids, None)]}
     response = requests.delete(BASE_URL + f"/logs", headers=headers, json=body)
     response.raise_for_status()
     return response.json()
@@ -505,6 +505,7 @@ def get_logs(
 # noinspection PyShadowingBuiltins
 def get_log_by_id(
     id: int,
+    project: Optional[str] = None,
     *,
     api_key: Optional[str] = None,
 ) -> unify.Log:
@@ -513,6 +514,8 @@ def get_log_by_id(
 
     Args:
         id: IDs of the logs to fetch.
+
+        project: Name of the project to get logs from.
 
         api_key: If specified, unify API key to be used. Defaults to the value in the
         `UNIFY_KEY` environment variable.
@@ -525,9 +528,14 @@ def get_log_by_id(
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    response = requests.get(BASE_URL + f"/log/{id}", headers=headers)
+    project = _get_and_maybe_create_project(project, api_key=api_key)
+    response = requests.get(
+        BASE_URL + "/logs",
+        params={"project": project, "from_ids": [id]},
+        headers=headers,
+    )
     response.raise_for_status()
-    params, lg = response.json().values()
+    params, (lg,), count = response.json().values()
     return unify.Log(
         id=lg["id"],
         ts=lg["ts"],
