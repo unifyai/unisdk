@@ -4,9 +4,10 @@ import math
 import asyncio
 import pytest
 import functools
+import threading
 
 import unify
-import threading
+from unify.utils._caching import _cache_fpath
 
 
 def _handle_project(test_fn):
@@ -960,48 +961,60 @@ def test_traced():
     )
 
 
+# noinspection PyBroadException
 @_handle_project
 def test_traced_w_caching():
-    if os.path.exists(".test_traced_w_cached.cache.json"):
-        os.remove(".test_traced_w_cached.cache.json")
-    unify.set_caching(True)
-    unify.set_caching_fname(".test_traced_w_cached.cache.json")
-
-    @unify.traced
-    def some_func(a, b, c):
-        return [a, b, c]
-
-    some_func(0, 1, 2)
-    logs = unify.get_logs()
-    assert len(logs) == 1
-    trace = logs[0].entries["trace"]
-    idx = trace["id"]
-    assert isinstance(idx, str)
-    assert trace["span_name"] == "some_func"
-    exec_time = trace["exec_time"]
-    assert isinstance(exec_time, float)
-    assert (
-        trace["code"].replace(" ", "")
-        == "@unify.traced\ndefsome_func(a,b,c):\nreturn[a,b,c]\n"
+    local_cache_path = _cache_fpath.replace(
+        ".cache.json",
+        ".test_traced_w_cached.cache.json",
     )
-    assert trace["inputs"] == {"a": 0, "b": 1, "c": 2}
-    assert trace["outputs"] == [0, 1, 2]
+    if os.path.exists(local_cache_path):
+        os.remove(local_cache_path)
 
-    some_func(0, 1, 2)
-    logs = unify.get_logs()
-    assert len(logs) == 1
-    trace = logs[0].entries["trace"]
-    assert trace["id"] == idx
-    assert trace["span_name"] == "some_func"
-    assert trace["exec_time"] == exec_time
-    assert (
-        trace["code"].replace(" ", "")
-        == "@unify.traced\ndefsome_func(a,b,c):\nreturn[a,b,c]\n"
-    )
-    assert trace["inputs"] == {"a": 0, "b": 1, "c": 2}
-    assert trace["outputs"] == [0, 1, 2]
+    try:
+        unify.set_caching(True)
+        unify.set_caching_fname(".test_traced_w_cached.cache.json")
 
-    os.remove(".test_traced_w_cached.cache.json")
+        @unify.traced
+        def some_func(a, b, c):
+            return [a, b, c]
+
+        some_func(0, 1, 2)
+        logs = unify.get_logs()
+        assert len(logs) == 1
+        trace = logs[0].entries["trace"]
+        idx = trace["id"]
+        assert isinstance(idx, str)
+        assert trace["span_name"] == "some_func"
+        exec_time = trace["exec_time"]
+        assert isinstance(exec_time, float)
+        assert (
+            trace["code"].replace(" ", "")
+            == "@unify.traced\ndefsome_func(a,b,c):\nreturn[a,b,c]\n"
+        )
+        assert trace["inputs"] == {"a": 0, "b": 1, "c": 2}
+        assert trace["outputs"] == [0, 1, 2]
+
+        some_func(0, 1, 2)
+        logs = unify.get_logs()
+        assert len(logs) == 1
+        trace = logs[0].entries["trace"]
+        assert trace["id"] == idx
+        assert trace["span_name"] == "some_func"
+        assert trace["exec_time"] == exec_time
+        assert (
+            trace["code"].replace(" ", "")
+            == "@unify.traced\ndefsome_func(a,b,c):\nreturn[a,b,c]\n"
+        )
+        assert trace["inputs"] == {"a": 0, "b": 1, "c": 2}
+        assert trace["outputs"] == [0, 1, 2]
+
+        breakpoint()
+        if os.path.exists(local_cache_path):
+            os.remove(local_cache_path)
+    except:
+        if os.path.exists(local_cache_path):
+            os.remove(local_cache_path)
 
 
 @_handle_project
