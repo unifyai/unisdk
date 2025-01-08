@@ -102,6 +102,10 @@ def _get_cache(fn_name: str, kw: Dict[str, Any], filename: str = None) -> Option
         return ret
     except:
         CACHE_LOCK.release()
+        raise Exception(
+            f"Failed to get cache for function {fn_name} with kwargs {kw} "
+            f"from cache at {filename}",
+        )
 
 
 def _dumps(
@@ -164,3 +168,7 @@ def _write_to_cache(
         CACHE_LOCK.release()
     except:
         CACHE_LOCK.release()
+        raise Exception(
+            f"Failed to write function {fn_name} with kwargs {kw} and "
+            f"response {response} to cache at {filename}",
+        )
