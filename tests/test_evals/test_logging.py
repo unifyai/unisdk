@@ -31,6 +31,8 @@ def _handle_project(test_fn):
 
 
 def test_get_log_by_value_no_project():
+    if "_" in unify.list_projects():
+        unify.delete_project("_")
     data = {
         "system_prompt": "You are a weather assistant",
         "user_prompt": "hello world",
