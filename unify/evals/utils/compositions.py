@@ -243,7 +243,7 @@ def get_source() -> str:
     frame = inspect.getouterframes(inspect.currentframe())[1]
     with open(frame.filename, "r") as file:
         source = file.read()
-    return source
+    return f"```python\n{source}\n```"
 
 
 # Entries #
