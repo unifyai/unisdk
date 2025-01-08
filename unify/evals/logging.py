@@ -214,10 +214,9 @@ class Experiment:
 # --------#
 
 
-def traced(fn: callable = None, *, prune_empty: bool = True):
-
+def traced(fn: callable = None, *, prune_empty: bool = True, trace_type: str = "span"):
     if fn is None:
-        return lambda f: traced(f, prune_empty=prune_empty)
+        return lambda f: traced(f, prune_empty=prune_empty, trace_type=trace_type)
 
     def wrapped(*args, **kwargs):
         log_token = None if ACTIVE_LOG.get() else ACTIVE_LOG.set([unify.log()])
@@ -231,6 +230,7 @@ def traced(fn: callable = None, *, prune_empty: bool = True):
         inputs = bound_args.arguments
         new_span = {
             "id": str(uuid.uuid4()),
+            "type": trace_type,
             "parent_span_id": (None if not SPAN.get() else SPAN.get()["id"]),
             "span_name": fn.__name__,
             "exec_time": None,
@@ -284,6 +284,7 @@ def traced(fn: callable = None, *, prune_empty: bool = True):
         inputs = bound_args.arguments
         new_span = {
             "id": str(uuid.uuid4()),
+            "type": trace_type,
             "parent_span_id": (None if not SPAN.get() else SPAN.get()["id"]),
             "span_name": fn.__name__,
             "exec_time": None,
