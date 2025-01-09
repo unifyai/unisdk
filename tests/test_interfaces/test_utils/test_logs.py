@@ -5,23 +5,7 @@ from unify.utils._caching import _get_cache
 from requests import HTTPError
 
 import unify
-
-
-def _handle_project(test_fn):
-    # noinspection PyBroadException
-    @functools.wraps(test_fn)
-    def wrapper(*args, **kwargs):
-        project = test_fn.__name__
-        if project in unify.list_projects():
-            unify.delete_project(project)
-        try:
-            with unify.Project(project):
-                test_fn(*args, **kwargs)
-            unify.delete_project(project)
-        except:
-            unify.delete_project(project)
-
-    return wrapper
+from ..helpers import _handle_project
 
 
 @_handle_project
