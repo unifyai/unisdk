@@ -1,5 +1,6 @@
+import sys
+import traceback
 import functools
-
 import unify
 
 
@@ -16,5 +17,8 @@ def _handle_project(test_fn):
             unify.delete_project(project)
         except:
             unify.delete_project(project)
+            exc_type, exc_value, exc_tb = sys.exc_info()
+            tb_string = "".join(traceback.format_exception(exc_type, exc_value, exc_tb))
+            raise Exception(f"{tb_string}")
 
     return wrapper
