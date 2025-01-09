@@ -56,7 +56,7 @@ def _create_cache_if_none(filename: str = None):
 def _get_cache(fn_name: str, kw: Dict[str, Any], filename: str = None) -> Optional[Any]:
     global CACHE_LOCK
     # prevents circular import
-    from unify.evals.logging import Log
+    from unify.interfaces.logs import Log
 
     type_str_to_type = {
         "ChatCompletion": ChatCompletion,
@@ -114,7 +114,7 @@ def _dumps(
     idx: List[Union[str, int]] = None,
 ) -> Any:
     # prevents circular import
-    from unify.evals.logging import Log
+    from unify.interfaces.logs import Log
 
     base = False
     if idx is None:

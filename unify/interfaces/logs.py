@@ -6,7 +6,7 @@ import uuid
 import datetime
 
 from ..utils.helpers import _validate_api_key, _prune_dict
-from .utils.logging import _handle_special_types
+from .utils.logs import _handle_special_types
 from .utils.compositions import *
 
 

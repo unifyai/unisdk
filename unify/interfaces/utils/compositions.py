@@ -2,8 +2,8 @@ from __future__ import annotations
 import json
 
 from ...utils.helpers import _validate_api_key, _get_and_maybe_create_project
-from .logging import _add_to_log, _to_log_ids, _to_logs
-from .logging import *
+from .logs import _add_to_log, _to_log_ids, _to_logs
+from .logs import *
 
 
 # Helpers #
