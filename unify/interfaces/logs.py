@@ -214,9 +214,20 @@ class Experiment:
 # --------#
 
 
-def traced(fn: callable = None, *, prune_empty: bool = True, trace_type: str = "span"):
+def traced(
+    fn: callable = None,
+    *,
+    prune_empty: bool = True,
+    trace_type: str = "span",
+    trace_contexts: Optional[List[str]] = None,
+):
     if fn is None:
-        return lambda f: traced(f, prune_empty=prune_empty, trace_type=trace_type)
+        return lambda f: traced(
+            f,
+            prune_empty=prune_empty,
+            trace_type=trace_type,
+            trace_contexts=trace_contexts,
+        )
 
     def wrapped(*args, **kwargs):
         log_token = None if ACTIVE_LOG.get() else ACTIVE_LOG.set([unify.log()])
