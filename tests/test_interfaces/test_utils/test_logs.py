@@ -8,6 +8,7 @@ import unify
 from ..helpers import _handle_project
 
 
+# noinspection PyBroadException
 @_handle_project
 def test_log_param():
     data = {
@@ -34,8 +35,8 @@ def test_log_param():
     try:
         unify.get_log_by_id(log_id)
         assert False
-    except HTTPError as e:
-        assert e.response.status_code == 404
+    except Exception as e:
+        assert str(e) == f"Log with id {log_id} does not exist"
 
 
 @_handle_project
@@ -95,8 +96,8 @@ def test_log_entry():
     try:
         unify.get_log_by_id(log_id)
         assert False
-    except HTTPError as e:
-        assert e.response.status_code == 404
+    except Exception as e:
+        assert str(e) == f"Log with id {log_id} does not exist"
 
 
 @_handle_project
@@ -307,7 +308,7 @@ def test_log_caching():
     assert (
         _get_cache(
             fn_name="log",
-            kw={"project": project, "a": 0, "b": 1},
+            kw={"a": 0, "b": 1},
         )
         is not None
     )
@@ -360,7 +361,7 @@ def test_log_caching():
         is not None
     )
     msg = unify.delete_logs(logs=log)
-    assert msg == {"info": "Logs deleted successfully!"}
+    assert msg == {"info": "Logs and fields deleted successfully!"}
 
     # delete_log_fields
     log = unify.log(a=1, b=2)
@@ -373,7 +374,7 @@ def test_log_caching():
         is not None
     )
     msg = unify.delete_log_fields(field="a", logs=log)
-    assert msg == {"info": "Log field deleted successfully from all logs!"}
+    assert msg == {"info": "Logs and fields deleted successfully!"}
 
     # cleanup
     os.remove(cache_fname)

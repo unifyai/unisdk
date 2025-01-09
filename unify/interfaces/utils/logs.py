@@ -437,9 +437,9 @@ def delete_log_fields(
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    body = {"fields": [(log_ids, field)]}
+    body = {"ids_and_fields": [(log_ids, field)]}
     response = requests.delete(
-        BASE_URL + f"/logs/fields",
+        BASE_URL + f"/logs",
         headers=headers,
         json=body,
     )
@@ -535,7 +535,10 @@ def get_log_by_id(
         headers=headers,
     )
     response.raise_for_status()
-    params, (lg,), count = response.json().values()
+    params, lgs, count = response.json().values()
+    if len(lgs) == 0:
+        raise Exception(f"Log with id {id} does not exist")
+    lg = lgs[0]
     return unify.Log(
         id=lg["id"],
         ts=lg["ts"],
