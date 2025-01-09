@@ -41,14 +41,14 @@ def test_traced():
     assert entries["trace"]["span_name"] == "some_func"
     assert (
         entries["trace"]["code"].replace(" ", "").replace("\n", "")
-        == """
+        == """```python
             @unify.traced
                 def some_func(st):
                     time.sleep(st)
                     inner_fn()
                     inner_fn()
                     return 1
-            """.replace(
+            ```""".replace(
             " ",
             "",
         ).replace(
@@ -93,7 +93,7 @@ def test_traced_w_caching():
         assert isinstance(exec_time, float)
         assert (
             trace["code"].replace(" ", "")
-            == "@unify.traced\ndefsome_func(a,b,c):\nreturn[a,b,c]\n"
+            == "```python\n@unify.traced\ndefsome_func(a,b,c):\nreturn[a,b,c]\n```"
         )
         assert trace["inputs"] == {"a": 0, "b": 1, "c": 2}
         assert trace["outputs"] == [0, 1, 2]
@@ -107,7 +107,7 @@ def test_traced_w_caching():
         assert trace["exec_time"] == exec_time
         assert (
             trace["code"].replace(" ", "")
-            == "@unify.traced\ndefsome_func(a,b,c):\nreturn[a,b,c]\n"
+            == "```python\n@unify.traced\ndefsome_func(a,b,c):\nreturn[a,b,c]\n```"
         )
         assert trace["inputs"] == {"a": 0, "b": 1, "c": 2}
         assert trace["outputs"] == [0, 1, 2]
@@ -134,11 +134,11 @@ def test_traced_none_handling():
     assert entries["trace"]["span_name"] == "some_func"
     assert (
         entries["trace"]["code"].replace(" ", "").replace("\n", "")
-        == """
+        == """```python
             @unify.traced(prune_empty=False)
             def some_func(a, b, c, d):
                 return [a, b, c, d]
-            """.replace(
+            ```""".replace(
             " ",
             "",
         ).replace(
@@ -160,11 +160,11 @@ def test_traced_none_handling():
     assert entries["trace"]["span_name"] == "some_func"
     assert (
         entries["trace"]["code"].replace(" ", "").replace("\n", "")
-        == """
+        == """```python
             @unify.traced(prune_empty=True)
             def some_func(a, b, c, d):
                 return [a, b, c, d]
-            """.replace(
+            ```""".replace(
             " ",
             "",
         ).replace(
