@@ -65,6 +65,57 @@ def test_traced():
 
 
 @_handle_project
+def test_traced_w_exception():
+
+    @unify.traced
+    def deeper_fn(inp):
+        if inp == 2:
+            raise ValueError("Something went wrong")
+        return 3
+
+    @unify.traced
+    def inner_fn(inp):
+        deeper_fn(inp)
+        return 2
+
+    @unify.traced
+    def some_func(inp):
+        inner_fn(inp)
+        inner_fn(inp + 1)
+        return 1
+
+    try:
+        some_func(1)
+    except ValueError:
+        pass
+    trace = unify.get_logs()[0].entries["trace"]
+
+    assert trace["inputs"] == {"inp": 1}
+    assert trace["span_name"] == "some_func"
+    assert (
+        trace["code"].replace(" ", "").replace("\n", "")
+        == """```python
+            @unify.traced
+                def some_func(inp):
+                    inner_fn(inp)
+                    inner_fn(inp+1)
+                    return 1
+            ```""".replace(
+            " ",
+            "",
+        ).replace(
+            "\n",
+            "",
+        )
+    )
+    assert len(trace["child_spans"]) == 2
+    assert trace["child_spans"][0]["span_name"] == "inner_fn"
+    assert len(trace["child_spans"][0]["child_spans"]) == 1
+    assert trace["child_spans"][0]["child_spans"][0]["span_name"] == "deeper_fn"
+    assert trace["child_spans"][1]["child_spans"][0]["errors"] == "Something went wrong"
+
+
+@_handle_project
 def test_traced_uni_llm():
 
     client = unify.Unify("gpt-4o@openai", traced=True)
