@@ -825,7 +825,15 @@ class Unify(_UniClient):
         )
         chat_completion = None
         if cache is True or _get_caching() and cache is None:
-            chat_completion = _get_cache(fn_name="chat.completions.create", kw=kw)
+            if self._traced:
+
+                @unify.traced(span_type="llm-cached")
+                def _get_cache_traced(**kw):
+                    return _get_cache(fn_name="chat.completions.create", kw=kw)
+
+                chat_completion = _get_cache_traced(**kw)
+            else:
+                chat_completion = _get_cache(fn_name="chat.completions.create", kw=kw)
         if chat_completion is None:
             try:
                 if endpoint in LOCAL_MODELS:

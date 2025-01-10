@@ -251,7 +251,7 @@ def traced(
                 2,
             ),
             "code": f"```python\n{inspect.getsource(fn)}\n```",
-            "inputs": inputs,
+            "inputs": inputs["kw"] if span_type == "llm-cached" else inputs,
             "outputs": None,
             "errors": None,
             "child_spans": [],
@@ -274,7 +274,7 @@ def traced(
             # ToDo: ensure there is a global log set upon the first trace,
             #  and removed on the last
             trace = SPAN.get()
-            if span_type.lower() == "llm":
+            if span_type.lower() in ("llm", "llm-cached"):
                 trace["outputs"] = json.loads(trace["outputs"].json())
             if prune_empty:
                 trace = _prune_dict(trace)
