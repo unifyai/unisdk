@@ -218,14 +218,14 @@ def traced(
     fn: callable = None,
     *,
     prune_empty: bool = True,
-    trace_type: str = "span",
+    span_type: str = "function",
     trace_contexts: Optional[List[str]] = None,
 ):
     if fn is None:
         return lambda f: traced(
             f,
             prune_empty=prune_empty,
-            trace_type=trace_type,
+            span_type=span_type,
             trace_contexts=trace_contexts,
         )
 
@@ -241,7 +241,7 @@ def traced(
         inputs = bound_args.arguments
         new_span = {
             "id": str(uuid.uuid4()),
-            "type": trace_type,
+            "type": span_type,
             "parent_span_id": (None if not SPAN.get() else SPAN.get()["id"]),
             "span_name": fn.__name__,
             "exec_time": None,
@@ -274,6 +274,8 @@ def traced(
             # ToDo: ensure there is a global log set upon the first trace,
             #  and removed on the last
             trace = SPAN.get()
+            if span_type.lower() == "llm":
+                trace["outputs"] = json.loads(trace["outputs"].json())
             if prune_empty:
                 trace = _prune_dict(trace)
             unify.add_log_entries(trace=trace, overwrite=True)
@@ -295,7 +297,7 @@ def traced(
         inputs = bound_args.arguments
         new_span = {
             "id": str(uuid.uuid4()),
-            "type": trace_type,
+            "type": span_type,
             "parent_span_id": (None if not SPAN.get() else SPAN.get()["id"]),
             "span_name": fn.__name__,
             "exec_time": None,

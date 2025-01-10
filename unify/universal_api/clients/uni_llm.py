@@ -777,7 +777,13 @@ class Unify(_UniClient):
             else:
                 if unify.CLIENT_LOGGING:
                     print(f"calling {kw['model']}... (thread {threading.get_ident()})")
-                chat_completion = self._client.chat.completions.create(**kw)
+                if self.traced:
+                    chat_completion = unify.traced(
+                        self._client.chat.completions.create,
+                        span_type="llm",
+                    )(**kw)
+                else:
+                    chat_completion = self._client.chat.completions.create(**kw)
                 if unify.CLIENT_LOGGING:
                     print(f"done (thread {threading.get_ident()})")
             for chunk in chat_completion:
@@ -832,7 +838,13 @@ class Unify(_UniClient):
                         print(
                             f"calling {kw['model']}... (thread {threading.get_ident()})",
                         )
-                    chat_completion = self._client.chat.completions.create(**kw)
+                    if self._traced:
+                        chat_completion = unify.traced(
+                            self._client.chat.completions.create,
+                            span_type="llm",
+                        )(**kw)
+                    else:
+                        chat_completion = self._client.chat.completions.create(**kw)
                     if unify.CLIENT_LOGGING:
                         print(f"done (thread {threading.get_ident()})")
             except openai.APIStatusError as e:
@@ -1011,7 +1023,14 @@ class AsyncUnify(_UniClient):
             else:
                 if unify.CLIENT_LOGGING:
                     print(f"calling {kw['model']}... (thread {threading.get_ident()})")
-                async_stream = await self._client.chat.completions.create(**kw)
+                if self._traced:
+                    # ToDo: test if this works, it probably won't
+                    async_stream = await unify.traced(
+                        self._client.chat.completions.create,
+                        span_type="llm",
+                    )(**kw)
+                else:
+                    async_stream = await self._client.chat.completions.create(**kw)
                 if unify.CLIENT_LOGGING:
                     print(f"done (thread {threading.get_ident()})")
             async for chunk in async_stream:  # type: ignore[union-attr]
@@ -1065,7 +1084,16 @@ class AsyncUnify(_UniClient):
                         print(
                             f"calling {kw['model']}... (thread {threading.get_ident()})",
                         )
-                    chat_completion = await self._client.chat.completions.create(**kw)
+                    if self.traced:
+                        # ToDo: test if this works, it probably won't
+                        chat_completion = await unify.traced(
+                            self._client.chat.completions.create,
+                            span_type="llm",
+                        )(**kw)
+                    else:
+                        chat_completion = await self._client.chat.completions.create(
+                            **kw,
+                        )
                     if unify.CLIENT_LOGGING:
                         print(
                             f"done (thread {threading.get_ident()})",

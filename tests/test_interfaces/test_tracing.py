@@ -64,6 +64,41 @@ def test_traced():
     )
 
 
+@_handle_project
+def test_traced_uni_llm():
+
+    client = unify.Unify("gpt-4o@openai", traced=True)
+    client.generate("hello")
+    trace = unify.get_logs()[0].entries["trace"]
+
+    assert trace["type"] == "llm"
+    assert trace["span_name"] == "create"
+    assert trace["offset"] == 0
+    assert trace["inputs"] == {
+        "messages": [{"role": "user", "content": "hello"}],
+        "model": "gpt-4o@openai",
+        "stream": False,
+        "temperature": 1.0,
+        "extra_body": {
+            "signature": "python",
+            "use_custom_keys": False,
+            "drop_params": True,
+            "log_query_body": True,
+            "log_response_body": True,
+        },
+    }
+    outputs = trace["outputs"]
+    choices = outputs["choices"]
+    assert len(choices) == 1
+    choice = choices[0]
+    assert choice["finish_reason"] == "stop"
+    assert choice["index"] == 0
+    message = choice["message"]
+    assert message["role"] == "assistant"
+    assert outputs["model"] == "gpt-4o@openai"
+    assert outputs["object"] == "chat.completion"
+
+
 # noinspection PyBroadException
 @_handle_project
 def test_traced_w_caching():

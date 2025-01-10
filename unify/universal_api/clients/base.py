@@ -905,10 +905,6 @@ class _Client(ABC):
             This client, useful for chaining inplace calls.
         """
         self._traced = value
-        if value is True:
-            self._generate = unify.traced(self._generate_raw)
-        else:
-            self._generate = self._generate_raw
         return self
 
     def set_cache(self, value: bool) -> Self:

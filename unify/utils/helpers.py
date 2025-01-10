@@ -1,7 +1,9 @@
 import json
 import os
+import openai
 import threading
 from typing import Any, Dict, List, Optional, Union
+
 
 import unify
 import requests
@@ -59,7 +61,7 @@ def _get_and_maybe_create_project(
 def _prune_dict(val):
 
     def keep(v):
-        if v is None:
+        if v in (None, openai.NotGiven, openai.NOT_GIVEN):
             return False
         else:
             ret = _prune_dict(v)
