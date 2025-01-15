@@ -46,6 +46,8 @@ class Dataset:
         self._name = name
         if isinstance(data, tuple):
             data = list(data)
+        elif isinstance(data, dict):
+            data = [(k, v) for k, v in data.items()]
         elif not isinstance(data, list):
             data = [data]
         if with_ids:
