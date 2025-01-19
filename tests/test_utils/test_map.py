@@ -69,7 +69,42 @@ def test_threaded_map() -> None:
                 evaluate_w_log(q)
 
 
+def test_threaded_map_from_args() -> None:
+    with ProjectHandling():
+        with unify.Project("test_project"):
+            unify.map(evaluate_w_log, qs, from_args=True)
+            for q in qs:
+                evaluate_w_log(q)
+
+
 def test_threaded_map_with_context() -> None:
+    with ProjectHandling():
+        with unify.Project("test_project"):
+
+            def contextual_func(a, b, c=3):
+                with unify.Entries(a=a, b=b, c=c):
+                    unify.log(test="some random value")
+                return a + b + c
+
+            results = unify.map(
+                contextual_func,
+                [
+                    ((1, 3), {"c": 2}),
+                    ((2, 4), {"c": 4}),
+                ],
+            )
+            assert results == [1 + 3 + 2, 2 + 4 + 4]
+            results = unify.map(
+                contextual_func,
+                [
+                    ((1,), {"b": 2, "c": 2}),
+                    ((3,), {"b": 4, "c": 4}),
+                ],
+            )
+            assert results == [1 + 2 + 2, 3 + 4 + 4]
+
+
+def test_threaded_map_with_context_from_args() -> None:
     with ProjectHandling():
         with unify.Project("test_project"):
 
@@ -83,13 +118,7 @@ def test_threaded_map_with_context() -> None:
                 (1, 2),
                 (3, 4),
                 c=(2, 4),
-            )
-            assert results == [1 + 3 + 2, 2 + 4 + 4]
-            results = unify.map(
-                contextual_func,
-                (1, 2),
-                (3, 4),
-                c=(2, 4),
+                from_args=True,
             )
             assert results == [1 + 3 + 2, 2 + 4 + 4]
             results = unify.map(
@@ -97,6 +126,7 @@ def test_threaded_map_with_context() -> None:
                 (1, 3),
                 b=(2, 4),
                 c=(2, 4),
+                from_args=True,
             )
             assert results == [1 + 2 + 2, 3 + 4 + 4]
 
@@ -107,8 +137,18 @@ def test_asyncio_map() -> None:
         evaluate(q)
 
 
+def test_asyncio_map_from_args() -> None:
+    unify.map(async_evaluate, qs, mode="asyncio", from_args=True)
+    for q in qs:
+        evaluate(q)
+
+
 def test_loop_map() -> None:
     unify.map(evaluate_w_log, qs, mode="loop")
+
+
+def test_loop_map_from_args() -> None:
+    unify.map(evaluate_w_log, qs, mode="loop", from_args=True)
 
 
 @pytest.mark.asyncio
@@ -124,10 +164,42 @@ def test_asyncio_map_with_context() -> None:
 
             results = unify.map(
                 contextual_func,
+                [
+                    ((1, 3), {"c": 2}),
+                    ((2, 4), {"c": 4}),
+                ],
+                mode="asyncio",
+            )
+            assert results == [1 + 3 + 2, 2 + 4 + 4]
+            results = unify.map(
+                contextual_func,
+                [
+                    ((1,), {"b": 2, "c": 2}),
+                    ((3,), {"b": 4, "c": 4}),
+                ],
+                mode="asyncio",
+            )
+            assert results == [1 + 2 + 2, 3 + 4 + 4]
+
+
+@pytest.mark.asyncio
+def test_asyncio_map_with_context_from_args() -> None:
+    with ProjectHandling():
+        with unify.Project("test_project"):
+
+            async def contextual_func(a, b, c=3):
+                with unify.Entries(a=a, b=b, c=c):
+                    await asyncio.sleep(0.1)
+                    unify.log(test="some random value")
+                return a + b + c
+
+            results = unify.map(
+                contextual_func,
                 (1, 2),
                 (3, 4),
                 c=2,
                 mode="asyncio",
+                from_args=True,
             )
             assert results == [1 + 3 + 2, 2 + 4 + 2]
             results = unify.map(
@@ -136,6 +208,7 @@ def test_asyncio_map_with_context() -> None:
                 (3, 4),
                 c=[2, 4],
                 mode="asyncio",
+                from_args=True,
             )
             assert results == [1 + 3 + 2, 2 + 4 + 4]
             results = unify.map(
@@ -144,6 +217,7 @@ def test_asyncio_map_with_context() -> None:
                 b=[2, 4],
                 c=[2, 4],
                 mode="asyncio",
+                from_args=True,
             )
             assert results == [1 + 2 + 2, 3 + 4 + 4]
 

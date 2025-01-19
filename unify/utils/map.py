@@ -14,7 +14,7 @@ def _is_iterable(item: Any) -> bool:
 
 
 # noinspection PyShadowingBuiltins
-def map(fn: callable, *args, mode="threading", **kwargs) -> Any:
+def map(fn: callable, *args, mode="threading", from_args=False, **kwargs) -> Any:
 
     assert mode in (
         "threading",
@@ -22,23 +22,44 @@ def map(fn: callable, *args, mode="threading", **kwargs) -> Any:
         "loop",
     ), "map mode must be one of threading, asyncio or loop."
 
-    args = list(args)
-    for i, a in enumerate(args):
-        if _is_iterable(a):
-            args[i] = list(a)
+    if from_args:
+        args = list(args)
+        for i, a in enumerate(args):
+            if _is_iterable(a):
+                args[i] = list(a)
 
-    if args:
-        num_calls = len(args[0])
-    else:
-        for v in kwargs.values():
-            if isinstance(v, list):
-                num_calls = len(v)
-                break
+        if args:
+            num_calls = len(args[0])
         else:
-            raise Exception(
-                "At least one of the args or kwargs must be a list, "
-                "which is to be mapped across the threads",
+            for v in kwargs.values():
+                if isinstance(v, list):
+                    num_calls = len(v)
+                    break
+            else:
+                raise Exception(
+                    "At least one of the args or kwargs must be a list, "
+                    "which is to be mapped across the threads",
+                )
+        args_n_kwargs = [
+            (
+                tuple(a[i] for a in args),
+                {
+                    k: v[i] if (isinstance(v, list) or isinstance(v, tuple)) else v
+                    for k, v in kwargs.items()
+                },
             )
+            for i in range(num_calls)
+        ]
+    else:
+        args_n_kwargs = args[0]
+        if not isinstance(args_n_kwargs[0], tuple):
+            if isinstance(args_n_kwargs[0], dict):
+                args_n_kwargs = [((), item) for item in args_n_kwargs]
+            elif isinstance(args_n_kwargs[0], tuple):
+                args_n_kwargs = [(item, {}) for item in args_n_kwargs]
+            else:
+                args_n_kwargs = [((item,), {}) for item in args_n_kwargs]
+        num_calls = len(args_n_kwargs)
 
     pbar = tqdm(total=num_calls)
 
@@ -47,12 +68,8 @@ def map(fn: callable, *args, mode="threading", **kwargs) -> Any:
         pbar.set_description("Iterations Completed")
 
         returns = list()
-        for i in range(num_calls):
-            a = tuple(a[i] for a in args)
-            kw = {
-                k: v[i] if (isinstance(v, list) or isinstance(v, tuple)) else v
-                for k, v in kwargs.items()
-            }
+        for a_n_kw in args_n_kwargs:
+            a, kw = a_n_kw
             returns.append(fn(*a, **kw))
             pbar.update(1)
         pbar.close()
@@ -72,12 +89,8 @@ def map(fn: callable, *args, mode="threading", **kwargs) -> Any:
 
         threads = list()
         returns = [None] * num_calls
-        for i in range(num_calls):
-            a = tuple(a[i] for a in args)
-            kw = {
-                k: v[i] if (isinstance(v, list) or isinstance(v, tuple)) else v
-                for k, v in kwargs.items()
-            }
+        for i, a_n_kw in enumerate(args_n_kwargs):
+            a, kw = a_n_kw
             kw["context"] = contextvars.copy_context()
             thread = threading.Thread(
                 target=fn_w_indexing,
@@ -98,12 +111,8 @@ def map(fn: callable, *args, mode="threading", **kwargs) -> Any:
         return ret
 
     fns = []
-    for i in range(num_calls):
-        a = (a[i] for a in args)
-        kw = {
-            k: v[i] if (isinstance(v, list) or isinstance(v, tuple)) else v
-            for k, v in kwargs.items()
-        }
+    for i, a_n_kw in enumerate(args_n_kwargs):
+        a, kw = a_n_kw
         fns.append(_wrapped(*a, **kw))
 
     async def main():
