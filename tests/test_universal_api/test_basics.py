@@ -57,6 +57,15 @@ class TestUnifyBasics:
         assert isinstance(result, dict)
         assert result == {"number": 2}
 
+    def test_structured_output_w_caching(self) -> None:
+        client = Unify(
+            endpoint="gpt-4o@openai",
+            response_format=Response,
+            cache=True,
+        )
+        client.generate(user_message="what is 1 + 1?")
+        client.generate(user_message="what is 1 + 1?")
+
     def test_generate_returns_generator_when_stream_true(self) -> None:
         client = Unify(
             endpoint="gpt-4o@openai",
