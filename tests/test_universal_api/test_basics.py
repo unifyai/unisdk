@@ -38,14 +38,22 @@ class TestUnifyBasics:
             endpoint="gpt-4o@openai",
             response_format=Response,
         )
+
         result = client.generate(
             user_message="what is 1 + 1?",
-            stream=False,
             return_full_completion=True,
         )
         assert isinstance(result, ParsedChatCompletion)
         assert isinstance(result.choices[0].message.content, str)
         result = json.loads(result.choices[0].message.content)
+        assert isinstance(result, dict)
+        assert result == {"number": 2}
+
+        result = client.generate(
+            user_message="what is 1 + 1?",
+        )
+        assert isinstance(result, str)
+        result = json.loads(result)
         assert isinstance(result, dict)
         assert result == {"number": 2}
 
