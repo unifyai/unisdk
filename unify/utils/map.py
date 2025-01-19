@@ -55,10 +55,14 @@ def map(fn: callable, *args, mode="threading", from_args=False, **kwargs) -> Any
         if not isinstance(args_n_kwargs[0], tuple):
             if isinstance(args_n_kwargs[0], dict):
                 args_n_kwargs = [((), item) for item in args_n_kwargs]
-            elif isinstance(args_n_kwargs[0], tuple):
-                args_n_kwargs = [(item, {}) for item in args_n_kwargs]
             else:
                 args_n_kwargs = [((item,), {}) for item in args_n_kwargs]
+        elif (
+            not isinstance(args_n_kwargs[0][0], tuple)
+            or len(args_n_kwargs[0]) < 2
+            or not isinstance(args_n_kwargs[0][1], dict)
+        ):
+            args_n_kwargs = [(item, {}) for item in args_n_kwargs]
         num_calls = len(args_n_kwargs)
 
     pbar = tqdm(total=num_calls)
