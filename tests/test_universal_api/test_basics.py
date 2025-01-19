@@ -1,5 +1,5 @@
 import json
-
+import inspect
 import pytest
 from pydantic import BaseModel
 from openai.types.chat import ParsedChatCompletion
@@ -63,8 +63,8 @@ class TestUnifyBasics:
             response_format=Response,
             cache=True,
         )
-        client.generate(user_message="what is 1 + 1?")
-        client.generate(user_message="what is 1 + 1?")
+        assert json.loads(client.generate(user_message="what is 1 + 1?"))["number"] == 2
+        assert json.loads(client.generate(user_message="what is 1 + 1?"))["number"] == 2
 
     def test_generate_returns_generator_when_stream_true(self) -> None:
         client = Unify(

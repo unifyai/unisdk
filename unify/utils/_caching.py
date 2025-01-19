@@ -1,9 +1,10 @@
+import inspect
 import os
 import json
 import threading
 from pydantic import BaseModel
 from typing import Dict, Optional, Union, Any, List
-from openai.types.chat import ChatCompletion
+from openai.types.chat import ChatCompletion, ParsedChatCompletion
 
 _cache: Optional[Dict] = None
 _cache_dir = (
@@ -61,6 +62,7 @@ def _get_cache(fn_name: str, kw: Dict[str, Any], filename: str = None) -> Option
     type_str_to_type = {
         "ChatCompletion": ChatCompletion,
         "Log": Log,
+        "ParsedChatCompletion": ParsedChatCompletion,
     }
     CACHE_LOCK.acquire()
     # noinspection PyBroadException
@@ -77,6 +79,7 @@ def _get_cache(fn_name: str, kw: Dict[str, Any], filename: str = None) -> Option
             CACHE_LOCK.release()
             return ret
         for idx_str, type_str in _cache[cache_str + "_res_types"].items():
+            type_str = type_str.split("[")[0]
             idx_list = json.loads(idx_str)
             if len(idx_list) == 0:
                 CACHE_LOCK.release()
@@ -124,6 +127,8 @@ def _dumps(
         if cached_types is not None:
             cached_types[json.dumps(idx)] = obj.__class__.__name__
         ret = obj.model_dump()
+    elif inspect.isclass(obj) and issubclass(obj, BaseModel):
+        ret = obj.schema_json()
     elif isinstance(obj, Log):
         if cached_types is not None:
             cached_types[json.dumps(idx)] = obj.__class__.__name__
