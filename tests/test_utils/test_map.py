@@ -107,6 +107,10 @@ def test_asyncio_map() -> None:
         evaluate(q)
 
 
+def test_loop_map() -> None:
+    unify.map(evaluate_w_log, qs, mode="loop")
+
+
 @pytest.mark.asyncio
 def test_asyncio_map_with_context() -> None:
     with ProjectHandling():

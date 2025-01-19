@@ -19,7 +19,8 @@ def map(fn: callable, *args, mode="threading", **kwargs) -> Any:
     assert mode in (
         "threading",
         "asyncio",
-    ), "map mode must be one of threading or asyncio."
+        "loop",
+    ), "map mode must be one of threading, asyncio or loop."
 
     args = list(args)
     for i, a in enumerate(args):
@@ -41,7 +42,23 @@ def map(fn: callable, *args, mode="threading", **kwargs) -> Any:
 
     pbar = tqdm(total=num_calls)
 
-    if mode == "threading":
+    if mode == "loop":
+
+        pbar.set_description("Iterations Completed")
+
+        returns = list()
+        for i in range(num_calls):
+            a = tuple(a[i] for a in args)
+            kw = {
+                k: v[i] if (isinstance(v, list) or isinstance(v, tuple)) else v
+                for k, v in kwargs.items()
+            }
+            returns.append(fn(*a, **kw))
+            pbar.update(1)
+        pbar.close()
+        return returns
+
+    elif mode == "threading":
 
         pbar.set_description("Threads Completed")
 
