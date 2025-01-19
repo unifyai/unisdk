@@ -1,9 +1,10 @@
 # global
 import abc
 import asyncio
-from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
-
 import requests
+from pydantic import BaseModel
+from typing import Any, Dict, Iterable, List, Optional, Tuple, Union, Type
+
 
 # local
 import unify
@@ -17,7 +18,6 @@ from openai.types.chat import (
     ChatCompletionToolParam,
     ChatCompletion,
 )
-from openai.types.chat.completion_create_params import ResponseFormat
 from typing_extensions import Self
 from unify import BASE_URL
 from ..clients import AsyncUnify, _Client, _UniClient
@@ -47,7 +47,7 @@ class _MultiClient(_Client, abc.ABC):
         max_completion_tokens: Optional[int] = None,
         n: Optional[int] = None,
         presence_penalty: Optional[float] = None,
-        response_format: Optional[ResponseFormat] = None,
+        response_format: Optional[Type[BaseModel]] = None,
         seed: Optional[int] = None,
         stop: Union[Optional[str], List[str]] = None,
         temperature: Optional[float] = 1.0,
@@ -485,7 +485,7 @@ class _MultiClient(_Client, abc.ABC):
         max_completion_tokens: Optional[int] = None,
         n: Optional[int] = None,
         presence_penalty: Optional[float] = None,
-        response_format: Optional[ResponseFormat] = None,
+        response_format: Optional[Type[BaseModel]] = None,
         seed: Optional[int] = None,
         stop: Union[Optional[str], List[str]] = None,
         stream: Optional[bool] = None,
@@ -763,7 +763,7 @@ class MultiUnify(_MultiClient):
         max_completion_tokens: Optional[int] = None,
         n: Optional[int] = None,
         presence_penalty: Optional[float] = None,
-        response_format: Optional[ResponseFormat] = None,
+        response_format: Optional[Type[BaseModel]] = None,
         seed: Optional[int] = None,
         stop: Union[Optional[str], List[str]] = None,
         temperature: Optional[float] = 1.0,
@@ -923,7 +923,7 @@ class AsyncMultiUnify(_MultiClient):
         max_completion_tokens: Optional[int] = None,
         n: Optional[int] = None,
         presence_penalty: Optional[float] = None,
-        response_format: Optional[ResponseFormat] = None,
+        response_format: Optional[Type[BaseModel]] = None,
         seed: Optional[int] = None,
         stop: Union[Optional[str], List[str]] = None,
         temperature: Optional[float] = 1.0,

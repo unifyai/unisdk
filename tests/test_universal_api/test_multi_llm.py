@@ -64,22 +64,6 @@ class TestMultiUnify:
             assert isinstance(response, str)
             assert len(response) > 0
 
-    def test_default_prompt_handled_correctly(self):
-        endpoints = ("gpt-4o@openai", "gpt-4@openai")
-        client = MultiUnify(
-            endpoints=endpoints,
-            n=2,
-            return_full_completion=True,
-            cache=True,
-        )
-        responses = client.generate("Hello, how it is going?")
-        for endpoint, (response_endpoint, response) in zip(
-            endpoints,
-            responses.items(),
-        ):
-            assert endpoint == response_endpoint
-            assert len(response.choices) == 2
-
     def test_multi_message_histories(self):
         endpoints = ("claude-3.5-sonnet@anthropic", "gpt-4o@openai")
         messages = {
@@ -141,22 +125,6 @@ class TestAsyncMultiUnify:
             assert endpoint == response_endpoint
             assert isinstance(response, str)
             assert len(response) > 0
-
-    async def test_default_prompt_handled_correctly(self):
-        endpoints = ("gpt-4o@openai", "gpt-4@openai")
-        client = AsyncMultiUnify(
-            endpoints=endpoints,
-            n=2,
-            return_full_completion=True,
-            cache=True,
-        )
-        responses = await client.generate("Hello, how it is going?")
-        for endpoint, (response_endpoint, response) in zip(
-            endpoints,
-            responses.items(),
-        ):
-            assert endpoint == response_endpoint
-            assert len(response.choices) == 2
 
 
 if __name__ == "__main__":

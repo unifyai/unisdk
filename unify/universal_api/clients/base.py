@@ -1,7 +1,8 @@
 # global
 import requests
+from pydantic import BaseModel
 from abc import ABC, abstractmethod
-from typing import Dict, Iterable, List, Mapping, Optional, Union
+from typing import Dict, Iterable, List, Mapping, Optional, Union, Type
 
 # noinspection PyProtectedMember
 from openai._types import Body, Headers, Query
@@ -11,13 +12,10 @@ from openai.types.chat import (
     ChatCompletionToolChoiceOptionParam,
     ChatCompletionToolParam,
 )
-from openai.types.chat.completion_create_params import ResponseFormat
 from typing_extensions import Self
 
 # local
-import unify
 from unify import BASE_URL
-from ..types import Prompt
 
 # noinspection PyProtectedMember
 from unify.utils.helpers import _validate_api_key
@@ -43,7 +41,7 @@ class _Client(ABC):
         max_completion_tokens: Optional[int],
         n: Optional[int],
         presence_penalty: Optional[float],
-        response_format: Optional[ResponseFormat],
+        response_format: Optional[Type[BaseModel]],
         seed: Optional[int],
         stop: Union[Optional[str], List[str]],
         stream: Optional[bool],
@@ -246,7 +244,7 @@ class _Client(ABC):
         return self._presence_penalty
 
     @property
-    def response_format(self) -> Optional[ResponseFormat]:
+    def response_format(self) -> Optional[Type[BaseModel]]:
         """
         Get the default response format, if set.
 
@@ -475,22 +473,6 @@ class _Client(ABC):
         """
         return self._extra_body
 
-    @property
-    def default_prompt(self) -> Prompt:
-        """
-        Get the default prompt, if set.
-
-        Returns:
-              The default prompt.
-        """
-        return Prompt(
-            **{
-                f: getattr(self, f)
-                for f in Prompt.model_fields
-                if hasattr(self, f) and getattr(self, f)
-            },
-        )
-
     # Setters #
     # --------#
 
@@ -659,7 +641,7 @@ class _Client(ABC):
         self._presence_penalty = value
         return self
 
-    def set_response_format(self, value: ResponseFormat) -> Self:
+    def set_response_format(self, value: BaseModel) -> Self:
         """
         Set the default response format.  # noqa: DAR101.
 
@@ -959,21 +941,6 @@ class _Client(ABC):
         self._extra_body = value
         return self
 
-    def set_default_prompt(self, value: Prompt) -> Self:
-        """
-        Set the default prompt.  # noqa: DAR101.
-
-        Args:
-              The default prompt.
-
-        Returns:
-            This client, useful for chaining inplace calls.
-        """
-        for f in value.model_fields:
-            if hasattr(self, f):
-                getattr(self, "set_" + f)(getattr(value, f))
-        return self
-
     # Credits #
     # --------#
 
@@ -1026,7 +993,7 @@ class _Client(ABC):
         max_completion_tokens: Optional[int],
         n: Optional[int],
         presence_penalty: Optional[float],
-        response_format: Optional[ResponseFormat],
+        response_format: Optional[Type[BaseModel]],
         seed: Optional[int],
         stop: Union[Optional[str], List[str]],
         stream: Optional[bool],

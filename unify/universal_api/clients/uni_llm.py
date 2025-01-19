@@ -2,7 +2,17 @@
 import abc
 import openai
 import threading
-from typing import AsyncGenerator, Dict, Generator, Iterable, List, Optional, Union
+from pydantic import BaseModel
+from typing import (
+    AsyncGenerator,
+    Dict,
+    Generator,
+    Iterable,
+    List,
+    Optional,
+    Union,
+    Type,
+)
 
 # local
 import unify
@@ -21,7 +31,6 @@ from openai.types.chat import (
     ChatCompletionToolParam,
     ChatCompletion,
 )
-from openai.types.chat.completion_create_params import ResponseFormat
 from typing_extensions import Self
 from unify import BASE_URL, LOCAL_MODELS
 from ...utils._caching import _get_cache, _write_to_cache, _get_caching
@@ -48,7 +57,7 @@ class _UniClient(_Client, abc.ABC):
         max_completion_tokens: Optional[int] = None,
         n: Optional[int] = None,
         presence_penalty: Optional[float] = None,
-        response_format: Optional[ResponseFormat] = None,
+        response_format: Optional[Type[BaseModel]] = None,
         seed: Optional[int] = None,
         stop: Union[Optional[str], List[str]] = None,
         stream: Optional[bool] = False,
@@ -410,7 +419,7 @@ class _UniClient(_Client, abc.ABC):
         log_query_body,
         log_response_body,
     ):
-        prompt_dict = prompt.model_dump()
+        prompt_dict = prompt.kwargs
         if "extra_body" in prompt_dict:
             extra_body = prompt_dict["extra_body"]
             del prompt_dict["extra_body"]
@@ -472,7 +481,7 @@ class _UniClient(_Client, abc.ABC):
         max_completion_tokens: Optional[int] = None,
         n: Optional[int] = None,
         presence_penalty: Optional[float] = None,
-        response_format: Optional[ResponseFormat] = None,
+        response_format: Optional[Type[BaseModel]] = None,
         seed: Optional[int] = None,
         stop: Union[Optional[str], List[str]] = None,
         stream: Optional[bool] = None,
@@ -823,6 +832,11 @@ class Unify(_UniClient):
             log_query_body=log_query_body,
             log_response_body=log_response_body,
         )
+        if "response_format" in kw:
+            chat_method = self._client.beta.chat.completions.parse
+            del kw["stream"]
+        else:
+            chat_method = self._client.chat.completions.create
         chat_completion = None
         if cache is True or _get_caching() and cache is None:
             if self._traced:
@@ -848,11 +862,11 @@ class Unify(_UniClient):
                         )
                     if self._traced:
                         chat_completion = unify.traced(
-                            self._client.chat.completions.create,
+                            chat_method,
                             span_type="llm",
                         )(**kw)
                     else:
-                        chat_completion = self._client.chat.completions.create(**kw)
+                        chat_completion = chat_method(**kw)
                     if unify.CLIENT_LOGGING:
                         print(f"done (thread {threading.get_ident()})")
             except openai.APIStatusError as e:
@@ -883,7 +897,7 @@ class Unify(_UniClient):
         max_completion_tokens: Optional[int],
         n: Optional[int],
         presence_penalty: Optional[float],
-        response_format: Optional[ResponseFormat],
+        response_format: Optional[Type[BaseModel]],
         seed: Optional[int],
         stop: Union[Optional[str], List[str]],
         stream: Optional[bool],
@@ -1134,7 +1148,7 @@ class AsyncUnify(_UniClient):
         max_completion_tokens: Optional[int],
         n: Optional[int],
         presence_penalty: Optional[float],
-        response_format: Optional[ResponseFormat],
+        response_format: Optional[Type[BaseModel]],
         seed: Optional[int],
         stop: Union[Optional[str], List[str]],
         stream: Optional[bool],

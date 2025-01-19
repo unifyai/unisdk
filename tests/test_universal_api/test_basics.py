@@ -1,9 +1,15 @@
+import json
+
 import pytest
+from pydantic import BaseModel
+from openai.types.chat import ParsedChatCompletion
 from types import AsyncGeneratorType, GeneratorType
 
-import unify
 from unify import AsyncUnify, Unify
-from unify.universal_api.types import Prompt
+
+
+class Response(BaseModel):
+    number: int
 
 
 class TestUnifyBasics:
@@ -27,6 +33,22 @@ class TestUnifyBasics:
         result = client.generate(user_message="hello", stream=False)
         assert isinstance(result, str)
 
+    def test_structured_output(self) -> None:
+        client = Unify(
+            endpoint="gpt-4o@openai",
+            response_format=Response,
+        )
+        result = client.generate(
+            user_message="what is 1 + 1?",
+            stream=False,
+            return_full_completion=True,
+        )
+        assert isinstance(result, ParsedChatCompletion)
+        assert isinstance(result.choices[0].message.content, str)
+        result = json.loads(result.choices[0].message.content)
+        assert isinstance(result, dict)
+        assert result == {"number": 2}
+
     def test_generate_returns_generator_when_stream_true(self) -> None:
         client = Unify(
             endpoint="gpt-4o@openai",
@@ -42,19 +64,6 @@ class TestUnifyBasics:
         )
         result = client.generate(user_message="hello")
         assert len(result.choices) == 2
-
-    def test_default_prompt_handled_correctly(self) -> None:
-        client = Unify(
-            endpoint="gpt-4o@openai",
-            n=2,
-            temperature=0.5,
-        )
-        assert client.default_prompt.temperature == 0.5
-        assert client.default_prompt.n == 2
-        prompt = Prompt(temperature=0.4)
-        client.set_default_prompt(prompt)
-        assert client.temperature == 0.4
-        assert client.n is None
 
     def test_setter_chaining(self):
         client = Unify("gpt-4o@openai")
@@ -135,19 +144,6 @@ class TestAsyncUnifyBasics:
         )
         result = await async_client.generate(user_message="hello")
         assert len(result.choices) == 2
-
-    async def test_default_prompt_handled_correctly(self) -> None:
-        client = AsyncUnify(
-            endpoint="gpt-4o@openai",
-            n=2,
-            temperature=0.5,
-        )
-        assert client.default_prompt.temperature == 0.5
-        assert client.default_prompt.n == 2
-        prompt = Prompt(temperature=0.4)
-        client.set_default_prompt(prompt)
-        assert client.temperature == 0.4
-        assert client.n is None
 
 
 if __name__ == "__main__":
