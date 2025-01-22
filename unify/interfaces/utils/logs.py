@@ -227,10 +227,10 @@ def log(
     entries = _handle_special_types(entries)
     project = _get_and_maybe_create_project(project, api_key=api_key)
     body = {"project": project, "params": params, "entries": entries}
-    response = requests.post(BASE_URL + "/log", headers=headers, json=body)
+    response = requests.post(BASE_URL + "/logs", headers=headers, json=body)
     response.raise_for_status()
     created_log = unify.Log(
-        id=response.json(),
+        id=response.json()[0],
         api_key=api_key,
         **entries,
         params=params,
