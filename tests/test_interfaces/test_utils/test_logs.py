@@ -46,20 +46,20 @@ def test_add_param():
     unify.log(c="c")
     logs = unify.get_logs()
     assert len(logs) == 3
-    assert logs[0].entries == {"a": "a"}
+    assert logs[0].entries == {"c": "c"}
     assert logs[0].params == {}
     assert logs[1].entries == {"b": "b"}
     assert logs[1].params == {}
-    assert logs[2].entries == {"c": "c"}
+    assert logs[2].entries == {"a": "a"}
     assert logs[2].params == {}
     unify.add_params(system_prompt="You know the alphabet.")
     logs = unify.get_logs()
     assert len(logs) == 3
-    assert logs[0].entries == {"a": "a"}
+    assert logs[0].entries == {"c": "c"}
     assert logs[0].params == {"system_prompt": "You know the alphabet."}
     assert logs[1].entries == {"b": "b"}
     assert logs[1].params == {"system_prompt": "You know the alphabet."}
-    assert logs[2].entries == {"c": "c"}
+    assert logs[2].entries == {"a": "a"}
     assert logs[2].params == {"system_prompt": "You know the alphabet."}
 
 
