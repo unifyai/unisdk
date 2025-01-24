@@ -663,8 +663,12 @@ class _UniClient(_Client, abc.ABC):
         stateful = _default(stateful, self._stateful)
         if stateful:
             if messages:
-                # system message only added once at the beginning
-                system_message = None
+                sys_msg_inside = any(msg["role"] == "system" for msg in messages)
+                if not sys_msg_inside and system_message is not None:
+                    messages = [
+                        {"role": "system", "content": system_message},
+                    ] + messages
+                    system_message = None
                 if user_message is not None:
                     messages += [{"role": "user", "content": user_message}]
                     user_message = None
