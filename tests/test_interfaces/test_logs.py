@@ -292,15 +292,15 @@ def test_with_log():
         with unify.Log(d="d"):
             logs = unify.get_logs()
             assert len(logs) == 2
-            assert logs[1].entries == {"d": "d"}
+            assert logs[0].entries == {"d": "d"}
             unify.add_log_entries(e="e", f="f")
             logs = unify.get_logs()
             assert len(logs) == 2
-            assert logs[1].entries == {"d": "d", "e": "e", "f": "f"}
+            assert logs[0].entries == {"d": "d", "e": "e", "f": "f"}
         unify.add_log_entries(g="g")
         logs = unify.get_logs()
         assert len(logs) == 2
-        assert logs[0].entries == {"a": "a", "b": "b", "c": "c", "g": "g"}
+        assert logs[1].entries == {"a": "a", "b": "b", "c": "c", "g": "g"}
 
 
 @_handle_project
@@ -317,15 +317,15 @@ def test_global_logging():
         with unify.Log(d="d"):
             logs = unify.get_logs()
             assert len(logs) == 2
-            assert logs[1].entries == {"d": "d"}
+            assert logs[0].entries == {"d": "d"}
             unify.log(e="e", f="f")
             logs = unify.get_logs()
             assert len(logs) == 2
-            assert logs[1].entries == {"d": "d", "e": "e", "f": "f"}
+            assert logs[0].entries == {"d": "d", "e": "e", "f": "f"}
         unify.log(g="g")
         logs = unify.get_logs()
         assert len(logs) == 2
-        assert logs[0].entries == {"a": "a", "b": "b", "c": "c", "g": "g"}
+        assert logs[1].entries == {"a": "a", "b": "b", "c": "c", "g": "g"}
 
 
 @_handle_project
