@@ -253,7 +253,7 @@ def test_group_logs_by_params():
 
 
 @_handle_project
-def test_open_close_log():
+def test_start_stop_log():
     tk0 = unify.start_log(a="a")
     logs = unify.get_logs()
     assert len(logs) == 1
