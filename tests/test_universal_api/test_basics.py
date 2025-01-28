@@ -1,5 +1,4 @@
 import json
-import inspect
 import pytest
 from pydantic import BaseModel
 from openai.types.chat import ParsedChatCompletion

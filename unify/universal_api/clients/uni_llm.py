@@ -57,7 +57,7 @@ class _UniClient(_Client, abc.ABC):
         max_completion_tokens: Optional[int] = None,
         n: Optional[int] = None,
         presence_penalty: Optional[float] = None,
-        response_format: Optional[Type[BaseModel]] = None,
+        response_format: Optional[Union[Type[BaseModel], Dict[str, str]]] = None,
         seed: Optional[int] = None,
         stop: Union[Optional[str], List[str]] = None,
         stream: Optional[bool] = False,
@@ -419,7 +419,7 @@ class _UniClient(_Client, abc.ABC):
         log_query_body,
         log_response_body,
     ):
-        prompt_dict = prompt.kwargs
+        prompt_dict = prompt.components
         if "extra_body" in prompt_dict:
             extra_body = prompt_dict["extra_body"]
             del prompt_dict["extra_body"]
@@ -481,7 +481,7 @@ class _UniClient(_Client, abc.ABC):
         max_completion_tokens: Optional[int] = None,
         n: Optional[int] = None,
         presence_penalty: Optional[float] = None,
-        response_format: Optional[Type[BaseModel]] = None,
+        response_format: Optional[Union[Type[BaseModel], Dict[str, str]]] = None,
         seed: Optional[int] = None,
         stop: Union[Optional[str], List[str]] = None,
         stream: Optional[bool] = None,
@@ -661,34 +661,27 @@ class _UniClient(_Client, abc.ABC):
         system_message = _default(system_message, self._system_message)
         messages = _default(messages, self._messages)
         stateful = _default(stateful, self._stateful)
-        if stateful:
-            if messages:
-                sys_msg_inside = any(msg["role"] == "system" for msg in messages)
-                if not sys_msg_inside and system_message is not None:
-                    messages = [
-                        {"role": "system", "content": system_message},
-                    ] + messages
-                    system_message = None
-                if user_message is not None:
-                    messages += [{"role": "user", "content": user_message}]
-                    user_message = None
-            else:
-                messages = list()
-                if system_message is not None:
-                    messages += [{"role": "system", "content": system_message}]
-                    system_message = None
-                if user_message is not None:
-                    messages += [{"role": "user", "content": user_message}]
-                    user_message = None
-                self._messages = messages
+        if messages:
+            sys_msg_inside = any(msg["role"] == "system" for msg in messages)
+            if not sys_msg_inside and system_message is not None:
+                messages = [
+                    {"role": "system", "content": system_message},
+                ] + messages
+            if user_message is not None:
+                messages += [{"role": "user", "content": user_message}]
+        else:
+            messages = list()
+            if system_message is not None:
+                messages += [{"role": "system", "content": system_message}]
+            if user_message is not None:
+                messages += [{"role": "user", "content": user_message}]
+            self._messages = messages
         return_full_completion = (
             True
             if _default(tools, self._tools)
             else _default(return_full_completion, self._return_full_completion)
         )
         ret = self._generate(
-            user_message=user_message,
-            system_message=system_message,
             messages=messages,
             frequency_penalty=_default(frequency_penalty, self._frequency_penalty),
             logit_bias=_default(logit_bias, self._logit_bias),
@@ -890,8 +883,6 @@ class Unify(_UniClient):
 
     def _generate(  # noqa: WPS234, WPS211
         self,
-        user_message: Optional[str],
-        system_message: Optional[str],
         messages: Optional[List[ChatCompletionMessageParam]],
         *,
         frequency_penalty: Optional[float],
@@ -901,7 +892,7 @@ class Unify(_UniClient):
         max_completion_tokens: Optional[int],
         n: Optional[int],
         presence_penalty: Optional[float],
-        response_format: Optional[Type[BaseModel]],
+        response_format: Optional[Union[Type[BaseModel], Dict[str, str]]],
         seed: Optional[int],
         stop: Union[Optional[str], List[str]],
         stream: Optional[bool],
@@ -926,16 +917,8 @@ class Unify(_UniClient):
         extra_query: Optional[Query],
         **kwargs,
     ) -> Union[Generator[str, None, None], str]:  # noqa: DAR101, DAR201, DAR401
-        contents = []
-        if system_message:
-            contents.append({"role": "system", "content": system_message})
-        if messages:
-            contents.extend(messages)
-        if user_message:
-            contents.append({"role": "user", "content": user_message})
-
         prompt = Prompt(
-            messages=contents,
+            messages=messages,
             frequency_penalty=frequency_penalty,
             logit_bias=logit_bias,
             logprobs=logprobs,
@@ -1141,8 +1124,6 @@ class AsyncUnify(_UniClient):
 
     async def _generate(  # noqa: WPS234, WPS211
         self,
-        user_message: Optional[str],
-        system_message: Optional[str],
         messages: Optional[List[ChatCompletionMessageParam]],
         *,
         frequency_penalty: Optional[float],
@@ -1152,7 +1133,7 @@ class AsyncUnify(_UniClient):
         max_completion_tokens: Optional[int],
         n: Optional[int],
         presence_penalty: Optional[float],
-        response_format: Optional[Type[BaseModel]],
+        response_format: Optional[Union[Type[BaseModel], Dict[str, str]]],
         seed: Optional[int],
         stop: Union[Optional[str], List[str]],
         stream: Optional[bool],
@@ -1177,18 +1158,8 @@ class AsyncUnify(_UniClient):
         extra_query: Optional[Query],
         **kwargs,
     ) -> Union[AsyncGenerator[str, None], str]:  # noqa: DAR101, DAR201, DAR401
-        contents = []
-        assert (
-            messages or user_message
-        ), "You must provide either the user_message or messages!"
-        if system_message:
-            contents.append({"role": "system", "content": system_message})
-        if messages:
-            contents.extend(messages)
-        if user_message:
-            contents.append({"role": "user", "content": user_message})
         prompt = Prompt(
-            messages=contents,
+            messages=messages,
             frequency_penalty=frequency_penalty,
             logit_bias=logit_bias,
             logprobs=logprobs,

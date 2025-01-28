@@ -47,7 +47,7 @@ class _MultiClient(_Client, abc.ABC):
         max_completion_tokens: Optional[int] = None,
         n: Optional[int] = None,
         presence_penalty: Optional[float] = None,
-        response_format: Optional[Type[BaseModel]] = None,
+        response_format: Optional[Union[Type[BaseModel], Dict[str, str]]] = None,
         seed: Optional[int] = None,
         stop: Union[Optional[str], List[str]] = None,
         temperature: Optional[float] = 1.0,
@@ -485,7 +485,7 @@ class _MultiClient(_Client, abc.ABC):
         max_completion_tokens: Optional[int] = None,
         n: Optional[int] = None,
         presence_penalty: Optional[float] = None,
-        response_format: Optional[Type[BaseModel]] = None,
+        response_format: Optional[Union[Type[BaseModel], Dict[str, str]]] = None,
         seed: Optional[int] = None,
         stop: Union[Optional[str], List[str]] = None,
         stream: Optional[bool] = None,
@@ -670,30 +670,30 @@ class _MultiClient(_Client, abc.ABC):
         system_message = _default(system_message, self._system_message)
         messages = _default(messages, self._messages)
         stateful = _default(stateful, self._stateful)
-        if stateful:
-            if messages:
-                # system message only added once at the beginning
-                if isinstance(arg0, str):
+        if messages:
+            # system message only added once at the beginning
+            if isinstance(arg0, str):
+                if isinstance(messages, dict):
+                    messages = {
+                        k: v + [{"role": "user", "content": arg0}]
+                        for k, v in messages.items()
+                    }
+                else:
                     messages += [{"role": "user", "content": arg0}]
-                    arg0 = None
-            else:
-                messages = list()
-                if system_message is not None:
-                    messages += [{"role": "system", "content": system_message}]
-                    system_message = None
-                if isinstance(arg0, str):
-                    messages += [{"role": "user", "content": arg0}]
-                    arg0 = None
-                self._messages = messages
+        else:
+            messages = list()
+            if system_message is not None:
+                messages += [{"role": "system", "content": system_message}]
+            if isinstance(arg0, str):
+                messages += [{"role": "user", "content": arg0}]
+            self._messages = messages
         return_full_completion = (
             True
             if _default(tools, self._tools)
             else _default(return_full_completion, self._return_full_completion)
         )
         ret = self._generate(
-            arg0,
-            system_message=_default(system_message, self._system_message),
-            messages=_default(messages, self._messages),
+            messages=messages,
             frequency_penalty=_default(frequency_penalty, self._frequency_penalty),
             logit_bias=_default(logit_bias, self._logit_bias),
             logprobs=_default(logprobs, self._logprobs),
@@ -747,8 +747,6 @@ class MultiUnify(_MultiClient):
 
     async def _async_gen(
         self,
-        user_message: Optional[str] = None,
-        system_message: Optional[str] = None,
         messages: Optional[
             Union[
                 List[ChatCompletionMessageParam],
@@ -763,7 +761,7 @@ class MultiUnify(_MultiClient):
         max_completion_tokens: Optional[int] = None,
         n: Optional[int] = None,
         presence_penalty: Optional[float] = None,
-        response_format: Optional[Type[BaseModel]] = None,
+        response_format: Optional[Union[Type[BaseModel], Dict[str, str]]] = None,
         seed: Optional[int] = None,
         stop: Union[Optional[str], List[str]] = None,
         temperature: Optional[float] = 1.0,
@@ -786,8 +784,6 @@ class MultiUnify(_MultiClient):
         **kwargs,
     ) -> Union[Union[str, ChatCompletion], Dict[str, Union[str, ChatCompletion]]]:
         kw = dict(
-            user_message=user_message,
-            system_message=system_message,
             messages=messages,
             max_completion_tokens=max_completion_tokens,
             stop=stop,
@@ -907,8 +903,6 @@ class AsyncMultiUnify(_MultiClient):
 
     async def _generate(  # noqa: WPS234, WPS211
         self,
-        user_message: Optional[str] = None,
-        system_message: Optional[str] = None,
         messages: Optional[
             Union[
                 List[ChatCompletionMessageParam],
@@ -923,7 +917,7 @@ class AsyncMultiUnify(_MultiClient):
         max_completion_tokens: Optional[int] = None,
         n: Optional[int] = None,
         presence_penalty: Optional[float] = None,
-        response_format: Optional[Type[BaseModel]] = None,
+        response_format: Optional[Union[Type[BaseModel], Dict[str, str]]] = None,
         seed: Optional[int] = None,
         stop: Union[Optional[str], List[str]] = None,
         temperature: Optional[float] = 1.0,
@@ -946,8 +940,6 @@ class AsyncMultiUnify(_MultiClient):
         **kwargs,
     ) -> Dict[str, str]:
         kw = dict(
-            user_message=user_message,
-            system_message=system_message,
             messages=messages,
             max_completion_tokens=max_completion_tokens,
             stop=stop,

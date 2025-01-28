@@ -41,7 +41,7 @@ class _Client(ABC):
         max_completion_tokens: Optional[int],
         n: Optional[int],
         presence_penalty: Optional[float],
-        response_format: Optional[Type[BaseModel]],
+        response_format: Optional[Union[Type[BaseModel], Dict[str, str]]],
         seed: Optional[int],
         stop: Union[Optional[str], List[str]],
         stream: Optional[bool],
@@ -244,7 +244,7 @@ class _Client(ABC):
         return self._presence_penalty
 
     @property
-    def response_format(self) -> Optional[Type[BaseModel]]:
+    def response_format(self) -> Optional[Union[Type[BaseModel], Dict[str, str]]]:
         """
         Get the default response format, if set.
 
@@ -977,8 +977,6 @@ class _Client(ABC):
     @abstractmethod
     def _generate(
         self,
-        user_message: str,
-        system_message: str,
         messages: Optional[
             Union[
                 List[ChatCompletionMessageParam],
@@ -993,7 +991,7 @@ class _Client(ABC):
         max_completion_tokens: Optional[int],
         n: Optional[int],
         presence_penalty: Optional[float],
-        response_format: Optional[Type[BaseModel]],
+        response_format: Optional[Union[Type[BaseModel], Dict[str, str]]],
         seed: Optional[int],
         stop: Union[Optional[str], List[str]],
         stream: Optional[bool],
