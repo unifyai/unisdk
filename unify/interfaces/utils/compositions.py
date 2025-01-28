@@ -1,5 +1,6 @@
 from __future__ import annotations
 import json
+from contextvars import Token
 
 from ...utils.helpers import _validate_api_key, _get_and_maybe_create_project
 from .logs import _add_to_log, _to_log_ids, _to_logs
@@ -539,3 +540,51 @@ def group_logs(
         )
         for k, v in get_groups(key=key, project=project, api_key=api_key).items()
     }
+
+
+def start_log(
+    *,
+    project: Optional[str] = None,
+    api_key: Optional[str] = None,
+    **entries,
+) -> Token:
+    """
+    Start a new log, such that all subsequent calls to unify.log will continue to
+    populate the currently open log.
+
+    Args:
+        project: Name of the project to get logs from.
+
+        api_key: If specified, unify API key to be used. Defaults to the value in the
+        `UNIFY_KEY` environment variable.
+
+        entries: The entries to start the log. Future calls to unify.log will add
+        more entries to the current logging context.
+
+    Returns:
+        The token which will need to be used to end the log.
+    """
+    lg = unify.log(
+        project=project,
+        new=True,
+        api_key=api_key,
+        **entries,
+    )
+    return ACTIVE_LOG.set(ACTIVE_LOG.get() + [lg])
+
+
+def end_log(
+    token: Token,
+) -> unify.Log:
+    """
+    Closes the currently active logging context.
+
+    Args:
+        token: The token for the logging context to end.
+
+    Returns:
+        The Log instance for the full final log.
+    """
+    log = ACTIVE_LOG.get()[-1]
+    ACTIVE_LOG.reset(token)
+    return log
