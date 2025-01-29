@@ -7,7 +7,6 @@ import datetime
 from ..utils.helpers import _validate_api_key, _prune_dict
 from .utils.logs import _handle_special_types
 from .utils.compositions import *
-from unify import UNIFY_DIR
 
 
 # Log #
@@ -254,7 +253,7 @@ def traced(
                 2,
             ),
             "code": f"```python\n{code}\n```",
-            "code_fpath": os.path.relpath(inspect.getsourcefile(fn), start=UNIFY_DIR),
+            "code_fpath": inspect.getsourcefile(fn),
             "code_start_line": start_line,
             "inputs": inputs["kw"] if span_type == "llm-cached" else inputs,
             "outputs": None,
