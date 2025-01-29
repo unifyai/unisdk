@@ -735,7 +735,7 @@ class _UniClient(_Client, abc.ABC):
             if self._messages is None:
                 self._messages = []
             self._messages += msg
-        else:
+        elif self._messages:
             self._messages.clear()
         return ret
 
