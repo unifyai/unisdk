@@ -13,6 +13,7 @@ else:
 CLIENT_LOGGING = False
 LOCAL_MODELS = dict()
 SEED = None
+UNIFY_DIR = os.path.dirname(__file__)
 
 
 def set_seed(seed: int) -> None:

@@ -7,6 +7,7 @@ import datetime
 from ..utils.helpers import _validate_api_key, _prune_dict
 from .utils.logs import _handle_special_types
 from .utils.compositions import *
+from unify import UNIFY_DIR
 
 
 # Log #
@@ -238,6 +239,8 @@ def traced(
         bound_args = signature.bind(*args, **kwargs)
         bound_args.apply_defaults()
         inputs = bound_args.arguments
+        lines, start_line = inspect.getsourcelines(fn)
+        code = "".join(lines)
         new_span = {
             "id": str(uuid.uuid4()),
             "type": span_type,
@@ -249,7 +252,9 @@ def traced(
                 0.0 if not SPAN.get() else t1 - RUNNING_TIME.get(),
                 2,
             ),
-            "code": f"```python\n{inspect.getsource(fn)}\n```",
+            "code": f"```python\n{code}\n```",
+            "code_fpath": os.path.relpath(inspect.getsourcefile(fn), start=UNIFY_DIR),
+            "code_start_line": start_line,
             "inputs": inputs["kw"] if span_type == "llm-cached" else inputs,
             "outputs": None,
             "errors": None,
