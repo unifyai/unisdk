@@ -40,6 +40,21 @@ class TestUnifyBasics:
         )
         client.generate("hello")
 
+    def test_copy_client(self) -> None:
+        client = Unify(
+            endpoint="gpt-4o@openai",
+        )
+        client.set_system_message("you are a helpful agent")
+        clone = client.copy()
+        assert clone.endpoint == "gpt-4o@openai"
+        assert clone.system_message == "you are a helpful agent"
+        clone.set_system_message("you are not helpful")
+        assert clone.system_message == "you are not helpful"
+        assert client.system_message == "you are a helpful agent"
+        clone.set_endpoint("o1@openai")
+        assert clone.endpoint == "o1@openai"
+        assert client.endpoint == "gpt-4o@openai"
+
     def test_structured_output(self) -> None:
         client = Unify(
             endpoint="gpt-4o@openai",

@@ -237,7 +237,7 @@ class _UniClient(_Client, abc.ABC):
         Raises:
             UnifyError: If the API key is missing.
         """
-        self._constructor_args = dict(
+        self._base_constructor_args = dict(
             system_message=system_message,
             messages=messages,
             frequency_penalty=frequency_penalty,
@@ -275,7 +275,13 @@ class _UniClient(_Client, abc.ABC):
             extra_query=extra_query,
             **kwargs,
         )
-        super().__init__(**self._constructor_args)
+        super().__init__(**self._base_constructor_args)
+        self._constructor_args = dict(
+            endpoint=endpoint,
+            model=model,
+            provider=provider,
+            **self._base_constructor_args,
+        )
         if endpoint and (model or provider):
             raise Exception(
                 "if the model or provider are passed, then the endpoint must not be"

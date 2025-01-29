@@ -214,7 +214,7 @@ class _MultiClient(_Client, abc.ABC):
         Raises:
             UnifyError: If the API key is missing.
         """
-        self._constructor_args = dict(
+        self._base_constructor_args = dict(
             system_message=system_message,
             messages=messages,
             frequency_penalty=frequency_penalty,
@@ -252,7 +252,11 @@ class _MultiClient(_Client, abc.ABC):
             extra_query=extra_query,
             **kwargs,
         )
-        super().__init__(**self._constructor_args)
+        super().__init__(**self._base_constructor_args)
+        self._constructor_args = dict(
+            endpoints=endpoints,
+            **self._base_constructor_args,
+        )
         if isinstance(endpoints, str):
             endpoints = [endpoints]
         else:

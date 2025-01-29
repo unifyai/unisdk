@@ -72,8 +72,7 @@ def map(fn: callable, *args, mode="threading", from_args=False, **kwargs) -> Any
         pbar.set_description("Iterations Completed")
 
         returns = list()
-        for a_n_kw in args_n_kwargs:
-            a, kw = a_n_kw
+        for a, kw in args_n_kwargs:
             returns.append(fn(*a, **kw))
             pbar.update(1)
         pbar.close()

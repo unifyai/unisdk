@@ -135,7 +135,6 @@ class _Client(ABC):
         # python client arguments
         self.set_stateful(stateful)
         self.set_return_full_completion(return_full_completion)
-        self._generate_raw = self._generate
         self.set_traced(traced)
         self.set_cache(cache)
         # passthrough arguments
@@ -641,7 +640,10 @@ class _Client(ABC):
         self._presence_penalty = value
         return self
 
-    def set_response_format(self, value: BaseModel) -> Self:
+    def set_response_format(
+        self,
+        value: Optional[Union[Type[BaseModel], Dict[str, str]]],
+    ) -> Self:
         """
         Set the default response format.  # noqa: DAR101.
 
@@ -970,6 +972,55 @@ class _Client(ABC):
             ) from e
         except (KeyError, ValueError) as e:
             raise ValueError("Error parsing JSON response.") from e
+
+    # Methods #
+    # --------#
+
+    def copy(self):
+        # noinspection PyUnresolvedReferences,PyArgumentList
+        return type(self)(
+            **{
+                **self._constructor_args,
+                **dict(
+                    system_message=self._system_message,
+                    messages=self._messages,
+                    frequency_penalty=self._frequency_penalty,
+                    logit_bias=self._logit_bias,
+                    logprobs=self._logprobs,
+                    top_logprobs=self._top_logprobs,
+                    max_completion_tokens=self._max_completion_tokens,
+                    n=self._n,
+                    presence_penalty=self._presence_penalty,
+                    response_format=self._response_format,
+                    seed=self._seed,
+                    stop=self._stop,
+                    stream=self._stream,
+                    stream_options=self._stream_options,
+                    temperature=self._temperature,
+                    top_p=self._top_p,
+                    tools=self._tools,
+                    tool_choice=self._tool_choice,
+                    parallel_tool_calls=self._parallel_tool_calls,
+                    # platform arguments
+                    use_custom_keys=self._use_custom_keys,
+                    tags=self._tags,
+                    drop_params=self._drop_params,
+                    region=self._region,
+                    log_query_body=self._log_query_body,
+                    log_response_body=self._log_response_body,
+                    api_key=self._api_key,
+                    # python client arguments
+                    stateful=self._stateful,
+                    return_full_completion=self._return_full_completion,
+                    traced=self._traced,
+                    cache=self._cache,
+                    # passthrough arguments
+                    extra_headers=self._extra_headers,
+                    extra_query=self._extra_query,
+                    extra_body=self._extra_body,
+                ),
+            },
+        )
 
     # Abstract Methods #
     # -----------------#
