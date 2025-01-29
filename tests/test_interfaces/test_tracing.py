@@ -123,7 +123,7 @@ def test_traced_uni_llm():
     trace = unify.get_logs()[0].entries["trace"]
 
     assert trace["type"] == "llm"
-    assert trace["span_name"] == "create"
+    assert trace["span_name"] == "gpt-4o@openai"
     assert trace["offset"] == 0
     assert trace["inputs"] == {
         "messages": [{"role": "user", "content": "hello"}],
@@ -160,7 +160,7 @@ def test_traced_uni_llm_w_caching():
     trace = unify.get_logs()[0].entries["trace"]
 
     assert trace["type"] == "llm-cached"
-    assert trace["span_name"] == "_get_cache_traced"
+    assert trace["span_name"] == "gpt-4o@openai"
     assert trace["offset"] == 0
     assert trace["inputs"] == {
         "messages": [{"role": "user", "content": "hello"}],

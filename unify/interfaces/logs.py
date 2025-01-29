@@ -219,6 +219,7 @@ def traced(
     *,
     prune_empty: bool = True,
     span_type: str = "function",
+    name: Optional[str] = None,
     trace_contexts: Optional[List[str]] = None,
 ):
     if fn is None:
@@ -245,7 +246,7 @@ def traced(
             "id": str(uuid.uuid4()),
             "type": span_type,
             "parent_span_id": (None if not SPAN.get() else SPAN.get()["id"]),
-            "span_name": fn.__name__,
+            "span_name": fn.__name__ if name is None else name,
             "exec_time": None,
             "timestamp": ts,
             "offset": round(
@@ -303,7 +304,7 @@ def traced(
             "id": str(uuid.uuid4()),
             "type": span_type,
             "parent_span_id": (None if not SPAN.get() else SPAN.get()["id"]),
-            "span_name": fn.__name__,
+            "span_name": fn.__name__ if name is None else name,
             "exec_time": None,
             "offset": round(
                 0.0 if not SPAN.get() else t1 - RUNNING_TIME.get(),

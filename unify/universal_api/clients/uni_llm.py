@@ -795,6 +795,7 @@ class Unify(_UniClient):
                     chat_completion = unify.traced(
                         self._client.chat.completions.create,
                         span_type="llm",
+                        name=endpoint,
                     )(**kw)
                 else:
                     chat_completion = self._client.chat.completions.create(**kw)
@@ -846,11 +847,14 @@ class Unify(_UniClient):
         if cache is True or _get_caching() and cache is None:
             if self._traced:
 
-                @unify.traced(span_type="llm-cached")
                 def _get_cache_traced(**kw):
                     return _get_cache(fn_name="chat.completions.create", kw=kw)
 
-                chat_completion = _get_cache_traced(**kw)
+                chat_completion = unify.traced(
+                    _get_cache_traced,
+                    span_type="llm-cached",
+                    name=endpoint,
+                )(**kw)
             else:
                 chat_completion = _get_cache(fn_name="chat.completions.create", kw=kw)
         if chat_completion is None:
@@ -869,6 +873,7 @@ class Unify(_UniClient):
                         chat_completion = unify.traced(
                             chat_method,
                             span_type="llm",
+                            name=endpoint,
                         )(**kw)
                     else:
                         chat_completion = chat_method(**kw)
@@ -1045,6 +1050,7 @@ class AsyncUnify(_UniClient):
                     async_stream = await unify.traced(
                         self._client.chat.completions.create,
                         span_type="llm",
+                        name=endpoint,
                     )(**kw)
                 else:
                     async_stream = await self._client.chat.completions.create(**kw)
@@ -1106,6 +1112,7 @@ class AsyncUnify(_UniClient):
                         chat_completion = await unify.traced(
                             self._client.chat.completions.create,
                             span_type="llm",
+                            name=endpoint,
                         )(**kw)
                     else:
                         chat_completion = await self._client.chat.completions.create(
