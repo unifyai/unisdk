@@ -282,8 +282,6 @@ def traced(
             # ToDo: ensure there is a global log set upon the first trace,
             #  and removed on the last
             trace = SPAN.get()
-            if span_type.lower() in ("llm", "llm-cached") and trace["outputs"]:
-                trace["outputs"] = json.loads(trace["outputs"].json())
             if prune_empty:
                 trace = _prune_dict(trace)
             unify.add_log_entries(trace=trace, overwrite=True)
