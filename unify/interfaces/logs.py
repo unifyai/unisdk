@@ -4,7 +4,7 @@ import time
 import uuid
 import datetime
 
-from ..utils.helpers import _validate_api_key, _prune_dict
+from ..utils.helpers import _validate_api_key, _prune_dict, _make_json_serializable
 from .utils.logs import _handle_special_types
 from .utils.compositions import *
 
@@ -239,6 +239,8 @@ def traced(
         bound_args = signature.bind(*args, **kwargs)
         bound_args.apply_defaults()
         inputs = bound_args.arguments
+        inputs = inputs["kw"] if span_type == "llm-cached" else inputs
+        inputs = _make_json_serializable(inputs)
         lines, start_line = inspect.getsourcelines(fn)
         code = "".join(lines)
         new_span = {
@@ -255,7 +257,7 @@ def traced(
             "code": f"```python\n{code}\n```",
             "code_fpath": inspect.getsourcefile(fn),
             "code_start_line": start_line,
-            "inputs": inputs["kw"] if span_type == "llm-cached" else inputs,
+            "inputs": inputs,
             "outputs": None,
             "errors": None,
             "child_spans": [],
@@ -274,7 +276,9 @@ def traced(
             t2 = time.perf_counter()
             exec_time = t2 - t1
             SPAN.get()["exec_time"] = round(exec_time, 2)
-            SPAN.get()["outputs"] = None if result is None else result
+            outputs = None if result is None else result
+            outputs = _make_json_serializable(outputs)
+            SPAN.get()["outputs"] = outputs
             # ToDo: ensure there is a global log set upon the first trace,
             #  and removed on the last
             trace = SPAN.get()

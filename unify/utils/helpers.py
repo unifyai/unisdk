@@ -1,8 +1,9 @@
 import json
 import os
 import openai
+import inspect
 import threading
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Tuple, Optional, Union
 
 
 import unify
@@ -36,6 +37,23 @@ def _dict_aligns_with_pydantic(dict_in: Dict, pydantic_cls: type(BaseModel)) -> 
         return True
     except ValidationError:
         return False
+
+
+def _make_json_serializable(
+    item: Union[Dict, List, Tuple],
+) -> Union[Dict, List, Tuple]:
+    if isinstance(item, list):
+        return [_make_json_serializable(i) for i in item]
+    elif isinstance(item, dict):
+        return {k: _make_json_serializable(v) for k, v in item.items()}
+    elif isinstance(item, tuple):
+        return tuple(_make_json_serializable(i) for i in item)
+    elif inspect.isclass(item) and issubclass(item, BaseModel):
+        return item.schema()
+    elif isinstance(item, BaseModel):
+        return item.dict()
+    else:
+        return item
 
 
 def _get_and_maybe_create_project(
