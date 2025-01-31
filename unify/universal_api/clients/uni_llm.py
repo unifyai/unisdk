@@ -79,7 +79,7 @@ class _UniClient(_Client, abc.ABC):
         stateful: bool = False,
         return_full_completion: bool = False,
         traced: bool = False,
-        cache: Optional[bool] = None,
+        cache: Optional[Union[bool, str]] = None,
         # passthrough arguments
         extra_headers: Optional[Headers] = None,
         extra_query: Optional[Query] = None,
@@ -218,9 +218,9 @@ class _UniClient(_Client, abc.ABC):
 
             cache: If True, then the arguments will be stored in a local cache file, and
             any future calls with identical arguments will read from the cache instead
-            of running the LLM query. This can help to save costs and also debug
-            multi-step LLM applications, while keeping early steps fixed.
-            This argument only has any effect when stream=False.
+            of running the LLM query. If "write" then the cache will only be written
+            to, and if "read" then the cache will only be read from. This argument
+            only has any effect when stream=False.
 
             extra_headers: Additional "passthrough" headers for the request which are
             provider-specific, and are not part of the OpenAI standard. They are handled
@@ -507,7 +507,7 @@ class _UniClient(_Client, abc.ABC):
         # python client arguments
         stateful: Optional[bool] = None,
         return_full_completion: Optional[bool] = None,
-        cache: Optional[bool] = None,
+        cache: Optional[Union[bool, str]] = None,
         # passthrough arguments
         extra_headers: Optional[Headers] = None,
         extra_query: Optional[Query] = None,
@@ -641,9 +641,9 @@ class _UniClient(_Client, abc.ABC):
 
             cache: If True, then the arguments will be stored in a local cache file, and
             any future calls with identical arguments will read from the cache instead
-            of running the LLM query. This can help to save costs and also debug
-            multi-step LLM applications, while keeping early steps fixed.
-            This argument only has any effect when stream=False. Defaults to False.
+            of running the LLM query. If "write" then the cache will only be written
+            to, and if "read" then the cache will only be read from. This argument
+            only has any effect when stream=False.
 
             extra_headers: Additional "passthrough" headers for the request which are
             provider-specific, and are not part of the OpenAI standard. They are handled
@@ -824,7 +824,7 @@ class Unify(_UniClient):
         log_response_body: Optional[bool],
         # python client arguments
         return_full_completion: bool,
-        cache: bool,
+        cache: Union[bool, str],
     ) -> Union[str, ChatCompletion]:
         kw = self._handle_kw(
             prompt=prompt,
@@ -844,7 +844,9 @@ class Unify(_UniClient):
         else:
             chat_method = self._client.chat.completions.create
         chat_completion = None
-        if cache is True or _get_caching() and cache is None:
+        if cache in [True, "read"] or (
+            _get_caching() in [True, "read"] and cache is None
+        ):
             if self._traced:
 
                 def _get_cache_traced(**kw):
@@ -881,7 +883,9 @@ class Unify(_UniClient):
                         print(f"done (thread {threading.get_ident()})")
             except openai.APIStatusError as e:
                 raise Exception(e.message)
-            if cache is True or _get_caching() and cache is None:
+            if cache in [True, "write"] or (
+                _get_caching() in [True, "write"] and cache is None
+            ):
                 _write_to_cache(
                     fn_name="chat.completions.create",
                     kw=kw,
@@ -924,7 +928,7 @@ class Unify(_UniClient):
         log_response_body: Optional[bool],
         # python client arguments
         return_full_completion: bool,
-        cache: bool,
+        cache: Union[bool, str],
         # passthrough arguments
         extra_headers: Optional[Headers],
         extra_query: Optional[Query],
@@ -1077,7 +1081,7 @@ class AsyncUnify(_UniClient):
         log_response_body: Optional[bool],
         # python client arguments
         return_full_completion: bool,
-        cache: bool,
+        cache: Union[bool, str],
     ) -> Union[str, ChatCompletion]:
         kw = self._handle_kw(
             prompt=prompt,
@@ -1167,7 +1171,7 @@ class AsyncUnify(_UniClient):
         log_response_body: Optional[bool],
         # python client arguments
         return_full_completion: bool,
-        cache: bool,
+        cache: Union[bool, str],
         # passthrough arguments
         extra_headers: Optional[Headers],
         extra_query: Optional[Query],

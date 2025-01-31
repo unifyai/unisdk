@@ -20,17 +20,77 @@ def test_basic_caching() -> None:
         r0 = client.generate(user_message="hello", cache=True)
         t0 = time.perf_counter() - t
         assert os.path.exists(local_cache_path)
+        mt0 = os.path.getmtime(local_cache_path)
         t = time.perf_counter()
         r1 = client.generate(user_message="hello", cache=True)
+        mt1 = os.path.getmtime(local_cache_path)
         t1 = time.perf_counter() - t
         assert t1 < t0
+        assert mt0 == mt1
         assert r0 == r1
         os.remove(local_cache_path)
         global_cache_path = local_cache_path.replace(".test_cache.json", ".cache.json")
         unify.utils._caching._cache_fpath = global_cache_path
-    except:
+    except Exception as e:
         if os.path.exists(local_cache_path):
             os.remove(local_cache_path)
+        raise e
+
+
+# noinspection PyBroadException
+def test_cache_writing() -> None:
+    local_cache_path = _cache_fpath.replace(".cache.json", ".test_cache.json")
+    try:
+        unify.utils._caching._cache_fpath = local_cache_path
+        if os.path.exists(local_cache_path):
+            os.remove(local_cache_path)
+        client = Unify(
+            endpoint="gpt-4o@openai",
+        )
+        client.generate(user_message="hello", cache="write")
+        assert os.path.exists(local_cache_path)
+        mt0 = os.path.getmtime(local_cache_path)
+        client.generate(user_message="hello", cache="write")
+        mt1 = os.path.getmtime(local_cache_path)
+        assert mt0 < mt1
+        os.remove(local_cache_path)
+        global_cache_path = local_cache_path.replace(".test_cache.json", ".cache.json")
+        unify.utils._caching._cache_fpath = global_cache_path
+    except Exception as e:
+        if os.path.exists(local_cache_path):
+            os.remove(local_cache_path)
+        raise e
+
+
+# noinspection PyBroadException
+def test_cache_reading() -> None:
+    local_cache_path = _cache_fpath.replace(".cache.json", ".test_cache.json")
+    try:
+        unify.utils._caching._cache_fpath = local_cache_path
+        if os.path.exists(local_cache_path):
+            os.remove(local_cache_path)
+        client = Unify(
+            endpoint="gpt-4o@openai",
+        )
+        t = time.perf_counter()
+        r0 = client.generate(user_message="hello", cache="write")
+        t0 = time.perf_counter() - t
+        assert os.path.exists(local_cache_path)
+        mt0 = os.path.getmtime(local_cache_path)
+        t = time.perf_counter()
+        r1 = client.generate(user_message="hello", cache="read")
+        mt1 = os.path.getmtime(local_cache_path)
+        t1 = time.perf_counter() - t
+        assert t1 < t0
+        assert mt0 == mt1
+        assert r0 == r1
+        os.remove(local_cache_path)
+        global_cache_path = local_cache_path.replace(".test_cache.json", ".cache.json")
+        unify.utils._caching._cache_fpath = global_cache_path
+    except Exception as e:
+        if os.path.exists(local_cache_path):
+            os.remove(local_cache_path)
+        raise e
 
 
 if __name__ == "__main__":

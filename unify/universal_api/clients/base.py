@@ -63,7 +63,7 @@ class _Client(ABC):
         stateful: bool,
         return_full_completion: bool,
         traced: bool,
-        cache: bool,
+        cache: Union[bool, str],
         # passthrough arguments
         extra_headers: Optional[Headers],
         extra_query: Optional[Query],
@@ -1061,7 +1061,7 @@ class _Client(ABC):
         log_response_body: Optional[bool],
         # python client arguments
         return_full_completion: bool,
-        cache: bool,
+        cache: Union[bool, str],
         # passthrough arguments
         extra_headers: Optional[Headers],
         extra_query: Optional[Query],

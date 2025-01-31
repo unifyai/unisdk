@@ -67,7 +67,7 @@ class _MultiClient(_Client, abc.ABC):
         stateful: bool = False,
         return_full_completion: bool = False,
         traced: bool = False,
-        cache: bool = None,
+        cache: Union[bool, str] = None,
         # passthrough arguments
         extra_headers: Optional[Headers] = None,
         extra_query: Optional[Query] = None,
@@ -195,9 +195,9 @@ class _MultiClient(_Client, abc.ABC):
 
             cache: If True, then the arguments will be stored in a local cache file, and
             any future calls with identical arguments will read from the cache instead
-            of running the LLM query. This can help to save costs and also debug
-            multi-step LLM applications, while keeping early steps fixed.
-            This argument only has any effect when stream=False.
+            of running the LLM query. If "write" then the cache will only be written
+            to, and if "read" then the cache will only be read from. This argument
+            only has any effect when stream=False.
 
             extra_headers: Additional "passthrough" headers for the request which are
             provider-specific, and are not part of the OpenAI standard. They are handled
@@ -509,7 +509,7 @@ class _MultiClient(_Client, abc.ABC):
         # python client arguments
         stateful: Optional[bool] = None,
         return_full_completion: Optional[bool] = None,
-        cache: Optional[bool] = None,
+        cache: Optional[Union[bool, str]] = None,
         # passthrough arguments
         extra_headers: Optional[Headers] = None,
         extra_query: Optional[Query] = None,
@@ -648,9 +648,9 @@ class _MultiClient(_Client, abc.ABC):
 
             cache: If True, then the arguments will be stored in a local cache file, and
             any future calls with identical arguments will read from the cache instead
-            of running the LLM query. This can help to save costs and also debug
-            multi-step LLM applications, while keeping early steps fixed.
-            This argument only has any effect when stream=False. Defaults to False.
+            of running the LLM query. If "write" then the cache will only be written
+            to, and if "read" then the cache will only be read from. This argument
+            only has any effect when stream=False.
 
             extra_headers: Additional "passthrough" headers for the request which are
             provider-specific, and are not part of the OpenAI standard. They are handled
