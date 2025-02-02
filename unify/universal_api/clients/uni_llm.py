@@ -1,5 +1,7 @@
 # global
 import abc
+import json
+
 import openai
 import threading
 from pydantic import BaseModel
@@ -219,8 +221,10 @@ class _UniClient(_Client, abc.ABC):
             cache: If True, then the arguments will be stored in a local cache file, and
             any future calls with identical arguments will read from the cache instead
             of running the LLM query. If "write" then the cache will only be written
-            to, and if "read" then the cache will only be read from. This argument
-            only has any effect when stream=False.
+            to, if "read" then the cache will be read from if a cache is available but
+            will not write, and if "read-only" then the argument must be present in the
+            cache, else an exception will be raised. This argument only has any effect
+            when stream=False.
 
             extra_headers: Additional "passthrough" headers for the request which are
             provider-specific, and are not part of the OpenAI standard. They are handled
@@ -642,8 +646,10 @@ class _UniClient(_Client, abc.ABC):
             cache: If True, then the arguments will be stored in a local cache file, and
             any future calls with identical arguments will read from the cache instead
             of running the LLM query. If "write" then the cache will only be written
-            to, and if "read" then the cache will only be read from. This argument
-            only has any effect when stream=False.
+            to, if "read" then the cache will be read from if a cache is available but
+            will not write, and if "read-only" then the argument must be present in the
+            cache, else an exception will be raised. This argument only has any effect
+            when stream=False.
 
             extra_headers: Additional "passthrough" headers for the request which are
             provider-specific, and are not part of the OpenAI standard. They are handled
@@ -844,8 +850,8 @@ class Unify(_UniClient):
         else:
             chat_method = self._client.chat.completions.create
         chat_completion = None
-        if cache in [True, "read"] or (
-            _get_caching() in [True, "read"] and cache is None
+        if cache in [True, "read", "read-only"] or (
+            _get_caching() in [True, "read", "read-only"] and cache is None
         ):
             if self._traced:
 
@@ -859,6 +865,11 @@ class Unify(_UniClient):
                 )(**kw)
             else:
                 chat_completion = _get_cache(fn_name="chat.completions.create", kw=kw)
+            if chat_completion is None and "read-only" in [cache, _get_caching()]:
+                raise Exception(
+                    f"read-only cache mode, "
+                    f"but failed to load cache for arguments {json.dumps(kw, indent=4)}",
+                )
         if chat_completion is None:
             try:
                 if endpoint in LOCAL_MODELS:

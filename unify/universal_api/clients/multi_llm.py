@@ -196,8 +196,10 @@ class _MultiClient(_Client, abc.ABC):
             cache: If True, then the arguments will be stored in a local cache file, and
             any future calls with identical arguments will read from the cache instead
             of running the LLM query. If "write" then the cache will only be written
-            to, and if "read" then the cache will only be read from. This argument
-            only has any effect when stream=False.
+            to, if "read" then the cache will be read from if a cache is available but
+            will not write, and if "read-only" then the argument must be present in the
+            cache, else an exception will be raised. This argument only has any effect
+            when stream=False.
 
             extra_headers: Additional "passthrough" headers for the request which are
             provider-specific, and are not part of the OpenAI standard. They are handled
@@ -649,8 +651,10 @@ class _MultiClient(_Client, abc.ABC):
             cache: If True, then the arguments will be stored in a local cache file, and
             any future calls with identical arguments will read from the cache instead
             of running the LLM query. If "write" then the cache will only be written
-            to, and if "read" then the cache will only be read from. This argument
-            only has any effect when stream=False.
+            to, if "read" then the cache will be read from if a cache is available but
+            will not write, and if "read-only" then the argument must be present in the
+            cache, else an exception will be raised. This argument only has any effect
+            when stream=False.
 
             extra_headers: Additional "passthrough" headers for the request which are
             provider-specific, and are not part of the OpenAI standard. They are handled
