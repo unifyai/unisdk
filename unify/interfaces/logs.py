@@ -254,6 +254,7 @@ def traced(
                 0.0 if not SPAN.get() else t1 - RUNNING_TIME.get(),
                 2,
             ),
+            "cost": 0.0,
             "code": f"```python\n{code}\n```",
             "code_fpath": inspect.getsourcefile(fn),
             "code_start_line": start_line,
@@ -273,12 +274,27 @@ def traced(
             new_span["errors"] = str(e)
             raise e
         finally:
+            if result is None:
+                outputs = None
+                if SPAN.get()["type"] == "llm-cached":
+                    # tried to load cache but nothing found,
+                    # do not add this failed cache load to trace
+                    if token.old_value is token.MISSING:
+                        SPAN.reset(token)
+                    else:
+                        SPAN.reset(token)
+                    if log_token:
+                        ACTIVE_LOG.set([])
+                    return
+            else:
+                outputs = _make_json_serializable(result)
             t2 = time.perf_counter()
             exec_time = t2 - t1
             SPAN.get()["exec_time"] = round(exec_time, 2)
-            outputs = None if result is None else result
-            outputs = _make_json_serializable(outputs)
             SPAN.get()["outputs"] = outputs
+            if SPAN.get()["type"] == "llm":
+                breakpoint()
+                SPAN.get()["cost"] = outputs["usage"]["cost"]
             # ToDo: ensure there is a global log set upon the first trace,
             #  and removed on the last
             trace = SPAN.get()
@@ -290,6 +306,7 @@ def traced(
             else:
                 SPAN.reset(token)
                 SPAN.get()["child_spans"].append(new_span)
+                SPAN.get()["cost"] += new_span["cost"]
             if log_token:
                 ACTIVE_LOG.set([])
 
