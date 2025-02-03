@@ -260,12 +260,15 @@ def test_get_param_by_version():
 
 @_handle_project
 def test_get_experiment_by_version():
-    unify.log(params={"experiment": "first_try"})
-    unify.log(params={"experiment": "second_try"})
-    unify.log(params={"experiment": "third_try"})
-    assert unify.get_experiment_by_version(0) == "first_try"
-    assert unify.get_experiment_by_version(1) == "second_try"
-    assert unify.get_experiment_by_version(2) == "third_try"
+    unify.log(params={"experiment": "first_try"}, x=0)
+    unify.log(params={"experiment": "second_try"}, x=1)
+    unify.log(params={"experiment": "third_try"}, x=2)
+    assert unify.get_experiment_by_version(-1) == ("2", "third_try")
+    assert unify.get_experiment_by_version(-2) == ("1", "second_try")
+    assert unify.get_experiment_by_version(-3) == ("0", "first_try")
+    assert unify.get_experiment_by_version(0) == ("0", "first_try")
+    assert unify.get_experiment_by_version(1) == ("1", "second_try")
+    assert unify.get_experiment_by_version(2) == ("2", "third_try")
 
 
 # Context Handlers #

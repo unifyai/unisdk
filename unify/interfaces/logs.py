@@ -9,8 +9,8 @@ from .utils.logs import _handle_special_types
 from .utils.compositions import *
 
 
-# Log #
-# ----#
+# Context Handlers #
+# -----------------#
 
 
 # noinspection PyShadowingBuiltins
@@ -23,7 +23,7 @@ class Log:
         ts: Optional[datetime] = None,
         project: Optional[str] = None,
         api_key: Optional[str] = None,
-        params: Dict[str, Any] = None,
+        params: Dict[str, Tuple[str, Any]] = None,
         **entries,
     ):
         self._id = id
@@ -48,7 +48,7 @@ class Log:
         return self._entries
 
     @property
-    def params(self) -> Dict[str, Any]:
+    def params(self) -> Dict[str, Tuple[str, Any]]:
         return self._params
 
     # Dunders
@@ -67,7 +67,9 @@ class Log:
     # Public
 
     def download(self):
-        self._entries = get_log_by_id(id=self._id, api_key=self._api_key)._entries
+        log = get_log_by_id(id=self._id, api_key=self._api_key)
+        self._params = log._params
+        self._entries = log._entries
 
     def add_entries(self, **entries) -> None:
         add_log_entries(logs=self._id, api_key=self._api_key, **entries)
