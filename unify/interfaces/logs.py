@@ -293,7 +293,6 @@ def traced(
             SPAN.get()["exec_time"] = round(exec_time, 2)
             SPAN.get()["outputs"] = outputs
             if SPAN.get()["type"] == "llm":
-                breakpoint()
                 SPAN.get()["cost"] = outputs["usage"]["cost"]
             # ToDo: ensure there is a global log set upon the first trace,
             #  and removed on the last
