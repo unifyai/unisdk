@@ -773,6 +773,28 @@ async def test_with_params_async():
     ]
 
 
+# Experiment
+
+
+@_handle_project
+def test_with_experiment():
+    with unify.Experiment(), unify.Params(sys_msg="you are a helpful assistant"):
+        unify.log(x=0)
+        unify.log(x=1)
+    assert len(unify.get_logs_with_fields("experiment")) == 2
+    assert unify.get_experiment_by_version(0) == ("0", 0)
+    # ToDo work out why this is returning as an int and not a str,
+    # the column type is a string, so not sure why it's being cast to an int
+    with unify.Experiment("new_idea"), unify.Params(
+        sys_msg="you are a very helpful assistant",
+    ):
+        unify.log(x=1)
+        unify.log(x=2)
+    assert len(unify.get_logs_with_fields("experiment")) == 4
+    assert unify.get_experiment_by_version(0) == ("0", 0)
+    assert unify.get_experiment_by_version(1) == ("1", "new_idea")
+
+
 # Combos
 
 
