@@ -256,7 +256,31 @@ def get_param_by_version(
     api_key = _validate_api_key(api_key)
     version = str(version)
     filter_exp = f"version({field}) == {version}"
-    return get_logs(filter=filter_exp, limit=1, api_key=api_key)[0].params[field]
+    return get_logs(filter=filter_exp, limit=1, api_key=api_key)[0].params[field][1]
+
+
+def get_param_by_value(
+    field: str,
+    value: Any,
+    api_key: Optional[str] = None,
+) -> Any:
+    """
+    Gets the parameter by value.
+
+    Args:
+        field: The field of the parameter to get.
+
+        value: The value of the parameter to get.
+
+        api_key: If specified, unify API key to be used. Defaults to the value in the
+        `UNIFY_KEY` environment variable.
+
+    Returns:
+        The parameter by version.
+    """
+    api_key = _validate_api_key(api_key)
+    filter_exp = f"{field} == {json.dumps(value)}"
+    return get_logs(filter=filter_exp, limit=1, api_key=api_key)[0].params[field][0]
 
 
 def get_source() -> str:
@@ -276,9 +300,9 @@ def get_source() -> str:
 # ------------#
 
 
-def get_experiment_by_version(version: int, api_key: Optional[str] = None) -> str:
+def get_experiment_name(version: int, api_key: Optional[str] = None) -> str:
     """
-    Gets the experiment by version.
+    Gets the experiment name (by version).
 
     Args:
         version: The version of the experiment to get.
@@ -298,6 +322,25 @@ def get_experiment_by_version(version: int, api_key: Optional[str] = None) -> st
         )
         version = latest_version + version + 1
     return get_param_by_version("experiment", version, api_key)
+
+
+def get_experiment_version(name: str, api_key: Optional[str] = None) -> int:
+    """
+    Gets the experiment version (by name).
+
+    Args:
+        name: The name of the experiment to get.
+
+        api_key: If specified, unify API key to be used. Defaults to the value in the
+        `UNIFY_KEY` environment variable.
+
+    Returns:
+        The experiment version with said name.
+    """
+    logs = get_logs_with_fields("experiment", api_key=api_key)
+    if not logs:
+        return None
+    return get_param_by_value("experiment", name, api_key)
 
 
 # Entries #

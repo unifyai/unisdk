@@ -259,16 +259,38 @@ def test_get_param_by_version():
 
 
 @_handle_project
-def test_get_experiment_by_version():
+def test_get_param_by_value():
+    unify.log(params={"sys_msg": "you are a helpful assistant"})
+    unify.log(params={"sys_msg": "you are a very helpful assistant"})
+    unify.log(params={"sys_msg": "you are a genious assistant"})
+    assert unify.get_param_by_value("sys_msg", "you are a helpful assistant") == "0"
+    assert (
+        unify.get_param_by_value("sys_msg", "you are a very helpful assistant") == "1"
+    )
+    assert unify.get_param_by_value("sys_msg", "you are a genious assistant") == "2"
+
+
+@_handle_project
+def test_get_experiment_name():
     unify.log(params={"experiment": "first_try"}, x=0)
     unify.log(params={"experiment": "second_try"}, x=1)
     unify.log(params={"experiment": "third_try"}, x=2)
-    assert unify.get_experiment_by_version(-1) == ("2", "third_try")
-    assert unify.get_experiment_by_version(-2) == ("1", "second_try")
-    assert unify.get_experiment_by_version(-3) == ("0", "first_try")
-    assert unify.get_experiment_by_version(0) == ("0", "first_try")
-    assert unify.get_experiment_by_version(1) == ("1", "second_try")
-    assert unify.get_experiment_by_version(2) == ("2", "third_try")
+    assert unify.get_experiment_name(-1) == "third_try"
+    assert unify.get_experiment_name(-2) == "second_try"
+    assert unify.get_experiment_name(-3) == "first_try"
+    assert unify.get_experiment_name(0) == "first_try"
+    assert unify.get_experiment_name(1) == "second_try"
+    assert unify.get_experiment_name(2) == "third_try"
+
+
+@_handle_project
+def test_get_experiment_version():
+    unify.log(params={"experiment": "first_try"}, x=0)
+    unify.log(params={"experiment": "second_try"}, x=1)
+    unify.log(params={"experiment": "third_try"}, x=2)
+    assert unify.get_experiment_version("third_try") == "2"
+    assert unify.get_experiment_version("second_try") == "1"
+    assert unify.get_experiment_version("first_try") == "0"
 
 
 # Context Handlers #
