@@ -272,6 +272,26 @@ def get_source() -> str:
     return f"```python\n{source}\n```"
 
 
+# Experiments #
+# ------------#
+
+
+def get_experiment_by_version(version: int, api_key: Optional[str] = None) -> str:
+    """
+    Gets the experiment by version.
+
+    Args:
+        version: The version of the experiment to get.
+
+        api_key: If specified, unify API key to be used. Defaults to the value in the
+        `UNIFY_KEY` environment variable.
+
+    Returns:
+        The experiment name with said version.
+    """
+    return get_param_by_version("experiment", version, api_key)
+
+
 # Entries #
 # --------#
 
