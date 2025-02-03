@@ -194,34 +194,23 @@ class Params:
 class Experiment:
 
     def __init__(self, name: Optional[Union[str, int]] = None, overwrite: bool = False):
-        latest_exp = get_experiment_by_version(-1)
-        if latest_exp is None:
-            self._name, self._version = "0", "0"
+        latest_exp_name = get_experiment_name(-1)
+        if latest_exp_name is None:
+            self._name = "0"
             self._overwrite = overwrite
             return
-        latest_version, latest_exp = latest_exp
-        latest_version = int(latest_version)
         if isinstance(name, int):
-            if name < 0:
-                this_version = str(latest_version + (name + 1))
-            else:
-                assert (
-                    name <= latest_version
-                ), f"Experiment version {name} must be less than or equal to the latest version {latest_version}"
-                this_version = name
-            exp = get_experiment_by_version(this_version)
-            self._name = exp["value"]
+            self._name = get_experiment_name(name)
         elif name is None:
-            this_version = str(latest_version + 1)
-            self._name = this_version
+            self._name = str(int(get_experiment_version(latest_exp_name)) + 1)
         else:
-            self._name = name
+            self._name = str(name)
         self._overwrite = overwrite
 
     def __enter__(self):
         if self._overwrite:
             logs = get_logs_by_value(experiment=self._name)
-            delete_logs(logs=logs, api_key=self._api_key)
+            delete_logs(logs=logs)
         self._params_token = ACTIVE_PARAMS.set(
             {**ACTIVE_PARAMS.get(), **{"experiment": self._name}},
         )

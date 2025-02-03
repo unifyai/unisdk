@@ -804,17 +804,31 @@ def test_with_experiment():
         unify.log(x=0)
         unify.log(x=1)
     assert len(unify.get_logs_with_fields("experiment")) == 2
-    assert unify.get_experiment_by_version(0) == ("0", 0)
+    assert unify.get_experiment_name(0) == 0
     # ToDo work out why this is returning as an int and not a str,
     # the column type is a string, so not sure why it's being cast to an int
+    logs = unify.get_logs()[0:2]
+    assert [lg.entries for lg in logs] == [{"x": 1}, {"x": 0}]
     with unify.Experiment("new_idea"), unify.Params(
         sys_msg="you are a very helpful assistant",
     ):
         unify.log(x=1)
         unify.log(x=2)
     assert len(unify.get_logs_with_fields("experiment")) == 4
-    assert unify.get_experiment_by_version(0) == ("0", 0)
-    assert unify.get_experiment_by_version(1) == ("1", "new_idea")
+    assert unify.get_experiment_name(0) == 0
+    assert unify.get_experiment_name(1) == "new_idea"
+    logs = unify.get_logs()[0:2]
+    assert [lg.entries for lg in logs] == [{"x": 2}, {"x": 1}]
+    with unify.Experiment(-1, overwrite=True), unify.Params(
+        sys_msg="you are a very helpful assistant",
+    ):
+        unify.log(x=2)
+        unify.log(x=3)
+    assert len(unify.get_logs_with_fields("experiment")) == 4
+    assert unify.get_experiment_name(0) == 0
+    assert unify.get_experiment_name(1) == "new_idea"
+    logs = unify.get_logs()[0:2]
+    assert [lg.entries for lg in logs] == [{"x": 3}, {"x": 2}]
 
 
 # Combos
