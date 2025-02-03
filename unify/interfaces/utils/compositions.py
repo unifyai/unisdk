@@ -234,6 +234,31 @@ def get_params(
     return list(dict.fromkeys([p for lg in logs for p in lg.params.keys()]))
 
 
+def get_param_by_version(
+    field: str,
+    version: Union[str, int],
+    api_key: Optional[str] = None,
+) -> Any:
+    """
+    Gets the parameter by version.
+
+    Args:
+        field: The field of the parameter to get.
+
+        version: The version of the parameter to get.
+
+        api_key: If specified, unify API key to be used. Defaults to the value in the
+        `UNIFY_KEY` environment variable.
+
+    Returns:
+        The parameter by version.
+    """
+    api_key = _validate_api_key(api_key)
+    version = str(version)
+    filter_exp = f"version({field}) == {version}"
+    return get_logs(filter=filter_exp, limit=1, api_key=api_key)[0].params[field]
+
+
 def get_source() -> str:
     """
     Extracts the source code for the file from where this function was called.
