@@ -100,11 +100,9 @@ def deactivate() -> None:
     PROJECT = None
 
 
-def __getattr__(name):
-    if name == "active_project":
-        global PROJECT
-        return PROJECT
-    raise AttributeError(f"module '{__name__}' has no attribute '{name}'")
+def active_project() -> str:
+    global PROJECT
+    return PROJECT
 
 
 class Project:

@@ -63,7 +63,7 @@ def _get_and_maybe_create_project(
 ) -> Optional[str]:
     api_key = _validate_api_key(api_key)
     if project is None:
-        project = unify.active_project
+        project = unify.active_project()
         if project is None:
             if required:
                 project = "_"
