@@ -290,7 +290,7 @@ def traced(
                 outputs = _make_json_serializable(result)
             t2 = time.perf_counter()
             exec_time = t2 - t1
-            SPAN.get()["exec_time"] = round(exec_time, 2)
+            SPAN.get()["exec_time"] = exec_time
             SPAN.get()["outputs"] = outputs
             if SPAN.get()["type"] == "llm":
                 SPAN.get()["cost"] = outputs["usage"]["cost"]
@@ -344,7 +344,7 @@ def traced(
         finally:
             t2 = time.perf_counter()
             exec_time = t2 - t1
-            SPAN.get()["exec_time"] = round(exec_time, 2)
+            SPAN.get()["exec_time"] = exec_time
             SPAN.get()["outputs"] = None if result is None else result
             if token.old_value is token.MISSING:
                 if ACTIVE_LOG.get():
