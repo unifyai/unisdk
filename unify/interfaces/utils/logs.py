@@ -4,6 +4,7 @@ import copy
 import os
 import inspect
 import requests
+import logging
 from contextvars import ContextVar
 from typing import Any, Dict, List, Optional, Union, Callable
 
@@ -16,6 +17,9 @@ from ...utils._caching import (
     _get_caching_fname,
 )
 from ...utils.helpers import _validate_api_key, _get_and_maybe_create_project
+
+# logging
+USR_LOGGING = True
 
 # log
 ACTIVE_LOG = ContextVar("active_log", default=[])
@@ -219,6 +223,8 @@ def log(
             api_key=api_key,
             **(params if params is not None else {}),
         )
+        if USR_LOGGING:
+            logging.info(f"Updated Log({ACTIVE_LOG.get().id})")
         return ACTIVE_LOG.get()[-1]
     headers = {
         "accept": "application/json",
@@ -261,6 +267,8 @@ def log(
                 created_log.id: list(params.keys()) + list(entries.keys()),
             },
         )
+    if USR_LOGGING:
+        logging.info(f"Created Log({created_log.id})")
     return created_log
 
 
@@ -373,13 +381,19 @@ def add_log_params(
     Returns:
         A message indicating whether the logs were successfully updated.
     """
-    return _add_to_log(
+    ret = _add_to_log(
         logs=logs,
         mode="params",
         mutable=mutable,
         api_key=api_key,
         **params,
     )
+    if USR_LOGGING:
+        logging.info(
+            f"Added Params {', '.join(list(params.keys()))} "
+            f"to Logs({', '.join(_to_log_ids(logs))})",
+        )
+    return ret
 
 
 @_handle_cache
@@ -412,7 +426,7 @@ def add_log_entries(
     Returns:
         A message indicating whether the logs were successfully updated.
     """
-    return _add_to_log(
+    ret = _add_to_log(
         logs=logs,
         mode="entries",
         overwrite=overwrite,
@@ -420,6 +434,12 @@ def add_log_entries(
         api_key=api_key,
         **entries,
     )
+    if USR_LOGGING:
+        logging.info(
+            f"Added Entries {', '.join(list(entries.keys()))} "
+            f"to Logs({', '.join(_to_log_ids(logs))})",
+        )
+    return ret
 
 
 @_handle_cache
@@ -456,6 +476,8 @@ def delete_logs(
     body = {"ids_and_fields": [(log_ids, None)]}
     response = requests.delete(BASE_URL + f"/logs", headers=headers, json=body)
     response.raise_for_status()
+    if USR_LOGGING:
+        logging.info(f"Deleted Logs({', '.join(log_ids)})")
     return response.json()
 
 
@@ -493,6 +515,8 @@ def delete_log_fields(
         json=body,
     )
     response.raise_for_status()
+    if USR_LOGGING:
+        logging.info(f"Deleted Field `{field}` from Logs({', '.join(log_ids)})")
     return response.json()
 
 
@@ -679,3 +703,12 @@ def get_groups(
     response = requests.get(BASE_URL + "/logs/groups", headers=headers, params=params)
     response.raise_for_status()
     return response.json()
+
+
+# User Logging #
+# -------------#
+
+
+def set_user_logging(value: bool):
+    global USR_LOGGING
+    USR_LOGGING = value
