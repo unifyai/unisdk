@@ -271,6 +271,7 @@ def traced(
                 2,
             ),
             "cost": 0.0,
+            "cost_inc_cache": 0.0,
             "code": f"```python\n{code}\n```",
             "code_fpath": inspect.getsourcefile(fn),
             "code_start_line": start_line,
@@ -310,6 +311,8 @@ def traced(
             SPAN.get()["outputs"] = outputs
             if SPAN.get()["type"] == "llm":
                 SPAN.get()["cost"] = outputs["usage"]["cost"]
+            if SPAN.get()["type"] in ("llm", "llm-cached"):
+                SPAN.get()["cost_inc_cache"] = outputs["usage"]["cost"]
             # ToDo: ensure there is a global log set upon the first trace,
             #  and removed on the last
             trace = SPAN.get()
@@ -322,6 +325,7 @@ def traced(
                 SPAN.reset(token)
                 SPAN.get()["child_spans"].append(new_span)
                 SPAN.get()["cost"] += new_span["cost"]
+                SPAN.get()["cost_inc_cache"] += new_span["cost_inc_cache"]
             if log_token:
                 ACTIVE_LOG.set([])
 
