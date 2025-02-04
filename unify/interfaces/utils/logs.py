@@ -125,42 +125,10 @@ def _to_log_ids(
                 f"list must contain int or unify.Log types, but found first entry "
                 f"{logs[0]} of type {type(logs[0])}",
             )
-    else:
-        raise Exception(
-            f"logs argument must be of type int, unify.Log, or list, but found "
-            f"{logs} of type {type(logs)}",
-        )
-
-
-def _to_logs(
-    logs: Optional[Union[int, unify.Log, List[Union[int, unify.Log]]]] = None,
-):
-    if logs is None:
-        current_active_logs = ACTIVE_LOG.get()
-        if not current_active_logs:
-            raise Exception(
-                "If logs is unspecified, then current_global_active_log must be.",
-            )
-        return [current_active_logs[-1]]
-    elif isinstance(logs, int):
-        return [unify.Log(id=logs)]
-    elif isinstance(logs, unify.Log):
-        return [logs]
-    elif isinstance(logs, list):
-        if isinstance(logs[0], int):
-            return [unify.Log(id=lg) for lg in logs]
-        elif isinstance(logs[0], unify.Log):
-            return logs
-        else:
-            raise Exception(
-                f"list must contain int or unify.Log types, but found first entry "
-                f"{logs[0]} of type {type(logs[0])}",
-            )
-    else:
-        raise Exception(
-            f"logs argument must be of type int, unify.Log, or list, but found "
-            f"{logs} of type {type(logs)}",
-        )
+    raise Exception(
+        f"logs argument must be of type int, unify.Log, or list, but found "
+        f"{logs} of type {type(logs)}",
+    )
 
 
 def _apply_context(**data):
@@ -364,10 +332,10 @@ def add_log_params(
     **params,
 ) -> Dict[str, str]:
     """
-    Add extra entries into an existing log.
+    Add extra params into an existing log.
 
     Args:
-        logs: The log(s) to update with extra data. Looks for the current active log if
+        logs: The log(s) to update with extra params. Looks for the current active log if
         no id is provided.
 
         mutable: Either a boolean to apply uniform mutability for all parameters, or a dictionary mapping parameter names to booleans for per-field control.
@@ -409,7 +377,7 @@ def add_log_entries(
     Add extra entries into an existing log.
 
     Args:
-        logs: The log(s) to update with extra data. Looks for the current active log if
+        logs: The log(s) to update with extra entries. Looks for the current active log if
         no id is provided.
 
         overwrite: Whether or not to overwrite an entry pre-existing with the same name.

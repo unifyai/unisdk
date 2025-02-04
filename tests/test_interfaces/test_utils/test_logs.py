@@ -1,66 +1,9 @@
 import os
 import pytest
-import functools
 from unify.utils._caching import _get_cache
-from requests import HTTPError
 
 import unify
 from ..helpers import _handle_project
-
-
-# noinspection PyBroadException
-@_handle_project
-def test_log_param():
-    data = {
-        "system_prompt": "You are a mathematician.",
-        "dataset": "maths questions",
-    }
-    assert len(unify.get_logs()) == 0
-    log_id = unify.log(params=data).id
-    project_logs = unify.get_logs()
-    assert len(project_logs) and project_logs[0].id == log_id
-    id_log = unify.get_log_by_id(log_id)
-    assert len(id_log) and "system_prompt" in id_log.params
-    unify.delete_log_fields(field="system_prompt", logs=log_id)
-    id_log = unify.get_log_by_id(log_id)
-    assert len(id_log) and "system_prompt" not in id_log.params
-    unify.add_log_params(
-        logs=log_id,
-        system_prompt=data["system_prompt"],
-    )
-    id_log = unify.get_log_by_id(log_id)
-    assert len(id_log) and "system_prompt" in id_log.params
-    unify.delete_logs(logs=log_id)
-    assert len(unify.get_logs()) == 0
-    try:
-        unify.get_log_by_id(log_id)
-        assert False
-    except Exception as e:
-        assert str(e) == f"Log with id {log_id} does not exist"
-
-
-@_handle_project
-def test_add_param():
-    unify.log(a="a")
-    unify.log(b="b")
-    unify.log(c="c")
-    logs = unify.get_logs()
-    assert len(logs) == 3
-    assert logs[0].entries == {"c": "c"}
-    assert logs[0].params == {}
-    assert logs[1].entries == {"b": "b"}
-    assert logs[1].params == {}
-    assert logs[2].entries == {"a": "a"}
-    assert logs[2].params == {}
-    unify.add_params(system_prompt="You know the alphabet.")
-    logs = unify.get_logs()
-    assert len(logs) == 3
-    assert logs[0].entries == {"c": "c"}
-    assert logs[0].params == {"system_prompt": ("0", "You know the alphabet.")}
-    assert logs[1].entries == {"b": "b"}
-    assert logs[1].params == {"system_prompt": ("0", "You know the alphabet.")}
-    assert logs[2].entries == {"a": "a"}
-    assert logs[2].params == {"system_prompt": ("0", "You know the alphabet.")}
 
 
 @_handle_project

@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import time
 import uuid
-import datetime
+from typing import Tuple
+from datetime import datetime
+from contextvars import Token
 
 from ..utils.helpers import _validate_api_key, _prune_dict, _make_json_serializable
 from .utils.logs import _handle_special_types
@@ -11,6 +13,54 @@ from .utils.compositions import *
 
 # Context Handlers #
 # -----------------#
+
+
+def start_log(
+    *,
+    project: Optional[str] = None,
+    api_key: Optional[str] = None,
+    **entries,
+) -> Token:
+    """
+    Start a new log, such that all subsequent calls to unify.log will continue to
+    populate the currently open log.
+
+    Args:
+        project: Name of the project to get logs from.
+
+        api_key: If specified, unify API key to be used. Defaults to the value in the
+        `UNIFY_KEY` environment variable.
+
+        entries: The entries to start the log. Future calls to unify.log will add
+        more entries to the current logging context.
+
+    Returns:
+        The token which will need to be used to end the log.
+    """
+    lg = unify.log(
+        project=project,
+        new=True,
+        api_key=api_key,
+        **entries,
+    )
+    return lg, ACTIVE_LOG.set(ACTIVE_LOG.get() + [lg])
+
+
+def end_log(
+    token: Token,
+) -> unify.Log:
+    """
+    Closes the currently active logging context.
+
+    Args:
+        token: The token for the logging context to end.
+
+    Returns:
+        The Log instance for the full final log.
+    """
+    log = ACTIVE_LOG.get()[-1]
+    ACTIVE_LOG.reset(token)
+    return log
 
 
 # noinspection PyShadowingBuiltins
@@ -74,22 +124,6 @@ class Log:
         add_log_entries(logs=self._id, api_key=self._api_key, **entries)
         self._entries = {**self._entries, **entries}
 
-    def replace_entries(self, **entries) -> None:
-        replace_log_entries(logs=self._id, api_key=self._api_key, **entries)
-        self._entries = {**self._entries, **entries}
-
-    def update_entries(self, fn, **entries) -> None:
-        update_log_entries(fn=fn, log=self._id, api_key=self._api_key, **entries)
-        for k, v in entries.items():
-            f = fn[k] if isinstance(fn, dict) else fn
-            self._entries[k] = f(self._entries[k], v)
-
-    def rename_entries(self, **entries) -> None:
-        rename_log_entries(logs=self._id, api_key=self._api_key, **entries)
-        for old_name, new_name in entries.items():
-            self._entries[new_name] = self._entries[old_name]
-            del self._entries[old_name]
-
     def delete_entries(
         self,
         keys_to_delete: List[str],
@@ -120,14 +154,12 @@ class Log:
     # Context #
 
     def __enter__(self):
-        lg = unify.log(
-            project=self._project,
-            new=True,
-            api_key=self._api_key,
+        lg, self._log_token = start_log(
+            self._project,
+            self._api_key,
             **self._entries,
         )
         self._active_log_set = False
-        self._log_token = ACTIVE_LOG.set(ACTIVE_LOG.get() + [lg])
         self._id = lg.id
         self._ts = lg.ts
 
