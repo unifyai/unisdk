@@ -313,11 +313,13 @@ def traced(
             trace = SPAN.get()
             if prune_empty:
                 trace = _prune_dict(trace)
-            unify.add_log_entries(trace=trace, overwrite=True)
-            if token.old_value is token.MISSING:
-                SPAN.reset(token)
-            else:
-                SPAN.reset(token)
+            unify.add_log_entries(
+                trace=trace,
+                overwrite=True,
+                mutable=trace["parent_span_id"] is not None,
+            )
+            SPAN.reset(token)
+            if token.old_value is not token.MISSING:
                 SPAN.get()["child_spans"].append(new_span)
                 SPAN.get()["cost"] += new_span["cost"]
                 SPAN.get()["cost_inc_cache"] += new_span["cost_inc_cache"]
