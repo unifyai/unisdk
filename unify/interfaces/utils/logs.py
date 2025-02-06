@@ -402,6 +402,7 @@ def add_log_entries(
 
         mutable: Either a boolean to apply uniform mutability for all entries, or a dictionary mapping entry names to booleans for per-field control.
         Defaults to True.
+
         api_key: If specified, unify API key to be used. Defaults to the value in the
         `UNIFY_KEY` environment variable.
 
@@ -425,6 +426,7 @@ def add_log_entries(
 def delete_logs(
     *,
     logs: Optional[Union[int, unify.Log, List[Union[int, unify.Log]]]] = None,
+    project: Optional[str] = None,
     api_key: Optional[str] = None,
 ) -> Dict[str, str]:
     """
@@ -433,12 +435,16 @@ def delete_logs(
     Args:
         logs: log(s) to delete from a project.
 
+        project: Name of the project to delete logs from.
+
         api_key: If specified, unify API key to be used. Defaults to the value in the
         `UNIFY_KEY` environment variable.
 
     Returns:
         A message indicating whether the logs were successfully deleted.
     """
+    if logs is None:
+        logs = get_logs(project=project, api_key=api_key)
     log_ids = _to_log_ids(logs)
     api_key = _validate_api_key(api_key)
     headers = {
