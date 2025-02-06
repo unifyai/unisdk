@@ -56,11 +56,11 @@ def test_add_param():
     logs = unify.get_logs()
     assert len(logs) == 3
     assert logs[0].entries == {"c": "c"}
-    assert logs[0].params == {"system_prompt": "You know the alphabet."}
+    assert logs[0].params == {"system_prompt": ("0", "You know the alphabet.")}
     assert logs[1].entries == {"b": "b"}
-    assert logs[1].params == {"system_prompt": "You know the alphabet."}
+    assert logs[1].params == {"system_prompt": ("0", "You know the alphabet.")}
     assert logs[2].entries == {"a": "a"}
-    assert logs[2].params == {"system_prompt": "You know the alphabet."}
+    assert logs[2].params == {"system_prompt": ("0", "You know the alphabet.")}
 
 
 @_handle_project
@@ -133,7 +133,6 @@ def test_duplicate_log_field():
 
 @_handle_project
 def test_log_function_logs_code():
-
     def my_func(a):
         return a + 1
 
