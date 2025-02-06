@@ -445,6 +445,8 @@ def delete_logs(
     """
     if logs is None:
         logs = get_logs(project=project, api_key=api_key)
+        if not logs:
+            return {"message": "No logs to delete"}
     log_ids = _to_log_ids(logs)
     api_key = _validate_api_key(api_key)
     headers = {
