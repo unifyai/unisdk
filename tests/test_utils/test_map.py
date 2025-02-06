@@ -9,7 +9,6 @@ import unify
 
 
 class ProjectHandling:
-
     def __enter__(self):
         if "test_project" in unify.list_projects():
             unify.delete_project("test_project")

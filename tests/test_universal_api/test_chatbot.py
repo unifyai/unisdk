@@ -5,7 +5,6 @@ from unify import ChatBot, MultiUnify, Unify
 
 
 class SimulateInput:
-
     def __init__(self):
         self._messages = [
             "What is the capital of Spain? Be succinct.",
@@ -35,7 +34,6 @@ class SimulateInput:
 
 
 class TestChatbotUniLLM:
-
     def test_constructor(self) -> None:
         client = Unify(
             endpoint="gpt-4o@openai",
@@ -64,7 +62,6 @@ class TestChatbotUniLLM:
 
 
 class TestChatbotMultiUnify:
-
     def test_constructor(self) -> None:
         client = MultiUnify(
             endpoints=["gpt-4@openai", "gpt-4o@openai"],

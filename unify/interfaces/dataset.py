@@ -12,7 +12,6 @@ from ..utils.helpers import _validate_api_key
 
 
 class Dataset:
-
     def __init__(
         self,
         data: Any,

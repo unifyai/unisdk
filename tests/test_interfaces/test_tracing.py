@@ -15,7 +15,6 @@ from .helpers import _handle_project
 
 @_handle_project
 def test_traced():
-
     @unify.traced
     def deeper_fn():
         time.sleep(1)
@@ -66,7 +65,6 @@ def test_traced():
 
 @_handle_project
 def test_traced_w_exception():
-
     @unify.traced
     def deeper_fn(inp):
         if inp == 2:
@@ -244,7 +242,6 @@ def test_traced_w_caching():
 
 @_handle_project
 def test_traced_none_handling():
-
     @unify.traced(prune_empty=False)
     def some_func(a, b, c, d):
         return [a, b, c, d]
@@ -300,7 +297,6 @@ def test_traced_none_handling():
 
 @_handle_project
 def test_traced_within_log_context():
-
     @unify.traced
     def deeper_fn():
         time.sleep(1)
@@ -338,7 +334,6 @@ def test_traced_within_log_context():
 
 @_handle_project
 def test_traced_threaded():
-
     @unify.traced
     def deeper_fn():
         time.sleep(1)
@@ -382,7 +377,6 @@ def test_traced_threaded():
 @_handle_project
 @pytest.mark.asyncio
 async def test_traced_async():
-
     @unify.traced
     async def deeper_fn():
         time.sleep(1)

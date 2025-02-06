@@ -3,7 +3,6 @@ import unify
 
 # noinspection PyBroadException
 class CustomEndpointHandler:
-
     def __init__(self, ky_name, ky_value, endpoint_names):
         self._key_name = ky_name
         self._key_value = ky_value

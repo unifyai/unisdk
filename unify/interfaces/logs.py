@@ -15,7 +15,6 @@ from .utils.compositions import *
 
 # noinspection PyShadowingBuiltins
 class Log:
-
     def __init__(
         self,
         *,
@@ -138,7 +137,6 @@ class Log:
 
 
 class Context:
-
     def __init__(self, context: str):
         self._context = context
 
@@ -152,7 +150,6 @@ class Context:
 
 
 class Entries:
-
     def __init__(self, **entries):
         self._entries = _handle_special_types(entries)
 
@@ -172,7 +169,6 @@ class Entries:
 
 
 class Params:
-
     def __init__(self, **params):
         self._params = _handle_special_types(params)
 
@@ -192,7 +188,6 @@ class Params:
 
 
 class Experiment:
-
     def __init__(self, name: Optional[Union[str, int]] = None, overwrite: bool = False):
         latest_exp_name = get_experiment_name(-1)
         if latest_exp_name is None:

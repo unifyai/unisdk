@@ -12,7 +12,6 @@ class Response(BaseModel):
 
 
 class TestUnifyBasics:
-
     def test_invalid_api_key_raises_authentication_error(self) -> None:
         with pytest.raises(Exception):
             client = Unify(
@@ -148,7 +147,6 @@ class TestUnifyBasics:
 
 @pytest.mark.asyncio
 class TestAsyncUnifyBasics:
-
     async def test_invalid_api_key_raises_authentication_error(self) -> None:
         with pytest.raises(Exception):
             async_client = AsyncUnify(

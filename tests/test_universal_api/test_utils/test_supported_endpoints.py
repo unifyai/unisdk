@@ -4,7 +4,6 @@ import unify
 
 
 class TestSupportedModels:
-
     def test_list_models(self) -> None:
         models = unify.list_models()
         assert isinstance(models, list), "return type was not a list: {}".format(
@@ -33,7 +32,6 @@ class TestSupportedModels:
 
 
 class TestSupportedProviders:
-
     def test_list_providers(self) -> None:
         providers = unify.list_providers()
         assert isinstance(providers, list), "return type was not a list: {}".format(
@@ -62,7 +60,6 @@ class TestSupportedProviders:
 
 
 class TestSupportedEndpoints:
-
     def test_list_endpoints(self) -> None:
         endpoints = unify.list_endpoints()
         assert isinstance(endpoints, list), "return type was not a list: {}".format(

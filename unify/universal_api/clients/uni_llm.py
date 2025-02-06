@@ -43,7 +43,6 @@ from ...utils.helpers import _default
 
 
 class _UniClient(_Client, abc.ABC):
-
     def __init__(
         self,
         endpoint: Optional[str] = None,

@@ -377,7 +377,6 @@ def test_global_logging():
 
 @_handle_project
 def test_with_log_threaded():
-
     def fn(a, b, c, d, e, f, g):
         with unify.Log(a=a):
             unify.add_log_entries(b=b, c=c)
@@ -407,7 +406,6 @@ def test_with_log_threaded():
 @_handle_project
 @pytest.mark.asyncio
 async def test_with_log_async():
-
     async def fn(a, b, c, d, e, f, g):
         with unify.Log(a=a):
             unify.add_log_entries(b=b, c=c)
@@ -493,7 +491,6 @@ def test_with_context_default_project():
 
 @_handle_project
 def test_with_context_threaded():
-
     def fn(a, b, e):
         log = unify.log(a=a)
         with unify.Context("capitalized"):
@@ -530,7 +527,6 @@ def test_with_context_threaded():
 @_handle_project
 @pytest.mark.asyncio
 async def test_with_context_async():
-
     async def fn(a, b, e):
         log = unify.log(a=a)
         with unify.Context("capitalized"):
@@ -606,7 +602,6 @@ def test_with_entries():
 
 @_handle_project
 def test_with_entries_threaded():
-
     def fn(a, b, c, d, e, f, g):
         with unify.Entries(a=a):
             log = unify.log()
@@ -646,7 +641,6 @@ def test_with_entries_threaded():
 @_handle_project
 @pytest.mark.asyncio
 async def test_with_entries_async():
-
     async def fn(a, b, c, d, e, f, g):
         with unify.Entries(a=a):
             log = unify.log()
@@ -725,7 +719,6 @@ def test_with_params():
 
 @_handle_project
 def test_with_params_threaded():
-
     def fn(a, b, c, d, e, f, g):
         with unify.Params(a=a):
             log = unify.log()
@@ -765,7 +758,6 @@ def test_with_params_threaded():
 @_handle_project
 @pytest.mark.asyncio
 async def test_with_params_async():
-
     async def fn(a, b, c, d, e, f, g):
         with unify.Params(a=a):
             log = unify.log()
@@ -959,7 +951,6 @@ def test_with_all_threaded():
 @_handle_project
 @pytest.mark.asyncio
 async def test_with_all_async():
-
     async def fn(a, b, c, d, e, f, g, h, i):
         with unify.Params(a=a):
             log = unify.log()

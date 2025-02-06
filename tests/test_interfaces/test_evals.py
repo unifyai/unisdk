@@ -16,7 +16,6 @@ import unify
 
 # noinspection PyUnresolvedReferences
 class SimulateFloatInput:
-
     def __init__(self, score_config: Dict[float, str]):
         self._score_config = score_config
 
@@ -36,7 +35,6 @@ class SimulateFloatInput:
 
 
 class ProjectHandling:
-
     def __enter__(self):
         if "test_project" in unify.list_projects():
             unify.delete_project("test_project")
@@ -51,7 +49,6 @@ class ProjectHandling:
 
 
 class MathsExample:
-
     def __init__(self) -> None:
         system_prompt = (
             "Answer the following maths question, "
@@ -87,7 +84,6 @@ def maths_example():
 
 
 class TestMathsEvaluator:
-
     def test_add_artifacts(self, maths_example) -> None:
         with ProjectHandling():
             with unify.Project("test_project"):
@@ -165,7 +161,6 @@ class TestMathsEvaluator:
 
 
 class HumanExample:
-
     def __init__(self) -> None:
         system_prompt = (
             "You are an AI assistant medical advisor, please only give medical advice "
@@ -233,7 +228,6 @@ def human_example():
 
 
 class TestHumanEvaluator:
-
     def test_evals(self, human_example) -> None:
         for data in human_example.dataset:
             response = human_example.client.generate(
@@ -274,7 +268,6 @@ class TestHumanEvaluator:
 
 
 class CodeExample:
-
     def __init__(self) -> None:
         system_prompt = (
             "You are an expert software engineer, write the code asked of you to the "
@@ -381,7 +374,6 @@ def code_example():
 
 
 class TestCodeEvaluator:
-
     def test_evals(self, code_example) -> None:
         for data in code_example.dataset:
             response = code_example.client.generate(*data["prompt"].values())
@@ -411,7 +403,6 @@ class TestCodeEvaluator:
 
 
 class CRMExample:
-
     def __init__(self) -> None:
 
         self.questions = [
@@ -602,7 +593,6 @@ def crm_example():
 
 
 class TestCRMEvaluator:
-
     def test_add_artifacts(self, crm_example) -> None:
         with ProjectHandling():
             with unify.Project("test_project"):

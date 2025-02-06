@@ -77,7 +77,6 @@ def _get_and_maybe_create_project(
 
 
 def _prune_dict(val):
-
     def keep(v):
         if v in (None, openai.NotGiven, openai.NOT_GIVEN):
             return False

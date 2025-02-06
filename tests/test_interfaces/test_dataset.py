@@ -10,7 +10,6 @@ dir_path = os.path.dirname(os.path.realpath(__file__))
 
 
 class TestDatasetConstruction:
-
     def test_create_dataset_from_str(self) -> None:
         dataset = unify.Dataset("a")
         assert isinstance(dataset[0], str)
@@ -76,7 +75,6 @@ class TestDatasetConstruction:
 
 # noinspection PyStatementEffect
 class TestDatasetManipulation:
-
     def test_iterate_over_dataset(self) -> None:
         msgs = ["a", "b", "c"]
         dataset = unify.Dataset(msgs)
@@ -128,7 +126,6 @@ class TestDatasetManipulation:
 
 # noinspection PyTypeChecker
 class TestDatasetCombining:
-
     def test_add_datasets(self) -> None:
         msgs = ["a", "b", "c", "d"]
         dataset1 = unify.Dataset(msgs[0:2])
@@ -202,7 +199,6 @@ class TestDatasetCombining:
 
 
 class TestDatasetTrimming:
-
     def test_sub_datasets(self) -> None:
         msgs = ["a", "b", "c", "d"]
         dataset1 = unify.Dataset(msgs)
@@ -248,7 +244,6 @@ class TestDatasetTrimming:
 
 
 class UploadTesting:
-
     def __enter__(self):
         if "test_dataset" in unify.list_datasets():
             unify.delete_dataset("test_dataset")
@@ -259,7 +254,6 @@ class UploadTesting:
 
 
 class TestDatasetUploading:
-
     def test_dataset_first_upload(self) -> None:
         with UploadTesting():
             dataset = unify.Dataset(["a", "b", "c"], name="test_dataset")
@@ -291,7 +285,6 @@ class TestDatasetUploading:
 
 
 class DownloadTesting:
-
     def __enter__(self):
         if "test_dataset" in unify.list_datasets():
             unify.delete_dataset("test_dataset")
@@ -304,7 +297,6 @@ class DownloadTesting:
 
 # noinspection PyStatementEffect
 class TestDatasetDownloading:
-
     def test_dataset_download(self) -> None:
         with DownloadTesting():
             assert "test_dataset" in unify.list_datasets()
@@ -356,7 +348,6 @@ class TestDatasetDownloading:
 
 
 class TestDatasetSync:
-
     def test_sync_uploads(self) -> None:
         with DownloadTesting():
             assert "test_dataset" in unify.list_datasets()

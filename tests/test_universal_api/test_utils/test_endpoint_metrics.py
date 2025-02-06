@@ -7,7 +7,6 @@ from unify import Metrics
 
 # noinspection PyBroadException
 class CustomEndpointHandler:
-
     def __init__(self, ep_name, ep_url, ky_name, ky_value):
         self.endpoint_name = ep_name
         self._endpoint_url = ep_url
