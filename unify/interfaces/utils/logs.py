@@ -171,6 +171,7 @@ def log(
     params: Dict[str, Any] = None,
     new: bool = False,
     overwrite: bool = False,
+    mutable: Optional[Union[bool, Dict[str, bool]]] = True,
     api_key: Optional[str] = None,
     **entries,
 ) -> unify.Log:
@@ -191,6 +192,8 @@ def log(
         overwrite: If adding to an existing log, dictates whether or not to overwrite
         fields with the same name.
 
+        mutable: Either a boolean to apply uniform mutability for all fields, or a dictionary mapping field names to booleans for per-field control. Defaults to True.
+
         api_key: If specified, unify API key to be used. Defaults to the value in the
         `UNIFY_KEY` environment variable.
 
@@ -205,12 +208,14 @@ def log(
         _add_to_log(
             mode="entries",
             overwrite=overwrite,
+            mutable=mutable,
             api_key=api_key,
             **entries,
         )
         _add_to_log(
             mode="params",
             overwrite=overwrite,
+            mutable=mutable,
             api_key=api_key,
             **(params if params is not None else {}),
         )
@@ -225,6 +230,20 @@ def log(
     params = _handle_special_types(params)
     entries = {**entries, **ACTIVE_ENTRIES.get()}
     entries = _handle_special_types(entries)
+    if mutable is not None:
+        if isinstance(mutable, dict):
+            for field, mut in mutable.items():
+                if field in params:
+                    params.setdefault("explicit_types", {})[field] = {"mutable": mut}
+                if field in entries:
+                    entries.setdefault("explicit_types", {})[field] = {"mutable": mut}
+        elif isinstance(mutable, bool):
+            for k in list(params.keys()):
+                if k != "explicit_types":
+                    params.setdefault("explicit_types", {})[k] = {"mutable": mutable}
+            for k in list(entries.keys()):
+                if k != "explicit_types":
+                    entries.setdefault("explicit_types", {})[k] = {"mutable": mutable}
     project = _get_and_maybe_create_project(project, api_key=api_key)
     body = {"project": project, "params": params, "entries": entries}
     response = requests.post(BASE_URL + "/logs", headers=headers, json=body)
@@ -251,6 +270,7 @@ def _add_to_log(
     logs: Optional[Union[int, unify.Log, List[Union[int, unify.Log]]]] = None,
     mode: str = None,
     overwrite: bool = False,
+    mutable: Optional[Union[bool, Dict[str, bool]]] = True,
     api_key: Optional[str] = None,
     **data,
 ) -> Dict[str, str]:
@@ -291,6 +311,14 @@ def _add_to_log(
         )
         data = all_kwargs[0]
     data = _handle_special_types(data)
+    if mutable is not None:
+        if isinstance(mutable, dict):
+            for field, mut in mutable.items():
+                data.setdefault("explicit_types", {})[field] = {"mutable": mut}
+        elif isinstance(mutable, bool):
+            for k in list(data.keys()):
+                if k != "explicit_types":
+                    data.setdefault("explicit_types", {})[k] = {"mutable": mutable}
     body = {
         "ids": log_ids,
         mode: data,
@@ -323,6 +351,7 @@ def _add_to_log(
 def add_log_params(
     *,
     logs: Optional[Union[int, unify.Log, List[Union[int, unify.Log]]]] = None,
+    mutable: Optional[Union[bool, Dict[str, bool]]] = True,
     api_key: Optional[str] = None,
     **params,
 ) -> Dict[str, str]:
@@ -333,6 +362,8 @@ def add_log_params(
         logs: The log(s) to update with extra data. Looks for the current active log if
         no id is provided.
 
+        mutable: Either a boolean to apply uniform mutability for all parameters, or a dictionary mapping parameter names to booleans for per-field control.
+        Defaults to True.
         api_key: If specified, unify API key to be used. Defaults to the value in the
         `UNIFY_KEY` environment variable.
 
@@ -342,7 +373,13 @@ def add_log_params(
     Returns:
         A message indicating whether the logs were successfully updated.
     """
-    return _add_to_log(logs=logs, mode="params", api_key=api_key, **params)
+    return _add_to_log(
+        logs=logs,
+        mode="params",
+        mutable=mutable,
+        api_key=api_key,
+        **params,
+    )
 
 
 @_handle_cache
@@ -350,6 +387,7 @@ def add_log_entries(
     *,
     logs: Optional[Union[int, unify.Log, List[Union[int, unify.Log]]]] = None,
     overwrite: bool = False,
+    mutable: Optional[Union[bool, Dict[str, bool]]] = True,
     api_key: Optional[str] = None,
     **entries,
 ) -> Dict[str, str]:
@@ -362,6 +400,8 @@ def add_log_entries(
 
         overwrite: Whether or not to overwrite an entry pre-existing with the same name.
 
+        mutable: Either a boolean to apply uniform mutability for all entries, or a dictionary mapping entry names to booleans for per-field control.
+        Defaults to True.
         api_key: If specified, unify API key to be used. Defaults to the value in the
         `UNIFY_KEY` environment variable.
 
@@ -375,6 +415,7 @@ def add_log_entries(
         logs=logs,
         mode="entries",
         overwrite=overwrite,
+        mutable=mutable,
         api_key=api_key,
         **entries,
     )
