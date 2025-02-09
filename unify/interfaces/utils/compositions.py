@@ -318,7 +318,7 @@ def get_experiment_name(version: int, api_key: Optional[str] = None) -> str:
         return None
     if version < 0:
         latest_version = max(
-            [max([int(param[0]) for param in lg.params.values()]) for lg in logs],
+            [int(lg.params["experiment"][0]) for lg in logs],
         )
         version = latest_version + version + 1
     return get_param_by_version("experiment", version, api_key)
