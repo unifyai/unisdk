@@ -171,7 +171,7 @@ def log(
     params: Dict[str, Any] = None,
     new: bool = False,
     overwrite: bool = False,
-    mutable: Optional[Union[bool, Dict[str, bool]]] = False,
+    mutable: Optional[Union[bool, Dict[str, bool]]] = True,
     api_key: Optional[str] = None,
     **entries,
 ) -> unify.Log:
@@ -270,7 +270,7 @@ def _add_to_log(
     logs: Optional[Union[int, unify.Log, List[Union[int, unify.Log]]]] = None,
     mode: str = None,
     overwrite: bool = False,
-    mutable: Optional[Union[bool, Dict[str, bool]]] = False,
+    mutable: Optional[Union[bool, Dict[str, bool]]] = True,
     api_key: Optional[str] = None,
     **data,
 ) -> Dict[str, str]:
@@ -351,7 +351,7 @@ def _add_to_log(
 def add_log_params(
     *,
     logs: Optional[Union[int, unify.Log, List[Union[int, unify.Log]]]] = None,
-    mutable: Optional[Union[bool, Dict[str, bool]]] = False,
+    mutable: Optional[Union[bool, Dict[str, bool]]] = True,
     api_key: Optional[str] = None,
     **params,
 ) -> Dict[str, str]:
@@ -387,7 +387,7 @@ def add_log_entries(
     *,
     logs: Optional[Union[int, unify.Log, List[Union[int, unify.Log]]]] = None,
     overwrite: bool = False,
-    mutable: Optional[Union[bool, Dict[str, bool]]] = False,
+    mutable: Optional[Union[bool, Dict[str, bool]]] = True,
     api_key: Optional[str] = None,
     **entries,
 ) -> Dict[str, str]:

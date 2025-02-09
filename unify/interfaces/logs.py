@@ -316,7 +316,7 @@ def traced(
             unify.add_log_entries(
                 trace=trace,
                 overwrite=True,
-                mutable=SPAN.get()["parent_span_id"] is not None,
+                # mutable=SPAN.get()["parent_span_id"] is not None,
             )
             SPAN.reset(token)
             if token.old_value is not token.MISSING:
