@@ -191,7 +191,7 @@ class Experiment:
     def __init__(self, name: Optional[Union[str, int]] = None, overwrite: bool = False):
         latest_exp_name = get_experiment_name(-1)
         if latest_exp_name is None:
-            self._name = "0"
+            self._name = name if name is not None else "0"
             self._overwrite = overwrite
             return
         if isinstance(name, int):
