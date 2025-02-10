@@ -53,7 +53,7 @@ def _make_json_serializable(
     elif isinstance(item, BaseModel):
         return item.dict()
     elif hasattr(item, "json") and callable(item.json):
-        return item.json()
+        return _make_json_serializable(item.json())
     else:
         return item
 
