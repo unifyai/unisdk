@@ -14,7 +14,17 @@ def _is_iterable(item: Any) -> bool:
 
 
 # noinspection PyShadowingBuiltins
-def map(fn: callable, *args, mode="threading", from_args=False, **kwargs) -> Any:
+def map(
+    fn: callable,
+    *args,
+    mode="threading",
+    name="",
+    from_args=False,
+    **kwargs,
+) -> Any:
+
+    if name:
+        name = name.capitalize() + " "
 
     assert mode in (
         "threading",
@@ -69,7 +79,7 @@ def map(fn: callable, *args, mode="threading", from_args=False, **kwargs) -> Any
 
     if mode == "loop":
 
-        pbar.set_description("Iterations Completed")
+        pbar.set_description(f"{name}Iterations Completed")
 
         returns = list()
         for a, kw in args_n_kwargs:
@@ -80,7 +90,7 @@ def map(fn: callable, *args, mode="threading", from_args=False, **kwargs) -> Any
 
     elif mode == "threading":
 
-        pbar.set_description("Threads Completed")
+        pbar.set_description(f"{name}Threads Completed")
 
         def fn_w_indexing(rets: List[None], thread_idx: int, *a, **kw):
             for var, value in kw["context"].items():
@@ -106,7 +116,7 @@ def map(fn: callable, *args, mode="threading", from_args=False, **kwargs) -> Any
         pbar.close()
         return returns
 
-    pbar.set_description("Coroutines Completed")
+    pbar.set_description(f"{name}Coroutines Completed")
 
     async def _wrapped(*a, **kw):
         ret = await fn(*a, **kw)
