@@ -52,6 +52,8 @@ def _make_json_serializable(
         return item.schema()
     elif isinstance(item, BaseModel):
         return item.dict()
+    elif hasattr(item, "json") and callable(item.json):
+        return item.json()
     else:
         return item
 
