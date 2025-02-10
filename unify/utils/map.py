@@ -24,7 +24,9 @@ def map(
 ) -> Any:
 
     if name:
-        name = name.capitalize() + " "
+        name = (
+            " ".join(substr[0].upper() + substr[1:] for substr in name.split("_")) + " "
+        )
 
     assert mode in (
         "threading",
