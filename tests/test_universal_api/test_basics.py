@@ -144,6 +144,15 @@ class TestUnifyBasics:
         assert client.messages[0]["role"] == "system"
         assert client.messages[1]["role"] == "user"
 
+    def test_json_structor(self):
+        client = Unify(
+            endpoint="gpt-4o@openai",
+            temperature=0.5,
+        )
+        serialized = client.json()
+        assert serialized
+        assert serialized["endpoint"] == "gpt-4o@openai"
+
 
 @pytest.mark.asyncio
 class TestAsyncUnifyBasics:

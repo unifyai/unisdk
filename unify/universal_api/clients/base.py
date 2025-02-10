@@ -1,6 +1,6 @@
 # global
 import requests
-from pydantic import BaseModel
+from pydantic import BaseModel, create_model
 from abc import ABC, abstractmethod
 from typing import Dict, Iterable, List, Mapping, Optional, Union, Type
 
@@ -1021,6 +1021,54 @@ class _Client(ABC):
                 ),
             },
         )
+
+    def json(self):
+        model = create_model(type(self).__name__, __config__={"extra": "allow"})
+        instance = model(
+            **{
+                "type": type(self).__name__,
+                **self._constructor_args,
+                **dict(
+                    system_message=self._system_message,
+                    messages=self._messages,
+                    frequency_penalty=self._frequency_penalty,
+                    logit_bias=self._logit_bias,
+                    logprobs=self._logprobs,
+                    top_logprobs=self._top_logprobs,
+                    max_completion_tokens=self._max_completion_tokens,
+                    n=self._n,
+                    presence_penalty=self._presence_penalty,
+                    response_format=self._response_format,
+                    seed=self._seed,
+                    stop=self._stop,
+                    stream=self._stream,
+                    stream_options=self._stream_options,
+                    temperature=self._temperature,
+                    top_p=self._top_p,
+                    tools=self._tools,
+                    tool_choice=self._tool_choice,
+                    parallel_tool_calls=self._parallel_tool_calls,
+                    # platform arguments
+                    use_custom_keys=self._use_custom_keys,
+                    tags=self._tags,
+                    drop_params=self._drop_params,
+                    region=self._region,
+                    log_query_body=self._log_query_body,
+                    log_response_body=self._log_response_body,
+                    api_key=self._api_key,
+                    # python client arguments
+                    stateful=self._stateful,
+                    return_full_completion=self._return_full_completion,
+                    traced=self._traced,
+                    cache=self._cache,
+                    # passthrough arguments
+                    extra_headers=self._extra_headers,
+                    extra_query=self._extra_query,
+                    extra_body=self._extra_body,
+                ),
+            },
+        )
+        return instance.model_dump()
 
     # Abstract Methods #
     # -----------------#
