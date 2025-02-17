@@ -359,7 +359,7 @@ def add_log_params(
     if USR_LOGGING:
         logging.info(
             f"Added Params {', '.join(list(params.keys()))} "
-            f"to Logs({', '.join(_to_log_ids(logs))})",
+            f"to [Logs({', '.join([str(i) for i in _to_log_ids(logs)])})]",
         )
     return ret
 
@@ -405,7 +405,7 @@ def add_log_entries(
     if USR_LOGGING:
         logging.info(
             f"Added Entries {', '.join(list(entries.keys()))} "
-            f"to Logs({', '.join(_to_log_ids(logs))})",
+            f"to Logs({', '.join([str(i) for i in _to_log_ids(logs)])})",
         )
     return ret
 
@@ -445,7 +445,7 @@ def delete_logs(
     response = requests.delete(BASE_URL + f"/logs", headers=headers, json=body)
     response.raise_for_status()
     if USR_LOGGING:
-        logging.info(f"Deleted Logs({', '.join(log_ids)})")
+        logging.info(f"Deleted Logs({', '.join([str(i) for i in log_ids])})")
     return response.json()
 
 
@@ -484,7 +484,7 @@ def delete_log_fields(
     )
     response.raise_for_status()
     if USR_LOGGING:
-        logging.info(f"Deleted Field `{field}` from Logs({', '.join(log_ids)})")
+        logging.info(f"Deleted Field `{field}` from Logs({', '.join([str(i) for i in log_ids])})")
     return response.json()
 
 
