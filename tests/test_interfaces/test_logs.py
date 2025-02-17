@@ -584,44 +584,44 @@ def test_with_all():
         log = unify.log()
         logs = unify.get_logs()
         assert len(logs) == 1
-        assert logs[0].params == {"a": "a"}
+        assert logs[0].params == {"a": ("0", "a")}
         unify.add_log_params(logs=log, b="b", c="c")
         logs = unify.get_logs()
         assert len(logs) == 1
-        assert logs[0].params == {"a": "a", "b": "b", "c": "c"}
+        assert logs[0].params == {"a": ("0", "a"), "b": ("0", "b"), "c": ("0", "c")}
         with unify.Entries(d="d"):
             unify.add_log_entries(logs=log)
             logs = unify.get_logs()
             assert len(logs) == 1
             assert logs[0].entries == {"d": "d"}
-            assert logs[0].params == {"a": "a", "b": "b", "c": "c"}
+            assert logs[0].params == {"a": ("0", "a"), "b": ("0", "b"), "c": ("0", "c")}
             unify.add_log_entries(logs=log, e="e")
             unify.add_log_params(logs=log, f="f")
             logs = unify.get_logs()
             assert len(logs) == 1
             assert logs[0].entries == {"d": "d", "e": "e"}
             assert logs[0].params == {
-                "a": "a",
-                "b": "b",
-                "c": "c",
-                "f": "f",
+                "a": ("0", "a"),
+                "b": ("0", "b"),
+                "c": ("0", "c"),
+                "f": ("0", "f"),
             }
             with unify.Log():
                 unify.add_log_params(g="g")
                 unify.add_log_entries(h="h")
                 logs = unify.get_logs()
                 assert len(logs) == 2
-                assert logs[1].params == {"a": "a", "g": "g"}
-                assert logs[1].entries == {"d": "d", "h": "h"}
+                assert logs[0].params == {"a": ("0", "a"), "g": ("0", "g")}
+                assert logs[0].entries == {"d": "d", "h": "h"}
             unify.add_log_entries(logs=log, i="i")
             logs = unify.get_logs()
             assert len(logs) == 2
-            assert logs[0].entries == {"d": "d", "e": "e", "i": "i"}
-            assert logs[0].params == {
-                "a": "a",
-                "b": "b",
-                "c": "c",
-                "f": "f",
+            assert logs[1].entries == {"d": "d", "e": "e", "i": "i"}
+            assert logs[1].params == {
+                "a": ("0", "a"),
+                "b": ("0", "b"),
+                "c": ("0", "c"),
+                "f": ("0", "f"),
             }
 
 
