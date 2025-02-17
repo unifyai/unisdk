@@ -63,33 +63,6 @@ def test_get_experiment_version():
 
 # Log
 
-
-@_handle_project
-def test_start_stop_log():
-    tk0 = unify.start_log(a="a")
-    logs = unify.get_logs()
-    assert len(logs) == 1
-    assert logs[0].entries == {"a": "a"}
-    unify.add_log_entries(b="b", c="c")
-    logs = unify.get_logs()
-    assert len(logs) == 1
-    assert logs[0].entries == {"a": "a", "b": "b", "c": "c"}
-    tk1 = unify.start_log(d="d")
-    logs = unify.get_logs()
-    assert len(logs) == 2
-    assert logs[0].entries == {"d": "d"}
-    unify.add_log_entries(e="e", f="f")
-    logs = unify.get_logs()
-    assert len(logs) == 2
-    assert logs[0].entries == {"d": "d", "e": "e", "f": "f"}
-    unify.end_log(tk1)
-    unify.add_log_entries(g="g")
-    logs = unify.get_logs()
-    assert len(logs) == 2
-    assert logs[1].entries == {"a": "a", "b": "b", "c": "c", "g": "g"}
-    unify.end_log(tk0)
-
-
 @_handle_project
 def test_with_log():
 

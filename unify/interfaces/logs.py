@@ -15,54 +15,6 @@ from .utils.compositions import *
 # -----------------#
 
 
-def start_log(
-    *,
-    project: Optional[str] = None,
-    api_key: Optional[str] = None,
-    **entries,
-) -> Token:
-    """
-    Start a new log, such that all subsequent calls to unify.log will continue to
-    populate the currently open log.
-
-    Args:
-        project: Name of the project to get logs from.
-
-        api_key: If specified, unify API key to be used. Defaults to the value in the
-        `UNIFY_KEY` environment variable.
-
-        entries: The entries to start the log. Future calls to unify.log will add
-        more entries to the current logging context.
-
-    Returns:
-        The token which will need to be used to end the log.
-    """
-    lg = unify.log(
-        project=project,
-        new=True,
-        api_key=api_key,
-        **entries,
-    )
-    return lg, ACTIVE_LOG.set(ACTIVE_LOG.get() + [lg])
-
-
-def end_log(
-    token: Token,
-) -> unify.Log:
-    """
-    Closes the currently active logging context.
-
-    Args:
-        token: The token for the logging context to end.
-
-    Returns:
-        The Log instance for the full final log.
-    """
-    log = ACTIVE_LOG.get()[-1]
-    ACTIVE_LOG.reset(token)
-    return log
-
-
 # noinspection PyShadowingBuiltins
 class Log:
     def __init__(
@@ -120,18 +72,6 @@ class Log:
         self._params = log._params
         self._entries = log._entries
 
-    def add_entries(self, **entries) -> None:
-        add_log_entries(logs=self._id, api_key=self._api_key, **entries)
-        self._entries = {**self._entries, **entries}
-
-    def delete_entries(
-        self,
-        keys_to_delete: List[str],
-    ) -> None:
-        for key in keys_to_delete:
-            delete_log_fields(field=key, logs=self._id, api_key=self._api_key)
-            del self._entries[key]
-
     def delete(self) -> None:
         delete_logs(logs=self._id, api_key=self._api_key)
 
@@ -154,11 +94,13 @@ class Log:
     # Context #
 
     def __enter__(self):
-        lg, self._log_token = start_log(
-            self._project,
-            self._api_key,
+        lg = unify.log(
+            project=self._project,
+            new=True,
+            api_key=self._api_key,
             **self._entries,
         )
+        self._log_token = ACTIVE_LOG.set(ACTIVE_LOG.get() + [lg])
         self._active_log_set = False
         self._id = lg.id
         self._ts = lg.ts
