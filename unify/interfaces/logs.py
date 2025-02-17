@@ -4,6 +4,7 @@ import time
 import uuid
 from typing import Tuple
 from datetime import datetime
+from datetime import UTC
 from contextvars import Token
 
 from ..utils.helpers import _validate_api_key, _prune_dict, _make_json_serializable
@@ -229,7 +230,7 @@ def traced(
     def wrapped(*args, **kwargs):
         log_token = None if ACTIVE_LOG.get() else ACTIVE_LOG.set([unify.log()])
         t1 = time.perf_counter()
-        ts = datetime.datetime.utcnow().isoformat()
+        ts = datetime.now(UTC).isoformat()
         if not SPAN.get():
             RUNNING_TIME.set(t1)
         signature = inspect.signature(fn)
