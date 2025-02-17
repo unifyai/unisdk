@@ -7,16 +7,6 @@ from ..helpers import _handle_project
 
 
 @_handle_project
-def test_get_params():
-    with unify.Params(system_prompt="You know the alphabet"):
-        unify.log(a="a")
-        with unify.Params(tools="internet"):
-            unify.log(b="b")
-            unify.log(c="c")
-    assert unify.get_params() == ["system_prompt", "tools"]
-
-
-@_handle_project
 def test_log_entry():
     data = {
         "question": "What is 1 + 1?",

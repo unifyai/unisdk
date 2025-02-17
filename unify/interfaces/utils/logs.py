@@ -459,6 +459,7 @@ def delete_log_fields(
     *,
     field: str,
     logs: Optional[Union[int, unify.Log, List[Union[int, unify.Log]]]] = None,
+    project: Optional[str] = None,
     api_key: Optional[str] = None,
 ) -> Dict[str, str]:
     """
@@ -468,6 +469,8 @@ def delete_log_fields(
         field: Name of the field to delete from the given logs.
 
         logs: log(s) to delete entries from.
+
+        project: Name of the project to delete logs from.
 
         api_key: If specified, unify API key to be used. Defaults to the value in the
         `UNIFY_KEY` environment variable.
@@ -481,7 +484,8 @@ def delete_log_fields(
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    body = {"ids_and_fields": [(log_ids, field)]}
+    project = _get_and_maybe_create_project(project, api_key=api_key)
+    body = {"project": project, "ids_and_fields": [(log_ids, field)]}
     response = requests.delete(
         BASE_URL + f"/logs",
         headers=headers,
