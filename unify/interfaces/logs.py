@@ -72,6 +72,18 @@ class Log:
         self._params = log._params
         self._entries = log._entries
 
+    def add_entries(self, **entries) -> None:
+        add_log_entries(logs=self._id, api_key=self._api_key, **entries)
+        self._entries = {**self._entries, **entries}
+
+    def delete_entries(
+        self,
+        keys_to_delete: List[str],
+    ) -> None:
+        for key in keys_to_delete:
+            delete_log_fields(field=key, logs=self._id, api_key=self._api_key)
+            del self._entries[key]
+
     def delete(self) -> None:
         delete_logs(logs=self._id, api_key=self._api_key)
 
