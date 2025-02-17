@@ -18,7 +18,7 @@ def test_project():
 def test_project_thread_lock():
     # all 10 threads would try to create the project at the same time without
     # thread locking, but only one should acquire the lock, and this should pass
-    unify.map(unify.log, project="test_project", a=[1] * 10, b=[2] * 10, c=[3] * 10)
+    unify.map(unify.log, project="test_project", a=[1] * 10, b=[2] * 10, c=[3] * 10, from_args=True)
     unify.delete_project("test_project")
 
 
