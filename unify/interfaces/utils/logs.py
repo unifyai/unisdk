@@ -191,9 +191,10 @@ def log(
             api_key=api_key,
             **(params if params is not None else {}),
         )
+        log = ACTIVE_LOG.get()[-1]
         if USR_LOGGING:
-            logging.info(f"Updated Log({ACTIVE_LOG.get().id})")
-        return ACTIVE_LOG.get()[-1]
+            logging.info(f"Updated Log({log.id})")
+        return log
     headers = {
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
