@@ -195,18 +195,18 @@ def test_with_context():
                 "capitalized/vowels/e": "E",
             }
             assert logs[0].params == {
-                "capitalized/vowels/u": "U",
+                "capitalized/vowels/u": ("0", "U"),
             }
             unify.log(a="A")
     logs = unify.get_logs()
     assert len(logs) == 2
     assert logs[0].entries == {
+        "capitalized/vowels/a": "A",
+    }
+    assert logs[1].entries == {
         "a": "a",
         "capitalized/b": "B",
         "capitalized/vowels/e": "E",
-    }
-    assert logs[1].entries == {
-        "capitalized/vowels/a": "A",
     }
 
 
