@@ -48,7 +48,6 @@ from .universal_api.utils.supported_endpoints import *
 
 from .interfaces.utils import artifacts
 from .interfaces.utils import compositions
-from .interfaces.utils import datasets
 from .interfaces.utils import logs
 from .interfaces.utils import projects
 
