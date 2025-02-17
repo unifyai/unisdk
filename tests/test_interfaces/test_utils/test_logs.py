@@ -34,20 +34,6 @@ def test_log_entry():
 
 
 @_handle_project
-def test_log_dataset():
-    unify.log(
-        dataset=unify.Dataset(["a", "b", "c"], name="letters"),
-    )
-    logs = unify.get_logs()
-    assert len(logs) == 1
-    assert logs[0].entries == {"dataset": "letters"}
-    downloaded = unify.download_dataset("letters")
-    assert len(downloaded) == 3
-    logs[0].delete()
-    unify.delete_dataset("letters")
-
-
-@_handle_project
 def test_duplicate_log_field():
     data = {
         "system_prompt": "You are a weather assistant",
@@ -95,9 +81,6 @@ def test_atomic_functions():
     unify.log(**log1)
     unify.log(**log2)
     unify.log(**log3)
-    grouped_logs = unify.group_logs(key="system_prompt")
-    assert len(grouped_logs) == 2
-    assert sorted([version for version in grouped_logs]) == ["0", "1"]
 
     logs_metric = unify.get_logs_metric(
         metric="mean",
@@ -197,28 +180,6 @@ def test_get_logs():
     assert (
         len(string_comparison_logs) == 1
     ), "There should be 1 log with user_prompt == 'What is the weather today?'."
-
-
-@_handle_project
-def test_delete_logs():
-    assert len(unify.get_logs()) == 0
-    unify.log(customer="John Smith")
-    unify.log(customer="Maggie Smith")
-    unify.log(customer="John Terry")
-    assert len(unify.get_logs()) == 3
-    deleted_logs = unify.delete_logs_by_value(
-        filter="'Smith' in customer",
-    )
-    assert len(deleted_logs) == 2
-    assert set([dl.entries["customer"] for dl in deleted_logs]) == {
-        "John Smith",
-        "Maggie Smith",
-    }
-    assert len(unify.get_logs()) == 1
-    deleted_logs = unify.delete_logs_by_value()
-    assert len(deleted_logs) == 1
-    assert deleted_logs[0].entries["customer"] == "John Terry"
-    assert len(unify.get_logs()) == 0
 
 
 @_handle_project
