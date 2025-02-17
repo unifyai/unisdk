@@ -650,10 +650,10 @@ def test_with_all_threaded():
     [t.start() for t in threads]
     [t.join() for t in threads]
 
-    logs = unify.get_logs()
+    logs = reversed(unify.get_logs())
 
     params = [log.params for log in logs]
-    observed = [sorted(d.items()) for d in sorted(params, key=lambda x: x["a"])]
+    observed = [sorted([(k,v[1]) for k,v in d.items()]) for d in sorted(params, key=lambda x: x["a"])]
     for i, obs in enumerate(observed):
         if i % 2 == 0:
             assert obs == [
