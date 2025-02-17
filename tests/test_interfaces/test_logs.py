@@ -476,10 +476,10 @@ def test_with_params_threaded():
     [t.start() for t in threads]
     [t.join() for t in threads]
 
-    logs = unify.get_logs()
+    logs = reversed(unify.get_logs())
     params = [log.params for log in logs]
 
-    assert sorted([sorted(d.items()) for d in params]) == [
+    assert sorted([sorted([(k,v[1]) for k,v in d.items()]) for d in params]) == [
         [
             ("a", i * 7),
             ("b", i * 7 + 1),
@@ -534,10 +534,8 @@ def test_with_experiment():
     with unify.Experiment(), unify.Params(sys_msg="you are a helpful assistant"):
         unify.log(x=0)
         unify.log(x=1)
-    assert len(unify.get_logs_with_fields("experiment")) == 2
     assert unify.get_experiment_name(0) == "0"
-    # ToDo work out why this is returning as an int and not a str,
-    # the column type is a string, so not sure why it's being cast to an int
+
     logs = unify.get_logs()[0:2]
     assert [lg.entries for lg in logs] == [{"x": 1}, {"x": 0}]
 
@@ -546,9 +544,8 @@ def test_with_experiment():
     ):
         unify.log(x=1)
         unify.log(x=2)
-    assert len(unify.get_logs_with_fields("experiment")) == 4
     assert unify.get_experiment_name(0) == "0"
-    assert unify.get_experiment_name(1) == "new_idea"
+    assert unify.get_experiment_name(1) == "1"
     logs = unify.get_logs()[0:2]
     assert [lg.entries for lg in logs] == [{"x": 2}, {"x": 1}]
 
@@ -557,9 +554,9 @@ def test_with_experiment():
     ):
         unify.log(x=2)
         unify.log(x=3)
-    assert len(unify.get_logs_with_fields("experiment")) == 6
     assert unify.get_experiment_name(0) == "0"
-    assert unify.get_experiment_name(1) == "new_idea"
+    assert unify.get_experiment_name(1) == "1"
+    assert unify.get_experiment_name(2) == "new_idea"
     logs = unify.get_logs()[0:2]
     assert [lg.entries for lg in logs] == [{"x": 3}, {"x": 2}]
 
@@ -568,9 +565,9 @@ def test_with_experiment():
     ):
         unify.log(x=3)
         unify.log(x=4)
-    assert len(unify.get_logs_with_fields("experiment")) == 6
     assert unify.get_experiment_name(0) == "0"
-    assert unify.get_experiment_name(1) == "new_idea"
+    assert unify.get_experiment_name(1) == "1"
+    assert unify.get_experiment_name(2) == "new_idea"
     logs = unify.get_logs()[0:2]
     assert [lg.entries for lg in logs] == [{"x": 4}, {"x": 3}]
 

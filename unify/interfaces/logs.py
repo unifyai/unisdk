@@ -190,7 +190,7 @@ class Experiment:
 
     def __enter__(self):
         if self._overwrite:
-            logs = get_logs_by_value(experiment=self._name)
+            logs = get_logs(filter=f"experiment=='{self._name}'")
             delete_logs(logs=logs)
         self._params_token = ACTIVE_PARAMS.set(
             {**ACTIVE_PARAMS.get(), **{"experiment": self._name}},
