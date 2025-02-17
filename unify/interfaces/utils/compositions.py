@@ -88,15 +88,14 @@ def get_experiment_name(version: int, api_key: Optional[str] = None) -> str:
     Returns:
         The experiment name with said version.
     """
-    logs = get_logs_with_fields("experiment", api_key=api_key)
-    if not logs:
+    experiments = get_groups(key="experiment", api_key=api_key)
+    if not experiments:
         return None
-    if version < 0:
-        latest_version = max(
-            [int(lg.params["experiment"][0]) for lg in logs],
-        )
-        version = latest_version + version + 1
-    return get_param_by_version("experiment", version, api_key)
+    elif version < 0:
+        version = len(experiments) + version
+    if str(version) not in experiments:
+        return None
+    return experiments[str(version)]
 
 
 def get_experiment_version(name: str, api_key: Optional[str] = None) -> int:
