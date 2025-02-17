@@ -420,38 +420,38 @@ def test_with_params():
         log = unify.log()
         logs = unify.get_logs()
         assert len(logs) == 1
-        assert logs[0].params == {"a": "a"}
+        assert logs[0].params == {"a": ("0","a")}
         unify.add_log_params(logs=log, b="b", c="c")
         logs = unify.get_logs()
         assert len(logs) == 1
-        assert logs[0].params == {"a": "a", "b": "b", "c": "c"}
+        assert logs[0].params == {"a": ("0","a"), "b": ("0", "b"), "c": ("0", "c")}
         with unify.Params(d="d"):
             unify.add_log_params(logs=log)
             logs = unify.get_logs()
             assert len(logs) == 1
-            assert logs[0].params == {"a": "a", "b": "b", "c": "c", "d": "d"}
+            assert logs[0].params == {"a": ("0","a"), "b": ("0", "b"), "c": ("0", "c"), "d": ("0", "d")}
             unify.add_log_params(logs=log, e="e", f="f")
             logs = unify.get_logs()
             assert len(logs) == 1
             assert logs[0].params == {
-                "a": "a",
-                "b": "b",
-                "c": "c",
-                "d": "d",
-                "e": "e",
-                "f": "f",
+                "a": ("0","a"),
+                "b": ("0", "b"),
+                "c": ("0", "c"),
+                "d": ("0", "d"),
+                "e": ("0", "e"),
+                "f": ("0", "f"),
             }
         unify.add_log_params(logs=log, g="g")
         logs = unify.get_logs()
         assert len(logs) == 1
         assert logs[0].params == {
-            "a": "a",
-            "b": "b",
-            "c": "c",
-            "d": "d",
-            "e": "e",
-            "f": "f",
-            "g": "g",
+            "a": ("0","a"),
+            "b": ("0", "b"),
+            "c": ("0", "c"),
+            "d": ("0", "d"),
+            "e": ("0", "e"),
+            "f": ("0", "f"),
+            "g": ("0", "g"),
         }
 
 
