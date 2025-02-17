@@ -247,7 +247,7 @@ def test_with_context_threaded():
     [t.start() for t in threads]
     [t.join() for t in threads]
 
-    logs = unify.get_logs()
+    logs = reversed(unify.get_logs())
     entries = sorted(
         [log.entries for log in logs],
         key=lambda dct: list(dct.values())[0],
