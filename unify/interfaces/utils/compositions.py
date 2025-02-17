@@ -111,7 +111,10 @@ def get_experiment_version(name: str, api_key: Optional[str] = None) -> int:
     Returns:
         The experiment version with said name.
     """
-    logs = get_logs_with_fields("experiment", api_key=api_key)
-    if not logs:
+    experiments = get_groups(key="experiment", api_key=api_key)
+    if not experiments:
         return None
-    return get_param_by_value("experiment", name, api_key)
+    experiments = {v: k for k, v in experiments.items()}
+    if name not in experiments:
+        return None
+    return int(experiments[name])

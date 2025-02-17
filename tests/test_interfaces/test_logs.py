@@ -53,9 +53,9 @@ def test_get_experiment_version():
     unify.log(params={"experiment": "first_try"}, x=0)
     unify.log(params={"experiment": "second_try"}, x=1)
     unify.log(params={"experiment": "third_try"}, x=2)
-    assert unify.get_experiment_version("third_try") == "2"
-    assert unify.get_experiment_version("second_try") == "1"
-    assert unify.get_experiment_version("first_try") == "0"
+    assert unify.get_experiment_version("third_try") == 2
+    assert unify.get_experiment_version("second_try") == 1
+    assert unify.get_experiment_version("first_try") == 0
 
 
 # Context Handlers #
