@@ -217,10 +217,10 @@ class TestDatasetTrimming:
         assert len(dataset) == 1
         assert dataset[0] == "a"
 
-    def test_dataset_from_prompt_subtraction(self) -> None:
-        dataset = unify.Prompt("b") + unify.Prompt("a") - unify.Prompt("b")
+    def test_dataset_from_item_subtraction(self) -> None:
+        dataset = unify.Dataset("b") + "a" - "b"
         assert len(dataset) == 1
-        assert dataset[0] == unify.Prompt("a")
+        assert dataset[0] == "a"
 
 
 class UploadTesting:
