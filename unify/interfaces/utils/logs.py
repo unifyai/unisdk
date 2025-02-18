@@ -272,11 +272,9 @@ def create_logs(
     context: Optional[str] = None,
     entries: List[Dict[str, Any]] = None,
     params: List[Dict[str, Any]] = None,
-    new: bool = False,
-    overwrite: bool = False,
     mutable: Optional[Union[bool, Dict[str, bool]]] = True,
     api_key: Optional[str] = None,
-) -> List[unify.Log]:
+) -> List[int]:
     """
     Creates one or more logs associated to a project.
 
@@ -288,12 +286,6 @@ def create_logs(
         entries: List of dictionaries with the entries to be logged.
 
         params: List of dictionaries with the params to be logged.
-
-        new: Whether to create a new log if there is a currently active global lob.
-        Defaults to False, in which case log will add to the existing log.
-
-        overwrite: If adding to an existing log, dictates whether or not to overwrite
-        fields with the same name.
 
         mutable: Either a boolean to apply uniform mutability for all fields, or a dictionary mapping field names to booleans for per-field control. Defaults to True.
 

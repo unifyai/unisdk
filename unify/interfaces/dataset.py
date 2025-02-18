@@ -70,7 +70,7 @@ class Dataset:
         """
         Dataset entries.
         """
-        return [_to_raw_data(dt.entries) for dt in self._logs]
+        return [_to_raw_data(l.entries) for l in self._logs]
 
     def _set_data(self, data):
         self._logs = [

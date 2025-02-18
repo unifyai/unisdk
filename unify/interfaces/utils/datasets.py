@@ -50,7 +50,7 @@ def upload_dataset(
     *,
     project: Optional[str] = None,
     api_key: Optional[str] = None,
-) -> List[Log]:
+) -> List[int]:
     """
     Upload a dataset to the server.
 
@@ -63,23 +63,19 @@ def upload_dataset(
 
         api_key: If specified, unify API key to be used. Defaults to the value in the
         `UNIFY_KEY` environment variable.
+    Returns:
+        A list of the newly created dataset logs.
     """
     api_key = _validate_api_key(api_key)
     project = _get_and_maybe_create_project(project, api_key=api_key)
-    headers = {
-        "accept": "application/json",
-        "Authorization": f"Bearer {api_key}",
-    }
     if not all(isinstance(item, dict) for item in data):
         data = [{"data": item} for item in data]
-    logs = create_logs(
+    ids = create_logs(
         project=project,
         context=f"Datasets/{name}",
         entries=data,
-        new=True,
-        overwrite=True,
     )
-    return logs
+    return ids
 
 
 def download_dataset(
@@ -101,10 +97,6 @@ def download_dataset(
     """
     api_key = _validate_api_key(api_key)
     project = _get_and_maybe_create_project(project, api_key=api_key)
-    headers = {
-        "accept": "application/json",
-        "Authorization": f"Bearer {api_key}",
-    }
     logs = get_logs(
         project=project,
         context=f"Datasets/{name}",
@@ -146,5 +138,39 @@ def delete_dataset(
     delete_context(f"Datasets/{name}", project=project, api_key=api_key)
 
 
-def download_dataset_artifacts():
-    pass
+def add_dataset_entries(
+    name: str,
+    data: List[Any],
+    *,
+    project: Optional[str] = None,
+    api_key: Optional[str] = None,
+) -> List[int]:
+    """
+    Adds entries to an existing dataset in the server.
+
+    Args:
+        name: Name of the dataset.
+
+        contents: Contents to add to the dataset.
+
+        project: Name of the project the dataset belongs to.
+
+        api_key: If specified, unify API key to be used. Defaults to the value in the
+        `UNIFY_KEY` environment variable.
+    Returns:
+        A list of the newly added dataset logs.
+    """
+    api_key = _validate_api_key(api_key)
+    project = _get_and_maybe_create_project(
+        project,
+        api_key=api_key,
+        create_if_missing=False,
+    )
+    if not all(isinstance(item, dict) for item in data):
+        data = [{"data": item} for item in data]
+    logs = create_logs(
+        project=project,
+        context=f"Datasets/{name}",
+        entries=data,
+    )
+    return logs

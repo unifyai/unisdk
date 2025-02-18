@@ -47,6 +47,55 @@ def test_upload_dataset():
 
 
 @_handle_project
+def test_add_dataset_entries():
+    dataset = [
+        {
+            "name": "Dan",
+            "age": 31,
+            "gender": "male",
+        },
+        {
+            "name": "Jane",
+            "age": 25,
+            "gender": "female",
+        },
+        {
+            "name": "John",
+            "age": 35,
+            "gender": "male",
+        },
+    ]
+    ids = unify.upload_dataset("staff", dataset)
+    assert len(ids) == 3
+    dataset = unify.download_dataset("staff")
+    assert len(dataset) == 3
+    assert dataset[0].entries["name"] == "Dan"
+    assert dataset[1].entries["name"] == "Jane"
+    assert dataset[2].entries["name"] == "John"
+    new_entries = [
+        {
+            "name": "Chloe",
+            "age": 28,
+            "gender": "female",
+        },
+        {
+            "name": "Tom",
+            "age": 32,
+            "gender": "male",
+        },
+    ]
+    ids = unify.add_dataset_entries("staff", new_entries)
+    assert len(ids) == 2
+    dataset = unify.download_dataset("staff")
+    assert len(dataset) == 5
+    assert dataset[0].entries["name"] == "Dan"
+    assert dataset[1].entries["name"] == "Jane"
+    assert dataset[2].entries["name"] == "John"
+    assert dataset[3].entries["name"] == "Chloe"
+    assert dataset[4].entries["name"] == "Tom"
+
+
+@_handle_project
 def test_download_dataset():
     dataset = [
         {
