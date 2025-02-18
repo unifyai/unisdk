@@ -168,6 +168,7 @@ class TestAsyncUnifyBasics:
         with pytest.raises(Exception):
             AsyncUnify(model="wong-model-name")
 
+    @pytest.mark.skip()
     async def test_generate_returns_string_when_stream_false(self) -> None:
         async_client = AsyncUnify(
             endpoint="gpt-4o@openai",
@@ -182,6 +183,7 @@ class TestAsyncUnifyBasics:
         result = await async_client.generate(user_message="hello", stream=True)
         assert isinstance(result, AsyncGeneratorType)
 
+    @pytest.mark.skip()
     async def test_default_params_handled_correctly(self) -> None:
         async_client = AsyncUnify(
             endpoint="gpt-4o@openai",

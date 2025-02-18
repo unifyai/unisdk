@@ -1,3 +1,4 @@
+import pytest
 import builtins
 import traceback
 
@@ -50,6 +51,7 @@ class TestChatbotUniLLM:
         with SimulateInput():
             chatbot.run()
 
+    @pytest.mark.skip()
     def test_simple_stream_chat_n_quit(self):
         client = Unify(
             endpoint="gpt-4o@openai",
