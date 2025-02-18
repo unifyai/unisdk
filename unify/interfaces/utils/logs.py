@@ -136,10 +136,20 @@ def _apply_col_context(**data):
     return {os.path.join(col_context, k): v for k, v in data.items()}
 
 
+def _handle_context(context: Optional[Union[str, Dict[str, str]]] = None):
+    if context is None:
+        return None
+    if isinstance(context, str):
+        return {"name": context}
+    else:
+        return context
+
+
 @_handle_cache
 def log(
     *,
     project: Optional[str] = None,
+    context: Optional[str] = None,
     params: Dict[str, Any] = None,
     new: bool = False,
     overwrite: bool = False,
@@ -154,6 +164,8 @@ def log(
 
     Args:
         project: Name of the project the stored logs will be associated to.
+
+        context: Context for the logs.
 
         params: Dictionary containing one or more key:value pairs that will be
         logged into the platform as params.
@@ -176,20 +188,21 @@ def log(
         The unique id of newly created log.
     """
     api_key = _validate_api_key(api_key)
+    context = _handle_context(context)
     if not new and ACTIVE_LOG.get():
         _add_to_log(
+            context=context,
             mode="entries",
             overwrite=overwrite,
             mutable=mutable,
-            context=context,
             api_key=api_key,
             **entries,
         )
         _add_to_log(
+            context=context,
             mode="params",
             overwrite=overwrite,
             mutable=mutable,
-            context=context,
             api_key=api_key,
             **(params if params is not None else {}),
         )
@@ -222,7 +235,12 @@ def log(
                 if k != "explicit_types":
                     entries.setdefault("explicit_types", {})[k] = {"mutable": mutable}
     project = _get_and_maybe_create_project(project, api_key=api_key)
-    body = {"project": project, "params": params, "entries": entries}
+    body = {
+        "project": project,
+        "context": context,
+        "params": params,
+        "entries": entries,
+    }
     response = requests.post(BASE_URL + "/logs", headers=headers, json=body)
     if response.status_code != 200:
         raise Exception(response.json())
@@ -231,6 +249,7 @@ def log(
         api_key=api_key,
         **entries,
         params=params,
+        context=context,
     )
     if PARAMS_NEST_LEVEL.get() > 0 or ENTRIES_NEST_LEVEL.get() > 0:
         LOGGED.set(

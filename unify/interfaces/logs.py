@@ -24,6 +24,7 @@ class Log:
         id: int = None,
         ts: Optional[datetime] = None,
         project: Optional[str] = None,
+        context: Optional[str] = None,
         api_key: Optional[str] = None,
         params: Dict[str, Tuple[str, Any]] = None,
         **entries,
@@ -31,11 +32,16 @@ class Log:
         self._id = id
         self._ts = ts
         self._project = project
+        self._context = context
         self._entries = entries
         self._params = params
         self._api_key = _validate_api_key(api_key)
 
     # Properties
+
+    @property
+    def context(self) -> Optional[str]:
+        return self._context
 
     @property
     def id(self) -> int:

@@ -45,6 +45,11 @@ def get_contexts(
     if response.status_code != 200:
         raise Exception(response.json())
     contexts = response.json()
+    contexts = {context["name"]: context["description"] for context in contexts}
     if prefix:
-        contexts = [context for context in contexts if context.startswith(prefix)]
+        contexts = {
+            context: description
+            for context, description in contexts.items()
+            if context.startswith(prefix)
+        }
     return contexts

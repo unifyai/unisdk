@@ -10,7 +10,6 @@ def test_contexts():
     unify.log(x=0, context="a/c")
     unify.log(x=1, context="a/c")
     contexts = unify.get_contexts()
-    breakpoint()
     assert len(contexts) == 2
     assert "a/b" in contexts
     assert "a/c" in contexts
