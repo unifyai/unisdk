@@ -68,7 +68,7 @@ class TestDatasetConstruction:
         dataset.upload()
         assert "TestCreateDatasetFromStr" in unify.list_datasets()
         dataset = unify.Dataset.from_upstream("TestCreateDatasetFromStr")
-        assert isinstance(dataset._raw_data[0], dict)
+        assert isinstance(dataset._raw_data[0], unify.Log)
         unify.delete_dataset("TestCreateDatasetFromStr")
         assert "TestCreateDatasetFromStr" not in unify.list_datasets()
 
