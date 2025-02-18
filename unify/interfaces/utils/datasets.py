@@ -5,6 +5,7 @@ from ...utils.helpers import _validate_api_key, _get_and_maybe_create_project
 from unify import BASE_URL
 from .contexts import *
 from .logs import *
+from ..logs import Log
 
 
 # Datasets #
@@ -49,7 +50,7 @@ def upload_dataset(
     *,
     project: Optional[str] = None,
     api_key: Optional[str] = None,
-) -> None:
+) -> List[Log]:
     """
     Upload a dataset to the server.
 
@@ -77,5 +78,35 @@ def upload_dataset(
         entries=data,
         new=True,
         overwrite=True,
+    )
+    return logs
+
+
+def download_dataset(
+    name: str,
+    *,
+    project: Optional[str] = None,
+    api_key: Optional[str] = None,
+) -> List[Log]:
+    """
+    Download a dataset from the server.
+
+    Args:
+        name: Name of the dataset.
+
+        project: Name of the project the dataset belongs to.
+
+        api_key: If specified, unify API key to be used. Defaults to the value in the
+        `UNIFY_KEY` environment variable.
+    """
+    api_key = _validate_api_key(api_key)
+    project = _get_and_maybe_create_project(project, api_key=api_key)
+    headers = {
+        "accept": "application/json",
+        "Authorization": f"Bearer {api_key}",
+    }
+    logs = get_logs(
+        project=project,
+        context=f"Datasets/{name}",
     )
     return logs

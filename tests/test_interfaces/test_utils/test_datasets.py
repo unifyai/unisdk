@@ -46,5 +46,29 @@ def test_upload_dataset():
     assert len(data) == 3
 
 
+@_handle_project
+def test_download_dataset():
+    dataset = [
+        {
+            "name": "Dan",
+            "age": 31,
+            "gender": "male",
+        },
+        {
+            "name": "Jane",
+            "age": 25,
+            "gender": "female",
+        },
+        {
+            "name": "John",
+            "age": 35,
+            "gender": "male",
+        },
+    ]
+    unify.upload_dataset("staff", dataset)
+    data = unify.download_dataset("staff")
+    assert len(data) == 3
+
+
 if __name__ == "__main__":
     pass

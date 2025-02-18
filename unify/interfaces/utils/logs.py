@@ -584,6 +584,7 @@ def delete_log_fields(
 def get_logs(
     *,
     project: Optional[str] = None,
+    context: Optional[str] = None,
     filter: Optional[str] = None,
     limit: Optional[int] = None,
     offset: int = 0,
@@ -594,6 +595,8 @@ def get_logs(
 
     Args:
         project: Name of the project to get logs from.
+
+        context: Context of the logs to get.
 
         filter: Boolean string to filter logs, for example:
         "(temperature > 0.5 and (len(system_msg) < 100 or 'no' in usr_response))"
@@ -608,6 +611,7 @@ def get_logs(
     Returns:
         The list of logs for the project, after optionally applying filtering.
     """
+    # ToDo: add support for all context handlers
     api_key = _validate_api_key(api_key)
     headers = {
         "accept": "application/json",
@@ -616,6 +620,7 @@ def get_logs(
     project = _get_and_maybe_create_project(project, api_key=api_key)
     params = {
         "project": project,
+        "context": context,
         "filter_expr": filter,
         "limit": limit,
         "offset": offset,
