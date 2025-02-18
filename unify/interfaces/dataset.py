@@ -17,7 +17,6 @@ class Dataset:
         data: Any,
         *,
         name: str = None,
-        artifacts: Dict[str, Any] = None,
         with_ids: Optional[bool] = False,
         api_key: Optional[str] = None,
     ) -> None:
@@ -30,8 +29,6 @@ class Dataset:
 
             name: The name of the dataset. To create a dataset for a specific project
             with name {project_name}, then prefix the name with {project_name}/{name}.
-
-            artifacts: Dataset metadata. This is an optional dict.
 
             with_ids: If platform entry ids are passed with the data. Defaults to False.
 
@@ -51,9 +48,6 @@ class Dataset:
             self._raw_data = data
         else:
             self._raw_data = [{"id": None, "entry": entry} for entry in data]
-        if artifacts is None:
-            artifacts = {}
-        self._artifacts = artifacts
         self._api_key = _validate_api_key(api_key)
         super().__init__()
 
@@ -109,11 +103,9 @@ class Dataset:
             UnifyError: If the API key is missing.
         """
         data = unify.download_dataset(name=name, api_key=api_key)
-        artifacts = unify.download_dataset_artifacts(name=name, api_key=api_key)
         return Dataset(
             data,
             name=name,
-            artifacts=artifacts,
             with_ids=True,
             api_key=api_key,
         )
@@ -190,20 +182,13 @@ class Dataset:
             name=self._name,
             api_key=self._api_key,
         )
-        upstream_artifacts = unify.download_dataset_artifacts(
-            name=self._name,
-            api_key=self._api_key,
-        )
         _data = upstream_dataset
-        _artifacts = upstream_artifacts
         existing_data = set([d["entry"] for d in upstream_dataset])
         if not overwrite:
             _data += [
                 item for item in self._raw_data if item["entry"] not in existing_data
             ]
-            _artifacts.update(self._artifacts)
         self._raw_data = _data
-        self._artifacts = _artifacts
 
         return self
 

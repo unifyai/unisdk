@@ -144,3 +144,7 @@ def delete_dataset(
     )
     # end ToDo
     delete_context(f"Datasets/{name}", project=project, api_key=api_key)
+
+
+def download_dataset_artifacts():
+    pass
