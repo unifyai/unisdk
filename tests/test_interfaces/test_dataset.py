@@ -322,9 +322,9 @@ class TestDatasetDownloading:
         with DownloadTesting():
             dataset = unify.Dataset.from_upstream("test_dataset")
             for item in dataset._logs:
-                assert "id" in item
-                assert "entry" in item
-                assert isinstance(item["id"], str)
+                assert item.id is not None
+                assert isinstance(item.id, int)
+                assert item.entries is not None
 
 
 class TestDatasetSync:
