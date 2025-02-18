@@ -117,10 +117,10 @@ class TestDatasetManipulation:
         assert dataset3 not in dataset1
 
     def test_dataset_one_liners(self) -> None:
-        dataset = ("a" + unify.Prompt("b")).add("c").set_name("my_dataset")
+        dataset = (unify.Dataset(["a"]) + "b").add("c").set_name("my_dataset")
         assert dataset.name == "my_dataset"
         assert "a" in dataset
-        assert unify.Prompt("b") in dataset
+        assert "b" in dataset
         assert "c" in dataset
 
 
