@@ -63,6 +63,7 @@ def test_get_experiment_version():
 
 # Log
 
+
 @_handle_project
 def test_with_log():
 
@@ -420,21 +421,26 @@ def test_with_params():
         log = unify.log()
         logs = unify.get_logs()
         assert len(logs) == 1
-        assert logs[0].params == {"a": ("0","a")}
+        assert logs[0].params == {"a": ("0", "a")}
         unify.add_log_params(logs=log, b="b", c="c")
         logs = unify.get_logs()
         assert len(logs) == 1
-        assert logs[0].params == {"a": ("0","a"), "b": ("0", "b"), "c": ("0", "c")}
+        assert logs[0].params == {"a": ("0", "a"), "b": ("0", "b"), "c": ("0", "c")}
         with unify.Params(d="d"):
             unify.add_log_params(logs=log)
             logs = unify.get_logs()
             assert len(logs) == 1
-            assert logs[0].params == {"a": ("0","a"), "b": ("0", "b"), "c": ("0", "c"), "d": ("0", "d")}
+            assert logs[0].params == {
+                "a": ("0", "a"),
+                "b": ("0", "b"),
+                "c": ("0", "c"),
+                "d": ("0", "d"),
+            }
             unify.add_log_params(logs=log, e="e", f="f")
             logs = unify.get_logs()
             assert len(logs) == 1
             assert logs[0].params == {
-                "a": ("0","a"),
+                "a": ("0", "a"),
                 "b": ("0", "b"),
                 "c": ("0", "c"),
                 "d": ("0", "d"),
@@ -445,7 +451,7 @@ def test_with_params():
         logs = unify.get_logs()
         assert len(logs) == 1
         assert logs[0].params == {
-            "a": ("0","a"),
+            "a": ("0", "a"),
             "b": ("0", "b"),
             "c": ("0", "c"),
             "d": ("0", "d"),
@@ -479,7 +485,7 @@ def test_with_params_threaded():
     logs = reversed(unify.get_logs())
     params = [log.params for log in logs]
 
-    assert sorted([sorted([(k,v[1]) for k,v in d.items()]) for d in params]) == [
+    assert sorted([sorted([(k, v[1]) for k, v in d.items()]) for d in params]) == [
         [
             ("a", i * 7),
             ("b", i * 7 + 1),
@@ -653,7 +659,10 @@ def test_with_all_threaded():
     logs = reversed(unify.get_logs())
 
     params = [log.params for log in logs]
-    observed = [sorted([(k,v[1]) for k,v in d.items()]) for d in sorted(params, key=lambda x: x["a"])]
+    observed = [
+        sorted([(k, v[1]) for k, v in d.items()])
+        for d in sorted(params, key=lambda x: x["a"])
+    ]
     for i, obs in enumerate(observed):
         if i % 2 == 0:
             assert obs == [

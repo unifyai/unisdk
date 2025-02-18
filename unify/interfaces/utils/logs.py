@@ -494,7 +494,9 @@ def delete_log_fields(
     if response.status_code != 200:
         raise Exception(response.json())
     if USR_LOGGING:
-        logging.info(f"Deleted Field `{field}` from Logs({', '.join([str(i) for i in log_ids])})")
+        logging.info(
+            f"Deleted Field `{field}` from Logs({', '.join([str(i) for i in log_ids])})",
+        )
     return response.json()
 
 
