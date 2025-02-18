@@ -48,6 +48,7 @@ def upload_dataset(
     name: str,
     data: List[Any],
     *,
+    overwrite: bool = False,
     project: Optional[str] = None,
     api_key: Optional[str] = None,
 ) -> List[int]:
@@ -57,7 +58,9 @@ def upload_dataset(
     Args:
         name: Name of the dataset.
 
-        contents: Contents of the dataset.
+        data: Contents of the dataset.
+
+        overwrite: Whether to overwrite the dataset if it already exists.
 
         project: Name of the project the dataset belongs to.
 
@@ -70,6 +73,8 @@ def upload_dataset(
     project = _get_and_maybe_create_project(project, api_key=api_key)
     if not all(isinstance(item, dict) for item in data):
         data = [{"data": item} for item in data]
+    if overwrite:
+        delete_dataset(name, project=project, api_key=api_key)
     ids = create_logs(
         project=project,
         context=f"Datasets/{name}",

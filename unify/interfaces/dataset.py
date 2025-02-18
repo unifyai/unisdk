@@ -148,27 +148,7 @@ class Dataset:
 
         self._assert_name_exists()
         raw_data = [_dump(d) for d in self._data]
-        dataset_exists_upstream = self._name in unify.list_datasets(
-            api_key=self._api_key,
-        )
-        if dataset_exists_upstream:
-            if overwrite:
-                upstream_dataset = unify.download_dataset(
-                    name=self._name,
-                    api_key=self._api_key,
-                )
-                unique_upstream_ids = [
-                    item["id"]
-                    for item in upstream_dataset
-                    if item["entry"] not in self._data
-                ]
-
-                for _id in unique_upstream_ids:
-                    unify.delete_dataset_entry(name=self._name, id=_id)
-
-            unify.add_dataset_entries(name=self._name, data=raw_data)
-        else:
-            unify.upload_dataset(name=self._name, data=raw_data)
+        unify.upload_dataset(name=self._name, data=raw_data, overwrite=overwrite)
 
         return self
 
