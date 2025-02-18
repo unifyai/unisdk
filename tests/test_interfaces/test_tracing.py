@@ -275,7 +275,7 @@ def test_traced_none_handling():
     some_func(1, 2, None, 4)
     logs = unify.get_logs()
     assert len(logs) == 2
-    entries = logs[1].entries
+    entries = logs[0].entries
     assert entries["trace"]["inputs"] == {"a": 1, "b": 2, "d": 4}
     assert entries["trace"]["span_name"] == "some_func"
     assert (

@@ -447,7 +447,6 @@ def delete_logs(
     body = {"project": project, "ids_and_fields": [(log_ids, None)]}
     response = requests.delete(BASE_URL + f"/logs", headers=headers, json=body)
     if response.status_code != 200:
-        breakpoint()
         raise Exception(response.json())
     if USR_LOGGING:
         logging.info(f"Deleted Logs({', '.join([str(i) for i in log_ids])})")
