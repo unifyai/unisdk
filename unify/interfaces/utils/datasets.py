@@ -109,7 +109,7 @@ def download_dataset(
         project=project,
         context=f"Datasets/{name}",
     )
-    return logs
+    return list(reversed(logs))
 
 
 def delete_dataset(
