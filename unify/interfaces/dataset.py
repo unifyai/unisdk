@@ -167,7 +167,7 @@ class Dataset:
 
             unify.add_dataset_entries(name=self._name, data=raw_data)
         else:
-            unify.upload_dataset(name=self._name, content=raw_data)
+            unify.upload_dataset(name=self._name, data=raw_data)
 
         return self
 

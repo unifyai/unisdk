@@ -303,6 +303,7 @@ def create_logs(
     """
     api_key = _validate_api_key(api_key)
     project = _get_and_maybe_create_project(project, api_key=api_key)
+    context = _handle_context(context)
     headers = {
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
@@ -311,10 +312,14 @@ def create_logs(
     body = {
         "project": project,
         "context": context,
-        "params": params,
-        "entries": entries,
+        "params": [{}] * len(entries) if params is None else params,
+        "entries": [{}] * len(params) if entries is None else entries,
     }
+    # ToDo remove the params/entries logic above once this [https://app.clickup.com/t/86c25g263] is done
     response = requests.post(BASE_URL + "/logs", headers=headers, json=body)
+    if response.status_code != 200:
+        raise Exception(response.json())
+    return response.json()
 
 
 @_handle_cache

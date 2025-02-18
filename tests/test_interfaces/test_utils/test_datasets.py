@@ -23,5 +23,28 @@ def test_list_datasets():
     assert "Prod/TestSet" not in datasets
 
 
+@_handle_project
+def test_upload_dataset():
+    dataset = [
+        {
+            "name": "Dan",
+            "age": 31,
+            "gender": "male",
+        },
+        {
+            "name": "Jane",
+            "age": 25,
+            "gender": "female",
+        },
+        {
+            "name": "John",
+            "age": 35,
+            "gender": "male",
+        },
+    ]
+    data = unify.upload_dataset("staff", dataset)
+    assert len(data) == 3
+
+
 if __name__ == "__main__":
     pass
