@@ -71,7 +71,7 @@ def upload_dataset(
         "Authorization": f"Bearer {api_key}",
     }
     if not all(isinstance(item, dict) for item in data):
-        data = [{name: item} for item in data]
+        data = [{"data": item} for item in data]
     logs = create_logs(
         project=project,
         context=f"Datasets/{name}",
