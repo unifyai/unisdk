@@ -116,7 +116,6 @@ class Dataset:
         return Dataset(
             data,
             name=name,
-            with_ids=True,
             api_key=api_key,
         )
 
