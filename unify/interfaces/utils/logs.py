@@ -116,7 +116,9 @@ def _to_log_ids(
     elif isinstance(logs, unify.Log):
         return [logs.id]
     elif isinstance(logs, list):
-        if isinstance(logs[0], int):
+        if not logs:
+            return logs
+        elif isinstance(logs[0], int):
             return logs
         elif isinstance(logs[0], unify.Log):
             return [lg.id for lg in logs]
