@@ -25,8 +25,8 @@ USR_LOGGING = True
 ACTIVE_LOG = ContextVar("active_log", default=[])
 LOGGED = ContextVar("logged", default={})
 
-# context
-CONTEXT = ContextVar("context", default="")
+# column context
+COLUMN_CONTEXT = ContextVar("context", default="")
 
 # entries
 ACTIVE_ENTRIES = ContextVar(
@@ -131,9 +131,9 @@ def _to_log_ids(
     )
 
 
-def _apply_context(**data):
-    context = CONTEXT.get()
-    return {os.path.join(context, k): v for k, v in data.items()}
+def _apply_col_context(**data):
+    col_context = COLUMN_CONTEXT.get()
+    return {os.path.join(col_context, k): v for k, v in data.items()}
 
 
 @_handle_cache
@@ -181,6 +181,7 @@ def log(
             mode="entries",
             overwrite=overwrite,
             mutable=mutable,
+            context=context,
             api_key=api_key,
             **entries,
         )
@@ -188,6 +189,7 @@ def log(
             mode="params",
             overwrite=overwrite,
             mutable=mutable,
+            context=context,
             api_key=api_key,
             **(params if params is not None else {}),
         )
@@ -199,8 +201,8 @@ def log(
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    params = _apply_context(**(params if params else {}))
-    entries = _apply_context(**entries)
+    params = _apply_col_context(**(params if params else {}))
+    entries = _apply_col_context(**entries)
     params = {**params, **ACTIVE_PARAMS.get()}
     params = _handle_special_types(params)
     entries = {**entries, **ACTIVE_ENTRIES.get()}
@@ -256,7 +258,7 @@ def _add_to_log(
         "params",
         "entries",
     ), "mode must be one of 'params', 'entries'"
-    data = _apply_context(**data)
+    data = _apply_col_context(**data)
     nest_level = {
         "params": PARAMS_NEST_LEVEL,
         "entries": ENTRIES_NEST_LEVEL,
