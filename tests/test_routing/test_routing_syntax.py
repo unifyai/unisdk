@@ -93,7 +93,7 @@ def test_routing_w_models():
 
 def test_routing_skip_models():
     unify.Unify(
-        "router@q:1|i:0.5|skip_models:gpt-4o,o1-preview,claude-3-sonnet",
+        "router@q:1|i:0.5|skip_models:gpt-4o,o3-mini,claude-3-sonnet",
     ).generate("Hello.")
 
 
