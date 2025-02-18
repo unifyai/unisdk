@@ -23,5 +23,16 @@ def test_get_contexts():
     assert "a/b" not in contexts
 
 
+@_handle_project
+def test_delete_context():
+    unify.log(x=0, context="a/b")
+    contexts = unify.get_contexts()
+    assert len(contexts) == 1
+    assert "a/b" in contexts
+    unify.delete_context("a/b")
+    assert "a/b" not in unify.get_contexts()
+    assert len(unify.get_logs()) == 0
+
+
 if __name__ == "__main__":
     pass

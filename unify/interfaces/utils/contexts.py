@@ -37,7 +37,11 @@ def get_contexts(
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    project = _get_and_maybe_create_project(project, api_key=api_key)
+    project = _get_and_maybe_create_project(
+        project,
+        api_key=api_key,
+        create_if_missing=False,
+    )
     response = requests.get(
         BASE_URL + f"/project/{project}/contexts",
         headers=headers,
@@ -53,3 +57,39 @@ def get_contexts(
             if context.startswith(prefix)
         }
     return contexts
+
+
+def delete_context(
+    name: str,
+    *,
+    project: Optional[str] = None,
+    api_key: Optional[str] = None,
+) -> None:
+    """
+    Delete a context from the server.
+
+    Args:
+        name: Name of the context to delete.
+
+        project: Name of the project the context belongs to.
+
+        api_key: If specified, unify API key to be used. Defaults to the value in the
+        `UNIFY_KEY` environment variable.
+    """
+    api_key = _validate_api_key(api_key)
+    project = _get_and_maybe_create_project(
+        project,
+        api_key=api_key,
+        create_if_missing=False,
+    )
+    headers = {
+        "accept": "application/json",
+        "Authorization": f"Bearer {api_key}",
+    }
+    response = requests.delete(
+        BASE_URL + f"/project/{project}/contexts/{name}",
+        headers=headers,
+    )
+    if response.status_code != 200:
+        raise Exception(response.json())
+    return response.json()

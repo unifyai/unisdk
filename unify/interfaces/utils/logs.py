@@ -588,6 +588,7 @@ def get_logs(
     filter: Optional[str] = None,
     limit: Optional[int] = None,
     offset: int = 0,
+    return_ids_only: bool = False,
     api_key: Optional[str] = None,
 ) -> List[unify.Log]:
     """
@@ -604,6 +605,8 @@ def get_logs(
         limit: The maximum number of logs to return. Default is None (unlimited).
 
         offset: The starting index of the logs to return. Default is 0.
+
+        return_ids_only: Whether to return only the log ids.
 
         api_key: If specified, unify API key to be used. Defaults to the value in the
         `UNIFY_KEY` environment variable.
@@ -624,10 +627,13 @@ def get_logs(
         "filter_expr": filter,
         "limit": limit,
         "offset": offset,
+        "return_ids_only": return_ids_only,
     }
     response = requests.get(BASE_URL + "/logs", headers=headers, params=params)
     if response.status_code != 200:
         raise Exception(response.json())
+    if return_ids_only:
+        return response.json()
     params, logs, _ = response.json().values()
     return [
         unify.Log(

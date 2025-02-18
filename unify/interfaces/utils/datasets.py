@@ -110,3 +110,34 @@ def download_dataset(
         context=f"Datasets/{name}",
     )
     return logs
+
+
+def delete_dataset(
+    name: str,
+    *,
+    project: Optional[str] = None,
+    api_key: Optional[str] = None,
+) -> None:
+    """
+    Delete a dataset from the server.
+
+    Args:
+        name: Name of the dataset.
+
+        project: Name of the project the dataset belongs to.
+
+        api_key: If specified, unify API key to be used. Defaults to the value in the
+        `UNIFY_KEY` environment variable.
+    """
+    api_key = _validate_api_key(api_key)
+    project = _get_and_maybe_create_project(project, api_key=api_key)
+    log_ids = get_logs(
+        project=project,
+        context=f"Datasets/{name}",
+        return_ids_only=True,
+    )
+    return delete_logs(
+        logs=log_ids,
+        project=project,
+        api_key=api_key,
+    )

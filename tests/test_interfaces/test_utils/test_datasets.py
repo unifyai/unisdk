@@ -70,5 +70,29 @@ def test_download_dataset():
     assert len(data) == 3
 
 
+@_handle_project
+def test_delete_dataset():
+    dataset = [
+        {
+            "name": "Dan",
+            "age": 31,
+            "gender": "male",
+        },
+        {
+            "name": "Jane",
+            "age": 25,
+            "gender": "female",
+        },
+        {
+            "name": "John",
+            "age": 35,
+            "gender": "male",
+        },
+    ]
+    unify.upload_dataset("staff", dataset)
+    unify.delete_dataset("staff")
+    assert "staff" not in unify.list_datasets()
+
+
 if __name__ == "__main__":
     pass

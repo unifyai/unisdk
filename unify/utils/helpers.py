@@ -62,6 +62,7 @@ def _get_and_maybe_create_project(
     project: Optional[str] = None,
     required: bool = True,
     api_key: Optional[str] = None,
+    create_if_missing: bool = True,
 ) -> Optional[str]:
     api_key = _validate_api_key(api_key)
     if project is None:
@@ -71,6 +72,8 @@ def _get_and_maybe_create_project(
                 project = "_"
             else:
                 return None
+    if not create_if_missing:
+        return project
     PROJECT_LOCK.acquire()
     if project not in unify.list_projects(api_key=api_key):
         unify.create_project(project, api_key=api_key)

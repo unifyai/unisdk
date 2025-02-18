@@ -775,7 +775,6 @@ class Unify(_UniClient):
         # python client arguments
         return_full_completion: bool,
     ) -> Generator[str, None, None]:
-        breakpoint()
         kw = self._handle_kw(
             prompt=prompt,
             endpoint=endpoint,
@@ -815,7 +814,6 @@ class Unify(_UniClient):
                 if content is not None:
                     yield content
         except openai.APIStatusError as e:
-            breakpoint()
             raise Exception(e.message)
 
     def _generate_non_stream(
