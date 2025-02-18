@@ -34,7 +34,8 @@ def create_custom_api_key(
     params = {"name": name, "value": value}
 
     response = requests.post(url, headers=headers, params=params)
-    response.raise_for_status()
+    if response.status_code != 200:
+        raise Exception(response.json())
 
     return response.json()
 
@@ -67,7 +68,8 @@ def get_custom_api_key(
     params = {"name": name}
 
     response = requests.get(url, headers=headers, params=params)
-    response.raise_for_status()
+    if response.status_code != 200:
+        raise Exception(response.json())
 
     return response.json()
 
@@ -108,7 +110,8 @@ def delete_custom_api_key(
     elif response.status_code == 404:
         raise KeyError("API key not found.")
     else:
-        response.raise_for_status()
+        if response.status_code != 200:
+            raise Exception(response.json())
 
 
 def rename_custom_api_key(
@@ -143,7 +146,8 @@ def rename_custom_api_key(
     params = {"name": name, "new_name": new_name}
 
     response = requests.post(url, headers=headers, params=params)
-    response.raise_for_status()
+    if response.status_code != 200:
+        raise Exception(response.json())
 
     return response.json()
 
@@ -172,6 +176,7 @@ def list_custom_api_keys(
     url = f"{BASE_URL}/custom_api_key/list"
 
     response = requests.get(url, headers=headers)
-    response.raise_for_status()
+    if response.status_code != 200:
+        raise Exception(response.json())
 
     return response.json()

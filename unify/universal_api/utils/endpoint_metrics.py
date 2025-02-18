@@ -57,7 +57,8 @@ def get_endpoint_metrics(
         headers=headers,
         params=params,
     )
-    response.raise_for_status()
+    if response.status_code != 200:
+        raise Exception(response.json())
     return [
         Metrics(
             ttft=metrics_dct["ttft"],
@@ -112,7 +113,8 @@ def log_endpoint_metric(
         headers=headers,
         params=params,
     )
-    response.raise_for_status()
+    if response.status_code != 200:
+        raise Exception(response.json())
     return response.json()
 
 
@@ -136,5 +138,6 @@ def delete_endpoint_metrics(
         headers=headers,
         params=params,
     )
-    response.raise_for_status()
+    if response.status_code != 200:
+        raise Exception(response.json())
     return response.json()

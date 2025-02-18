@@ -56,7 +56,8 @@ def create_custom_endpoint(
         headers=headers,
         params=params,
     )
-    response.raise_for_status()
+    if response.status_code != 200:
+        raise Exception(response.json())
 
     return response.json()
 
@@ -90,7 +91,8 @@ def delete_custom_endpoint(
     params = {"name": name}
 
     response = requests.delete(url, headers=headers, params=params)
-    response.raise_for_status()
+    if response.status_code != 200:
+        raise Exception(response.json())
 
     return response.json()
 
@@ -126,7 +128,8 @@ def rename_custom_endpoint(
     params = {"name": name, "new_name": new_name}
 
     response = requests.post(url, headers=headers, params=params)
-    response.raise_for_status()
+    if response.status_code != 200:
+        raise Exception(response.json())
 
     return response.json()
 
@@ -157,6 +160,7 @@ def list_custom_endpoints(
     url = f"{BASE_URL}/custom_endpoint/list"
 
     response = requests.get(url, headers=headers)
-    response.raise_for_status()
+    if response.status_code != 200:
+        raise Exception(response.json())
 
     return response.json()

@@ -222,7 +222,8 @@ def log(
     project = _get_and_maybe_create_project(project, api_key=api_key)
     body = {"project": project, "params": params, "entries": entries}
     response = requests.post(BASE_URL + "/logs", headers=headers, json=body)
-    response.raise_for_status()
+    if response.status_code != 200:
+        raise Exception(response.json())
     created_log = unify.Log(
         id=response.json()[0],
         api_key=api_key,

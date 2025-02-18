@@ -26,5 +26,6 @@ def get_credits(*, api_key: Optional[str] = None) -> float:
     }
     # Send GET request to the /get_credits endpoint
     response = requests.get(BASE_URL + "/credits", headers=headers)
-    response.raise_for_status()
+    if response.status_code != 200:
+        raise Exception(response.json())
     return _res_to_list(response)["credits"]

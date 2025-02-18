@@ -5,21 +5,22 @@ from ...utils.helpers import _validate_api_key, _get_and_maybe_create_project
 from unify import BASE_URL
 
 
-# Artifacts #
-# ----------#
+# Contexts #
+# ---------#
 
 
-def add_project_artifacts(
+def get_contexts(
     *,
+    prefix: Optional[str] = None,
     project: Optional[str] = None,
     api_key: Optional[str] = None,
-    **kwargs,
 ) -> Dict[str, str]:
     """
-    Creates one or more artifacts associated to a project. Artifacts are project-level
-    metadata that don’t depend on other variables.
+    Gets all contexts associated with a project, with the corresponding prefix.
 
     Args:
+        prefix: Prefix of the contexts to get.
+
         project: Name of the project the artifacts belong to.
 
         api_key: If specified, unify API key to be used. Defaults to the value in the
@@ -36,12 +37,10 @@ def add_project_artifacts(
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    body = {"artifacts": kwargs}
     project = _get_and_maybe_create_project(project, api_key=api_key)
-    response = requests.post(
-        BASE_URL + f"/project/{project}/artifacts",
+    response = requests.get(
+        BASE_URL + f"/project/{project}/contexts",
         headers=headers,
-        json=body,
     )
     if response.status_code != 200:
         raise Exception(response.json())

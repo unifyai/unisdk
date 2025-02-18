@@ -37,7 +37,8 @@ def list_providers(
     else:
         kw = dict(headers=headers)
     response = requests.get(url, **kw)
-    response.raise_for_status()
+    if response.status_code != 200:
+        raise Exception(response.json())
     return _res_to_list(response)
 
 
@@ -71,7 +72,8 @@ def list_models(
     else:
         kw = dict(headers=headers)
     response = requests.get(url, **kw)
-    response.raise_for_status()
+    if response.status_code != 200:
+        raise Exception(response.json())
     return _res_to_list(response)
 
 
@@ -114,5 +116,6 @@ def list_endpoints(
     else:
         kw = dict(headers=headers)
     response = requests.get(url, **kw)
-    response.raise_for_status()
+    if response.status_code != 200:
+        raise Exception(response.json())
     return _res_to_list(response)

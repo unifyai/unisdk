@@ -28,7 +28,8 @@ def get_query_tags(
     }
     url = f"{BASE_URL}/tags"
     response = requests.get(url, headers=headers)
-    response.raise_for_status()
+    if response.status_code != 200:
+        raise Exception(response.json())
 
     return response.json()
 
@@ -92,7 +93,8 @@ def get_queries(
 
     url = f"{BASE_URL}/queries"
     response = requests.get(url, headers=headers, params=params)
-    response.raise_for_status()
+    if response.status_code != 200:
+        raise Exception(response.json())
 
     return response.json()
 
@@ -145,7 +147,8 @@ def log_query(
     url = f"{BASE_URL}/queries"
 
     response = requests.post(url, headers=headers, json=data)
-    response.raise_for_status()
+    if response.status_code != 200:
+        raise Exception(response.json())
 
     return response.json()
 
@@ -196,6 +199,7 @@ def get_query_metrics(
     url = f"{BASE_URL}/metrics"
 
     response = requests.get(url, headers=headers, params=params)
-    response.raise_for_status()
+    if response.status_code != 200:
+        raise Exception(response.json())
 
     return response.json()

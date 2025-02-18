@@ -403,7 +403,8 @@ class _MultiClient(_Client, abc.ABC):
         }
         try:
             response = requests.get(url, headers=headers, timeout=10)
-            response.raise_for_status()
+            if response.status_code != 200:
+                raise Exception(response.json())
             return response.json()["credits"]
         except requests.RequestException as e:
             raise Exception("There was an error with the request.") from e
