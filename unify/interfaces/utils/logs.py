@@ -264,6 +264,60 @@ def log(
 
 
 @_handle_cache
+def create_logs(
+    *,
+    project: Optional[str] = None,
+    context: Optional[str] = None,
+    entries: List[Dict[str, Any]] = None,
+    params: List[Dict[str, Any]] = None,
+    new: bool = False,
+    overwrite: bool = False,
+    mutable: Optional[Union[bool, Dict[str, bool]]] = True,
+    api_key: Optional[str] = None,
+) -> List[unify.Log]:
+    """
+    Creates one or more logs associated to a project.
+
+    Args:
+        project: Name of the project the stored logs will be associated to.
+
+        context: Context for the logs.
+
+        entries: List of dictionaries with the entries to be logged.
+
+        params: List of dictionaries with the params to be logged.
+
+        new: Whether to create a new log if there is a currently active global lob.
+        Defaults to False, in which case log will add to the existing log.
+
+        overwrite: If adding to an existing log, dictates whether or not to overwrite
+        fields with the same name.
+
+        mutable: Either a boolean to apply uniform mutability for all fields, or a dictionary mapping field names to booleans for per-field control. Defaults to True.
+
+        api_key: If specified, unify API key to be used. Defaults to the value in the
+        `UNIFY_KEY` environment variable.
+
+    Returns:
+        A list of the created logs.
+    """
+    api_key = _validate_api_key(api_key)
+    project = _get_and_maybe_create_project(project, api_key=api_key)
+    headers = {
+        "accept": "application/json",
+        "Authorization": f"Bearer {api_key}",
+    }
+    # ToDo: add support for all of the context variables, as is done for log above, as well as `new`, `overwrite` and `mutable`.
+    body = {
+        "project": project,
+        "context": context,
+        "params": params,
+        "entries": entries,
+    }
+    response = requests.post(BASE_URL + "/logs", headers=headers, json=body)
+
+
+@_handle_cache
 def _add_to_log(
     *,
     logs: Optional[Union[int, unify.Log, List[Union[int, unify.Log]]]] = None,

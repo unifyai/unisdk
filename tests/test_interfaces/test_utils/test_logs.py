@@ -34,6 +34,22 @@ def test_log_entry():
 
 
 @_handle_project
+def test_create_logs():
+    entries = [
+        {"a": 0, "b": 1, "c": 2},
+        {"a": 1, "b": 2, "c": 3},
+        {"a": 2, "b": 3, "c": 4},
+    ]
+    params = [
+        {"x": -1, "y": -2, "z": -3},
+        {"x": -4, "y": -5, "z": -6},
+        {"x": -7, "y": -8, "z": -9},
+    ]
+    unify.create_logs(entries=entries, params=params)
+    assert len(unify.get_logs()) == 3
+
+
+@_handle_project
 def test_duplicate_log_field():
     data = {
         "system_prompt": "You are a weather assistant",
