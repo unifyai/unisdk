@@ -64,7 +64,9 @@ class Log:
     def __eq__(self, other: Union[dict, Log]) -> bool:
         if isinstance(other, dict):
             other = Log(id=other["id"], **other["entries"])
-        return self._id == other._id
+        if self._id is not None and other._id is not None:
+            return self._id == other._id
+        return self.to_json() == other.to_json()
 
     def __len__(self):
         return len(self._entries) + len(self._params)

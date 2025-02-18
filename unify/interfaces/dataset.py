@@ -11,13 +11,16 @@ from ..universal_api.types import Prompt
 from ..utils.helpers import _validate_api_key
 
 
+def _to_raw_data(x: Dict[str, Any]):
+    return x["data"] if "data" in x and len(x) == 1 else x
+
+
 class Dataset:
     def __init__(
         self,
         data: Any,
         *,
         name: str = None,
-        with_ids: Optional[bool] = False,
         api_key: Optional[str] = None,
     ) -> None:
         """
@@ -29,8 +32,6 @@ class Dataset:
 
             name: The name of the dataset. To create a dataset for a specific project
             with name {project_name}, then prefix the name with {project_name}/{name}.
-
-            with_ids: If platform entry ids are passed with the data. Defaults to False.
 
             api_key: API key for accessing the Unify API. If None, it attempts to
             retrieve the API key from the environment variable UNIFY_KEY. Defaults to
@@ -44,11 +45,17 @@ class Dataset:
             data = list(data)
         elif not isinstance(data, list):
             data = [data]
-        if with_ids:
-            self._raw_data = data
-        else:
-            self._raw_data = [{"id": None, "entry": entry} for entry in data]
         self._api_key = _validate_api_key(api_key)
+        self._logs = [
+            (
+                entry
+                if isinstance(entry, unify.Log)
+                else unify.Log(
+                    **(entry if isinstance(entry, dict) else {"data": entry}),
+                )
+            )
+            for entry in data
+        ]
         super().__init__()
 
     @property
@@ -63,10 +70,13 @@ class Dataset:
         """
         Dataset entries.
         """
-        return [dt["entry"] for dt in self._raw_data]
+        return [_to_raw_data(dt.entries) for dt in self._logs]
 
     def _set_data(self, data):
-        self._raw_data = [{"id": None, "entry": entry} for entry in data]
+        self._logs = [
+            unify.Log(**(entry if isinstance(entry, dict) else {self._name: entry}))
+            for entry in data
+        ]
 
     def set_name(self, name: str) -> Self:
         """
@@ -185,10 +195,8 @@ class Dataset:
         _data = upstream_dataset
         existing_data = set([d["entry"] for d in upstream_dataset])
         if not overwrite:
-            _data += [
-                item for item in self._raw_data if item["entry"] not in existing_data
-            ]
-        self._raw_data = _data
+            _data += [item for item in self._logs if item["entry"] not in existing_data]
+        self._logs = _data
 
         return self
 
@@ -305,9 +313,7 @@ class Dataset:
         if other == 0:
             return self
         other = other if isinstance(other, Dataset) else Dataset(other)
-        self._raw_data = self._raw_data + [
-            d for d in other._raw_data if d not in self._raw_data
-        ]
+        self._logs = self._logs + [d for d in other._logs if d not in self._logs]
         return self
 
     def inplace_sub(
@@ -329,9 +335,7 @@ class Dataset:
             "cannot subtract dataset B from dataset A unless all queries of dataset "
             "B are also present in dataset A"
         )
-        self._raw_data = [
-            item for item in self._raw_data if item not in other._raw_data
-        ]
+        self._logs = [item for item in self._logs if item not in other._logs]
         return self
 
     def __add__(

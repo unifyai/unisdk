@@ -68,7 +68,7 @@ class TestDatasetConstruction:
         dataset.upload()
         assert "TestCreateDatasetFromStr" in unify.list_datasets()
         dataset = unify.Dataset.from_upstream("TestCreateDatasetFromStr")
-        assert isinstance(dataset._raw_data[0], unify.Log)
+        assert isinstance(dataset._logs[0], unify.Log)
         unify.delete_dataset("TestCreateDatasetFromStr")
         assert "TestCreateDatasetFromStr" not in unify.list_datasets()
 
@@ -321,7 +321,7 @@ class TestDatasetDownloading:
     def test_dataset_downloading_prompt_ids(self) -> None:
         with DownloadTesting():
             dataset = unify.Dataset.from_upstream("test_dataset")
-            for item in dataset._raw_data:
+            for item in dataset._logs:
                 assert "id" in item
                 assert "entry" in item
                 assert isinstance(item["id"], str)
