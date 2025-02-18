@@ -191,12 +191,12 @@ class Dataset:
             name=self._name,
             api_key=self._api_key,
         )
-        _data = upstream_dataset
-        existing_data = set([d["entry"] for d in upstream_dataset])
-        if not overwrite:
-            _data += [item for item in self._logs if item["entry"] not in existing_data]
-        self._logs = _data
-
+        if overwrite:
+            self._logs = upstream_dataset
+            return self
+        local_ids = set([l.id for l in self._logs if l.id is not None])
+        new_data = [l for l in upstream_dataset if l.id not in local_ids]
+        self._logs += new_data
         return self
 
     def sync(self) -> Self:
