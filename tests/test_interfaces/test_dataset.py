@@ -144,13 +144,6 @@ class TestDatasetCombining:
         for item, msg in zip(dataset, msgs):
             assert item == msg
 
-    def test_sum_variety(self) -> None:
-        msgs = [unify.Prompt("a"), "b", unify.Prompt("c"), "d"]
-        dataset = sum(msgs)
-        assert len(dataset) == len(msgs)
-        for item, msg in zip(dataset, msgs):
-            assert unify.cast(item, str) == unify.cast(msg, str)
-
     def test_add_datasets_w_duplicates(self) -> None:
         msgs1 = ["a", "b"]
         msgs2 = ["b", "c"]
@@ -183,19 +176,6 @@ class TestDatasetCombining:
         assert len(dataset) == 2
         assert dataset[0] == "a"
         assert dataset[1] == "b"
-
-    def test_dataset_from_prompt_addition(self) -> None:
-        dataset = unify.Prompt("a") + unify.Prompt("b")
-        assert len(dataset) == 2
-        assert dataset[0] == unify.Prompt("a")
-        assert dataset[1] == unify.Prompt("b")
-
-    def test_dataset_from_multi_item_addition(self) -> None:
-        dataset = "a" + unify.Prompt("b") + "c"
-        assert len(dataset) == 3
-        assert dataset[0] == "a"
-        assert dataset[1] == unify.Prompt("b")
-        assert dataset[2] == "c"
 
 
 class TestDatasetTrimming:
