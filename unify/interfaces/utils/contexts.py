@@ -87,7 +87,8 @@ def delete_context(
         "Authorization": f"Bearer {api_key}",
     }
     response = requests.delete(
-        BASE_URL + f"/project/{project}/contexts/{name}",
+        BASE_URL + f"/project/{project}/contexts",
+        params={"name": name},
         headers=headers,
     )
     if response.status_code != 200:

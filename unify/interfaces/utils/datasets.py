@@ -131,13 +131,16 @@ def delete_dataset(
     """
     api_key = _validate_api_key(api_key)
     project = _get_and_maybe_create_project(project, api_key=api_key)
+    # ToDo: remove this once contexts correctly delete their logs
     log_ids = get_logs(
         project=project,
         context=f"Datasets/{name}",
         return_ids_only=True,
     )
-    return delete_logs(
+    delete_logs(
         logs=log_ids,
         project=project,
         api_key=api_key,
     )
+    # end ToDo
+    delete_context(f"Datasets/{name}", project=project, api_key=api_key)
