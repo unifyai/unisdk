@@ -744,5 +744,64 @@ async def test_with_all_async():
             ]
 
 
+@_handle_project
+def test_basic_log_decorator():
+    @unify.log
+    def sample_function(a, b):
+        c = a + b
+        d = c * 2
+        return d
+
+    sample_function(2, 3)
+    logs = unify.get_logs()
+    assert len(logs) == 1
+    assert logs[0].entries == {
+        "a": 2,
+        "b": 3,
+        "c": 5,
+        "d": 10,
+    }
+
+
+@_handle_project
+def test_private_variable_exclusion():
+    @unify.log
+    def sample_function(public_var, _private_var):
+        visible = public_var * 2
+        _hidden = _private_var * 3
+        result = visible + _hidden
+        return result
+
+    sample_function(5, 3)
+    logs = unify.get_logs()
+    assert len(logs) == 1
+    # Verify public variables and computed results are captured
+    assert "public_var" in logs[0].entries
+    assert "visible" in logs[0].entries
+    assert "result" in logs[0].entries
+    # Ensure private variables are not present
+    assert "_private_var" not in logs[0].entries
+    assert "_hidden" not in logs[0].entries
+
+
+@_handle_project
+@pytest.mark.asyncio
+async def test_async_log_decorator():
+    @unify.log
+    async def async_sample(x, y):
+        z = x * y
+        return z
+
+    result = await async_sample(4, 5)
+    logs = unify.get_logs()
+    assert len(logs) == 1
+    assert logs[0].entries == {
+        "x": 4,
+        "y": 5,
+        "z": 20,
+    }
+    assert result == 20
+
+
 if __name__ == "__main__":
     pass
