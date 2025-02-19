@@ -11,7 +11,6 @@ dir_path = os.path.dirname(os.path.realpath(__file__))
 
 
 class TestDatasetConstruction:
-
     @_handle_project
     def test_create_dataset_from_str(self) -> None:
         dataset = unify.Dataset("a")
@@ -86,7 +85,6 @@ class TestDatasetConstruction:
 
 # noinspection PyStatementEffect
 class TestDatasetManipulation:
-
     @_handle_project
     def test_iterate_over_dataset(self) -> None:
         msgs = ["a", "b", "c"]
@@ -143,7 +141,6 @@ class TestDatasetManipulation:
 
 # noinspection PyTypeChecker
 class TestDatasetCombining:
-
     @_handle_project
     def test_add_datasets(self) -> None:
         msgs = ["a", "b", "c", "d"]
@@ -203,7 +200,6 @@ class TestDatasetCombining:
 
 
 class TestDatasetTrimming:
-
     @_handle_project
     def test_sub_datasets(self) -> None:
         msgs = ["a", "b", "c", "d"]
@@ -255,7 +251,6 @@ class TestDatasetTrimming:
 
 
 class UploadTesting:
-
     def __enter__(self):
         if "test_dataset" in unify.list_datasets():
             unify.delete_dataset("test_dataset")
@@ -266,7 +261,6 @@ class UploadTesting:
 
 
 class TestDatasetUploading:
-
     @_handle_project
     def test_dataset_first_upload(self) -> None:
         with UploadTesting():
@@ -313,7 +307,6 @@ class DownloadTesting:
 
 # noinspection PyStatementEffect
 class TestDatasetDownloading:
-
     @_handle_project
     def test_dataset_download(self) -> None:
         with DownloadTesting():
@@ -369,7 +362,6 @@ class TestDatasetDownloading:
 
 
 class TestDatasetSync:
-
     @_handle_project
     def test_sync_uploads(self) -> None:
         with DownloadTesting():
