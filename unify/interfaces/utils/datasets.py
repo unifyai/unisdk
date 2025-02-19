@@ -71,14 +71,54 @@ def upload_dataset(
     """
     api_key = _validate_api_key(api_key)
     project = _get_and_maybe_create_project(project, api_key=api_key)
-    if not all(isinstance(item, dict) for item in data):
+    log_instances = [isinstance(item, unify.Log) for item in data]
+    are_logs = False
+    if any(log_instances):
+        assert all(log_instances), "If any items are logs, all items must be logs"
+        are_logs = True
+    elif not all(isinstance(item, dict) for item in data):
         data = [{"data": item} for item in data]
+    if name in unify.list_datasets():
+        upstream_ids = get_logs(
+            project=project,
+            context=f"Datasets/{name}",
+            return_ids_only=True,
+        )
+    else:
+        upstream_ids = []
+    if not are_logs:
+        return create_logs(
+            project=project,
+            context=f"Datasets/{name}",
+            entries=data,
+            mutable=True,
+        )
+    local_ids = [l.id for l in data]
+    matching_ids = [id for id in upstream_ids if id in local_ids]
+    matching_data = [l.entries for l in data if l.id in matching_ids]
+    update_logs(
+        logs=matching_ids,
+        api_key=api_key,
+        entries=matching_data,
+        overwrite=True,
+    )
     if overwrite:
-        delete_dataset(name, project=project, api_key=api_key)
+        upstream_only_ids = [id for id in upstream_ids if id not in local_ids]
+        delete_logs(
+            logs=upstream_only_ids,
+            project=project,
+            api_key=api_key,
+        )
+    # ToDo add these existing logs to the dataset context
+    ids_not_in_dataset = [
+        id for id in local_ids if id not in matching_ids and id is not None
+    ]
+    # end ToDo
+    local_only_data = [l.entries for l in data if l.id is None]
     ids = create_logs(
         project=project,
         context=f"Datasets/{name}",
-        entries=data,
+        entries=local_only_data,
         mutable=True,
     )
     return ids
