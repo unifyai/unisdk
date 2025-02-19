@@ -1,5 +1,5 @@
 import requests
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from ...utils.helpers import _validate_api_key, _get_and_maybe_create_project
 
 from unify import BASE_URL
@@ -90,6 +90,53 @@ def delete_context(
         BASE_URL + f"/project/{project}/contexts",
         params={"name": name},
         headers=headers,
+    )
+    if response.status_code != 200:
+        raise Exception(response.json())
+    return response.json()
+
+
+def add_logs_to_context(
+    log_ids: List[int],
+    context: str,
+    *,
+    project: Optional[str] = None,
+    api_key: Optional[str] = None,
+) -> None:
+    """
+    Add logs to a context.
+
+    Args:
+        log_ids: List of log ids to add to the context.
+
+        context: Name of the context to add the logs to.
+
+        project: Name of the project the logs belong to.
+
+        api_key: If specified, unify API key to be used. Defaults to the value in the
+        `UNIFY_KEY` environment variable.
+
+    Returns:
+        A message indicating whether the logs were successfully added to the context.
+    """
+    api_key = _validate_api_key(api_key)
+    project = _get_and_maybe_create_project(
+        project,
+        api_key=api_key,
+        create_if_missing=False,
+    )
+    headers = {
+        "accept": "application/json",
+        "Authorization": f"Bearer {api_key}",
+    }
+    body = {
+        "context_name": context,
+        "log_ids": log_ids,
+    }
+    response = requests.post(
+        BASE_URL + f"/project/{project}/contexts/add_logs",
+        headers=headers,
+        json=body,
     )
     if response.status_code != 200:
         raise Exception(response.json())
