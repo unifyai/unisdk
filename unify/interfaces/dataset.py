@@ -140,16 +140,25 @@ class Dataset:
         Returns:
             This dataset, useful for chaining methods.
         """
-
-        def _dump(item):
-            if isinstance(item, BaseModel):
-                return item.model_dump()
-            return item
-
         self._assert_name_exists()
-        raw_data = [_dump(d) for d in self._data]
-        unify.upload_dataset(name=self._name, data=raw_data, overwrite=overwrite)
+        if overwrite:
+            ids = unify.upload_dataset(name=self._name, data=self._data, overwrite=True)
+            [l.set_id(i) for i, l in zip(ids, self._logs)]
+            return self
 
+        # split logs
+        logs_to_upload = [l for l in self._logs if l.id is None]
+        logs_to_update = [l for l in self._logs if l.id is not None]
+
+        # upload missing
+        entries_to_upload = [l.entries for l in logs_to_upload if l.id is None]
+        ids = unify.add_dataset_entries(name=self._name, data=entries_to_upload)
+        [l.set_id(i) for i, l in zip(ids, logs_to_upload)]
+
+        # update existing
+        ids_to_update = [l.id for l in logs_to_update]
+        entries_to_update = [l.entries for l in logs_to_update]
+        unify.update_logs(logs=ids_to_update, entries=entries_to_update, overwrite=True)
         return self
 
     def download(self, overwrite: bool = False) -> Self:

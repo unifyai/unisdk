@@ -177,5 +177,6 @@ def add_dataset_entries(
         project=project,
         context=f"Datasets/{name}",
         entries=data,
+        mutable=True,
     )
     return logs
