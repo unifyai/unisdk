@@ -375,14 +375,16 @@ class TestDatasetSync:
         with DownloadTesting():
             assert "test_dataset" in unify.list_datasets()
             dataset = unify.Dataset.from_upstream("test_dataset")
+            assert len(dataset) == 3
             dataset += "d"
             dataset.sync()
-            dataset.download()
             assert len(dataset) == 4
             assert dataset[0] == "a"
             assert dataset[1] == "b"
             assert dataset[2] == "c"
             assert dataset[3] == "d"
+            dataset.download()
+            assert len(dataset) == 4
 
     @_handle_project
     def test_sync_downloads(self) -> None:
