@@ -510,6 +510,3 @@ def log_inputs(func: Callable) -> Callable:
 
     return wrapper
 
-
-# Expose the decorator at the module level
-__all__ = ["Log", "ColumnContext", "Entries", "Params", "Experiment", "log"]
