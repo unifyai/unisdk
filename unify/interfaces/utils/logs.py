@@ -147,6 +147,23 @@ def _handle_context(context: Optional[Union[str, Dict[str, str]]] = None):
         return context
 
 
+def _handle_mutability(
+    mutable: Optional[Union[bool, Dict[str, bool]]],
+    data: Optional[Union[List[Dict[str, Any]], Dict[str, Any]]] = None,
+):
+    if mutable is None:
+        return data
+    if isinstance(mutable, dict):
+        for field, mut in mutable.items():
+            if field in data:
+                data.setdefault("explicit_types", {})[field] = {"mutable": mut}
+    elif isinstance(mutable, bool):
+        for k in list(data.keys()):
+            if k != "explicit_types":
+                data.setdefault("explicit_types", {})[k] = {"mutable": mutable}
+    return data
+
+
 @_handle_cache
 def log(
     *,
@@ -217,25 +234,13 @@ def log(
         "Authorization": f"Bearer {api_key}",
     }
     params = _apply_col_context(**(params if params else {}))
-    entries = _apply_col_context(**entries)
     params = {**params, **ACTIVE_PARAMS.get()}
     params = _handle_special_types(params)
+    params = _handle_mutability(mutable, params)
+    entries = _apply_col_context(**entries)
     entries = {**entries, **ACTIVE_ENTRIES.get()}
     entries = _handle_special_types(entries)
-    if mutable is not None:
-        if isinstance(mutable, dict):
-            for field, mut in mutable.items():
-                if field in params:
-                    params.setdefault("explicit_types", {})[field] = {"mutable": mut}
-                if field in entries:
-                    entries.setdefault("explicit_types", {})[field] = {"mutable": mut}
-        elif isinstance(mutable, bool):
-            for k in list(params.keys()):
-                if k != "explicit_types":
-                    params.setdefault("explicit_types", {})[k] = {"mutable": mutable}
-            for k in list(entries.keys()):
-                if k != "explicit_types":
-                    entries.setdefault("explicit_types", {})[k] = {"mutable": mutable}
+    entries = _handle_mutability(mutable, entries)
     project = _get_and_maybe_create_project(project, api_key=api_key)
     body = {
         "project": project,
@@ -270,8 +275,8 @@ def create_logs(
     *,
     project: Optional[str] = None,
     context: Optional[str] = None,
-    entries: List[Dict[str, Any]] = None,
-    params: List[Dict[str, Any]] = None,
+    params: Optional[Union[List[Dict[str, Any]], Dict[str, Any]]] = None,
+    entries: Optional[Union[List[Dict[str, Any]], Dict[str, Any]]] = None,
     mutable: Optional[Union[bool, Dict[str, bool]]] = True,
     api_key: Optional[str] = None,
 ) -> List[int]:
@@ -302,7 +307,9 @@ def create_logs(
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    # ToDo: add support for all of the context variables, as is done for `unify.log` above, as well as `mutable`.
+    # ToDo: add support for all of the context variables, as is done for `unify.log` above
+    params = _handle_mutability(mutable, params)
+    entries = _handle_mutability(mutable, params)
     body = {
         "project": project,
         "context": context,
@@ -364,14 +371,7 @@ def _add_to_log(
         )
         data = all_kwargs[0]
     data = _handle_special_types(data)
-    if mutable is not None:
-        if isinstance(mutable, dict):
-            for field, mut in mutable.items():
-                data.setdefault("explicit_types", {})[field] = {"mutable": mut}
-        elif isinstance(mutable, bool):
-            for k in list(data.keys()):
-                if k != "explicit_types":
-                    data.setdefault("explicit_types", {})[k] = {"mutable": mutable}
+    data = _handle_mutability(mutable, data)
     body = {
         "ids": log_ids,
         mode: data,
