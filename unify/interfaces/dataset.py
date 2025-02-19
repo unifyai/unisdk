@@ -142,12 +142,16 @@ class Dataset:
             This dataset, useful for chaining methods.
         """
         self._assert_name_exists()
-        ids = unify.upload_dataset(
+        new_ids = unify.upload_dataset(
             name=self._name,
             data=self._logs,
             overwrite=overwrite,
         )
-        [l.set_id(i) for i, l in zip(ids, self._logs)]
+        idless_logs = [l for l in self._logs if l.id is None]
+        assert len(new_ids) == len(
+            idless_logs,
+        ), "Number of new ids and id-less logs must match"
+        [l.set_id(i) for i, l in zip(new_ids, idless_logs)]
         return self
 
     def download(self, overwrite: bool = False) -> Self:
