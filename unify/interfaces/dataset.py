@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional, Union
 
 import unify
+import json
 from pydantic import BaseModel
 from typing_extensions import Self
 from ..universal_api.types import Prompt
@@ -323,7 +324,7 @@ class Dataset:
             "cannot subtract dataset B from dataset A unless all queries of dataset "
             "B are also present in dataset A"
         )
-        self._logs = [item for item in self._logs if item not in other._logs]
+        self._logs = [item for item in self._logs if item not in other]
         return self
 
     def __add__(
@@ -464,8 +465,16 @@ class Dataset:
             Boolean, whether the passed Dataset is a subset of this one.
         """
         item = item if isinstance(item, Dataset) else Dataset(item)
-        this_set = set(self._data)
-        combined_set = set(self._data + item._data)
+        this_serialized = [
+            json.dumps({k: v for k, v in l.to_json().items() if k != "id"})
+            for l in self._logs
+        ]
+        item_serialized = [
+            json.dumps({k: v for k, v in l.to_json().items() if k != "id"})
+            for l in item._logs
+        ]
+        this_set = set(this_serialized)
+        combined_set = set(this_serialized + item_serialized)
         return len(this_set) == len(combined_set)
 
     def __len__(self) -> int:

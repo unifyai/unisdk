@@ -153,24 +153,26 @@ def _handle_mutability(
 ):
     if mutable is None or data is None:
         return data
+
     if isinstance(data, list):
         single_item = False
+        new_data = copy.deepcopy(data)
     else:
         single_item = True
-        data = [data]
+        new_data = [copy.deepcopy(data)]
     if isinstance(mutable, dict):
         for field, mut in mutable.items():
-            for item in data:
+            for item in new_data:
                 if field in item:
                     item.setdefault("explicit_types", {})[field] = {"mutable": mut}
     elif isinstance(mutable, bool):
-        for item in data:
+        for item in new_data:
             for k in list(item.keys()):
                 if k != "explicit_types":
                     item.setdefault("explicit_types", {})[k] = {"mutable": mutable}
     if single_item:
-        return data[0]
-    return data
+        return new_data[0]
+    return new_data
 
 
 @_handle_cache
