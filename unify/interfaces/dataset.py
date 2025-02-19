@@ -466,11 +466,23 @@ class Dataset:
         """
         item = item if isinstance(item, Dataset) else Dataset(item)
         this_serialized = [
-            json.dumps({k: v for k, v in l.to_json().items() if k != "id"})
+            json.dumps(
+                {
+                    k: v
+                    for k, v in l.to_json().items()
+                    if k not in ("id", "ts") and v not in ({}, None)
+                },
+            )
             for l in self._logs
         ]
         item_serialized = [
-            json.dumps({k: v for k, v in l.to_json().items() if k != "id"})
+            json.dumps(
+                {
+                    k: v
+                    for k, v in l.to_json().items()
+                    if k not in ("id", "ts") and v not in ({}, None)
+                },
+            )
             for l in item._logs
         ]
         this_set = set(this_serialized)
