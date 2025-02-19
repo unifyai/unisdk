@@ -153,14 +153,23 @@ def _handle_mutability(
 ):
     if mutable is None:
         return data
+    if isinstance(data, list):
+        single_item = False
+    else:
+        single_item = True
+        data = [data]
     if isinstance(mutable, dict):
         for field, mut in mutable.items():
-            if field in data:
-                data.setdefault("explicit_types", {})[field] = {"mutable": mut}
+            for item in data:
+                if field in item:
+                    item.setdefault("explicit_types", {})[field] = {"mutable": mut}
     elif isinstance(mutable, bool):
-        for k in list(data.keys()):
-            if k != "explicit_types":
-                data.setdefault("explicit_types", {})[k] = {"mutable": mutable}
+        for item in data:
+            for k in list(item.keys()):
+                if k != "explicit_types":
+                    item.setdefault("explicit_types", {})[k] = {"mutable": mutable}
+    if single_item:
+        return data[0]
     return data
 
 
