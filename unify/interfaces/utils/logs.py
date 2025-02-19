@@ -338,6 +338,7 @@ def create_logs(
 @_handle_cache
 def _add_to_log(
     *,
+    context: Optional[str] = None,
     logs: Optional[Union[int, unify.Log, List[Union[int, unify.Log]]]] = None,
     mode: str = None,
     overwrite: bool = False,
@@ -359,6 +360,7 @@ def _add_to_log(
         "entries": ACTIVE_ENTRIES,
     }[mode]
     log_ids = _to_log_ids(logs)
+    context = _handle_context(context)
     api_key = _validate_api_key(api_key)
     headers = {
         "accept": "application/json",
@@ -387,6 +389,7 @@ def _add_to_log(
         "ids": log_ids,
         mode: data,
         "overwrite": overwrite,
+        "context": context,
     }
     response = requests.put(
         BASE_URL + f"/logs",
