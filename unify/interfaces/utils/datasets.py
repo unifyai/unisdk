@@ -109,11 +109,15 @@ def upload_dataset(
             project=project,
             api_key=api_key,
         )
-    # ToDo add these existing logs to the dataset context
     ids_not_in_dataset = [
         id for id in local_ids if id not in matching_ids and id is not None
     ]
-    # end ToDo
+    unify.add_logs_to_context(
+        log_ids=ids_not_in_dataset,
+        context=f"Datasets/{name}",
+        project=project,
+        api_key=api_key,
+    )
     local_only_data = [l.entries for l in data if l.id is None]
     ids = create_logs(
         project=project,
