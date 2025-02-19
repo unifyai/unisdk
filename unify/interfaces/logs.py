@@ -2,13 +2,16 @@ from __future__ import annotations
 
 import time
 import uuid
-from typing import Tuple
+from typing import Any, Set, Dict, Callable, List, Optional, Tuple, Union
 from datetime import datetime
 from datetime import UTC
-from contextvars import Token
+import ast
+from functools import wraps
+import textwrap
+
 
 from ..utils.helpers import _validate_api_key, _prune_dict, _make_json_serializable
-from .utils.logs import _handle_special_types
+from .utils.logs import _handle_special_types, log as unify_log
 from .utils.compositions import *
 
 
@@ -377,3 +380,136 @@ def traced(
                 SPAN.get()["child_spans"].append(new_span)
 
     return wrapped if not inspect.iscoroutinefunction(fn) else async_wrapped
+
+
+class LogTransformer(ast.NodeTransformer):
+    def __init__(self):
+        super().__init__()
+        self.param_names = []
+        self.assigned_names = set()
+        self._in_function = False
+
+    def visit_FunctionDef(self, node: ast.FunctionDef):
+        self._in_function = True
+        self.param_names = [
+            arg.arg for arg in node.args.args if not arg.arg.startswith("_")
+        ]
+
+        for arg in node.args.kwonlyargs:
+            if not arg.arg.startswith("_"):
+                self.param_names.append(arg.arg)
+
+        node = self.generic_visit(node)
+        self._in_function = False
+        self.param_names = []
+        self.assigned_names = set()
+        return node
+
+    def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef):
+        self._in_function = True
+        self.param_names = [
+            arg.arg for arg in node.args.args if not arg.arg.startswith("_")
+        ]
+        node = self.generic_visit(node)
+        self._in_function = False
+        self.param_names = []
+        self.assigned_names = set()
+        return node
+
+    def visit_Assign(self, node: ast.Assign):
+        if self._in_function:
+            for target in node.targets:
+                if isinstance(target, ast.Name) and not target.id.startswith("_"):
+                    self.assigned_names.add(target.id)
+        return node
+
+    def visit_Return(self, node: ast.Return):
+        if not self._in_function:
+            return node
+
+        log_keywords = []
+        for p in self.param_names:
+            log_keywords.append(
+                ast.keyword(arg=p, value=ast.Name(id=p, ctx=ast.Load())),
+            )
+
+        for var_name in sorted(self.assigned_names):
+            log_keywords.append(
+                ast.keyword(arg=var_name, value=ast.Name(id=var_name, ctx=ast.Load())),
+            )
+
+        return_value = (
+            node.value if node.value is not None else ast.Constant(value=None)
+        )
+
+        log_call = ast.Expr(
+            value=ast.Call(
+                func=ast.Name(id="unify_log", ctx=ast.Load()),
+                args=[],
+                keywords=log_keywords,
+            ),
+        )
+
+        return [log_call, ast.Return(value=return_value)]
+
+
+def log_decorator(func):
+    """
+    Decorator that rewrites the function's AST so that it logs non-underscore
+    parameters, and assigned variables.
+    """
+    # 1) Parse the source to an AST
+    source = textwrap.dedent(inspect.getsource(func))
+
+    # Remove the decorator line if present
+    source_lines = source.split("\n")
+    if source_lines[0].strip().startswith("@"):
+        source = "\n".join(source_lines[1:])
+
+    mod = ast.parse(source)
+
+    # 2) Transform the AST
+    transformer = LogTransformer()
+    mod = transformer.visit(mod)
+    ast.fix_missing_locations(mod)
+
+    # 3) Compile the new AST
+    code = compile(mod, filename="<ast>", mode="exec")
+
+    # 4) Create a dict for the module namespace in which we'll execute
+    func_globals = func.__globals__.copy()
+    func_globals["unify_log"] = unify_log
+
+    # 5) Execute the compiled module code in that namespace
+    exec(code, func_globals)
+    transformed_func = func_globals[func.__name__]
+
+    transformed_func.__name__ = func.__name__
+    transformed_func.__doc__ = func.__doc__
+    transformed_func.__module__ = func.__module__
+    transformed_func.__annotations__ = func.__annotations__
+    return transformed_func
+
+
+def log(func: Callable) -> Callable:
+    """
+    Decorator that logs function inputs, and intermediate values.
+    """
+
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        if inspect.iscoroutinefunction(func):
+
+            async def async_wrapper(*args, **kwargs):
+                transformed = log_decorator(func)
+                return await transformed(*args, **kwargs)
+
+            return async_wrapper(*args, **kwargs)
+        transformed = log_decorator(func)
+        return transformed(*args, **kwargs)
+
+    return wrapper
+
+
+# Expose the decorator at the module level
+__all__ = ["Log", "ColumnContext", "Entries", "Params", "Experiment", "log"]
