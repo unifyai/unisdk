@@ -388,7 +388,8 @@ class TestDatasetSync:
     def test_sync_downloads(self) -> None:
         with DownloadTesting():
             assert "test_dataset" in unify.list_datasets()
-            dataset = unify.Dataset(["a", "b"], name="test_dataset")
+            dataset = unify.Dataset.from_upstream("test_dataset")
+            dataset -= "c"
             dataset.sync()
             dataset.download()
             assert len(dataset) == 3
