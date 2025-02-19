@@ -151,7 +151,7 @@ def _handle_mutability(
     mutable: Optional[Union[bool, Dict[str, bool]]],
     data: Optional[Union[List[Dict[str, Any]], Dict[str, Any]]] = None,
 ):
-    if mutable is None:
+    if mutable is None or data is None:
         return data
     if isinstance(data, list):
         single_item = False
