@@ -50,6 +50,13 @@ def test_create_logs():
 
 
 @_handle_project
+def test_update_logs():
+    log = unify.log(a=0, b=1)
+    unify.update_logs(logs=log, entries={"a": 1}, overwrite=True)
+    assert unify.get_log_by_id(log.id).entries["a"] == 1
+
+
+@_handle_project
 def test_duplicate_log_field():
     data = {
         "system_prompt": "You are a weather assistant",

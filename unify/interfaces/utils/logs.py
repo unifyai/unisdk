@@ -302,14 +302,15 @@ def create_logs(
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    # ToDo: add support for all of the context variables, as is done for log above, as well as `new`, `overwrite` and `mutable`.
+    # ToDo: add support for all of the context variables, as is done for `unify.log` above, as well as `mutable`.
     body = {
         "project": project,
         "context": context,
+        # ToDo remove the params/entries logic above once this [https://app.clickup.com/t/86c25g263] is done
         "params": [{}] * len(entries) if params is None else params,
         "entries": [{}] * len(params) if entries is None else entries,
+        # end ToDo
     }
-    # ToDo remove the params/entries logic above once this [https://app.clickup.com/t/86c25g263] is done
     response = requests.post(BASE_URL + "/logs", headers=headers, json=body)
     if response.status_code != 200:
         raise Exception(response.json())
@@ -485,6 +486,39 @@ def add_log_entries(
             f"to Logs({', '.join([str(i) for i in _to_log_ids(logs)])})",
         )
     return ret
+
+
+@_handle_cache
+def update_logs(
+    *,
+    logs: Optional[Union[int, unify.Log, List[Union[int, unify.Log]]]] = None,
+    context: Optional[Union[str, List[str]]] = None,
+    params: Optional[Union[Dict[str, Any], List[Dict[str, Any]]]] = None,
+    entries: Optional[Union[Dict[str, Any], List[Dict[str, Any]]]] = None,
+    overwrite: bool = False,
+    api_key: Optional[str] = None,
+) -> Dict[str, str]:
+    """
+    Updates existing logs.
+    """
+    api_key = _validate_api_key(api_key)
+    headers = {
+        "accept": "application/json",
+        "Authorization": f"Bearer {api_key}",
+    }
+    body = {
+        "ids": _to_log_ids(logs),
+        "context": context,
+        # ToDo: remove once this [https://app.clickup.com/t/86c25g263] is done
+        "params": [{}] * len(entries) if params is None else params,
+        "entries": [{}] * len(params) if entries is None else entries,
+        # end ToDo
+        "overwrite": overwrite,
+    }
+    response = requests.put(BASE_URL + "/logs", headers=headers, json=body)
+    if response.status_code != 200:
+        raise Exception(response.json())
+    return response.json()
 
 
 @_handle_cache
