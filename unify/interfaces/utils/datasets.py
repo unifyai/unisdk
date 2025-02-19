@@ -96,36 +96,43 @@ def upload_dataset(
     local_ids = [l.id for l in data]
     matching_ids = [id for id in upstream_ids if id in local_ids]
     matching_data = [l.entries for l in data if l.id in matching_ids]
-    update_logs(
-        logs=matching_ids,
-        api_key=api_key,
-        entries=matching_data,
-        overwrite=True,
-    )
+    assert len(matching_data) == len(
+        matching_ids,
+    ), "matching data and ids must be the same length"
+    if matching_data:
+        update_logs(
+            logs=matching_ids,
+            api_key=api_key,
+            entries=matching_data,
+            overwrite=True,
+        )
     if overwrite:
         upstream_only_ids = [id for id in upstream_ids if id not in local_ids]
-        delete_logs(
-            logs=upstream_only_ids,
-            project=project,
-            api_key=api_key,
-        )
+        if upstream_only_ids:
+            delete_logs(
+                logs=upstream_only_ids,
+                project=project,
+                api_key=api_key,
+            )
     ids_not_in_dataset = [
         id for id in local_ids if id not in matching_ids and id is not None
     ]
-    unify.add_logs_to_context(
-        log_ids=ids_not_in_dataset,
-        context=f"Datasets/{name}",
-        project=project,
-        api_key=api_key,
-    )
+    if ids_not_in_dataset:
+        unify.add_logs_to_context(
+            log_ids=ids_not_in_dataset,
+            context=f"Datasets/{name}",
+            project=project,
+            api_key=api_key,
+        )
     local_only_data = [l.entries for l in data if l.id is None]
-    ids = create_logs(
-        project=project,
-        context=f"Datasets/{name}",
-        entries=local_only_data,
-        mutable=True,
-    )
-    return ids
+    if local_only_data:
+        return create_logs(
+            project=project,
+            context=f"Datasets/{name}",
+            entries=local_only_data,
+            mutable=True,
+        )
+    return []
 
 
 def download_dataset(
