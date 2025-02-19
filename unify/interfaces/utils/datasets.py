@@ -79,6 +79,7 @@ def upload_dataset(
         project=project,
         context=f"Datasets/{name}",
         entries=data,
+        mutable=True,
     )
     return ids
 
