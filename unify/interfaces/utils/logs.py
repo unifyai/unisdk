@@ -510,6 +510,8 @@ def update_logs(
     """
     Updates existing logs.
     """
+    if not logs and not params and not entries:
+        return {"detail": "No logs to update."}
     api_key = _validate_api_key(api_key)
     headers = {
         "accept": "application/json",
