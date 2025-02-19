@@ -37,6 +37,11 @@ class Log:
         self._params = params
         self._api_key = _validate_api_key(api_key)
 
+    # Setters
+
+    def set_id(self, id: int) -> None:
+        self._id = id
+
     # Properties
 
     @property
