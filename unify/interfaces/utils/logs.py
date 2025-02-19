@@ -318,7 +318,7 @@ def create_logs(
     }
     # ToDo: add support for all of the context variables, as is done for `unify.log` above
     params = _handle_mutability(mutable, params)
-    entries = _handle_mutability(mutable, params)
+    entries = _handle_mutability(mutable, entries)
     body = {
         "project": project,
         "context": context,
