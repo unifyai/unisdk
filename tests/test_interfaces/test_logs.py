@@ -746,7 +746,7 @@ async def test_with_all_async():
 
 @_handle_project
 def test_basic_log_decorator():
-    @unify.log
+    @unify.log_inputs
     def sample_function(a, b):
         c = a + b
         d = c * 2
@@ -765,7 +765,7 @@ def test_basic_log_decorator():
 
 @_handle_project
 def test_private_variable_exclusion():
-    @unify.log
+    @unify.log_inputs
     def sample_function(public_var, _private_var):
         visible = public_var * 2
         _hidden = _private_var * 3
@@ -787,7 +787,7 @@ def test_private_variable_exclusion():
 @_handle_project
 @pytest.mark.asyncio
 async def test_async_log_decorator():
-    @unify.log
+    @unify.log_inputs
     async def async_sample(x, y):
         z = x * y
         return z

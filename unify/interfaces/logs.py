@@ -491,7 +491,7 @@ def log_decorator(func):
     return transformed_func
 
 
-def log(func: Callable) -> Callable:
+def log_inputs(func: Callable) -> Callable:
     """
     Decorator that logs function inputs, and intermediate values.
     """
