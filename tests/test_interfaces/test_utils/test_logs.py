@@ -51,9 +51,15 @@ def test_create_logs():
 
 @_handle_project
 def test_update_logs():
-    log = unify.log(a=0, b=1)
-    unify.update_logs(logs=log, entries={"a": 1}, overwrite=True)
-    assert unify.get_log_by_id(log.id).entries["a"] == 1
+    log0 = unify.log(a=0, b=1)
+    unify.update_logs(logs=log0, entries={"a": 1}, overwrite=True)
+    assert unify.get_log_by_id(log0.id).entries["a"] == 1
+    unify.update_logs(logs=log0, entries={"c": 2})
+    assert unify.get_log_by_id(log0.id).entries["c"] == 2
+    log1 = unify.log(a=1, b=2)
+    unify.update_logs(logs=[log0, log1], entries=[{"a": 3}, {"a": 4}], overwrite=True)
+    assert unify.get_log_by_id(log0.id).entries["a"] == 3
+    assert unify.get_log_by_id(log1.id).entries["a"] == 4
 
 
 @_handle_project
