@@ -31,8 +31,7 @@ def test_delete_context():
     assert "a/b" in contexts
     unify.delete_context("a/b")
     assert "a/b" not in unify.get_contexts()
-    # ToDo: uncomment assertion below once contexts correctly delete their logs
-    # assert len(unify.get_logs()) == 0
+    assert len(unify.get_logs()) == 0
 
 
 @_handle_project
