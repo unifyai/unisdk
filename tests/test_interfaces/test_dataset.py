@@ -401,13 +401,19 @@ class TestDatasetSync:
     def test_sync_achieves_superset(self) -> None:
         with DownloadTesting():
             assert "test_dataset" in unify.list_datasets()
-            dataset = unify.Dataset(["a", "b", "d"], name="test_dataset")
-            dataset.sync()
-            assert len(dataset) == 4
-            assert dataset[0] == "a"
-            assert dataset[1] == "b"
-            assert dataset[2] == "c"
-            assert dataset[3] == "d"
+            dataset0 = unify.Dataset.from_upstream("test_dataset")
+            dataset1 = unify.Dataset.from_upstream("test_dataset")
+            dataset0 -= "a"
+            assert len(dataset0) == 2
+            dataset0.upload(overwrite=True)
+            assert len(unify.Dataset.from_upstream("test_dataset")) == 2
+            dataset1 += "d"
+            dataset1.sync()
+            assert len(dataset1) == 4
+            assert dataset1[0] == "a"
+            assert dataset1[1] == "b"
+            assert dataset1[2] == "c"
+            assert dataset1[3] == "d"
 
 
 if __name__ == "__main__":
