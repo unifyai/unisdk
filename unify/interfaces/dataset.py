@@ -1,11 +1,11 @@
 from __future__ import annotations
 
+import json
 from typing import Any, Dict, List, Optional, Union
 
 import unify
-import json
-from pydantic import BaseModel
 from typing_extensions import Self
+
 from ..universal_api.types import Prompt
 
 # noinspection PyProtectedMember

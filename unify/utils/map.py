@@ -1,8 +1,9 @@
 import asyncio
-import threading
 import contextvars
-from tqdm import tqdm
+import threading
 from typing import Any, List
+
+from tqdm import tqdm
 
 
 def _is_iterable(item: Any) -> bool:

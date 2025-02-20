@@ -7,7 +7,6 @@ import traceback
 from typing import Any, Dict, List, Union
 
 import pytest
-
 import unify
 
 # Helpers #

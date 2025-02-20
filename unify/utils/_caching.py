@@ -1,10 +1,11 @@
 import inspect
-import os
 import json
+import os
 import threading
-from pydantic import BaseModel
-from typing import Dict, Optional, Union, Any, List
+from typing import Any, Dict, List, Optional, Union
+
 from openai.types.chat import ChatCompletion, ParsedChatCompletion
+from pydantic import BaseModel
 
 _cache: Optional[Dict] = None
 _cache_dir = (

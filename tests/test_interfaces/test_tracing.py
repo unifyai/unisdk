@@ -1,13 +1,13 @@
-import os
-import time
 import asyncio
-import pytest
+import os
 import threading
+import time
 
+import pytest
 import unify
 from unify.utils._caching import _cache_fpath
-from .helpers import _handle_project
 
+from .helpers import _handle_project
 
 # Trace #
 # ------#

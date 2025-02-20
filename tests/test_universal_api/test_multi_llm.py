@@ -1,5 +1,4 @@
 import pytest
-
 from unify import AsyncMultiUnify, MultiUnify
 
 

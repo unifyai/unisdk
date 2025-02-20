@@ -1,6 +1,6 @@
 from typing import List, Type, Union
-from openai.types.chat import ChatCompletion
 
+from openai.types.chat import ChatCompletion
 from unify.universal_api.types import Prompt
 
 # Upcasting

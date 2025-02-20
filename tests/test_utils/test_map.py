@@ -1,8 +1,7 @@
-import pytest
 import asyncio
 
+import pytest
 import unify
-
 
 # Helpers #
 # --------#

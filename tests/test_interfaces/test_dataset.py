@@ -1,10 +1,11 @@
 import os
 import random
 import string
-import pytest
 
+import pytest
 import unify
 from unify.universal_api.types import Prompt
+
 from .helpers import _handle_project
 
 dir_path = os.path.dirname(os.path.realpath(__file__))

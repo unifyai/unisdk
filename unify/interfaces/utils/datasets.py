@@ -1,12 +1,9 @@
-import requests
-from typing import Optional, Dict, Any, List
-from ...utils.helpers import _validate_api_key, _get_and_maybe_create_project
+from typing import Any, Dict, List, Optional
 
-from unify import BASE_URL
+from ...utils.helpers import _get_and_maybe_create_project, _validate_api_key
+from ..logs import Log
 from .contexts import *
 from .logs import *
-from ..logs import Log
-
 
 # Datasets #
 # ---------#

@@ -1,11 +1,11 @@
-import math
 import asyncio
-import pytest
+import math
 import threading
 
+import pytest
 import unify
-from .helpers import _handle_project
 
+from .helpers import _handle_project
 
 # Functional Compositions #
 # ------------------------#

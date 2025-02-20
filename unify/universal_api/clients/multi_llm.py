@@ -1,10 +1,9 @@
 # global
 import abc
 import asyncio
-import requests
-from pydantic import BaseModel
-from typing import Any, Dict, Iterable, List, Optional, Tuple, Union, Type
+from typing import Any, Dict, Iterable, List, Optional, Tuple, Type, Union
 
+import requests
 
 # local
 import unify
@@ -12,19 +11,21 @@ import unify
 # noinspection PyProtectedMember
 from openai._types import Headers, Query
 from openai.types.chat import (
+    ChatCompletion,
     ChatCompletionMessageParam,
     ChatCompletionStreamOptionsParam,
     ChatCompletionToolChoiceOptionParam,
     ChatCompletionToolParam,
-    ChatCompletion,
 )
+from pydantic import BaseModel
 from typing_extensions import Self
 from unify import BASE_URL
-from ..clients import AsyncUnify, _Client, _UniClient
-from ..utils.endpoint_metrics import Metrics
 
 # noinspection PyProtectedMember
 from unify.utils.helpers import _default, _validate_api_key
+
+from ..clients import AsyncUnify, _Client, _UniClient
+from ..utils.endpoint_metrics import Metrics
 
 
 class _MultiClient(_Client, abc.ABC):

@@ -2,8 +2,8 @@ import datetime
 from typing import Dict, List, Optional, Union
 
 import requests
-from unify import BASE_URL
 from pydantic import BaseModel
+from unify import BASE_URL
 
 from ...utils.helpers import _validate_api_key
 

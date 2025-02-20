@@ -1,6 +1,7 @@
+from typing import Any, Dict, List, Optional
+
 import requests
 from unify import BASE_URL
-from typing import Any, Dict, List, Optional
 
 from ...utils.helpers import _validate_api_key
 

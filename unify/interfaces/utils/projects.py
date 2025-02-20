@@ -1,9 +1,9 @@
-import requests
-from typing import Optional, Dict, List
+from typing import Dict, List, Optional
 
-from ...utils.helpers import _validate_api_key
+import requests
 from unify import BASE_URL
 
+from ...utils.helpers import _validate_api_key
 
 # Projects #
 # ---------#

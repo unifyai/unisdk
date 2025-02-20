@@ -1,10 +1,9 @@
 from __future__ import annotations
+
 import json
 
 from ...utils.helpers import _validate_api_key
-from .logs import _add_to_log, _to_log_ids
 from .logs import *
-
 
 # Parameters #
 # -----------#

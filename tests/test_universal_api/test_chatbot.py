@@ -1,7 +1,7 @@
-import pytest
 import builtins
 import traceback
 
+import pytest
 from unify import ChatBot, MultiUnify, Unify
 
 

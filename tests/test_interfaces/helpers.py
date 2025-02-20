@@ -1,6 +1,7 @@
+import functools
 import sys
 import traceback
-import functools
+
 import unify
 
 

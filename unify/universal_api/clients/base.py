@@ -1,8 +1,8 @@
 # global
-import requests
-from pydantic import BaseModel, create_model
 from abc import ABC, abstractmethod
-from typing import Dict, Iterable, List, Mapping, Optional, Union, Type
+from typing import Dict, Iterable, List, Mapping, Optional, Type, Union
+
+import requests
 
 # noinspection PyProtectedMember
 from openai._types import Body, Headers, Query
@@ -12,6 +12,7 @@ from openai.types.chat import (
     ChatCompletionToolChoiceOptionParam,
     ChatCompletionToolParam,
 )
+from pydantic import BaseModel, create_model
 from typing_extensions import Self
 
 # local

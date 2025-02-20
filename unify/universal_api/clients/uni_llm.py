@@ -1,10 +1,7 @@
 # global
 import abc
 import json
-
-import openai
 import threading
-from pydantic import BaseModel
 from typing import (
     AsyncGenerator,
     Dict,
@@ -12,34 +9,38 @@ from typing import (
     Iterable,
     List,
     Optional,
-    Union,
     Type,
+    Union,
 )
+
+import openai
 
 # local
 import unify
-from unify.universal_api.clients.helpers import (
-    _assert_is_valid_provider,
-    _assert_is_valid_model,
-    _assert_is_valid_endpoint,
-)
 
 # noinspection PyProtectedMember
 from openai._types import Headers, Query
 from openai.types.chat import (
+    ChatCompletion,
     ChatCompletionMessageParam,
     ChatCompletionStreamOptionsParam,
     ChatCompletionToolChoiceOptionParam,
     ChatCompletionToolParam,
-    ChatCompletion,
 )
+from pydantic import BaseModel
 from typing_extensions import Self
 from unify import BASE_URL, LOCAL_MODELS
-from ...utils._caching import _get_cache, _write_to_cache, _get_caching
+from unify.universal_api.clients.helpers import (
+    _assert_is_valid_endpoint,
+    _assert_is_valid_model,
+    _assert_is_valid_provider,
+)
+
+from ...utils._caching import _get_cache, _get_caching, _write_to_cache
+from ...utils.helpers import _default
 from ..clients.base import _Client
 from ..types import Prompt
 from ..utils.endpoint_metrics import Metrics
-from ...utils.helpers import _default
 
 
 class _UniClient(_Client, abc.ABC):

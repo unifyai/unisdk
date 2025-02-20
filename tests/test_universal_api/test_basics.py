@@ -1,9 +1,9 @@
 import json
-import pytest
-from pydantic import BaseModel
-from openai.types.chat import ParsedChatCompletion
 from types import AsyncGeneratorType, GeneratorType
 
+import pytest
+from openai.types.chat import ParsedChatCompletion
+from pydantic import BaseModel
 from unify import AsyncUnify, Unify
 
 

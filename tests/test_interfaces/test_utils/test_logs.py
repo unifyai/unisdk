@@ -1,8 +1,9 @@
 import os
+
 import pytest
+import unify
 from unify.utils._caching import _get_cache
 
-import unify
 from ..helpers import _handle_project
 
 
