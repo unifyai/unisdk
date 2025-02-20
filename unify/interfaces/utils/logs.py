@@ -736,7 +736,7 @@ def get_log_by_id(
         id=lg["id"],
         ts=lg["ts"],
         **lg["entries"],
-        params={k: params[k][v] for k, v in lg["params"].items()},
+        params={k: (v, params[k][v]) for k, v in lg["params"].items()},
         api_key=api_key,
     )
 
