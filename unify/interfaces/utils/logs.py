@@ -1,25 +1,35 @@
 from __future__ import annotations
 
+import atexit
 import copy
-import os
 import inspect
-import requests
 import logging
+import os
 from contextvars import ContextVar
-from typing import Any, Dict, List, Optional, Union, Callable
+from typing import Any, Callable, Dict, List, Optional, Union
 
+import requests
 import unify
 from unify import BASE_URL
+
 from ...utils._caching import (
     _get_cache,
-    _write_to_cache,
     _get_caching,
     _get_caching_fname,
+    _write_to_cache,
 )
-from ...utils.helpers import _validate_api_key, _get_and_maybe_create_project
+from ...utils.helpers import _get_and_maybe_create_project, _validate_api_key
+from .async_logger import AsyncLoggerManager
 
-# logging
+# logging configuration
 USR_LOGGING = True
+ASYNC_LOGGING = False  # Flag to enable/disable async logging
+ASYNC_BATCH_SIZE = 100  # Default batch size for async logging
+ASYNC_FLUSH_INTERVAL = 5.0  # Default flush interval in secondss
+ASYNC_MAX_QUEUE_SIZE = 10000  # Default maximum queue size
+
+# Async logger instance
+_async_logger: Optional[AsyncLoggerManager] = None
 
 # log
 ACTIVE_LOG = ContextVar("active_log", default=[])
@@ -57,6 +67,52 @@ def _removes_unique_trace_values(kw: Dict[str, Any]) -> Dict[str, Any]:
             _removes_unique_trace_values(cs) for cs in kw["child_spans"]
         ]
     return kw
+
+
+def initialize_async_logger(
+    batch_size: int = ASYNC_BATCH_SIZE,
+    flush_interval: float = ASYNC_FLUSH_INTERVAL,
+    max_queue_size: int = ASYNC_MAX_QUEUE_SIZE,
+    api_key: Optional[str] = None,
+) -> None:
+    """
+    Initialize the async logger with the specified configuration.
+
+    Args:
+        batch_size: Number of logs to batch together before sending
+        flush_interval: How often to flush logs in seconds
+        max_queue_size: Maximum size of the log queue
+        api_key: API key for authentication
+    """
+    global _async_logger, ASYNC_LOGGING
+
+    if _async_logger is not None:
+        return
+    api_key = _validate_api_key(api_key)
+    _async_logger = AsyncLoggerManager(
+        base_url=BASE_URL,
+        api_key=api_key,
+        batch_size=batch_size,
+        flush_interval=flush_interval,
+        max_queue_size=max_queue_size,
+    )
+    _async_logger.start()
+    ASYNC_LOGGING = True
+
+    # Register shutdown handler
+    atexit.register(shutdown_async_logger)
+
+
+def shutdown_async_logger() -> None:
+    """
+    Gracefully shutdown the async logger, ensuring all pending logs are flushed.
+    """
+    global _async_logger, ASYNC_LOGGING
+
+    if _async_logger is not None:
+        _async_logger.stop()
+        _async_logger = None
+        ASYNC_LOGGING = False
 
 
 def _handle_cache(fn: Callable) -> Callable:
@@ -217,6 +273,7 @@ def log(
     Returns:
         The unique id of newly created log.
     """
+    global ASYNC_LOGGING
     api_key = _validate_api_key(api_key)
     context = _handle_context(context)
     if not new and ACTIVE_LOG.get():
@@ -240,10 +297,7 @@ def log(
         if USR_LOGGING:
             logging.info(f"Updated Log({log.id})")
         return log
-    headers = {
-        "accept": "application/json",
-        "Authorization": f"Bearer {api_key}",
-    }
+    # Process parameters and entries
     params = _apply_col_context(**(params if params else {}))
     params = {**params, **ACTIVE_PARAMS.get()}
     params = _handle_special_types(params)
@@ -253,22 +307,47 @@ def log(
     entries = _handle_special_types(entries)
     entries = _handle_mutability(mutable, entries)
     project = _get_and_maybe_create_project(project, api_key=api_key)
-    body = {
-        "project": project,
-        "context": context,
-        "params": params,
-        "entries": entries,
-    }
-    response = requests.post(BASE_URL + "/logs", headers=headers, json=body)
-    if response.status_code != 200:
-        raise Exception(response.json())
-    created_log = unify.Log(
-        id=response.json()[0],
-        api_key=api_key,
-        **entries,
-        params=params,
-        context=context,
-    )
+    if ASYNC_LOGGING and _async_logger is not None:
+        # Use async logging if enabled
+        try:
+            _async_logger.log(
+                project=project,
+                context=context,
+                params=params,
+                entries=entries,
+            )
+            # Create a placholder log with ID -1
+            # since the actual log ID is not known yet
+            created_log = unify.Log(
+                id=-1,  # Placeholder ID
+                api_key=api_key,
+                **entries,
+                params=params,
+                context=context,
+            )
+        except RuntimeError as e:
+            if "AsyncLoggerManager is not running" in str(e):
+                # Fall back to synchronous logging if async logger is not running
+                ASYNC_LOGGING = False
+                created_log = _sync_log(
+                    project=project,
+                    context=context,
+                    params=params,
+                    entries=entries,
+                    api_key=api_key,
+                )
+
+            raise
+    else:
+        # Use synchronous logging
+        created_log = _sync_log(
+            project=project,
+            context=context,
+            params=params,
+            entries=entries,
+            api_key=api_key,
+        )
+
     if PARAMS_NEST_LEVEL.get() > 0 or ENTRIES_NEST_LEVEL.get() > 0:
         LOGGED.set(
             {
@@ -279,6 +358,41 @@ def log(
     if USR_LOGGING:
         logging.info(f"Created Log({created_log.id})")
     return created_log
+
+
+def _sync_log(
+    project: str,
+    context: Optional[str],
+    params: Dict[str, Any],
+    entries: Dict[str, Any],
+    api_key: str,
+) -> unify.Log:
+    """
+    Synchronously create a log entry using direct HTTP request.
+
+    This is a helper function used when async logging is disabled or unavailable.
+    """
+    headers = {
+        "accept": "application/json",
+        "Authorization": f"Bearer {api_key}",
+    }
+
+    body = {
+        "project": project,
+        "context": context,
+        "params": params,
+        "entries": entries,
+    }
+    response = requests.post(BASE_URL + "/logs", headers=headers, json=body)
+    if response.status_code != 200:
+        raise Exception(response.json())
+    return unify.Log(
+        id=response.json()[0],
+        api_key=api_key,
+        **entries,
+        params=params,
+        context=context,
+    )
 
 
 @_handle_cache
