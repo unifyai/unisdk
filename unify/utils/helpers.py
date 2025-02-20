@@ -1,13 +1,12 @@
+import inspect
 import json
 import os
-import openai
-import inspect
 import threading
-from typing import Any, Dict, List, Tuple, Optional, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
-
-import unify
+import openai
 import requests
+import unify
 from pydantic import BaseModel, ValidationError
 
 PROJECT_LOCK = threading.Lock()
@@ -64,6 +63,9 @@ def _get_and_maybe_create_project(
     api_key: Optional[str] = None,
     create_if_missing: bool = True,
 ) -> Optional[str]:
+    # noinspection PyUnresolvedReferences
+    from unify.interfaces.utils.logs import ASYNC_LOGGING
+
     api_key = _validate_api_key(api_key)
     if project is None:
         project = unify.active_project()
@@ -73,6 +75,10 @@ def _get_and_maybe_create_project(
             else:
                 return None
     if not create_if_missing:
+        return project
+    if ASYNC_LOGGING:
+        # acquiring the project lock here will block the async logger
+        # so we skip the lock if we are in async mode
         return project
     PROJECT_LOCK.acquire()
     if project not in unify.list_projects(api_key=api_key):
