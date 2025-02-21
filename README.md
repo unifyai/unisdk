@@ -12,6 +12,12 @@
 <a href="https://x.com/letsunifyai">![X (formerly Twitter) Follow](https://img.shields.io/twitter/follow/letsunifyai)</a>
 <a href="https://discord.gg/sXyFF8tDtm"> ![Static Badge](https://img.shields.io/badge/Join_Discord-464646?&logo=discord&logoColor=5865F2) </a>
 
+<div style="display: block;" align="center">
+    <a href="https://console.unify.ai/">
+        <img class="dark-light" width="100%" src="https://raw.githubusercontent.com/unifyai/unifyai.github.io/refs/heads/main/img/externally_linked/line_group_dark.gif"/>
+    </a>
+</div>
+
 **Fully hackable** LLMOps. Build *custom* interfaces for: logging, evals, guardrails, labelling, tracing, agents, human-in-the-loop, hyperparam sweeps, and anything else you can think of ✨
 
 Just `unify.log` your data, and add an interface using the four building blocks:
@@ -22,12 +28,6 @@ Just `unify.log` your data, and add an interface using the four building blocks:
 4. **editor** 🕹️ (coming soon)
 
 Every LLM product has **unique** and **changing** requirements, as do the **users**. Your infra should reflect this!
-
-<div style="display: block;" align="center">
-    <a href="https://console.unify.ai/">
-        <img class="dark-light" width="100%" src="https://raw.githubusercontent.com/unifyai/unifyai.github.io/refs/heads/main/img/externally_linked/line_group_dark.gif"/>
-    </a>
-</div>
 
 We've tried to make Unify as **(a) simple**, **(b) modular** and **(c) hackable** as possible, so you can quickly probe, analyze, and iterate on the data that's important for **you**, your **product** and your **users** ⚡
 
