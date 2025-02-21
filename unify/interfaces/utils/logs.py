@@ -233,6 +233,7 @@ def _handle_mutability(
 
 @_handle_cache
 def log(
+    fn: Optional[Callable] = None,
     *,
     project: Optional[str] = None,
     context: Optional[str] = None,
@@ -242,13 +243,19 @@ def log(
     mutable: Optional[Union[bool, Dict[str, bool]]] = True,
     api_key: Optional[str] = None,
     **entries,
-) -> unify.Log:
+) -> Union[unify.Log, Callable]:
     """
+    Can be used either as a regular function to create logs or as a decorator to log function inputs.
+
+    When used as a regular function:
     Creates one or more logs associated to a project. unify.Logs are LLM-call-level data
-    that might depend on other variables. This method returns the id of the new
-    stored log.
+    that might depend on other variables.
+
+    When used as a decorator:
+    Logs function inputs and intermediate values.
 
     Args:
+        fn: When used as a decorator, this is the function to be wrapped.
         project: Name of the project the stored logs will be associated to.
 
         context: Context for the logs.
@@ -271,8 +278,24 @@ def log(
         into the platform as entries.
 
     Returns:
-        The unique id of newly created log.
+        When used as a regular function: The unique id of newly created log.
+        When used as a decorator: The wrapped function.
     """
+    # If used as a decorator
+    if fn is not None and callable(fn):
+        from unify.interfaces.logs import log_decorator
+
+        if inspect.iscoroutinefunction(fn):
+
+            async def async_wrapper(*args, **kwargs):
+                transformed = log_decorator(fn)
+                return await transformed(*args, **kwargs)
+
+            return async_wrapper
+        transformed = log_decorator(fn)
+        return transformed
+
+    # Regular log function logic
     global ASYNC_LOGGING
     api_key = _validate_api_key(api_key)
     context = _handle_context(context)
