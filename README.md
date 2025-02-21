@@ -81,11 +81,15 @@ with unify.Experiment():
 
 Despite all of the hype, abstractions, and jargon, the *process* for building quality LLM apps is pretty simple.
 
-<div style="display: block;" align="center">
-    <a href="https://console.unify.ai/">
-        <img class="dark-light" width="100%" src="https://raw.githubusercontent.com/unifyai/unifyai.github.io/refs/heads/main/img/externally_linked/flywheel_dark.gif"/>
-    </a>
-</div>
+```
+create simplest possible agent 🤖
+while True:
+    create/expand unit tests (evals) 🗂️
+    while run(tests) failing: 🧪
+        Analyze failures, understand the root cause 🔍
+        Vary system prompt, in-context examples, tools etc. to rectify 🔀
+    Beta test with users, find more failures 🚦
+```
 
 We've tried to strip away all of the excessive LLM jargon, so you can focus on your *product*, your *users*, and the *data* you care about, and *nothing else* 📈
 
