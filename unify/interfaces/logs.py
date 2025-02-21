@@ -389,13 +389,18 @@ class LogTransformer(ast.NodeTransformer):
 
     def visit_FunctionDef(self, node: ast.FunctionDef):
         self._in_function = True
+        # Collect non-underscore params
         self.param_names = [
             arg.arg for arg in node.args.args if not arg.arg.startswith("_")
         ]
+        # Collect non-underscore kwonlyargs
+        self.param_names += [
+            arg.arg for arg in node.args.kwonlyargs if not arg.arg.startswith("_")
+        ]
 
-        for arg in node.args.kwonlyargs:
-            if not arg.arg.startswith("_"):
-                self.param_names.append(arg.arg)
+        # Add **kwargs parameter if not already present
+        if not node.args.kwarg:
+            node.args.kwarg = ast.arg(arg="kwargs")
 
         node = self.generic_visit(node)
         self._in_function = False
@@ -426,15 +431,59 @@ class LogTransformer(ast.NodeTransformer):
             return node
 
         log_keywords = []
+        # Add regular parameters
         for p in self.param_names:
             log_keywords.append(
                 ast.keyword(arg=p, value=ast.Name(id=p, ctx=ast.Load())),
             )
 
+        # Add assigned variables
         for var_name in sorted(self.assigned_names):
             log_keywords.append(
                 ast.keyword(arg=var_name, value=ast.Name(id=var_name, ctx=ast.Load())),
             )
+
+        # Add filtered kwargs (non-underscore keys)
+        kwargs_dict = ast.DictComp(
+            key=ast.Name(id="k", ctx=ast.Load()),
+            value=ast.Name(id="v", ctx=ast.Load()),
+            generators=[
+                ast.comprehension(
+                    target=ast.Tuple(
+                        elts=[
+                            ast.Name(id="k", ctx=ast.Store()),
+                            ast.Name(id="v", ctx=ast.Store()),
+                        ],
+                        ctx=ast.Store(),
+                    ),
+                    iter=ast.Call(
+                        func=ast.Attribute(
+                            value=ast.Name(id="kwargs", ctx=ast.Load()),
+                            attr="items",
+                            ctx=ast.Load(),
+                        ),
+                        args=[],
+                        keywords=[],
+                    ),
+                    ifs=[
+                        ast.UnaryOp(
+                            op=ast.Not(),
+                            operand=ast.Call(
+                                func=ast.Attribute(
+                                    value=ast.Name(id="k", ctx=ast.Load()),
+                                    attr="startswith",
+                                    ctx=ast.Load(),
+                                ),
+                                args=[ast.Constant(value="_")],
+                                keywords=[],
+                            ),
+                        ),
+                    ],
+                    is_async=0,
+                ),
+            ],
+        )
+        log_keywords.append(ast.keyword(arg=None, value=kwargs_dict))
 
         return_value = (
             node.value if node.value is not None else ast.Constant(value=None)
@@ -474,36 +523,23 @@ def log_decorator(func):
     # 3) Compile the new AST
     code = compile(mod, filename="<ast>", mode="exec")
 
-    # 4) Create a dict for the module namespace in which we'll execute
-    func_globals = func.__globals__.copy()
+    # 4) Get the current module's globals
+    module = inspect.getmodule(func)
+    func_globals = module.__dict__.copy() if module else globals().copy()
     func_globals["unify_log"] = unify_log
 
     # 5) Execute the compiled module code in that namespace
     exec(code, func_globals)
     transformed_func = func_globals[func.__name__]
 
+    # Copy necessary attributes
     transformed_func.__name__ = func.__name__
     transformed_func.__doc__ = func.__doc__
     transformed_func.__module__ = func.__module__
     transformed_func.__annotations__ = func.__annotations__
+
+    # Copy closure and cell variables if they exist
+    if func.__closure__:
+        transformed_func.__closure__ = func.__closure__
+
     return transformed_func
-
-
-def log_inputs(func: Callable) -> Callable:
-    """
-    Decorator that logs function inputs, and intermediate values.
-    """
-
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        if inspect.iscoroutinefunction(func):
-
-            async def async_wrapper(*args, **kwargs):
-                transformed = log_decorator(func)
-                return await transformed(*args, **kwargs)
-
-            return async_wrapper(*args, **kwargs)
-        transformed = log_decorator(func)
-        return transformed(*args, **kwargs)
-
-    return wrapper
