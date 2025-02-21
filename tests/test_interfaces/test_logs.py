@@ -747,12 +747,12 @@ async def test_with_all_async():
 @_handle_project
 def test_basic_log_decorator():
     @unify.log
-    def sample_function(a, b):
+    def sample_function(a, b, c, d):
         c = a + b
         d = c * 2
         return d
 
-    sample_function(2, 3, w=2, y=9)
+    sample_function(2, 3, 8, 9, w=2, y=9)
     logs = unify.get_logs()
     assert len(logs) == 1
     assert logs[0].entries == {

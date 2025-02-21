@@ -423,6 +423,9 @@ class LogTransformer(ast.NodeTransformer):
         if self._in_function:
             for target in node.targets:
                 if isinstance(target, ast.Name) and not target.id.startswith("_"):
+                    # Remove from param_names if it's a reassigned parameter
+                    if target.id in self.param_names:
+                        self.param_names.remove(target.id)
                     self.assigned_names.add(target.id)
         return node
 
@@ -431,13 +434,13 @@ class LogTransformer(ast.NodeTransformer):
             return node
 
         log_keywords = []
-        # Add regular parameters
+        # Add regular parameters (that weren't reassigned)
         for p in self.param_names:
             log_keywords.append(
                 ast.keyword(arg=p, value=ast.Name(id=p, ctx=ast.Load())),
             )
 
-        # Add assigned variables
+        # Add assigned variables (including reassigned parameters)
         for var_name in sorted(self.assigned_names):
             log_keywords.append(
                 ast.keyword(arg=var_name, value=ast.Name(id=var_name, ctx=ast.Load())),
