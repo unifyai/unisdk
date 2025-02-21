@@ -139,7 +139,8 @@ class Log:
         self._ts = lg.ts
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self.download()
+        if self._id is None and self._future is not None:
+            self.download()
         ACTIVE_LOG.reset(self._log_token)
 
 
