@@ -25,7 +25,7 @@ Every LLM product has **unique** and **changing** requirements, as do the **user
 
 <div style="display: block;" align="center">
     <a href="https://console.unify.ai/">
-        <img class="dark-light" width="100%" src="https://raw.githubusercontent.com/unifyai/unifyai.github.io/refs/heads/main/img/externally_linked/notion_for_llm_observability.gif"/>
+        <img class="dark-light" width="100%" src="https://raw.githubusercontent.com/unifyai/unifyai.github.io/refs/heads/main/img/externally_linked/line_group_dark.gif"/>
     </a>
 </div>
 
@@ -83,7 +83,7 @@ Despite all of the hype, abstractions, and jargon, the *process* for building qu
 
 <div style="display: block;" align="center">
     <a href="https://console.unify.ai/">
-        <img class="dark-light" width="100%" src="https://raw.githubusercontent.com/unifyai/unifyai.github.io/refs/heads/main/img/externally_linked/flywheel.gif"/>
+        <img class="dark-light" width="100%" src="https://raw.githubusercontent.com/unifyai/unifyai.github.io/refs/heads/main/img/externally_linked/flywheel_dark.gif"/>
     </a>
 </div>
 
