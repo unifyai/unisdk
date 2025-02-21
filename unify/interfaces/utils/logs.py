@@ -160,32 +160,41 @@ def _handle_special_types(
 def _to_log_ids(
     logs: Optional[Union[int, unify.Log, List[Union[int, unify.Log]]]] = None,
 ):
+    def resolve_log_id(log):
+        if isinstance(log, unify.Log):
+            if log.id is None and hasattr(log, "_future"):
+                try:
+                    # Wait (with timeout) for the future to resolve
+                    log._id = log._future.result(timeout=5)
+                except Exception as e:
+                    raise Exception(f"Failed to resolve log id: {e}")
+            return log.id
+        return log
+
     if logs is None:
         current_active_logs = ACTIVE_LOG.get()
         if not current_active_logs:
             raise Exception(
                 "If logs is unspecified, then current_global_active_log must be.",
             )
-        return [current_active_logs[-1].id]
+        return [resolve_log_id(current_active_logs[-1])]
     elif isinstance(logs, int):
         return [logs]
     elif isinstance(logs, unify.Log):
-        return [logs.id]
+        return [resolve_log_id(logs)]
     elif isinstance(logs, list):
         if not logs:
             return logs
         elif isinstance(logs[0], int):
             return logs
         elif isinstance(logs[0], unify.Log):
-            return [lg.id for lg in logs]
+            return [resolve_log_id(lg) for lg in logs]
         else:
             raise Exception(
-                f"list must contain int or unify.Log types, but found first entry "
-                f"{logs[0]} of type {type(logs[0])}",
+                f"list must contain int or unify.Log types, but found first entry {logs[0]} of type {type(logs[0])}",
             )
     raise Exception(
-        f"logs argument must be of type int, unify.Log, or list, but found "
-        f"{logs} of type {type(logs)}",
+        f"logs argument must be of type int, unify.Log, or list, but found {logs} of type {type(logs)}",
     )
 
 
@@ -331,36 +340,21 @@ def log(
     entries = _handle_mutability(mutable, entries)
     project = _get_and_maybe_create_project(project, api_key=api_key)
     if ASYNC_LOGGING and _async_logger is not None:
-        # Use async logging if enabled
-        try:
-            _async_logger.log(
-                project=project,
-                context=context,
-                params=params,
-                entries=entries,
-            )
-            # Create a placholder log with ID -1
-            # since the actual log ID is not known yet
-            created_log = unify.Log(
-                id=-1,  # Placeholder ID
-                api_key=api_key,
-                **entries,
-                params=params,
-                context=context,
-            )
-        except RuntimeError as e:
-            if "AsyncLoggerManager is not running" in str(e):
-                # Fall back to synchronous logging if async logger is not running
-                ASYNC_LOGGING = False
-                created_log = _sync_log(
-                    project=project,
-                    context=context,
-                    params=params,
-                    entries=entries,
-                    api_key=api_key,
-                )
-
-            raise
+        # Use async logging: enqueue a create event and capture the Future.
+        log_future = _async_logger.log_create(
+            project=project,
+            context=context,
+            params=params,
+            entries=entries,
+        )
+        created_log = unify.Log(
+            id=None,  # Placeholder; will be updated when the Future resolves.
+            _future=log_future,
+            api_key=api_key,
+            **entries,
+            params=params,
+            context=context,
+        )
     else:
         # Use synchronous logging
         created_log = _sync_log(
@@ -483,73 +477,81 @@ def _add_to_log(
     api_key: Optional[str] = None,
     **data,
 ) -> Dict[str, str]:
-    assert mode in (
-        "params",
-        "entries",
-    ), "mode must be one of 'params', 'entries'"
+    assert mode in ("params", "entries"), "mode must be one of 'params', 'entries'"
     data = _apply_col_context(**data)
-    nest_level = {
-        "params": PARAMS_NEST_LEVEL,
-        "entries": ENTRIES_NEST_LEVEL,
-    }[mode]
-    active = {
-        "params": ACTIVE_PARAMS,
-        "entries": ACTIVE_ENTRIES,
-    }[mode]
-    log_ids = _to_log_ids(logs)
-    context = _handle_context(context)
+    nest_level = {"params": PARAMS_NEST_LEVEL, "entries": ENTRIES_NEST_LEVEL}[mode]
+    active = {"params": ACTIVE_PARAMS, "entries": ACTIVE_ENTRIES}[mode]
     api_key = _validate_api_key(api_key)
-    headers = {
-        "accept": "application/json",
-        "Authorization": f"Bearer {api_key}",
-    }
-    all_kwargs = list()
-    if nest_level.get() > 0:
-        for log_id in log_ids:
-            combined_kwargs = {
-                **data,
-                **{
-                    k: v
-                    for k, v in active.get().items()
-                    if k not in LOGGED.get().get(log_id, {})
-                },
-            }
-            all_kwargs.append(combined_kwargs)
-        assert all(kw == all_kwargs[0] for kw in all_kwargs), (
-            "All logs must share the same context if they're all "
-            "being updated at the same time."
-        )
-        data = all_kwargs[0]
+    context = _handle_context(context)
     data = _handle_special_types(data)
     data = _handle_mutability(mutable, data)
-    body = {
-        "ids": log_ids,
-        mode: data,
-        "overwrite": overwrite,
-        "context": context,
-    }
-    response = requests.put(
-        BASE_URL + f"/logs",
-        headers=headers,
-        json=body,
-    )
-    if response.status_code != 200:
-        raise Exception(response.json())
-    if nest_level.get() > 0:
-        logged = LOGGED.get()
-        new_logged = dict()
-        for log_id in log_ids:
-            if log_id in logged:
-                new_logged[log_id] = logged[log_id] + list(data.keys())
-            else:
-                new_logged[log_id] = list(data.keys())
-        LOGGED.set(
-            {
-                **logged,
-                **new_logged,
-            },
+    if ASYNC_LOGGING and _async_logger is not None:
+        # For simplicity, assume logs is a single unify.Log.
+        if logs is None:
+            log_obj = ACTIVE_LOG.get()[-1]
+        elif isinstance(logs, unify.Log):
+            log_obj = logs
+        elif isinstance(logs, list) and logs and isinstance(logs[0], unify.Log):
+            log_obj = logs[0]
+        else:
+            # If not a Log, resolve synchronously.
+            log_id = _to_log_ids(logs)[0]
+            lf = _async_logger._loop.create_future()
+            lf.set_result(log_id)
+            log_obj = unify.Log(id=log_id, _future=lf, api_key=api_key)
+        # Prepare the future to pass (if the log is still pending, use its _future)
+        if hasattr(log_obj, "_future") and log_obj._future is not None:
+            lf = log_obj._future
+        else:
+            lf = _async_logger._loop.create_future()
+            lf.set_result(log_obj.id)
+        _async_logger.log_update(
+            project=_get_and_maybe_create_project(None, api_key=api_key),
+            context=context,
+            log_future=lf,
+            mode=mode,
+            overwrite=overwrite,
+            mutable=mutable,
+            data=data,
         )
-    return response.json()
+        return {"detail": "Update queued asynchronously"}
+    else:
+        # Fallback to synchronous update if async logging isn’t enabled.
+        log_ids = _to_log_ids(logs)
+        headers = {
+            "accept": "application/json",
+            "Authorization": f"Bearer {api_key}",
+        }
+        all_kwargs = []
+        if nest_level.get() > 0:
+            for log_id in log_ids:
+                combined_kwargs = {
+                    **data,
+                    **{
+                        k: v
+                        for k, v in active.get().items()
+                        if k not in LOGGED.get().get(log_id, {})
+                    },
+                }
+                all_kwargs.append(combined_kwargs)
+            assert all(
+                kw == all_kwargs[0] for kw in all_kwargs
+            ), "All logs must share the same context if they're all being updated at the same time."
+            data = all_kwargs[0]
+        body = {"ids": log_ids, mode: data, "overwrite": overwrite, "context": context}
+        response = requests.put(BASE_URL + "/logs", headers=headers, json=body)
+        if response.status_code != 200:
+            raise Exception(response.json())
+        if nest_level.get() > 0:
+            logged = LOGGED.get()
+            new_logged = {}
+            for log_id in log_ids:
+                if log_id in logged:
+                    new_logged[log_id] = logged[log_id] + list(data.keys())
+                else:
+                    new_logged[log_id] = list(data.keys())
+            LOGGED.set({**logged, **new_logged})
+        return response.json()
 
 
 @_handle_cache

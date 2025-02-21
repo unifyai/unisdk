@@ -5,8 +5,7 @@ import textwrap
 import time
 import uuid
 from datetime import UTC, datetime
-from functools import wraps
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from ..utils.helpers import _make_json_serializable, _prune_dict, _validate_api_key
 from .utils.compositions import *
@@ -23,6 +22,7 @@ class Log:
         self,
         *,
         id: int = None,
+        _future=None,
         ts: Optional[datetime] = None,
         project: Optional[str] = None,
         context: Optional[str] = None,
@@ -31,6 +31,7 @@ class Log:
         **entries,
     ):
         self._id = id
+        self._future = _future
         self._ts = ts
         self._project = project
         self._context = context
@@ -51,6 +52,8 @@ class Log:
 
     @property
     def id(self) -> int:
+        if self._id is None and self._future is not None and self._future.done():
+            self._id = self._future.result()
         return self._id
 
     @property
@@ -83,6 +86,9 @@ class Log:
     # Public
 
     def download(self):
+        # If id is not yet resolved, wait for the future
+        if self._id is None and self._future is not None:
+            self._id = self._future.result(timeout=5)
         log = get_log_by_id(id=self._id, api_key=self._api_key)
         self._params = log._params
         self._entries = log._entries
