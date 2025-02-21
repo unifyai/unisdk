@@ -746,13 +746,13 @@ async def test_with_all_async():
 
 @_handle_project
 def test_basic_log_decorator():
-    @unify.log_inputs
+    @unify.log
     def sample_function(a, b):
         c = a + b
         d = c * 2
         return d
 
-    sample_function(2, 3)
+    sample_function(2, 3, w=2, y=9)
     logs = unify.get_logs()
     assert len(logs) == 1
     assert logs[0].entries == {
@@ -760,12 +760,14 @@ def test_basic_log_decorator():
         "b": 3,
         "c": 5,
         "d": 10,
+        "w": 2,
+        "y": 9,
     }
 
 
 @_handle_project
 def test_private_variable_exclusion():
-    @unify.log_inputs
+    @unify.log
     def sample_function(public_var, _private_var):
         visible = public_var * 2
         _hidden = _private_var * 3
@@ -787,7 +789,7 @@ def test_private_variable_exclusion():
 @_handle_project
 @pytest.mark.asyncio
 async def test_async_log_decorator():
-    @unify.log_inputs
+    @unify.log
     async def async_sample(x, y):
         z = x * y
         return z
