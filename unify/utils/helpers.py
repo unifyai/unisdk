@@ -64,7 +64,7 @@ def _get_and_maybe_create_project(
     create_if_missing: bool = True,
 ) -> Optional[str]:
     # noinspection PyUnresolvedReferences
-    from unify.interfaces.utils.logs import ASYNC_LOGGING
+    from unify.logging.utils.logs import ASYNC_LOGGING
 
     api_key = _validate_api_key(api_key)
     if project is None:

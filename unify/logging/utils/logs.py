@@ -292,7 +292,7 @@ def log(
     """
     # If used as a decorator
     if fn is not None and callable(fn):
-        from unify.interfaces.logs import log_decorator
+        from unify.logging.logs import log_decorator
 
         if inspect.iscoroutinefunction(fn):
 
