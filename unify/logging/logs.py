@@ -232,6 +232,12 @@ class Experiment:
 # --------#
 
 
+def _nested_add(a, b):
+    if isinstance(a, dict) and isinstance(b, dict):
+        return {k: _nested_add(a[k], b[k]) for k in a if k in b}
+    return a + b
+
+
 def traced(
     fn: callable = None,
     *,
@@ -260,8 +266,15 @@ def traced(
         inputs = bound_args.arguments
         inputs = inputs["kw"] if span_type == "llm-cached" else inputs
         inputs = _make_json_serializable(inputs)
-        lines, start_line = inspect.getsourcelines(fn)
-        code = "".join(lines)
+        try:
+            lines, start_line = inspect.getsourcelines(fn)
+            code = "".join(lines)
+        except:
+            lines, start_line = None, None
+            try:
+                code = inspect.getsource(fn)
+            except:
+                code = None
         new_span = {
             "id": str(uuid.uuid4()),
             "type": span_type,
@@ -273,8 +286,8 @@ def traced(
                 0.0 if not SPAN.get() else t1 - RUNNING_TIME.get(),
                 2,
             ),
-            "cost": 0.0,
-            "cost_inc_cache": 0.0,
+            "llm_usage": 0.0,
+            "llm_usage_inc_cache": 0.0,
             "code": f"```python\n{code}\n```",
             "code_fpath": inspect.getsourcefile(fn),
             "code_start_line": start_line,
@@ -313,9 +326,9 @@ def traced(
             SPAN.get()["exec_time"] = exec_time
             SPAN.get()["outputs"] = outputs
             if SPAN.get()["type"] == "llm":
-                SPAN.get()["cost"] = outputs["usage"]["cost"]
+                SPAN.get()["llm_usage"] = outputs["usage"]
             if SPAN.get()["type"] in ("llm", "llm-cached"):
-                SPAN.get()["cost_inc_cache"] = outputs["usage"]["cost"]
+                SPAN.get()["llm_usage_inc_cache"] = outputs["usage"]
             # ToDo: ensure there is a global log set upon the first trace,
             #  and removed on the last
             trace = SPAN.get()
@@ -329,8 +342,14 @@ def traced(
             SPAN.reset(token)
             if token.old_value is not token.MISSING:
                 SPAN.get()["child_spans"].append(new_span)
-                SPAN.get()["cost"] += new_span["cost"]
-                SPAN.get()["cost_inc_cache"] += new_span["cost_inc_cache"]
+                SPAN.get()["llm_usage"] = _nested_add(
+                    SPAN.get()["llm_usage"],
+                    new_span["llm_usage"],
+                )
+                SPAN.get()["llm_usage_inc_cache"] = _nested_add(
+                    SPAN.get()["llm_usage_inc_cache"],
+                    new_span["llm_usage_inc_cache"],
+                )
             if log_token:
                 ACTIVE_LOG.set([])
 
