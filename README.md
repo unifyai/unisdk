@@ -94,7 +94,7 @@ while True:
 We've tried to strip away all of the excessive LLM jargon, so you can focus on your *product*, your *users*, and the *data* you care about, and *nothing else* 📈
 
 Unify takes inspiration from:
-- [PostHog](https://posthog.com/) / [Grafana](https://grafana.com/) / [LogFire]() for powerful observability 🔬
+- [PostHog](https://posthog.com/) / [Grafana](https://grafana.com/) / [LogFire](https://pydantic.dev/logfire) for powerful observability 🔬
 - [LangSmith](https://www.langchain.com/langsmith) / [BrainTrust](https://www.braintrust.dev/) / [Weave](https://wandb.ai/site/weave/) for LLM abstractions 🤖
 - [Notion](https://www.notion.com/) / [Airtable](https://www.airtable.com/) for composability and versatility 🧱
 
