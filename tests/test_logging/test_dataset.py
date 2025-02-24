@@ -393,12 +393,29 @@ class TestDatasetSync:
             assert dataset[2] == "c"
 
     @_handle_project
-    def test_sync_uniqueness(self) -> None:
+    def test_allow_duplicates(self) -> None:
         with DownloadTesting():
             assert "test_dataset" in unify.list_datasets()
-            dataset = unify.Dataset(["a", "b", "c"], name="test_dataset")
-            dataset.download()
+
+            # Download
+            dataset = unify.Dataset(["a", "b", "c"], name="test_dataset").download()
             assert len(dataset) == 3
+            dataset = unify.Dataset(
+                ["a", "b", "c"],
+                name="test_dataset",
+                allow_duplicates=True,
+            ).download()
+            assert len(dataset) == 6
+
+            # Upload
+            dataset = unify.Dataset(["a", "b", "c"], name="test_dataset").upload()
+            assert len(unify.download_dataset(name="test_dataset")) == 3
+            dataset = unify.Dataset(
+                ["a", "b", "c"],
+                name="test_dataset",
+                allow_duplicates=True,
+            ).upload()
+            assert len(unify.download_dataset(name="test_dataset")) == 6
 
 
 if __name__ == "__main__":

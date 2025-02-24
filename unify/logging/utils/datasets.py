@@ -46,6 +46,7 @@ def upload_dataset(
     data: List[Any],
     *,
     overwrite: bool = False,
+    allow_duplicates: bool = False,
     project: Optional[str] = None,
     api_key: Optional[str] = None,
 ) -> List[int]:
@@ -59,21 +60,37 @@ def upload_dataset(
 
         overwrite: Whether to overwrite the dataset if it already exists.
 
+        allow_duplicates: Whether to allow duplicates in the dataset.
+
         project: Name of the project the dataset belongs to.
 
         api_key: If specified, unify API key to be used. Defaults to the value in the
         `UNIFY_KEY` environment variable.
     Returns:
-        A list of the newly created dataset logs.
+        A list all log ids in the dataset.
     """
     api_key = _validate_api_key(api_key)
     project = _get_and_maybe_create_project(project, api_key=api_key)
     log_instances = [isinstance(item, unify.Log) for item in data]
     are_logs = False
+    if not allow_duplicates and not overwrite:
+        # ToDo: remove this verbose logic once ignore_duplicates is implemented
+        if name in unify.list_datasets():
+            upstream_dataset = unify.Dataset(
+                unify.download_dataset(name, project=project, api_key=api_key),
+            )
+        else:
+            upstream_dataset = unify.Dataset([])
     if any(log_instances):
         assert all(log_instances), "If any items are logs, all items must be logs"
         are_logs = True
+        # ToDo: remove this verbose logic once ignore_duplicates is implemented
+        if not allow_duplicates and not overwrite:
+            data = [l for l in data if l not in upstream_dataset]
     elif not all(isinstance(item, dict) for item in data):
+        # ToDo: remove this verbose logic once ignore_duplicates is implemented
+        if not allow_duplicates and not overwrite:
+            data = [item for item in data if item not in upstream_dataset]
         data = [{"data": item} for item in data]
     if name in unify.list_datasets():
         upstream_ids = get_logs(
@@ -84,11 +101,13 @@ def upload_dataset(
     else:
         upstream_ids = []
     if not are_logs:
-        return create_logs(
+        return upstream_ids + create_logs(
             project=project,
             context=f"Datasets/{name}",
             entries=data,
             mutable=True,
+            # ToDo: uncomment once ignore_duplicates is implemented
+            # ignore_duplicates=not allow_duplicates,
         )
     local_ids = [l.id for l in data]
     matching_ids = [id for id in upstream_ids if id in local_ids]
@@ -123,13 +142,13 @@ def upload_dataset(
         )
     local_only_data = [l.entries for l in data if l.id is None]
     if local_only_data:
-        return create_logs(
+        return upstream_ids + create_logs(
             project=project,
             context=f"Datasets/{name}",
             entries=local_only_data,
             mutable=True,
         )
-    return []
+    return upstream_ids
 
 
 def download_dataset(

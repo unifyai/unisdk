@@ -166,16 +166,15 @@ class Dataset:
             This dataset, useful for chaining methods.
         """
         self._assert_name_exists()
-        new_ids = unify.upload_dataset(
+        dataset_ids = unify.upload_dataset(
             name=self._name,
             data=self._logs,
             overwrite=overwrite,
+            allow_duplicates=self._allow_duplicates,
         )
-        idless_logs = [l for l in self._logs if l.id is None]
-        assert len(new_ids) == len(
-            idless_logs,
-        ), "Number of new ids and id-less logs must match"
-        [l.set_id(i) for i, l in zip(new_ids, idless_logs)]
+        assert len(dataset_ids) >= len(
+            self._logs,
+        ), "Number of upstream items must be great than or equal to items"
         return self
 
     def download(self, overwrite: bool = False) -> Self:
@@ -208,15 +207,13 @@ class Dataset:
             new_data = [l for l in upstream_dataset if l.id not in local_ids]
         else:
             local_values = set([json.dumps(l.entries) for l in self._logs])
-            new_data = list(
-                set(
-                    [
-                        l
-                        for l in upstream_dataset
-                        if json.dumps(l.entries) not in local_values
-                    ],
-                ),
-            )
+            upstream_values = set()
+            new_data = list()
+            for l in upstream_dataset:
+                value = json.dumps(l.entries)
+                if value not in local_values.union(upstream_values):
+                    new_data.append(l)
+                    upstream_values.add(value)
         self._logs += new_data
         return self
 
