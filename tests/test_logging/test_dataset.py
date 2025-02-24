@@ -417,6 +417,18 @@ class TestDatasetSync:
             ).upload()
             assert len(unify.download_dataset(name="test_dataset")) == 6
 
+            # Sync
+            dataset = unify.Dataset(["a", "b", "c"], name="test_dataset").sync()
+            assert len(dataset) == 3
+            dataset = unify.Dataset(["a", "d"], name="test_dataset").sync()
+            assert len(dataset) == 4
+            dataset = unify.Dataset(
+                ["a", "d"],
+                name="test_dataset",
+                allow_duplicates=True,
+            ).sync()
+            assert len(dataset) == 6
+
 
 if __name__ == "__main__":
     pass
