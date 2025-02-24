@@ -169,10 +169,13 @@ class Dataset:
         """
         self._assert_name_exists()
 
-        upstream_dataset = unify.download_dataset(
-            name=self._name,
-            api_key=self._api_key,
-        )
+        if f"Datasets/{self._name}" not in unify.get_contexts():
+            upstream_dataset = list()
+        else:
+            upstream_dataset = unify.download_dataset(
+                name=self._name,
+                api_key=self._api_key,
+            )
         if overwrite:
             self._logs = upstream_dataset
             return self
