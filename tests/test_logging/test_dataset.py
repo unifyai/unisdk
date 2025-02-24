@@ -393,22 +393,12 @@ class TestDatasetSync:
             assert dataset[2] == "c"
 
     @_handle_project
-    def test_sync_achieves_superset(self) -> None:
+    def test_sync_uniqueness(self) -> None:
         with DownloadTesting():
             assert "test_dataset" in unify.list_datasets()
-            dataset0 = unify.Dataset.from_upstream("test_dataset")
-            dataset1 = unify.Dataset.from_upstream("test_dataset")
-            dataset0 -= "a"
-            assert len(dataset0) == 2
-            dataset0.upload(overwrite=True)
-            assert len(unify.Dataset.from_upstream("test_dataset")) == 2
-            dataset1 += "d"
-            dataset1.sync()
-            assert len(dataset1) == 4
-            assert dataset1[0] == "a"
-            assert dataset1[1] == "b"
-            assert dataset1[2] == "c"
-            assert dataset1[3] == "d"
+            dataset = unify.Dataset(["a", "b", "c"], name="test_dataset")
+            dataset.download()
+            assert len(dataset) == 3
 
 
 if __name__ == "__main__":

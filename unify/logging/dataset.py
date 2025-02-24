@@ -22,6 +22,7 @@ class Dataset:
         data: Any,
         *,
         name: str = None,
+        allow_duplicates: bool = False,
         api_key: Optional[str] = None,
     ) -> None:
         """
@@ -33,6 +34,8 @@ class Dataset:
 
             name: The name of the dataset. To create a dataset for a specific project
             with name {project_name}, then prefix the name with {project_name}/{name}.
+
+            allow_duplicates: Whether to allow duplicates in the dataset.
 
             api_key: API key for accessing the Unify API. If None, it attempts to
             retrieve the API key from the environment variable UNIFY_KEY. Defaults to
@@ -46,6 +49,7 @@ class Dataset:
             data = list(data)
         elif not isinstance(data, list):
             data = [data]
+        self._allow_duplicates = allow_duplicates
         self._api_key = _validate_api_key(api_key)
         self._logs = [
             (
@@ -65,6 +69,13 @@ class Dataset:
         Name of the dataset.
         """
         return self._name
+
+    @property
+    def allow_duplicates(self) -> bool:
+        """
+        Whether to allow duplicates in the dataset.
+        """
+        return self._allow_duplicates
 
     @property
     def _data(self):
@@ -90,6 +101,19 @@ class Dataset:
             This dataset, useful for chaining methods.
         """
         self._name = name
+        return self
+
+    def set_allow_duplicates(self, allow_duplicates: bool) -> Self:
+        """
+        Set whether to allow duplicates in the dataset.
+
+        Args:
+            allow_duplicates: Whether to allow duplicates in the dataset.
+
+        Returns:
+            This dataset, useful for chaining methods.
+        """
+        self._allow_duplicates = allow_duplicates
         return self
 
     @staticmethod
@@ -179,8 +203,20 @@ class Dataset:
         if overwrite:
             self._logs = upstream_dataset
             return self
-        local_ids = set([l.id for l in self._logs if l.id is not None])
-        new_data = [l for l in upstream_dataset if l.id not in local_ids]
+        if self._allow_duplicates:
+            local_ids = set([l.id for l in self._logs if l.id is not None])
+            new_data = [l for l in upstream_dataset if l.id not in local_ids]
+        else:
+            local_values = set([json.dumps(l.entries) for l in self._logs])
+            new_data = list(
+                set(
+                    [
+                        l
+                        for l in upstream_dataset
+                        if json.dumps(l.entries) not in local_values
+                    ],
+                ),
+            )
         self._logs += new_data
         return self
 
