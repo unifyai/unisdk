@@ -549,3 +549,6 @@ class Dataset:
             "expected item to be of type int or slice,"
             "but found {} of type {}".format(item, type(item)),
         )
+
+    def __repr__(self):
+        return f"unify.Dataset({self._data}, name='{self._name}')"
