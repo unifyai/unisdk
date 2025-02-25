@@ -12,6 +12,7 @@ from typing import Any, Callable, Dict, List, Optional, Union
 
 import requests
 import unify
+from tqdm import tqdm
 from unify import BASE_URL
 
 from ...utils._caching import (
@@ -245,6 +246,20 @@ def _handle_mutability(
     return new_data
 
 
+def _json_chunker(big_dict, chunk_size=1024 * 1024):
+    json_string = json.dumps(big_dict)
+    total_bytes = len(json_string)
+    pbar = tqdm(total=total_bytes, unit="B", unit_scale=True, desc="Uploading JSON")
+    start = 0
+    while start < total_bytes:
+        end = min(start + chunk_size, total_bytes)
+        chunk = json_string[start:end]
+        yield chunk
+        pbar.update(len(chunk))
+        start = end
+    pbar.close()
+
+
 @_handle_cache
 def log(
     fn: Optional[Callable] = None,
@@ -470,47 +485,15 @@ def create_logs(
     body_size = sys.getsizeof(json.dumps(body))
     if body_size < CHUNK_LIMIT:
         response = requests.post(BASE_URL + "/logs", headers=headers, json=body)
-        if response.status_code != 200:
-            breakpoint()
-            raise Exception(response.json())
-        return [unify.Log(id=i) for i in response.json()]
-    if USR_LOGGING:
-        logging.info("Splitting user request into chunks")
-    bodies = list()
-    while params or entries:
-        size = 0
-        body = {
-            "project": project,
-            "context": context,
-            "params": [],
-            "entries": [],
-        }
-        while size < CHUNK_LIMIT and (params or entries):
-            param = params.pop(0)
-            size += sys.getsizeof(json.dumps(param))
-            body["params"].append(param)
-            entry = entries.pop(0)
-            size += sys.getsizeof(json.dumps(entry))
-            body["entries"].append(entry)
-        bodies.append(body)
-    if USR_LOGGING:
-        logging.info(f"Sending {len(bodies)} chunks for create_logs")
-    responses = unify.map(
-        lambda b: requests.post(BASE_URL + "/logs", headers=headers, json=b),
-        bodies,
-        from_args=True,
-    )
-    errors = list()
-    for r in responses:
-        if r.status_code != 200:
-            errors.append(r)
-    if errors:
-        raise Exception(
-            f"{len(errors)} out of {len(bodies)} create_logs requests failed, first failure:\n{errors[0].json()}",
+    else:
+        response = requests.post(
+            BASE_URL + "/logs",
+            headers=headers,
+            data=_json_chunker(body),
         )
-    if USR_LOGGING:
-        logging.info(f"Successfully sent {len(responses)} chunks for create_logs")
-    return [unify.Log(id=i) for r in responses for i in r.json()]
+    if response.status_code != 200:
+        raise Exception(response.json())
+    return [unify.Log(id=i) for i in response.json()]
 
 
 @_handle_cache
