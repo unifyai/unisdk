@@ -59,7 +59,7 @@ SPAN = ContextVar("span", default={})
 RUNNING_TIME = ContextVar("running_time", default=0.0)
 
 # chunking
-CHUNK_LIMIT = 1000000
+CHUNK_LIMIT = 5000000
 
 
 def _removes_unique_trace_values(kw: Dict[str, Any]) -> Dict[str, Any]:
