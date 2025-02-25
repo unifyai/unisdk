@@ -482,23 +482,23 @@ def create_logs(
         body = {
             "project": project,
             "context": context,
-            "params": {},
-            "entries": {},
+            "params": [],
+            "entries": [],
         }
         while size < CHUNK_LIMIT:
-            if params:
-                body["params"].update(params.pop(0))
-            if entries:
-                body["entries"].update(entries.pop(0))
-            size += sys.getsizeof(body)
-            if size > CHUNK_LIMIT:
-                break
+            param = params.pop(0)
+            size += sys.getsizeof(json.dumps(param))
+            body["params"].append(param)
+            entry = entries.pop(0)
+            size += sys.getsizeof(json.dumps(entry))
+            body["entries"].append(entry)
         bodies.append(body)
     if USR_LOGGING:
         logging.info(f"Sending {len(bodies)} chunks for create_logs")
     responses = unify.map(
         lambda b: requests.post(BASE_URL + "/logs", headers=headers, json=b),
         bodies,
+        from_args=True,
     )
     for r in responses:
         if r.status_code != 200:
