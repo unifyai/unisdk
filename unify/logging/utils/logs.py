@@ -3,6 +3,7 @@ from __future__ import annotations
 import atexit
 import copy
 import inspect
+import json
 import logging
 import os
 import sys
@@ -466,7 +467,7 @@ def create_logs(
         "params": params,
         "entries": entries,
     }
-    body_size = sys.getsizeof(body)
+    body_size = sys.getsizeof(json.dumps(body))
     if body_size < CHUNK_LIMIT:
         response = requests.post(BASE_URL + "/logs", headers=headers, json=body)
         if response.status_code != 200:
