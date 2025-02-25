@@ -10,6 +10,7 @@ repository = "https://github.com/unifyai/unify"
 [tool.poetry.dependencies]
 python = "^3.9"
 requests = "^2.31.0"
+requests-toolbelt = "^1.0.0"
 openai = "^1.47.0"
 jsonlines = "^4.0.0"
 rich = "^13.8.1"
