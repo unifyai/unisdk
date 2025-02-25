@@ -5,6 +5,7 @@ import copy
 import inspect
 import logging
 import os
+import sys
 from contextvars import ContextVar
 from typing import Any, Callable, Dict, List, Optional, Union
 
@@ -55,6 +56,9 @@ PARAMS_NEST_LEVEL = ContextVar("params_nest_level", default=0)
 # span
 SPAN = ContextVar("span", default={})
 RUNNING_TIME = ContextVar("running_time", default=0.0)
+
+# chunking
+CHUNK_LIMIT = 1000000
 
 
 def _removes_unique_trace_values(kw: Dict[str, Any]) -> Dict[str, Any]:
@@ -452,18 +456,55 @@ def create_logs(
     # ToDo: add support for all of the context variables, as is done for `unify.log` above
     params = _handle_mutability(mutable, params)
     entries = _handle_mutability(mutable, entries)
+    # ToDo remove the params/entries logic above once this [https://app.clickup.com/t/86c25g263] is done
+    params = [{}] * len(entries) if params in [None, []] else params
+    entries = [{}] * len(params) if entries in [None, []] else entries
+    # end ToDo
     body = {
         "project": project,
         "context": context,
-        # ToDo remove the params/entries logic above once this [https://app.clickup.com/t/86c25g263] is done
-        "params": [{}] * len(entries) if params is None else params,
-        "entries": [{}] * len(params) if entries is None else entries,
-        # end ToDo
+        "params": params,
+        "entries": entries,
     }
-    response = requests.post(BASE_URL + "/logs", headers=headers, json=body)
-    if response.status_code != 200:
-        raise Exception(response.json())
-    return response.json()
+    body_size = sys.getsizeof(body)
+    if body_size < CHUNK_LIMIT:
+        response = requests.post(BASE_URL + "/logs", headers=headers, json=body)
+        if response.status_code != 200:
+            breakpoint()
+            raise Exception(response.json())
+        return [unify.Log(id=i) for i in response.json()]
+    if USR_LOGGING:
+        logging.info("Splitting user request into chunks")
+    bodies = list()
+    while params or entries:
+        size = 0
+        body = {
+            "project": project,
+            "context": context,
+            "params": {},
+            "entries": {},
+        }
+        while size < CHUNK_LIMIT:
+            if params:
+                body["params"].update(params.pop(0))
+            if entries:
+                body["entries"].update(entries.pop(0))
+            size += sys.getsizeof(body)
+            if size > CHUNK_LIMIT:
+                break
+        bodies.append(body)
+    if USR_LOGGING:
+        logging.info(f"Sending {len(bodies)} chunks for create_logs")
+    responses = unify.map(
+        lambda b: requests.post(BASE_URL + "/logs", headers=headers, json=b),
+        bodies,
+    )
+    for r in responses:
+        if r.status_code != 200:
+            raise Exception(r.json())
+    if USR_LOGGING:
+        logging.info(f"Successfully sent {len(responses)} chunks for create_logs")
+    return [unify.Log(id=i) for r in responses for i in r.json()]
 
 
 @_handle_cache
