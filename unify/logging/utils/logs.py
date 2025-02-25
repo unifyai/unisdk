@@ -485,7 +485,7 @@ def create_logs(
             "params": [],
             "entries": [],
         }
-        while size < CHUNK_LIMIT:
+        while size < CHUNK_LIMIT and (params or entries):
             param = params.pop(0)
             size += sys.getsizeof(json.dumps(param))
             body["params"].append(param)
@@ -500,9 +500,14 @@ def create_logs(
         bodies,
         from_args=True,
     )
+    errors = list()
     for r in responses:
         if r.status_code != 200:
-            raise Exception(r.json())
+            errors.append(r)
+    if errors:
+        raise Exception(
+            f"{len(errors)} out of {len(bodies)} create_logs requests failed, first failure:\n{errors[0].json()}",
+        )
     if USR_LOGGING:
         logging.info(f"Successfully sent {len(responses)} chunks for create_logs")
     return [unify.Log(id=i) for r in responses for i in r.json()]
