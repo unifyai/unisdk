@@ -44,10 +44,16 @@ unify.activate("Maths Assistant")
 
 # build agent
 client = unify.Unify("o3-mini@openai", traced=True)
-client.set_system_message("You are a helpful maths assistant, tasked with adding and subtracting integers.")
+client.set_system_message(
+    "You are a helpful maths assistant, "
+    "tasked with adding and subtracting integers."
+)
 
 # add test cases
-qs = [f"{randint(0, 100)} {choice(['+', '-'])} {randint(0, 100)}" for i in range(10)]
+qs = [
+    f"{randint(0, 100)} {choice(['+', '-'])} {randint(0, 100)}"
+    for i in range(10)
+]
 
 # define evaluator
 @unify.traced
@@ -55,7 +61,12 @@ def evaluate_response(question: str, response: str) -> float:
     correct_answer = eval(question)
     try:
         response_int = int(
-            "".join([c for c in response.split(" ")[-1] if c.isdigit()]),
+            "".join(
+                [
+                    c for c in response.split(" ")[-1]
+                    if c.isdigit()
+                ]
+            ),
         )
         return float(correct_answer == response_int)
     except ValueError:
