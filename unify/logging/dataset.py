@@ -86,7 +86,7 @@ class Dataset:
 
     def _set_data(self, data):
         self._logs = [
-            unify.Log(**(entry if isinstance(entry, dict) else {self._name: entry}))
+            unify.Log(**(entry if isinstance(entry, dict) else {"data": entry}))
             for entry in data
         ]
 
@@ -546,6 +546,28 @@ class Dataset:
             "expected item to be of type int or slice,"
             "but found {} of type {}".format(item, type(item)),
         )
+
+    def __setitem__(self, item: Union[int, slice], value: Union[Any, Dataset]):
+        if isinstance(item, int):
+            if isinstance(value, unify.Log):
+                self._logs[item] = value
+            else:
+                self._logs[item] = unify.Log(
+                    **(value if isinstance(value, dict) else {"data": value}),
+                )
+        elif isinstance(item, slice):
+            self._logs[item.start : item.stop : item.step] = [
+                (
+                    unify.Log(**(v if isinstance(v, dict) else {"data": v}))
+                    if not isinstance(v, unify.Log)
+                    else v
+                )
+                for v in value
+            ]
+        else:
+            raise TypeError(
+                "expected item to be of type int or slice,",
+            )
 
     def __repr__(self):
         return f"unify.Dataset({self._data}, name='{self._name}')"
