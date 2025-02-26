@@ -233,6 +233,10 @@ class Experiment:
 
 
 def _nested_add(a, b):
+    if a is None and isinstance(b, dict):
+        a = {k: None if isinstance(v, dict) else 0 for k, v in b.items()}
+    elif b is None and isinstance(a, dict):
+        b = {k: None if isinstance(v, dict) else 0 for k, v in a.items()}
     if isinstance(a, dict) and isinstance(b, dict):
         return {k: _nested_add(a[k], b[k]) for k in a if k in b}
     return a + b
@@ -286,8 +290,8 @@ def traced(
                 0.0 if not SPAN.get() else t1 - RUNNING_TIME.get(),
                 2,
             ),
-            "llm_usage": 0.0,
-            "llm_usage_inc_cache": 0.0,
+            "llm_usage": None,
+            "llm_usage_inc_cache": None,
             "code": f"```python\n{code}\n```",
             "code_fpath": inspect.getsourcefile(fn),
             "code_start_line": start_line,
