@@ -4,6 +4,14 @@ from ..helpers import _handle_project
 
 
 @_handle_project
+def test_create_context():
+    assert len(unify.get_contexts()) == 0
+    unify.create_context("my_context")
+    assert len(unify.get_contexts()) == 1
+    assert "my_context" in unify.get_contexts()
+
+
+@_handle_project
 def test_get_contexts():
     assert len(unify.get_contexts()) == 0
     unify.log(x=0, context="a/b")
