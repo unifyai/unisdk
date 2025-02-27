@@ -239,6 +239,8 @@ def _nested_add(a, b):
         b = {k: None if isinstance(v, dict) else 0 for k, v in a.items()}
     if isinstance(a, dict) and isinstance(b, dict):
         return {k: _nested_add(a[k], b[k]) for k in a if k in b}
+    elif a is None and b is None:
+        return None
     return a + b
 
 
