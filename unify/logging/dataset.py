@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Sequence
 from typing import Any, Dict, List, Optional, Union
 
 import unify
@@ -16,7 +17,7 @@ def _to_raw_data(x: Dict[str, Any]):
     return x["data"] if "data" in x and len(x) == 1 else x
 
 
-class Dataset:
+class Dataset(Sequence):
     def __init__(
         self,
         data: Any,
