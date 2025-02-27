@@ -515,12 +515,26 @@ class TestDatasetSync:
             assert len(dataset) == 6
 
 
-# class TestMultiDataset:
-#     @_handle_project
-#     def test_slice_dataset(self) -> None:
-#         dataset1 = unify.Dataset(["a", "b", "c"], name="test_dataset").upload()
-#         dataset2 = dataset1[0:2]
-#         assert [l1.id == l2.id for l1, l2 in zip(dataset1, dataset2)]
+class TestMultiDataset:
+    @pytest.mark.skip(reason="immutable field bug")
+    @_handle_project
+    def test_sub_dataset(self) -> None:
+        dataset = unify.Dataset(["a", "b", "c"], name="test_dataset").sync()
+        # even the commented line below fails due to "immutable field"
+        # [l.update_entries(data=c) for l, c in zip(dataset, ["A", "B", "C"])]
+        sub_dataset = dataset[0:2].set_name("sub_dataset")
+        assert isinstance(sub_dataset, unify.Dataset)
+        assert len(sub_dataset) == 2
+        assert [l1.id == l2.id for l1, l2 in zip(dataset, sub_dataset)]
+        sub_dataset.sync()
+        assert len(sub_dataset) == 2
+        assert [l1.id == l2.id for l1, l2 in zip(dataset, sub_dataset)]
+        [l.update_entries(data=c) for l, c in zip(dataset, ["A", "B", "C"])]
+        assert len(dataset) == 3
+        sub_dataset.download()
+        sub_data = sub_dataset.data
+        assert sub_data[0] == "A"
+        assert sub_data[1] == "B"
 
 
 if __name__ == "__main__":

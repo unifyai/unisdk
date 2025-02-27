@@ -130,13 +130,21 @@ def upload_dataset(
                 project=project,
                 api_key=api_key,
             )
+            upstream_ids = [id for id in upstream_ids if id not in upstream_only_ids]
     ids_not_in_dataset = [
         id for id in local_ids if id not in matching_ids and id is not None
     ]
     if ids_not_in_dataset:
+        context = f"Datasets/{name}"
+        if context not in unify.get_contexts():
+            unify.create_context(
+                context,
+                project=project,
+                api_key=api_key,
+            )
         unify.add_logs_to_context(
             log_ids=ids_not_in_dataset,
-            context=f"Datasets/{name}",
+            context=context,
             project=project,
             api_key=api_key,
         )
@@ -148,7 +156,7 @@ def upload_dataset(
             entries=local_only_data,
             mutable=True,
         )
-    return upstream_ids
+    return upstream_ids + ids_not_in_dataset
 
 
 def download_dataset(

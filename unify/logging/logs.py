@@ -98,7 +98,12 @@ class Log:
         self._entries = {**self._entries, **entries}
 
     def update_entries(self, **entries) -> None:
-        update_log_entries(logs=self._id, api_key=self._api_key, **entries)
+        update_logs(
+            logs=self._id,
+            api_key=self._api_key,
+            entries=entries,
+            overwrite=True,
+        )
         self._entries = {**self._entries, **entries}
 
     def delete_entries(
