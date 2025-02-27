@@ -493,7 +493,16 @@ def create_logs(
         )
     if response.status_code != 200:
         raise Exception(response.json())
-    return [unify.Log(id=i) for i in response.json()]
+    return [
+        unify.Log(
+            project=project,
+            context=context,
+            **{k: v for k, v in e.items() if k != "explicit_types"},
+            **p,
+            id=i,
+        )
+        for e, p, i in zip(entries, params, response.json())
+    ]
 
 
 @_handle_cache
