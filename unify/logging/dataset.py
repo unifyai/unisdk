@@ -233,7 +233,7 @@ class Dataset:
             This dataset after the in-place sync, useful for chaining methods.
         """
         self.upload()
-        self.download()
+        self.download(overwrite=True)
         return self
 
     def upstream_diff(self) -> Self:
