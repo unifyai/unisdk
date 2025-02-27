@@ -78,7 +78,7 @@ class Dataset:
         return self._allow_duplicates
 
     @property
-    def _data(self):
+    def data(self):
         """
         Dataset entries.
         """
@@ -242,15 +242,13 @@ class Dataset:
             api_key=self._api_key,
         )
         unique_upstream = [
-            item["entry"]
-            for item in upstream_dataset
-            if item["entry"] not in self._data
+            item["entry"] for item in upstream_dataset if item["entry"] not in self.data
         ]
         print(
             "The following {} entries are stored upstream but not locally\n: "
             "{}".format(len(unique_upstream), unique_upstream),
         )
-        unique_local = [item for item in self._data if item not in upstream_dataset]
+        unique_local = [item for item in self.data if item not in upstream_dataset]
         print(
             "The following {} entries are stored upstream but not locally\n: "
             "{}".format(len(unique_local), unique_local),
@@ -281,7 +279,7 @@ class Dataset:
         if other == 0:
             return self
         other = other if isinstance(other, Dataset) else Dataset(other)
-        data = self._data + [d for d in other._data if d not in self._data]
+        data = self.data + [d for d in other.data if d not in self.data]
         return Dataset(data=data, api_key=self._api_key)
 
     def sub(
@@ -303,7 +301,7 @@ class Dataset:
             "cannot subtract dataset B from dataset A unless all queries of dataset "
             "B are also present in dataset A"
         )
-        data = [item for item in self._data if item not in other]
+        data = [item for item in self.data if item not in other]
         return Dataset(data=data, api_key=self._api_key)
 
     def inplace_add(
@@ -473,8 +471,8 @@ class Dataset:
         Returns:
             The next instance in the dataset.
         """
-        for x in self._data:
-            yield x
+        for l in self._logs:
+            yield l
 
     def __contains__(
         self,
@@ -524,7 +522,7 @@ class Dataset:
         Returns:
             The number of entries in the dataset.
         """
-        return len(self._data)
+        return len(self._logs)
 
     def __getitem__(self, item: Union[int, slice]) -> Union[Any, Dataset]:
         """
@@ -539,9 +537,9 @@ class Dataset:
             An individual item or Dataset slice, for int and slice queries respectively.
         """
         if isinstance(item, int):
-            return self._data[item]
+            return self._logs[item]
         elif isinstance(item, slice):
-            return Dataset(self._data[item.start : item.stop : item.step])
+            return Dataset(self._logs[item.start : item.stop : item.step])
         raise TypeError(
             "expected item to be of type int or slice,"
             "but found {} of type {}".format(item, type(item)),
@@ -570,4 +568,4 @@ class Dataset:
             )
 
     def __repr__(self):
-        return f"unify.Dataset({self._data}, name='{self._name}')"
+        return f"unify.Dataset({self.data}, name='{self._name}')"

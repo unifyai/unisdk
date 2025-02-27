@@ -15,17 +15,32 @@ class TestDatasetConstruction:
     @_handle_project
     def test_create_dataset_from_str(self) -> None:
         dataset = unify.Dataset("a")
-        assert isinstance(dataset[0], str)
+        assert isinstance(dataset[0], unify.Log)
+        data = dataset.data
+        assert isinstance(data, list)
+        assert len(data) == 1
+        assert isinstance(data[0], str)
+        assert data[0] == "a"
 
     @_handle_project
     def test_create_dataset_from_list_of_str(self) -> None:
         dataset = unify.Dataset(["a", "b", "c"])
-        assert isinstance(dataset[0], str)
+        assert isinstance(dataset[0], unify.Log)
+        data = dataset.data
+        assert isinstance(data, list)
+        assert len(data) == 3
+        assert isinstance(data[0], str)
+        assert data[0] == "a"
 
     @_handle_project
     def test_create_dataset_from_prompt(self) -> None:
         dataset = unify.Dataset(Prompt(messages=[{"role": "user", "content": "a"}]))
-        assert isinstance(dataset[0], Prompt)
+        assert isinstance(dataset[0], unify.Log)
+        data = dataset.data
+        assert isinstance(data, list)
+        assert len(data) == 1
+        assert isinstance(data[0], Prompt)
+        assert data[0].components["messages"][0] == {"role": "user", "content": "a"}
 
     @_handle_project
     def test_create_dataset_from_list_of_prompts(self) -> None:
@@ -35,12 +50,22 @@ class TestDatasetConstruction:
                 for usr_msg in ["a", "b", "c"]
             ],
         )
-        assert isinstance(dataset[0], Prompt)
+        assert isinstance(dataset[0], unify.Log)
+        data = dataset.data
+        assert isinstance(data, list)
+        assert len(data) == 3
+        assert isinstance(data[0], Prompt)
+        assert data[0].components["messages"][0] == {"role": "user", "content": "a"}
 
     @_handle_project
     def test_create_dataset_from_dict(self) -> None:
         dataset = unify.Dataset(dict(messages=[{"role": "user", "content": "a"}]))
-        assert isinstance(dataset[0], dict)
+        assert isinstance(dataset[0], unify.Log)
+        data = dataset.data
+        assert isinstance(data, list)
+        assert len(data) == 1
+        assert isinstance(data[0], dict)
+        assert data[0]["messages"][0] == {"role": "user", "content": "a"}
 
     @_handle_project
     def test_create_dataset_from_list_of_dicts(self) -> None:
@@ -50,14 +75,27 @@ class TestDatasetConstruction:
                 for usr_msg in ["a", "b", "c"]
             ],
         )
-        assert isinstance(dataset[0], dict)
+        assert isinstance(dataset[0], unify.Log)
+        data = dataset.data
+        assert isinstance(data, list)
+        assert len(data) == 3
+        assert isinstance(data[0], dict)
+        assert data[0]["messages"][0] == {"role": "user", "content": "a"}
 
     @_handle_project
     def test_create_dataset_from_dict_w_prompt(self) -> None:
         dataset = unify.Dataset(
             dict(prompt=Prompt(messages=[{"role": "user", "content": "a"}])),
         )
-        assert isinstance(dataset[0], dict)
+        assert isinstance(dataset[0], unify.Log)
+        data = dataset.data
+        assert isinstance(data, list)
+        assert len(data) == 1
+        assert isinstance(data[0], dict)
+        assert data[0]["prompt"].components["messages"][0] == {
+            "role": "user",
+            "content": "a",
+        }
 
     @_handle_project
     def test_create_dataset_from_list_of_prompt_dicts(self) -> None:
@@ -67,7 +105,15 @@ class TestDatasetConstruction:
                 for usr_msg in ["a", "b", "c"]
             ],
         )
-        assert isinstance(dataset[0], dict)
+        assert isinstance(dataset[0], unify.Log)
+        data = dataset.data
+        assert isinstance(data, list)
+        assert len(data) == 3
+        assert isinstance(data[0], dict)
+        assert data[0]["prompt"].components["messages"][0] == {
+            "role": "user",
+            "content": "a",
+        }
 
     @_handle_project
     def test_create_dataset_from_upstream(self) -> None:
@@ -79,7 +125,7 @@ class TestDatasetConstruction:
         dataset.upload()
         assert "TestCreateDatasetFromStr" in unify.list_datasets()
         dataset = unify.Dataset.from_upstream("TestCreateDatasetFromStr")
-        assert isinstance(dataset._logs[0], unify.Log)
+        assert isinstance(dataset[0], unify.Log)
         unify.delete_dataset("TestCreateDatasetFromStr")
         assert "TestCreateDatasetFromStr" not in unify.list_datasets()
 
@@ -91,21 +137,22 @@ class TestDatasetManipulation:
         msgs = ["a", "b", "c"]
         dataset = unify.Dataset(msgs)
         assert len(dataset) == len(msgs)
-        for item, msg in zip(dataset, msgs):
-            assert isinstance(item, str)
+        for log, item, msg in zip(dataset, dataset.data, msgs):
+            assert isinstance(log, unify.Log)
             assert item == msg
 
     @_handle_project
     def test_index_dataset(self) -> None:
         dataset = unify.Dataset(["a", "b", "c"])
-        assert isinstance(dataset[0], str)
-        assert dataset[0] == "a"
-        assert isinstance(dataset[1], str)
-        assert dataset[1] == "b"
-        assert isinstance(dataset[2], str)
-        assert dataset[2] == "c"
-        assert isinstance(dataset[-1], str)
-        assert dataset[-1] == "c"
+        data = dataset.data
+        assert isinstance(dataset[0], unify.Log)
+        assert data[0] == "a"
+        assert isinstance(dataset[1], unify.Log)
+        assert data[1] == "b"
+        assert isinstance(dataset[2], unify.Log)
+        assert data[2] == "c"
+        assert isinstance(dataset[-1], unify.Log)
+        assert data[-1] == "c"
         with pytest.raises(IndexError):
             dataset[3]
 
@@ -115,8 +162,9 @@ class TestDatasetManipulation:
         dataset = unify.Dataset(["a", "b", "c", "d"])
         msgs = msgs[1:-1]
         dataset = dataset[1:-1]
-        for item, msg in zip(dataset, msgs):
-            assert isinstance(item, str)
+        data = dataset.data[1:-1]
+        for log, item, msg in zip(dataset, data, msgs):
+            assert isinstance(log, unify.Log)
             assert item == msg
 
     @_handle_project
@@ -126,6 +174,8 @@ class TestDatasetManipulation:
         assert dataset2 in dataset1
         assert "a" in dataset1
         assert "b" in dataset1
+        assert dataset1.data[1] in dataset1
+        assert dataset1.data[0:2] in dataset1
         assert ["b", "c"] in dataset1
         assert "d" not in dataset1
         dataset3 = unify.Dataset(["c", "d"])
@@ -149,7 +199,9 @@ class TestDatasetCombining:
         dataset2 = unify.Dataset(msgs[2:])
         dataset = dataset1 + dataset2
         assert len(dataset) == len(msgs)
-        for item, msg in zip(dataset, msgs):
+        data = dataset.data
+        for log, item, msg in zip(dataset, data, msgs):
+            assert isinstance(log, unify.Log)
             assert item == msg
 
     @_handle_project
@@ -159,7 +211,9 @@ class TestDatasetCombining:
         dataset2 = unify.Dataset(msgs[2:])
         dataset = sum([dataset1, dataset2])
         assert len(dataset) == len(msgs)
-        for item, msg in zip(dataset, msgs):
+        data = dataset.data
+        for log, item, msg in zip(dataset, data, msgs):
+            assert isinstance(log, unify.Log)
             assert item == msg
 
     @_handle_project
@@ -170,7 +224,9 @@ class TestDatasetCombining:
         dataset2 = unify.Dataset(msgs2)
         dataset = dataset1 + dataset2
         assert len(dataset) == 3
-        for item, msg in zip(dataset, ("a", "b", "c")):
+        data = dataset.data
+        for log, item, msg in zip(dataset, data, ("a", "b", "c")):
+            assert isinstance(log, unify.Log)
             assert item == msg
 
     @_handle_project
@@ -182,22 +238,30 @@ class TestDatasetCombining:
         dataset += dataset2
         assert did == id(dataset)
         assert len(dataset) == len(msgs)
-        for item, msg in zip(dataset, msgs):
+        data = dataset.data
+        for log, item, msg in zip(dataset, data, msgs):
+            assert isinstance(log, unify.Log)
             assert item == msg
 
     @_handle_project
     def test_dataset_single_item_addition(self) -> None:
         dataset = unify.Dataset("a") + "b"
+        data = dataset.data
         assert len(dataset) == 2
-        assert dataset[0] == "a"
-        assert dataset[1] == "b"
+        assert isinstance(dataset[0], unify.Log)
+        assert data[0] == "a"
+        assert isinstance(dataset[1], unify.Log)
+        assert data[1] == "b"
 
     @_handle_project
     def test_dataset_reverse_addition(self) -> None:
         dataset = "a" + unify.Dataset("b")
+        data = dataset.data
         assert len(dataset) == 2
-        assert dataset[0] == "a"
-        assert dataset[1] == "b"
+        assert isinstance(dataset[0], unify.Log)
+        assert data[0] == "a"
+        assert isinstance(dataset[1], unify.Log)
+        assert data[1] == "b"
 
 
 class TestDatasetTrimming:
@@ -208,7 +272,9 @@ class TestDatasetTrimming:
         dataset2 = unify.Dataset(msgs[2:])
         dataset = dataset1 - dataset2
         assert len(dataset) == 2
-        for item, msg in zip(dataset, msgs[0:2]):
+        data = dataset.data
+        for log, item, msg in zip(dataset, data, msgs[0:2]):
+            assert isinstance(log, unify.Log)
             assert item == msg
 
     @_handle_project
@@ -229,26 +295,34 @@ class TestDatasetTrimming:
         dataset -= dataset2
         assert did == id(dataset)
         assert len(dataset) == 2
-        for item, msg in zip(dataset, msgs[0:2]):
+        data = dataset.data
+        for log, item, msg in zip(dataset, data, msgs[0:2]):
+            assert isinstance(log, unify.Log)
             assert item == msg
 
     @_handle_project
     def test_dataset_single_item_subtraction(self) -> None:
         dataset = unify.Dataset(["a", "b"]) - "b"
         assert len(dataset) == 1
-        assert dataset[0] == "a"
+        data = dataset.data
+        assert isinstance(dataset[0], unify.Log)
+        assert data[0] == "a"
 
     @_handle_project
     def test_dataset_reverse_subtraction(self) -> None:
         dataset = ["a", "b"] - unify.Dataset("b")
         assert len(dataset) == 1
-        assert dataset[0] == "a"
+        data = dataset.data
+        assert isinstance(dataset[0], unify.Log)
+        assert data[0] == "a"
 
     @_handle_project
     def test_dataset_from_item_subtraction(self) -> None:
         dataset = unify.Dataset("b") + "a" - "b"
         assert len(dataset) == 1
-        assert dataset[0] == "a"
+        data = dataset.data
+        assert isinstance(dataset[0], unify.Log)
+        assert data[0] == "a"
 
 
 class UploadTesting:
@@ -313,19 +387,20 @@ class TestDatasetDownloading:
         with DownloadTesting():
             assert "test_dataset" in unify.list_datasets()
             dataset = unify.Dataset.from_upstream("test_dataset")
-            # noinspection DuplicatedCode
-            assert len(dataset) == 3
-            assert dataset[0] == "a"
-            assert dataset[1] == "b"
-            assert dataset[2] == "c"
+            data = dataset.data
+            for log, item, msg in zip(dataset, data, ("a", "b", "c")):
+                assert isinstance(log, unify.Log)
+                assert item == msg
 
     @_handle_project
     def test_dataset_download_w_overwrite(self) -> None:
         with DownloadTesting():
             assert "test_dataset" in unify.list_datasets()
             dataset = unify.Dataset(["a", "b", "c", "d"], name="test_dataset")
-            assert len(dataset) == 4
-            assert dataset[3] == "d"
+            data = dataset.data
+            for log, item, msg in zip(dataset, data, ("a", "b", "c", "d")):
+                assert isinstance(log, unify.Log)
+                assert item == msg
             dataset.download(overwrite=True)
             assert len(dataset) == 3
             with pytest.raises(IndexError):
@@ -339,27 +414,32 @@ class TestDatasetDownloading:
         msgs = ("a", "b", "c")
         extra = ("A", "B", "C")
         extra_name = "".join(random.choice(string.ascii_lowercase) for _ in range(4))
-        data = [{"message": msg, extra_name: ans} for msg, ans in zip(msgs, extra)]
-        dataset = unify.Dataset(data, name="test_dataset")
-        assert "message" in dataset[0]
-        assert extra_name in dataset[0]
+        data_in = [{"message": msg, extra_name: ans} for msg, ans in zip(msgs, extra)]
+        dataset = unify.Dataset(data_in, name="test_dataset")
+        data = dataset.data
+        for log, item, msg in zip(dataset, data, data_in):
+            assert isinstance(log, unify.Log)
+            assert item == msg
+        assert "message" in data[0]
+        assert extra_name in data[0]
         dataset.upload()
         dataset = unify.Dataset.from_upstream("test_dataset")
-        for i, (msg, ans) in enumerate(zip(msgs, extra)):
-            assert "message" in dataset[i]
-            assert dataset[i]["message"] == msg
-            assert extra_name in dataset[i]
-            assert dataset[i][extra_name] == ans
+        data = dataset.data
+        for log, item, msg in zip(dataset, data, data_in):
+            assert isinstance(log, unify.Log)
+            assert item == msg
+        assert "message" in data[0]
+        assert extra_name in data[0]
         unify.delete_dataset("test_dataset")
 
     @_handle_project
     def test_dataset_downloading_prompt_ids(self) -> None:
         with DownloadTesting():
             dataset = unify.Dataset.from_upstream("test_dataset")
-            for item in dataset._logs:
-                assert item.id is not None
-                assert isinstance(item.id, int)
-                assert item.entries is not None
+            for log in dataset:
+                assert log.id is not None
+                assert isinstance(log.id, int)
+                assert log.entries is not None
 
 
 class TestDatasetSync:
@@ -371,13 +451,16 @@ class TestDatasetSync:
             assert len(dataset) == 3
             dataset += "d"
             dataset.sync()
-            assert len(dataset) == 4
-            assert dataset[0] == "a"
-            assert dataset[1] == "b"
-            assert dataset[2] == "c"
-            assert dataset[3] == "d"
+            data = dataset.data
+            for log, item, msg in zip(dataset, data, ("a", "b", "c", "d")):
+                assert isinstance(log, unify.Log)
+                assert item == msg
             dataset.download()
             assert len(dataset) == 4
+            data = dataset.data
+            for log, item, msg in zip(dataset, data, ("a", "b", "c", "d")):
+                assert isinstance(log, unify.Log)
+                assert item == msg
 
     @_handle_project
     def test_sync_downloads(self) -> None:
@@ -388,9 +471,10 @@ class TestDatasetSync:
             dataset.sync()
             dataset.download()
             assert len(dataset) == 3
-            assert dataset[0] == "a"
-            assert dataset[1] == "b"
-            assert dataset[2] == "c"
+            data = dataset.data
+            for log, item, msg in zip(dataset, data, ("a", "b", "c")):
+                assert isinstance(log, unify.Log)
+                assert item == msg
 
     @_handle_project
     def test_allow_duplicates(self) -> None:
@@ -418,6 +502,7 @@ class TestDatasetSync:
             assert len(unify.download_dataset(name="test_dataset")) == 6
 
             # Sync
+            unify.delete_dataset("test_dataset")
             dataset = unify.Dataset(["a", "b", "c"], name="test_dataset").sync()
             assert len(dataset) == 3
             dataset = unify.Dataset(["a", "d"], name="test_dataset").sync()
@@ -428,6 +513,14 @@ class TestDatasetSync:
                 allow_duplicates=True,
             ).sync()
             assert len(dataset) == 6
+
+
+# class TestMultiDataset:
+#     @_handle_project
+#     def test_slice_dataset(self) -> None:
+#         dataset1 = unify.Dataset(["a", "b", "c"], name="test_dataset").upload()
+#         dataset2 = dataset1[0:2]
+#         assert [l1.id == l2.id for l1, l2 in zip(dataset1, dataset2)]
 
 
 if __name__ == "__main__":
