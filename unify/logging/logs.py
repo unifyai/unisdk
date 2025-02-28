@@ -574,7 +574,12 @@ def log_decorator(func):
 
     # 5) Execute the compiled module code in that namespace
     exec(code, func_globals)
-    transformed_func = func_globals[func.__name__]
+    trans = func_globals[func.__name__]
+
+    # 6 ) Add logging context
+    def transformed_func(*args, **kwargs):
+        with unify.Log():
+            return trans(*args, **kwargs)
 
     # Copy necessary attributes
     transformed_func.__name__ = func.__name__

@@ -766,6 +766,29 @@ def test_basic_log_decorator():
 
 
 @_handle_project
+def test_log_decorator_w_internal_logging():
+    @unify.log
+    def sample_function(a, b, c, d):
+        c = a + b
+        unify.log(e=15)
+        d = c * 2
+        return d
+
+    sample_function(2, 3, 8, 9, w=2, y=9)
+    logs = unify.get_logs()
+    assert len(logs) == 1
+    assert logs[0].entries == {
+        "e": 15,
+        "a": 2,
+        "b": 3,
+        "c": 5,
+        "d": 10,
+        "w": 2,
+        "y": 9,
+    }
+
+
+@_handle_project
 def test_private_variable_exclusion():
     @unify.log
     def sample_function(public_var, _private_var):
