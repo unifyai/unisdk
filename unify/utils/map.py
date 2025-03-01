@@ -4,6 +4,7 @@ import threading
 from typing import Any, List
 
 from tqdm import tqdm
+from tqdm.asyncio import tqdm_asyncio
 
 
 def _is_iterable(item: Any) -> bool:
@@ -122,9 +123,7 @@ def map(
     pbar.set_description(f"{name}Coroutines")
 
     async def _wrapped(*a, **kw):
-        ret = await fn(*a, **kw)
-        pbar.update(1)
-        return ret
+        return await asyncio.to_thread(fn, *a, **kw)
 
     fns = []
     for i, a_n_kw in enumerate(args_n_kwargs):
@@ -132,7 +131,7 @@ def map(
         fns.append(_wrapped(*a, **kw))
 
     async def main():
-        ret = await asyncio.gather(*fns)
+        ret = await tqdm_asyncio.gather(*fns)
         pbar.close()
         return ret
 
