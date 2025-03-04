@@ -14,7 +14,7 @@
 
 <div style="display: block;" align="center">
     <a href="https://console.unify.ai/">
-        <img class="dark-light" width="100%" src="https://raw.githubusercontent.com/unifyai/unifyai.github.io/refs/heads/main/img/externally_linked/line_group_dark.gif"/>
+        <img class="dark-light" width="100%" src="https://raw.githubusercontent.com/unifyai/unifyai.github.io/refs/heads/main/img/externally_linked/docs/line_group_dark.gif"/>
     </a>
 </div>
 
