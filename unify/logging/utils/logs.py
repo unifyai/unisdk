@@ -274,7 +274,7 @@ def log(
     **entries,
 ) -> Union[unify.Log, Callable]:
     """
-    Can be used either as a regular function to create logs or as a decorator to log function inputs.
+    Can be used either as a regular function to create logs or as a decorator to log function inputs, intermediates and outputs.
 
     When used as a regular function:
     Creates one or more logs associated to a project. unify.Logs are LLM-call-level data
@@ -292,7 +292,7 @@ def log(
         params: Dictionary containing one or more key:value pairs that will be
         logged into the platform as params.
 
-        new: Whether to create a new log if there is a currently active global lob.
+        new: Whether to create a new log if there is a currently active global log.
         Defaults to False, in which case log will add to the existing log.
 
         overwrite: If adding to an existing log, dictates whether or not to overwrite
@@ -440,6 +440,7 @@ def create_logs(
     params: Optional[Union[List[Dict[str, Any]], Dict[str, Any]]] = None,
     entries: Optional[Union[List[Dict[str, Any]], Dict[str, Any]]] = None,
     mutable: Optional[Union[bool, Dict[str, bool]]] = True,
+    batched: bool = False,
     api_key: Optional[str] = None,
 ) -> List[int]:
     """
@@ -476,33 +477,50 @@ def create_logs(
     params = [{}] * len(entries) if params in [None, []] else params
     entries = [{}] * len(params) if entries in [None, []] else entries
     # end ToDo
-    body = {
-        "project": project,
-        "context": context,
-        "params": params,
-        "entries": entries,
-    }
-    body_size = sys.getsizeof(json.dumps(body))
-    if body_size < CHUNK_LIMIT:
-        response = requests.post(BASE_URL + "/logs", headers=headers, json=body)
-    else:
-        response = requests.post(
-            BASE_URL + "/logs",
-            headers=headers,
-            data=_json_chunker(body),
-        )
-    if response.status_code != 200:
-        raise Exception(response.json())
-    return [
-        unify.Log(
+    if batched:
+        body = {
+            "project": project,
+            "context": context,
+            "params": params,
+            "entries": entries,
+        }
+        body_size = sys.getsizeof(json.dumps(body))
+        if body_size < CHUNK_LIMIT:
+            response = requests.post(BASE_URL + "/logs", headers=headers, json=body)
+        else:
+            response = requests.post(
+                BASE_URL + "/logs",
+                headers=headers,
+                data=_json_chunker(body),
+            )
+        if response.status_code != 200:
+            raise Exception(response.json())
+        return [
+            unify.Log(
+                project=project,
+                context=context,
+                **{k: v for k, v in e.items() if k != "explicit_types"},
+                **p,
+                id=i,
+            )
+            for e, p, i in zip(entries, params, response.json())
+        ]
+    return unify.map(
+        lambda p, e: log(
             project=project,
             context=context,
-            **{k: v for k, v in e.items() if k != "explicit_types"},
-            **p,
-            id=i,
-        )
-        for e, p, i in zip(entries, params, response.json())
-    ]
+            params=p,
+            new=True,
+            mutable=mutable,
+            api_key=api_key,
+            **e,
+        ),
+        params,
+        entries,
+        mode="asyncio",
+        name="CreateLog",
+        from_args=True,
+    )
 
 
 @_handle_cache

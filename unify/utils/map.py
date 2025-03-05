@@ -126,7 +126,7 @@ def map(
         return await asyncio.to_thread(fn, *a, **kw)
 
     fns = []
-    for i, a_n_kw in enumerate(args_n_kwargs):
+    for _, a_n_kw in enumerate(args_n_kwargs):
         a, kw = a_n_kw
         fns.append(_wrapped(*a, **kw))
 
