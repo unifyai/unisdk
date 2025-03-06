@@ -16,6 +16,21 @@ from .utils.logs import log as unify_log
 # -----------------#
 
 
+def _validate_mode(mode: str) -> None:
+    assert mode in (
+        "both",
+        "read",
+        "write",
+    ), f"mode must be one of 'read', 'write', or 'both', but found {mode}"
+
+
+def _validate_mode_nesting(parent_mode: str, child_mode: str) -> None:
+    if not (parent_mode in ("both", child_mode)):
+        raise Exception(
+            f"Cannot nest context with mode '{child_mode}' under parent with mode '{parent_mode}'",
+        )
+
+
 # noinspection PyShadowingBuiltins
 class Log:
     def __init__(
@@ -153,59 +168,154 @@ class Log:
         ACTIVE_LOG.reset(self._log_token)
 
 
-class ColumnContext:
-    def __init__(self, context: str):
-        self._col_context = context
+class Context:
+    def _join_path(self, base_path: str, context: str) -> str:
+        return os.path.join(
+            base_path,
+            os.path.normpath(context),
+        ).replace("\\", "/")
+
+    def __init__(self, context: str, mode: str = "both"):
+        self._context = context
+        _validate_mode(mode)
+        self._mode = mode
 
     def __enter__(self):
-        self._col_context_token = COLUMN_CONTEXT.set(
-            os.path.join(COLUMN_CONTEXT.get(), self._col_context),
-        )
+        _validate_mode_nesting(CONTEXT_MODE.get(), self._mode)
+        self._mode_token = CONTEXT_MODE.set(self._mode)
+
+        if self._mode in ("both", "write"):
+            self._context_write_token = CONTEXT_WRITE.set(
+                self._join_path(CONTEXT_WRITE.get(), self._context),
+            )
+        if self._mode in ("both", "read"):
+            self._context_read_token = CONTEXT_READ.set(
+                self._join_path(CONTEXT_READ.get(), self._context),
+            )
 
     def __exit__(self, *args, **kwargs):
-        COLUMN_CONTEXT.reset(self._col_context_token)
+        if self._mode in ("both", "write"):
+            CONTEXT_WRITE.reset(self._context_write_token)
+        if self._mode in ("both", "read"):
+            CONTEXT_READ.reset(self._context_read_token)
+
+        CONTEXT_MODE.reset(self._mode_token)
+
+
+class ColumnContext:
+    def _join_path(self, base_path: str, context: str) -> str:
+        return os.path.join(
+            base_path,
+            os.path.normpath(context),
+            "",
+        ).replace("\\", "/")
+
+    def __init__(self, context: str, mode: str = "both"):
+        self._col_context = context
+        _validate_mode(mode)
+        self._mode = mode
+
+    def __enter__(self):
+        _validate_mode_nesting(COLUMN_CONTEXT_MODE.get(), self._mode)
+
+        self._mode_token = COLUMN_CONTEXT_MODE.set(self._mode)
+        if self._mode in ("both", "write"):
+            self._context_write_token = COLUMN_CONTEXT_WRITE.set(
+                self._join_path(COLUMN_CONTEXT_WRITE.get(), self._col_context),
+            )
+        if self._mode in ("both", "read"):
+            self._context_read_token = COLUMN_CONTEXT_READ.set(
+                self._join_path(COLUMN_CONTEXT_READ.get(), self._col_context),
+            )
+
+    def __exit__(self, *args, **kwargs):
+        if self._mode in ("both", "write"):
+            COLUMN_CONTEXT_WRITE.reset(self._context_write_token)
+        if self._mode in ("both", "read"):
+            COLUMN_CONTEXT_READ.reset(self._context_read_token)
+        COLUMN_CONTEXT_MODE.reset(self._mode_token)
 
 
 class Entries:
-    def __init__(self, **entries):
+    def __init__(self, mode: str = "both", **entries):
         self._entries = _handle_special_types(entries)
+        _validate_mode(mode)
+        self._mode = mode
 
     def __enter__(self):
-        self._entries_token = ACTIVE_ENTRIES.set(
-            {**ACTIVE_ENTRIES.get(), **self._entries},
-        )
-        self._nest_token = ENTRIES_NEST_LEVEL.set(
-            ENTRIES_NEST_LEVEL.get() + 1,
-        )
+        _validate_mode_nesting(ACTIVE_ENTRIES_MODE.get(), self._mode)
+        self._mode_token = ACTIVE_ENTRIES_MODE.set(self._mode)
+        if self._mode in ("both", "write"):
+            self._entries_token = ACTIVE_ENTRIES_WRITE.set(
+                {**ACTIVE_ENTRIES_WRITE.get(), **self._entries},
+            )
+            self._nest_token = ENTRIES_NEST_LEVEL.set(
+                ENTRIES_NEST_LEVEL.get() + 1,
+            )
+
+        if self._mode in ("both", "read"):
+            self._entries_read_token = ACTIVE_ENTRIES_READ.set(
+                {**ACTIVE_ENTRIES_READ.get(), **self._entries},
+            )
 
     def __exit__(self, *args, **kwargs):
-        ACTIVE_ENTRIES.reset(self._entries_token)
-        ENTRIES_NEST_LEVEL.reset(self._nest_token)
-        if ENTRIES_NEST_LEVEL.get() == 0:
-            LOGGED.set({})
+        if self._mode in ("both", "write"):
+            ACTIVE_ENTRIES_WRITE.reset(self._entries_token)
+            ENTRIES_NEST_LEVEL.reset(self._nest_token)
+            if ENTRIES_NEST_LEVEL.get() == 0:
+                LOGGED.set({})
+
+        if self._mode in ("both", "read"):
+            ACTIVE_ENTRIES_READ.reset(self._entries_read_token)
+
+        ACTIVE_ENTRIES_MODE.reset(self._mode_token)
 
 
 class Params:
-    def __init__(self, **params):
+    def __init__(self, mode: str = "both", **params):
         self._params = _handle_special_types(params)
+        _validate_mode(mode)
+        self._mode = mode
 
     def __enter__(self):
-        self._params_token = ACTIVE_PARAMS.set(
-            {**ACTIVE_PARAMS.get(), **self._params},
-        )
-        self._nest_token = PARAMS_NEST_LEVEL.set(
-            PARAMS_NEST_LEVEL.get() + 1,
-        )
+        _validate_mode_nesting(ACTIVE_PARAMS_MODE.get(), self._mode)
+        self._mode_token = ACTIVE_PARAMS_MODE.set(self._mode)
+        if self._mode in ("both", "write"):
+            self._params_token = ACTIVE_PARAMS_WRITE.set(
+                {**ACTIVE_PARAMS_WRITE.get(), **self._params},
+            )
+            self._nest_token = PARAMS_NEST_LEVEL.set(
+                PARAMS_NEST_LEVEL.get() + 1,
+            )
+
+        if self._mode in ("both", "read"):
+            self._params_read_token = ACTIVE_PARAMS_READ.set(
+                {**ACTIVE_PARAMS_READ.get(), **self._params},
+            )
 
     def __exit__(self, *args, **kwargs):
-        ACTIVE_PARAMS.reset(self._params_token)
-        PARAMS_NEST_LEVEL.reset(self._nest_token)
-        if PARAMS_NEST_LEVEL.get() == 0:
-            LOGGED.set({})
+        ACTIVE_PARAMS_MODE.reset(self._mode_token)
+
+        if self._mode in ("both", "write"):
+            ACTIVE_PARAMS_WRITE.reset(self._params_token)
+            PARAMS_NEST_LEVEL.reset(self._nest_token)
+            if PARAMS_NEST_LEVEL.get() == 0:
+                LOGGED.set({})
+
+        if self._mode in ("both", "read"):
+            ACTIVE_PARAMS_READ.reset(self._params_read_token)
 
 
 class Experiment:
-    def __init__(self, name: Optional[Union[str, int]] = None, overwrite: bool = False):
+    def __init__(
+        self,
+        name: Optional[Union[str, int]] = None,
+        overwrite: bool = False,
+        mode: str = "both",
+    ):
+        _validate_mode(mode)
+        self._mode = mode
+
         latest_exp_name = get_experiment_name(-1)
         if latest_exp_name is None:
             self._name = name if name is not None else "0"
@@ -220,21 +330,34 @@ class Experiment:
         self._overwrite = overwrite
 
     def __enter__(self):
+        _validate_mode_nesting(ACTIVE_PARAMS_MODE.get(), self._mode)
+        self._mode_token = ACTIVE_PARAMS_MODE.set(self._mode)
+
         if self._overwrite:
             logs = get_logs(filter=f"experiment=='{self._name}'")
             delete_logs(logs=logs)
-        self._params_token = ACTIVE_PARAMS.set(
-            {**ACTIVE_PARAMS.get(), **{"experiment": self._name}},
-        )
-        self._nest_token = PARAMS_NEST_LEVEL.set(
-            PARAMS_NEST_LEVEL.get() + 1,
-        )
+
+        if self._mode in ("both", "write"):
+            self._params_token_write = ACTIVE_PARAMS_WRITE.set(
+                {**ACTIVE_PARAMS_WRITE.get(), **{"experiment": self._name}},
+            )
+            self._nest_token = PARAMS_NEST_LEVEL.set(
+                PARAMS_NEST_LEVEL.get() + 1,
+            )
+        if self._mode in ("both", "read"):
+            self._params_read_token = ACTIVE_PARAMS_READ.set(
+                {**ACTIVE_PARAMS_READ.get(), **{"experiment": self._name}},
+            )
 
     def __exit__(self, *args, **kwargs):
-        ACTIVE_PARAMS.reset(self._params_token)
-        PARAMS_NEST_LEVEL.reset(self._nest_token)
-        if PARAMS_NEST_LEVEL.get() == 0:
-            LOGGED.set({})
+        ACTIVE_PARAMS_MODE.reset(self._mode_token)
+        if self._mode in ("both", "write"):
+            ACTIVE_PARAMS_WRITE.reset(self._params_token_write)
+            PARAMS_NEST_LEVEL.reset(self._nest_token)
+            if PARAMS_NEST_LEVEL.get() == 0:
+                LOGGED.set({})
+        if self._mode in ("both", "read"):
+            ACTIVE_PARAMS_READ.reset(self._params_read_token)
 
 
 # Tracing #

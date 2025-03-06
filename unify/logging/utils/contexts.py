@@ -4,6 +4,7 @@ import requests
 from unify import BASE_URL
 
 from ...utils.helpers import _get_and_maybe_create_project, _validate_api_key
+from .logs import CONTEXT_WRITE
 
 # Contexts #
 # ---------#
@@ -149,8 +150,8 @@ def delete_context(
 
 def add_logs_to_context(
     log_ids: List[int],
-    context: str,
     *,
+    context: Optional[str] = None,
     project: Optional[str] = None,
     api_key: Optional[str] = None,
 ) -> None:
@@ -171,6 +172,7 @@ def add_logs_to_context(
         A message indicating whether the logs were successfully added to the context.
     """
     api_key = _validate_api_key(api_key)
+    context = context if context else CONTEXT_WRITE.get()
     project = _get_and_maybe_create_project(
         project,
         api_key=api_key,

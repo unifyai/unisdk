@@ -38,21 +38,38 @@ _async_logger: Optional[AsyncLoggerManager] = None
 ACTIVE_LOG = ContextVar("active_log", default=[])
 LOGGED = ContextVar("logged", default={})
 
+# context
+CONTEXT_READ = ContextVar("context_read", default="")
+CONTEXT_WRITE = ContextVar("context_write", default="")
+CONTEXT_MODE = ContextVar("context_mode", default="both")
+
 # column context
-COLUMN_CONTEXT = ContextVar("context", default="")
+COLUMN_CONTEXT_READ = ContextVar("column_context_read", default="")
+COLUMN_CONTEXT_WRITE = ContextVar("column_context_write", default="")
+COLUMN_CONTEXT_MODE = ContextVar("column_context_mode", default="both")
 
 # entries
-ACTIVE_ENTRIES = ContextVar(
-    "active_entries",
+ACTIVE_ENTRIES_WRITE = ContextVar(
+    "active_entries_write",
     default={},
 )
+ACTIVE_ENTRIES_READ = ContextVar(
+    "active_entries_read",
+    default={},
+)
+ACTIVE_ENTRIES_MODE = ContextVar("active_entries_mode", default="both")
 ENTRIES_NEST_LEVEL = ContextVar("entries_nest_level", default=0)
 
 # params
-ACTIVE_PARAMS = ContextVar(
-    "active_params",
+ACTIVE_PARAMS_WRITE = ContextVar(
+    "active_params_write",
     default={},
 )
+ACTIVE_PARAMS_READ = ContextVar(
+    "active_params_read",
+    default={},
+)
+ACTIVE_PARAMS_MODE = ContextVar("active_params_mode", default="both")
 PARAMS_NEST_LEVEL = ContextVar("params_nest_level", default=0)
 
 # span
@@ -205,13 +222,19 @@ def _to_log_ids(
 
 
 def _apply_col_context(**data):
-    col_context = COLUMN_CONTEXT.get()
+    if COLUMN_CONTEXT_MODE.get() == "both":
+        assert COLUMN_CONTEXT_WRITE.get() == COLUMN_CONTEXT_READ.get()
+        col_context = COLUMN_CONTEXT_WRITE.get()
+    elif COLUMN_CONTEXT_MODE.get() == "write":
+        col_context = COLUMN_CONTEXT_WRITE.get()
+    elif COLUMN_CONTEXT_MODE.get() == "read":
+        col_context = COLUMN_CONTEXT_READ.get()
     return {os.path.join(col_context, k): v for k, v in data.items()}
 
 
 def _handle_context(context: Optional[Union[str, Dict[str, str]]] = None):
     if context is None:
-        return None
+        return {"name": CONTEXT_WRITE.get()}
     if isinstance(context, str):
         return {"name": context}
     else:
@@ -351,11 +374,11 @@ def log(
         return log
     # Process parameters and entries
     params = _apply_col_context(**(params if params else {}))
-    params = {**params, **ACTIVE_PARAMS.get()}
+    params = {**params, **ACTIVE_PARAMS_WRITE.get()}
     params = _handle_special_types(params)
     params = _handle_mutability(mutable, params)
     entries = _apply_col_context(**entries)
-    entries = {**entries, **ACTIVE_ENTRIES.get()}
+    entries = {**entries, **ACTIVE_ENTRIES_WRITE.get()}
     entries = _handle_special_types(entries)
     entries = _handle_mutability(mutable, entries)
     project = _get_and_maybe_create_project(project, api_key=api_key)
@@ -537,7 +560,7 @@ def _add_to_log(
     assert mode in ("params", "entries"), "mode must be one of 'params', 'entries'"
     data = _apply_col_context(**data)
     nest_level = {"params": PARAMS_NEST_LEVEL, "entries": ENTRIES_NEST_LEVEL}[mode]
-    active = {"params": ACTIVE_PARAMS, "entries": ACTIVE_ENTRIES}[mode]
+    active = {"params": ACTIVE_PARAMS_WRITE, "entries": ACTIVE_ENTRIES_WRITE}[mode]
     api_key = _validate_api_key(api_key)
     context = _handle_context(context)
     data = _handle_special_types(data)
@@ -861,6 +884,14 @@ def get_logs(
         "Authorization": f"Bearer {api_key}",
     }
     project = _get_and_maybe_create_project(project, api_key=api_key)
+    context = context if context else CONTEXT_READ.get()
+    merged_filters = ACTIVE_PARAMS_READ.get() | ACTIVE_ENTRIES_READ.get()
+    if merged_filters:
+        _filter = " and ".join(f"{k}=={repr(v)}" for k, v in merged_filters.items())
+        if filter:
+            filter = f"({filter}) and ({_filter})"
+        else:
+            filter = _filter
     params = {
         "project": project,
         "context": context,
@@ -868,6 +899,7 @@ def get_logs(
         "limit": limit,
         "offset": offset,
         "return_ids_only": return_ids_only,
+        "column_context": COLUMN_CONTEXT_READ.get(),
     }
     response = requests.get(BASE_URL + "/logs", headers=headers, params=params)
     if response.status_code != 200:
@@ -884,6 +916,7 @@ def get_logs(
                 param_name: (param_ver, params[param_name][param_ver])
                 for param_name, param_ver in dct["params"].items()
             },
+            context=context,
             api_key=api_key,
         )
         for dct in logs

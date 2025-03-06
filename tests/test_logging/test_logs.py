@@ -164,6 +164,178 @@ async def test_with_log_async():
     ] + [[("d", i * 7 + 3), ("e", i * 7 + 4), ("f", i * 7 + 5)] for i in range(4)]
 
 
+# Context
+
+
+@_handle_project
+def test_with_context():
+    [unify.log(x=i) for i in range(3)]
+
+    with unify.Context("Foo", mode="both"):
+        [unify.log(x=i) for i in range(10)]
+        assert len(unify.get_logs()) == 10
+
+    with unify.Context("Foo", mode="read"):
+        assert len(unify.get_logs()) == 10
+
+    with unify.Context("Foo", mode="write"):
+        [unify.log(x=i) for i in range(10)]
+        assert len(unify.get_logs()) == 3
+
+    with unify.Context("Foo", mode="read"):
+        assert len(unify.get_logs()) == 20
+
+    with unify.Context("Foo"):
+        assert len(unify.get_logs()) == 20
+
+
+@_handle_project
+def test_with_context_nested():
+
+    with unify.Context("Foo"):
+        [unify.log(x=i) for i in range(10)]
+
+        with unify.Context("Bar"):
+            [unify.log(y=i) for i in range(5)]
+            assert len(unify.get_logs()) == 5
+
+        with unify.Context("Bar/Baz"):
+            [unify.log(z=i) for i in range(20)]
+            assert len(unify.get_logs()) == 20
+
+        with unify.Context("Bar"):
+            with unify.Context("Baz"):
+                assert len(unify.get_logs()) == 20
+
+        assert len(unify.get_logs()) == 10
+
+
+@_handle_project
+def test_with_context_mode_nested():
+
+    with unify.Context("Foo"):
+        [unify.log(x=i) for i in range(10)]
+
+        with unify.Context("Bar"):
+            [unify.log(y=i) for i in range(5)]
+            assert len(unify.get_logs()) == 5
+
+        with unify.Context("Bar/Baz"):
+            [unify.log(z=i) for i in range(20)]
+            assert len(unify.get_logs()) == 20
+
+        with unify.Context("Bar/Baz", mode="write"):
+            [unify.log(y=i) for i in range(5)]
+            assert len(unify.get_logs()) == 10  # Get from Foo
+
+        with unify.Context("Bar/Baz", mode="read"):
+            [unify.log(y=i) for i in range(5)]
+            assert len(unify.get_logs()) == 25  # Read from Bar/Baz
+
+        assert len(unify.get_logs()) == 15
+
+
+@_handle_project
+def test_with_context_mode_restricted():
+    with unify.Context("Foo", mode="read"):
+        with pytest.raises(Exception):
+            with unify.Context("Bar", mode="write"):
+                pass
+
+    with unify.Context("Foo", mode="read"):
+        with pytest.raises(Exception):
+            with unify.Context("Bar", mode="both"):
+                pass
+
+    with unify.Context("Foo", mode="write"):
+        with pytest.raises(Exception):
+            with unify.Context("Bar", mode="both"):
+                pass
+
+    with unify.Context("Foo", mode="write"):
+        with pytest.raises(Exception):
+            with unify.Context("Bar", mode="read"):
+                pass
+
+
+@_handle_project
+def test_with_context_threaded():
+    NUM_THREADS = 4
+    THREAD_MULTIPLIER = 10
+    FOO_LOGS_PER_THREAD = 3
+    BAR_LOGS_PER_THREAD = 5
+    BAZ_LOGS_PER_THREAD = 7
+
+    def fn(i):
+        with unify.Context("Foo"):
+            [unify.log(x=j) for j in range(i, i + FOO_LOGS_PER_THREAD)]
+            with unify.Context("Bar"):
+                [unify.log(x=j) for j in range(i, i + BAR_LOGS_PER_THREAD)]
+            with unify.Context("Bar/Baz"):
+                [unify.log(x=j) for j in range(i, i + BAZ_LOGS_PER_THREAD)]
+
+    threads = [
+        threading.Thread(
+            target=fn,
+            args=[i * THREAD_MULTIPLIER],
+        )
+        for i in range(NUM_THREADS)
+    ]
+    [t.start() for t in threads]
+    [t.join() for t in threads]
+
+    with unify.Context("Foo"):
+        assert len(unify.get_logs()) == NUM_THREADS * FOO_LOGS_PER_THREAD
+        logs = unify.get_logs()
+        x_values = sorted([log.entries["x"] for log in logs])
+        expected_x = sorted(
+            [
+                j
+                for i in range(NUM_THREADS)
+                for j in range(
+                    i * THREAD_MULTIPLIER,
+                    i * THREAD_MULTIPLIER + FOO_LOGS_PER_THREAD,
+                )
+            ],
+        )
+        assert x_values == expected_x
+
+    with unify.Context("Foo/Bar"):
+        assert len(unify.get_logs()) == NUM_THREADS * BAR_LOGS_PER_THREAD
+        logs = unify.get_logs()
+        x_values = sorted([log.entries["x"] for log in logs])
+        expected_x = sorted(
+            [
+                j
+                for i in range(NUM_THREADS)
+                for j in range(
+                    i * THREAD_MULTIPLIER,
+                    i * THREAD_MULTIPLIER + BAR_LOGS_PER_THREAD,
+                )
+            ],
+        )
+        assert x_values == expected_x
+
+    with unify.Context("Foo/Bar/Baz"):
+        assert len(unify.get_logs()) == NUM_THREADS * BAZ_LOGS_PER_THREAD
+        logs = unify.get_logs()
+        x_values = sorted([log.entries["x"] for log in logs])
+        expected_x = sorted(
+            [
+                j
+                for i in range(NUM_THREADS)
+                for j in range(
+                    i * THREAD_MULTIPLIER,
+                    i * THREAD_MULTIPLIER + BAZ_LOGS_PER_THREAD,
+                )
+            ],
+        )
+        assert x_values == expected_x
+
+
+# ToDo: add asyncio test
+
+
 # Column Context
 
 
@@ -226,6 +398,29 @@ def test_with_col_context_default_project():
     assert entries["science/physics/score"] == 1.0
     assert entries["science/chemistry/score"] == 0.5
     assert entries["science/biology/score"] == 0.0
+
+
+@_handle_project
+def test_with_col_context_mode_restricted():
+    with unify.ColumnContext("foo", mode="read"):
+        with pytest.raises(Exception):
+            with unify.ColumnContext("bar", mode="write"):
+                pass
+
+    with unify.ColumnContext("foo", mode="read"):
+        with pytest.raises(Exception):
+            with unify.ColumnContext("bar", mode="both"):
+                pass
+
+    with unify.ColumnContext("foo", mode="write"):
+        with pytest.raises(Exception):
+            with unify.ColumnContext("bar", mode="both"):
+                pass
+
+    with unify.ColumnContext("foo", mode="write"):
+        with pytest.raises(Exception):
+            with unify.ColumnContext("bar", mode="read"):
+                pass
 
 
 @_handle_project
@@ -409,6 +604,50 @@ async def test_with_entries_async():
     ]
 
 
+@_handle_project
+def test_with_entries_mode():
+    with unify.Entries(x=0):
+        unify.log(y=1)
+        assert len(unify.get_logs()) == 1
+
+    with unify.Entries(x=0, y=1, mode="read"):
+        assert len(unify.get_logs()) == 1
+
+    with unify.Entries(x=0, y=2, mode="write"):
+        unify.log()
+        assert len(unify.get_logs()) == 2
+
+    with unify.Entries(x=1, y=3):
+        assert len(unify.get_logs()) == 0
+        [unify.log() for _ in range(2)]
+        assert len(unify.get_logs()) == 2
+
+    assert len(unify.get_logs()) == 4
+
+
+@_handle_project
+def test_with_entries_mode_restricted():
+    with unify.Entries(x=0, mode="read"):
+        with pytest.raises(Exception):
+            with unify.Entries(x=0, mode="write"):
+                pass
+
+    with unify.Entries(x=0, mode="read"):
+        with pytest.raises(Exception):
+            with unify.Entries(x=0, mode="both"):
+                pass
+
+    with unify.Entries(msg="foo", mode="write"):
+        with pytest.raises(Exception):
+            with unify.Entries(msg="foo", mode="both"):
+                pass
+
+    with unify.Entries(msg="foo", mode="write"):
+        with pytest.raises(Exception):
+            with unify.Entries(msg="foo", mode="read"):
+                pass
+
+
 # Params
 
 
@@ -500,6 +739,83 @@ def test_with_params_threaded():
 
 
 @_handle_project
+def test_with_params_mode():
+    with unify.Params(msg="foo"):
+        [unify.log(x=i) for i in range(10)]
+        assert len(unify.get_logs()) == 10
+
+    with unify.Params(msg="foo", mode="read"):
+        assert len(unify.get_logs()) == 10
+
+    with unify.Params(msg="foo"):
+        with unify.Params(msg="bar"):
+            [unify.log(x=i) for i in range(5)]
+            assert len(unify.get_logs()) == 5
+
+        with unify.Params(msg="bar", mode="write"):
+            [unify.log(x=i) for i in range(5)]
+            assert len(unify.get_logs()) == 10
+
+        with unify.Params(msg="bar", mode="read"):
+            [unify.log(x=i) for i in range(10)]
+            assert len(unify.get_logs()) == 10
+
+        assert len(unify.get_logs()) == 20
+
+    assert len(unify.get_logs()) == 30
+
+
+@_handle_project
+def test_with_params_mode_multiple():
+    with unify.Params(msg="foo"):
+        [unify.log(x=i) for i in range(5)]
+        assert len(unify.get_logs()) == 5
+
+    with unify.Params(msg="foo", mode="read"):
+        assert len(unify.get_logs()) == 5
+
+    with unify.Params(msg="foo"):
+        with unify.Params(reg="US"):
+            [unify.log(x=i) for i in range(5)]
+            assert len(unify.get_logs()) == 5
+
+        with unify.Params(reg="US", mode="write"):
+            [unify.log(x=i) for i in range(5)]
+            assert len(unify.get_logs()) == 15
+
+        with unify.Params(reg="US", mode="read"):
+            assert len(unify.get_logs()) == 10
+            [unify.log(x=i) for i in range(10)]
+
+        assert len(unify.get_logs()) == 25
+
+    assert len(unify.get_logs()) == 25
+
+
+@_handle_project
+def test_with_params_mode_restricted():
+    with unify.Params(mode="read"):
+        with pytest.raises(Exception):
+            with unify.Params(mode="write"):
+                pass
+
+    with unify.Params(mode="read"):
+        with pytest.raises(Exception):
+            with unify.Params(mode="both"):
+                pass
+
+    with unify.Params(msg="foo", mode="write"):
+        with pytest.raises(Exception):
+            with unify.Params(msg="foo", mode="both"):
+                pass
+
+    with unify.Params(msg="foo", mode="write"):
+        with pytest.raises(Exception):
+            with unify.Params(msg="foo", mode="read"):
+                pass
+
+
+@_handle_project
 @pytest.mark.asyncio
 async def test_with_params_async():
     async def fn(a, b, c, d, e, f, g):
@@ -576,6 +892,51 @@ def test_with_experiment():
     assert unify.get_experiment_name(2) == "new_idea"
     logs = unify.get_logs()[0:2]
     assert [lg.entries for lg in logs] == [{"x": 4}, {"x": 3}]
+
+
+@_handle_project
+def test_with_experiment_mode():
+    with unify.Experiment("foo", mode="both"):
+        [unify.log(x=i) for i in range(10)]
+        assert len(unify.get_logs()) == 10
+
+    with unify.Experiment("foo", mode="read"):
+        assert len(unify.get_logs()) == 10
+
+    with unify.Experiment("foo", mode="write"):
+        [unify.log(x=i) for i in range(5)]
+        assert len(unify.get_logs()) == 15
+
+    with unify.Experiment("bar", mode="both"):
+        [unify.log(x=i) for i in range(20)]
+        assert len(unify.get_logs()) == 20
+        with unify.Experiment("foo", mode="read"):
+            assert len(unify.get_logs()) == 15
+
+    assert len(unify.get_logs()) == 35
+
+
+@_handle_project
+def test_with_experiment_mode_restricted():
+    with unify.Experiment(mode="read"):
+        with pytest.raises(Exception):
+            with unify.Experiment(mode="write"):
+                pass
+
+    with unify.Experiment(mode="read"):
+        with pytest.raises(Exception):
+            with unify.Experiment(mode="both"):
+                pass
+
+    with unify.Experiment("foo", mode="write"):
+        with pytest.raises(Exception):
+            with unify.Experiment("foo", mode="both"):
+                pass
+
+    with unify.Experiment("foo", mode="write"):
+        with pytest.raises(Exception):
+            with unify.Experiment(mode="read"):
+                pass
 
 
 # Combos
