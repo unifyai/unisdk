@@ -347,6 +347,7 @@ def test_with_column_context():
     assert len(logs) == 1
     assert logs[0].entries == {"a": "a"}
     with unify.ColumnContext("capitalized"):
+        unify.log(a="a")
         logs = unify.get_logs()
         assert len(logs) == 1
         assert logs[0].entries == {"a": "a"}
