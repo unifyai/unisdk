@@ -164,7 +164,7 @@ class AsyncLoggerManager:
         if create_events:
             grouped = {}
             for event in create_events:
-                key = (event["project"], event["context"])
+                key = (event["project"], tuple(event["context"].values()))
                 if key not in grouped:
                     grouped[key] = {
                         "project": event["project"],
@@ -244,7 +244,7 @@ class AsyncLoggerManager:
                 log_id = event["log_future"].result()
                 key = (
                     event["project"],
-                    event["context"],
+                    tuple(event["context"].values()),
                     event["mode"],
                     event["overwrite"],
                     str(event["mutable"]),
