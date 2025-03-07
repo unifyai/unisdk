@@ -857,7 +857,7 @@ def test_with_experiment():
     with unify.Experiment(), unify.Params(sys_msg="you are a helpful assistant"):
         unify.log(x=0)
         unify.log(x=1)
-    assert unify.get_experiment_name(0) == "0"
+    assert unify.get_experiment_name(0) == "exp0"
 
     logs = unify.get_logs()[0:2]
     assert [lg.entries for lg in logs] == [{"x": 1}, {"x": 0}]
@@ -867,8 +867,8 @@ def test_with_experiment():
     ):
         unify.log(x=1)
         unify.log(x=2)
-    assert unify.get_experiment_name(0) == "0"
-    assert unify.get_experiment_name(1) == "1"
+    assert unify.get_experiment_name(0) == "exp0"
+    assert unify.get_experiment_name(1) == "exp1"
     logs = unify.get_logs()[0:2]
     assert [lg.entries for lg in logs] == [{"x": 2}, {"x": 1}]
 
@@ -877,8 +877,8 @@ def test_with_experiment():
     ):
         unify.log(x=2)
         unify.log(x=3)
-    assert unify.get_experiment_name(0) == "0"
-    assert unify.get_experiment_name(1) == "1"
+    assert unify.get_experiment_name(0) == "exp0"
+    assert unify.get_experiment_name(1) == "exp1"
     assert unify.get_experiment_name(2) == "new_idea"
     logs = unify.get_logs()[0:2]
     assert [lg.entries for lg in logs] == [{"x": 3}, {"x": 2}]
@@ -888,8 +888,8 @@ def test_with_experiment():
     ):
         unify.log(x=3)
         unify.log(x=4)
-    assert unify.get_experiment_name(0) == "0"
-    assert unify.get_experiment_name(1) == "1"
+    assert unify.get_experiment_name(0) == "exp0"
+    assert unify.get_experiment_name(1) == "exp1"
     assert unify.get_experiment_name(2) == "new_idea"
     logs = unify.get_logs()[0:2]
     assert [lg.entries for lg in logs] == [{"x": 4}, {"x": 3}]

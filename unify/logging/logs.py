@@ -318,13 +318,13 @@ class Experiment:
 
         latest_exp_name = get_experiment_name(-1)
         if latest_exp_name is None:
-            self._name = name if name is not None else "0"
+            self._name = name if name is not None else "exp0"
             self._overwrite = overwrite
             return
         if isinstance(name, int):
-            self._name = get_experiment_name(name)
+            self._name = f"exp{get_experiment_name(name)}"
         elif name is None:
-            self._name = str(int(get_experiment_version(latest_exp_name)) + 1)
+            self._name = f"exp{int(get_experiment_version(latest_exp_name)) + 1}"
         else:
             self._name = str(name)
         self._overwrite = overwrite
