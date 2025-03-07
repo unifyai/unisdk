@@ -283,7 +283,6 @@ def _json_chunker(big_dict, chunk_size=1024 * 1024):
     pbar.close()
 
 
-@_handle_cache
 def log(
     fn: Optional[Callable] = None,
     *,
@@ -455,7 +454,6 @@ def _sync_log(
     )
 
 
-@_handle_cache
 def create_logs(
     *,
     project: Optional[str] = None,
@@ -546,7 +544,6 @@ def create_logs(
     )
 
 
-@_handle_cache
 def _add_to_log(
     *,
     context: Optional[str] = None,
@@ -634,7 +631,6 @@ def _add_to_log(
         return response.json()
 
 
-@_handle_cache
 def add_log_params(
     *,
     logs: Optional[Union[int, unify.Log, List[Union[int, unify.Log]]]] = None,
@@ -675,7 +671,6 @@ def add_log_params(
     return ret
 
 
-@_handle_cache
 def add_log_entries(
     *,
     logs: Optional[Union[int, unify.Log, List[Union[int, unify.Log]]]] = None,
@@ -721,7 +716,6 @@ def add_log_entries(
     return ret
 
 
-@_handle_cache
 def update_logs(
     *,
     logs: Optional[Union[int, unify.Log, List[Union[int, unify.Log]]]] = None,
@@ -756,7 +750,6 @@ def update_logs(
     return response.json()
 
 
-@_handle_cache
 def delete_logs(
     *,
     logs: Optional[Union[int, unify.Log, List[Union[int, unify.Log]]]] = None,
@@ -797,7 +790,6 @@ def delete_logs(
     return response.json()
 
 
-@_handle_cache
 def delete_log_fields(
     *,
     field: str,

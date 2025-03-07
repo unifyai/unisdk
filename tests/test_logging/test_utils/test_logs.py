@@ -1,8 +1,5 @@
-import os
-
 import pytest
 import unify
-from unify.utils._caching import _get_cache
 
 from ..helpers import _handle_project
 
@@ -228,91 +225,6 @@ def test_get_logs():
 def test_get_source():
     source = unify.get_source()
     assert "source = unify.get_source()" in source
-
-
-@_handle_project
-def test_log_caching():
-    cache_fname = ".test_log_caching.cache.json"
-    if os.path.exists(cache_fname):
-        os.remove(cache_fname)
-    unify.set_caching(True)
-    unify.set_caching_fname(cache_fname)
-
-    # log
-    unify.log(a=0, b=1)
-    assert (
-        _get_cache(
-            fn_name="log",
-            kw={"a": 0, "b": 1},
-        )
-        is not None
-    )
-    log = unify.log(a=0, b=1)
-    assert isinstance(log, unify.Log)
-
-    # add_log_params
-    unify.add_log_params(logs=log, p="p")
-    assert (
-        _get_cache(
-            fn_name="add_log_params",
-            kw={"logs": log, "p": "p"},
-        )
-        is not None
-    )
-    msg = unify.add_log_params(logs=log, p="p")
-    assert msg == {"info": "Logs updated successfully!"}
-
-    # add_log_params
-    unify.add_log_params(logs=log, p="p")
-    assert (
-        _get_cache(
-            fn_name="add_log_params",
-            kw={"logs": log, "p": "p"},
-        )
-        is not None
-    )
-    msg = unify.add_log_params(logs=log, p="p")
-    assert msg == {"info": "Logs updated successfully!"}
-
-    # add_log_entries
-    unify.add_log_entries(logs=log, e="e")
-    assert (
-        _get_cache(
-            fn_name="add_log_entries",
-            kw={"logs": log, "e": "e"},
-        )
-        is not None
-    )
-    msg = unify.add_log_entries(logs=log, e="e")
-    assert msg == {"info": "Logs updated successfully!"}
-
-    # delete_logs
-    unify.delete_logs(logs=log)
-    assert (
-        _get_cache(
-            fn_name="delete_logs",
-            kw={"logs": log},
-        )
-        is not None
-    )
-    msg = unify.delete_logs(logs=log)
-    assert msg == {"info": "Logs and fields deleted successfully!"}
-
-    # delete_log_fields
-    log = unify.log(a=1, b=2)
-    unify.delete_log_fields(field="a", logs=log)
-    assert (
-        _get_cache(
-            fn_name="delete_log_fields",
-            kw={"field": "a", "logs": log},
-        )
-        is not None
-    )
-    msg = unify.delete_log_fields(field="a", logs=log)
-    assert msg == {"info": "Logs and fields deleted successfully!"}
-
-    # cleanup
-    os.remove(cache_fname)
 
 
 if __name__ == "__main__":
