@@ -168,12 +168,40 @@ class Log:
         ACTIVE_LOG.reset(self._log_token)
 
 
+def _join_path(base_path: str, context: str) -> str:
+    return os.path.join(
+        base_path,
+        os.path.normpath(context),
+    ).replace("\\", "/")
+
+
+def set_context(context: str, mode: str = "both"):
+    global MODE, MODE_TOKEN, CONTEXT_READ_TOKEN, CONTEXT_WRITE_TOKEN
+    MODE = mode
+    _validate_mode_nesting(CONTEXT_MODE.get(), mode)
+    MODE_TOKEN = CONTEXT_MODE.set(mode)
+
+    if mode in ("both", "write"):
+        CONTEXT_WRITE_TOKEN = CONTEXT_WRITE.set(
+            _join_path(CONTEXT_WRITE.get(), context),
+        )
+    if mode in ("both", "read"):
+        CONTEXT_READ_TOKEN = CONTEXT_READ.set(
+            _join_path(CONTEXT_READ.get(), context),
+        )
+
+
+def unset_context():
+    global MODE, MODE_TOKEN, CONTEXT_READ_TOKEN, CONTEXT_WRITE_TOKEN
+    if MODE in ("both", "write"):
+        CONTEXT_WRITE.reset(CONTEXT_WRITE_TOKEN)
+    if MODE in ("both", "read"):
+        CONTEXT_READ.reset(CONTEXT_READ_TOKEN)
+
+    CONTEXT_MODE.reset(MODE_TOKEN)
+
+
 class Context:
-    def _join_path(self, base_path: str, context: str) -> str:
-        return os.path.join(
-            base_path,
-            os.path.normpath(context),
-        ).replace("\\", "/")
 
     def __init__(self, context: str, mode: str = "both"):
         self._context = context
@@ -186,11 +214,11 @@ class Context:
 
         if self._mode in ("both", "write"):
             self._context_write_token = CONTEXT_WRITE.set(
-                self._join_path(CONTEXT_WRITE.get(), self._context),
+                _join_path(CONTEXT_WRITE.get(), self._context),
             )
         if self._mode in ("both", "read"):
             self._context_read_token = CONTEXT_READ.set(
-                self._join_path(CONTEXT_READ.get(), self._context),
+                _join_path(CONTEXT_READ.get(), self._context),
             )
 
     def __exit__(self, *args, **kwargs):

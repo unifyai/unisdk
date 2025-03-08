@@ -168,6 +168,33 @@ async def test_with_log_async():
 
 
 @_handle_project
+def test_set_context():
+    [unify.log(x=i) for i in range(3)]
+
+    unify.set_context("Foo", mode="both")
+    [unify.log(x=i) for i in range(10)]
+    assert len(unify.get_logs()) == 10
+    unify.unset_context()
+
+    unify.set_context("Foo", mode="read")
+    assert len(unify.get_logs()) == 10
+    unify.unset_context()
+
+    unify.set_context("Foo", mode="write")
+    [unify.log(x=i) for i in range(10)]
+    assert len(unify.get_logs()) == 3
+    unify.unset_context()
+
+    unify.set_context("Foo", mode="read")
+    assert len(unify.get_logs()) == 20
+    unify.unset_context()
+
+    unify.set_context("Foo")
+    assert len(unify.get_logs()) == 20
+    unify.unset_context()
+
+
+@_handle_project
 def test_with_context():
     [unify.log(x=i) for i in range(3)]
 

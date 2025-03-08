@@ -43,6 +43,12 @@ CONTEXT_READ = ContextVar("context_read", default="")
 CONTEXT_WRITE = ContextVar("context_write", default="")
 CONTEXT_MODE = ContextVar("context_mode", default="both")
 
+# context function
+MODE = None
+MODE_TOKEN = None
+CONTEXT_READ_TOKEN = None
+CONTEXT_WRITE_TOKEN = None
+
 # column context
 COLUMN_CONTEXT_READ = ContextVar("column_context_read", default="")
 COLUMN_CONTEXT_WRITE = ContextVar("column_context_write", default="")
