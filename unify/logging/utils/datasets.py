@@ -106,6 +106,7 @@ def upload_dataset(
             context=f"Datasets/{name}",
             entries=data,
             mutable=True,
+            batched=True,
             # ToDo: uncomment once ignore_duplicates is implemented
             # ignore_duplicates=not allow_duplicates,
         )
@@ -155,6 +156,7 @@ def upload_dataset(
             context=f"Datasets/{name}",
             entries=local_only_data,
             mutable=True,
+            batched=True,
         )
     return upstream_ids + ids_not_in_dataset
 
@@ -242,5 +244,6 @@ def add_dataset_entries(
         context=f"Datasets/{name}",
         entries=data,
         mutable=True,
+        batched=True,
     )
     return logs
