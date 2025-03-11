@@ -846,6 +846,7 @@ def get_logs(
     *,
     project: Optional[str] = None,
     context: Optional[str] = None,
+    column_context: Optional[str] = None,
     filter: Optional[str] = None,
     limit: Optional[int] = None,
     offset: int = 0,
@@ -859,6 +860,8 @@ def get_logs(
         project: Name of the project to get logs from.
 
         context: Context of the logs to get.
+
+        column_context: Column context of the logs to get.
 
         filter: Boolean string to filter logs, for example:
         "(temperature > 0.5 and (len(system_msg) < 100 or 'no' in usr_response))"
@@ -883,6 +886,7 @@ def get_logs(
     }
     project = _get_and_maybe_create_project(project, api_key=api_key)
     context = context if context else CONTEXT_READ.get()
+    column_context = column_context if column_context else COLUMN_CONTEXT_READ.get()
     merged_filters = ACTIVE_PARAMS_READ.get() | ACTIVE_ENTRIES_READ.get()
     if merged_filters:
         _filter = " and ".join(f"{k}=={repr(v)}" for k, v in merged_filters.items())
@@ -897,7 +901,7 @@ def get_logs(
         "limit": limit,
         "offset": offset,
         "return_ids_only": return_ids_only,
-        "column_context": COLUMN_CONTEXT_READ.get(),
+        "column_context": column_context,
     }
     response = _requests.get(BASE_URL + "/logs", headers=headers, params=params)
     if response.status_code != 200:

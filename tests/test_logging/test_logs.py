@@ -412,6 +412,27 @@ def test_with_column_context():
 
 
 @_handle_project
+def test_with_col_context_get_logs():
+    [unify.log(a=i) for i in range(10)]
+
+    with unify.ColumnContext("foo"):
+        [unify.log(a=i) for i in range(10)]
+        assert len(unify.get_logs()) == 10
+
+    with unify.ColumnContext("foo"):
+        assert len(unify.get_logs()) == 10
+
+    with unify.ColumnContext("foo/bar"):
+        [unify.log(a=i) for i in range(10)]
+        assert len(unify.get_logs()) == 10
+
+    with unify.ColumnContext("foo"):
+        assert len(unify.get_logs()) == 20
+
+    assert len(unify.get_logs()) == 30
+
+
+@_handle_project
 def test_with_col_context_default_project():
     with unify.Log():
         with unify.ColumnContext("science"):
