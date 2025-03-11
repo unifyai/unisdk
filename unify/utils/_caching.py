@@ -55,6 +55,28 @@ def _create_cache_if_none(filename: str = None):
             _cache = json.load(outfile)
 
 
+def _minimal_char_diff(a: str, b: str, context: int = 5) -> str:
+    matcher = difflib.SequenceMatcher(None, a, b)
+    diff_parts = []
+
+    for tag, i1, i2, j1, j2 in matcher.get_opcodes():
+        if tag == "equal":
+            segment = a[i1:i2]
+            # If the segment is too long, show only a context at the beginning and end.
+            if len(segment) > 2 * context:
+                diff_parts.append(segment[:context] + "..." + segment[-context:])
+            else:
+                diff_parts.append(segment)
+        elif tag == "replace":
+            diff_parts.append(f"[{a[i1:i2]}|{b[j1:j2]}]")
+        elif tag == "delete":
+            diff_parts.append(f"[-{a[i1:i2]}-]")
+        elif tag == "insert":
+            diff_parts.append(f"[+{b[j1:j2]}+]")
+
+    return "".join(diff_parts)
+
+
 # noinspection PyTypeChecker,PyUnboundLocalVariable
 def _get_cache(
     fn_name: str,
@@ -87,10 +109,12 @@ def _get_cache(
                     n=1,
                     cutoff=0,
                 )
+                minimal_char_diff = _minimal_char_diff(cache_str, closest_match)
                 raise Exception(
                     f"Failed to get cache for function {fn_name} with kwargs {_dumps(kw, indent=4)} "
                     f"from cache at {filename}. \n\nCorresponding key\n{cache_str}\nwas not found in the cache.\n\n"
-                    f"The closest match was:\n{closest_match}\n",
+                    f"The closest match is:\n{closest_match}\n\n"
+                    f"The contracted diff is: {minimal_char_diff}\n\n",
                 )
             return
         ret = json.loads(_cache[cache_str])
