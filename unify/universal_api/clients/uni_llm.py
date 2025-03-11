@@ -35,7 +35,7 @@ from unify.universal_api.clients.helpers import (
     _assert_is_valid_provider,
 )
 
-from ...utils._caching import _dumps, _get_cache, _get_caching, _write_to_cache
+from ...utils._caching import _get_cache, _get_caching, _write_to_cache
 from ...utils.helpers import _default
 from ..clients.base import _Client
 from ..types import Prompt
@@ -855,7 +855,11 @@ class Unify(_UniClient):
             if self._traced:
 
                 def _get_cache_traced(**kw):
-                    return _get_cache(fn_name="chat.completions.create", kw=kw)
+                    return _get_cache(
+                        fn_name="chat.completions.create",
+                        kw=kw,
+                        raise_on_empty="read-only" in [cache, _get_caching()],
+                    )
 
                 chat_completion = unify.traced(
                     _get_cache_traced,
@@ -863,11 +867,10 @@ class Unify(_UniClient):
                     name=endpoint,
                 )(**kw)
             else:
-                chat_completion = _get_cache(fn_name="chat.completions.create", kw=kw)
-            if chat_completion is None and "read-only" in [cache, _get_caching()]:
-                raise Exception(
-                    f"read-only cache mode, "
-                    f"but failed to load cache for arguments {_dumps(kw, indent=4)}",
+                chat_completion = _get_cache(
+                    fn_name="chat.completions.create",
+                    kw=kw,
+                    raise_on_empty="read-only" in [cache, _get_caching()],
                 )
         if chat_completion is None:
             try:

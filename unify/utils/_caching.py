@@ -1,3 +1,4 @@
+import difflib
 import inspect
 import json
 import os
@@ -55,7 +56,12 @@ def _create_cache_if_none(filename: str = None):
 
 
 # noinspection PyTypeChecker,PyUnboundLocalVariable
-def _get_cache(fn_name: str, kw: Dict[str, Any], filename: str = None) -> Optional[Any]:
+def _get_cache(
+    fn_name: str,
+    kw: Dict[str, Any],
+    filename: str = None,
+    raise_on_empty: bool = False,
+) -> Optional[Any]:
     global CACHE_LOCK
     # prevents circular import
     from unify.logging.logs import Log
@@ -74,6 +80,18 @@ def _get_cache(fn_name: str, kw: Dict[str, Any], filename: str = None) -> Option
         cache_str = fn_name + "_" + kw_str
         if cache_str not in _cache:
             CACHE_LOCK.release()
+            if raise_on_empty:
+                closest_match = difflib.get_close_matches(
+                    cache_str,
+                    list(_cache.keys()),
+                    n=1,
+                    cutoff=0,
+                )
+                raise Exception(
+                    f"Failed to get cache for function {fn_name} with kwargs {_dumps(kw, indent=4)} "
+                    f"from cache at {filename}. Corresponding string index {cache_str} was not found in the cache"
+                    f"the closest match was: {closest_match}",
+                )
             return
         ret = json.loads(_cache[cache_str])
         if cache_str + "_res_types" not in _cache:

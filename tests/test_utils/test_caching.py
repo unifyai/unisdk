@@ -1,5 +1,6 @@
 import os
 import time
+import traceback
 
 import unify
 from unify import Unify
@@ -123,6 +124,32 @@ def test_cache_read_only() -> None:
         except Exception:
             raised_exception = True
         assert raised_exception, "read-only mode should have raised exception"
+        unify.utils._caching._cache_fpath = _cache_fpath
+    except Exception as e:
+        unify.utils._caching._cache_fpath = _cache_fpath
+        if os.path.exists(local_cache_path):
+            os.remove(local_cache_path)
+        raise e
+
+
+def test_cache_closest_match_on_exception():
+    local_cache_path = _cache_fpath.replace(".cache.json", ".test_cache.json")
+    try:
+        unify.utils._caching._cache_fpath = local_cache_path
+        if os.path.exists(local_cache_path):
+            os.remove(local_cache_path)
+        client = Unify(
+            endpoint="gpt-4o@openai",
+        )
+        r0 = client.generate(user_message="hello", cache="write")
+        assert os.path.exists(local_cache_path)
+        try:
+            client.generate(user_message="helloo", cache="read-only")
+        except Exception:
+            assert (
+                """Failed to get cache for function chat.completions.create with kwargs {\n    "model": "gpt-4o@openai",\n    "messages": [\n        {\n            "role": "user",\n            "content": "helloo"\n        }\n    ],\n    "temperature": 1.0,\n    "stream": false,\n    "extra_body": {\n        "signature": "python",\n        "use_custom_keys": false,\n        "tags": null,\n        "drop_params": true,\n        "region": null,\n        "log_query_body": true,\n        "log_response_body": true\n    }\n} from cache at None. Corresponding string index chat.completions.create_{"model": "gpt-4o@openai", "messages": [{"role": "user", "content": "helloo"}], "temperature": 1.0, "stream": false, "extra_body": {"signature": "python", "use_custom_keys": false, "tags": null, "drop_params": true, "region": null, "log_query_body": true, "log_response_body": true}} was not found in the cachethe closest match was: [\'chat.completions.create_{"model": "gpt-4o@openai", "messages": [{"role": "user", "content": "hello"}], "temperature": 1.0, "stream": false, "extra_body": {"signature": "python", "use_custom_keys": false, "tags": null, "drop_params": true, "region": null, "log_query_body": true, "log_response_body": true}}\']\n\n"""
+                in traceback.format_exc()
+            )
         unify.utils._caching._cache_fpath = _cache_fpath
     except Exception as e:
         unify.utils._caching._cache_fpath = _cache_fpath
