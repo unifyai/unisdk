@@ -114,7 +114,7 @@ def _get_cache(
                     f"Failed to get cache for function {fn_name} with kwargs {_dumps(kw, indent=4)} "
                     f"from cache at {filename}. \n\nCorresponding key\n{cache_str}\nwas not found in the cache.\n\n"
                     f"The closest match is:\n{closest_match}\n\n"
-                    f"The contracted diff is: {minimal_char_diff}\n\n",
+                    f"The contracted diff is:\n{minimal_char_diff}\n\n",
                 )
             return
         ret = json.loads(_cache[cache_str])
