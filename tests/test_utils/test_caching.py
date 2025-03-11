@@ -29,9 +29,9 @@ def test_cache() -> None:
         assert mt0 == mt1
         assert r0 == r1
         os.remove(local_cache_path)
-        global_cache_path = local_cache_path.replace(".test_cache.json", ".cache.json")
-        unify.utils._caching._cache_fpath = global_cache_path
+        unify.utils._caching._cache_fpath = _cache_fpath
     except Exception as e:
+        unify.utils._caching._cache_fpath = _cache_fpath
         if os.path.exists(local_cache_path):
             os.remove(local_cache_path)
         raise e
@@ -54,9 +54,9 @@ def test_cache_write() -> None:
         mt1 = os.path.getmtime(local_cache_path)
         assert mt0 < mt1
         os.remove(local_cache_path)
-        global_cache_path = local_cache_path.replace(".test_cache.json", ".cache.json")
-        unify.utils._caching._cache_fpath = global_cache_path
+        unify.utils._caching._cache_fpath = _cache_fpath
     except Exception as e:
+        unify.utils._caching._cache_fpath = _cache_fpath
         if os.path.exists(local_cache_path):
             os.remove(local_cache_path)
         raise e
@@ -85,9 +85,9 @@ def test_cache_read() -> None:
         assert mt0 == mt1
         assert r0 == r1
         os.remove(local_cache_path)
-        global_cache_path = local_cache_path.replace(".test_cache.json", ".cache.json")
-        unify.utils._caching._cache_fpath = global_cache_path
+        unify.utils._caching._cache_fpath = _cache_fpath
     except Exception as e:
+        unify.utils._caching._cache_fpath = _cache_fpath
         if os.path.exists(local_cache_path):
             os.remove(local_cache_path)
         raise e
@@ -123,9 +123,9 @@ def test_cache_read_only() -> None:
         except Exception:
             raised_exception = True
         assert raised_exception, "read-only mode should have raised exception"
-        global_cache_path = local_cache_path.replace(".test_cache.json", ".cache.json")
-        unify.utils._caching._cache_fpath = global_cache_path
+        unify.utils._caching._cache_fpath = _cache_fpath
     except Exception as e:
+        unify.utils._caching._cache_fpath = _cache_fpath
         if os.path.exists(local_cache_path):
             os.remove(local_cache_path)
         raise e
