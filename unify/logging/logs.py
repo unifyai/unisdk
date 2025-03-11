@@ -202,11 +202,11 @@ def unset_context():
 
 
 class Context:
-
-    def __init__(self, context: str, mode: str = "both"):
+    def __init__(self, context: str, mode: str = "both", overwrite: bool = False):
         self._context = context
         _validate_mode(mode)
         self._mode = mode
+        self._overwrite = overwrite
 
     def __enter__(self):
         _validate_mode_nesting(CONTEXT_MODE.get(), self._mode)
@@ -220,6 +220,13 @@ class Context:
             self._context_read_token = CONTEXT_READ.set(
                 _join_path(CONTEXT_READ.get(), self._context),
             )
+
+        if self._overwrite and self._context in unify.get_contexts():
+            if self._mode == "read":
+                raise Exception(f"Cannot overwrite logs in read mode.")
+
+            unify.delete_context(self._context)
+            unify.create_context(self._context)
 
     def __exit__(self, *args, **kwargs):
         if self._mode in ("both", "write"):
@@ -238,15 +245,16 @@ class ColumnContext:
             "",
         ).replace("\\", "/")
 
-    def __init__(self, context: str, mode: str = "both"):
+    def __init__(self, context: str, mode: str = "both", overwrite: bool = False):
         self._col_context = context
         _validate_mode(mode)
         self._mode = mode
+        self._overwrite = overwrite
 
     def __enter__(self):
         _validate_mode_nesting(COLUMN_CONTEXT_MODE.get(), self._mode)
-
         self._mode_token = COLUMN_CONTEXT_MODE.set(self._mode)
+
         if self._mode in ("both", "write"):
             self._context_write_token = COLUMN_CONTEXT_WRITE.set(
                 self._join_path(COLUMN_CONTEXT_WRITE.get(), self._col_context),
@@ -255,6 +263,14 @@ class ColumnContext:
             self._context_read_token = COLUMN_CONTEXT_READ.set(
                 self._join_path(COLUMN_CONTEXT_READ.get(), self._col_context),
             )
+
+        if self._overwrite:
+            if self._mode == "read":
+                raise Exception(f"Cannot overwrite logs in read mode.")
+
+            logs = unify.get_logs(return_ids_only=True)
+            if len(logs) > 0:
+                unify.delete_logs(logs=logs)
 
     def __exit__(self, *args, **kwargs):
         if self._mode in ("both", "write"):
@@ -265,10 +281,11 @@ class ColumnContext:
 
 
 class Entries:
-    def __init__(self, mode: str = "both", **entries):
+    def __init__(self, mode: str = "both", overwrite: bool = False, **entries):
         self._entries = _handle_special_types(entries)
         _validate_mode(mode)
         self._mode = mode
+        self._overwrite = overwrite
 
     def __enter__(self):
         _validate_mode_nesting(ACTIVE_ENTRIES_MODE.get(), self._mode)
@@ -286,6 +303,14 @@ class Entries:
                 {**ACTIVE_ENTRIES_READ.get(), **self._entries},
             )
 
+        if self._overwrite:
+            if self._mode == "read":
+                raise Exception(f"Cannot overwrite logs in read mode.")
+
+            logs = unify.get_logs(return_ids_only=True)
+            if len(logs) > 0:
+                unify.delete_logs(logs=logs)
+
     def __exit__(self, *args, **kwargs):
         if self._mode in ("both", "write"):
             ACTIVE_ENTRIES_WRITE.reset(self._entries_token)
@@ -300,10 +325,11 @@ class Entries:
 
 
 class Params:
-    def __init__(self, mode: str = "both", **params):
+    def __init__(self, mode: str = "both", overwrite: bool = False, **params):
         self._params = _handle_special_types(params)
         _validate_mode(mode)
         self._mode = mode
+        self._overwrite = overwrite
 
     def __enter__(self):
         _validate_mode_nesting(ACTIVE_PARAMS_MODE.get(), self._mode)
@@ -320,6 +346,14 @@ class Params:
             self._params_read_token = ACTIVE_PARAMS_READ.set(
                 {**ACTIVE_PARAMS_READ.get(), **self._params},
             )
+
+        if self._overwrite:
+            if self._mode == "read":
+                raise Exception(f"Cannot overwrite logs in read mode.")
+
+            logs = unify.get_logs(return_ids_only=True)
+            if len(logs) > 0:
+                unify.delete_logs(logs=logs)
 
     def __exit__(self, *args, **kwargs):
         ACTIVE_PARAMS_MODE.reset(self._mode_token)
@@ -361,11 +395,6 @@ class Experiment:
         _validate_mode_nesting(ACTIVE_PARAMS_MODE.get(), self._mode)
         self._mode_token = ACTIVE_PARAMS_MODE.set(self._mode)
 
-        if self._overwrite:
-            logs = get_logs(filter=f"experiment=='{self._name}'")
-            if len(logs) > 0:
-                delete_logs(logs=logs)
-
         if self._mode in ("both", "write"):
             self._params_token_write = ACTIVE_PARAMS_WRITE.set(
                 {**ACTIVE_PARAMS_WRITE.get(), **{"experiment": self._name}},
@@ -377,6 +406,14 @@ class Experiment:
             self._params_read_token = ACTIVE_PARAMS_READ.set(
                 {**ACTIVE_PARAMS_READ.get(), **{"experiment": self._name}},
             )
+
+        if self._overwrite:
+            if self._mode == "read":
+                raise Exception(f"Cannot overwrite logs in read mode.")
+
+            logs = unify.get_logs(return_ids_only=True)
+            if len(logs) > 0:
+                unify.delete_logs(logs=logs)
 
     def __exit__(self, *args, **kwargs):
         ACTIVE_PARAMS_MODE.reset(self._mode_token)

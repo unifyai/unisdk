@@ -217,6 +217,29 @@ def test_with_context():
 
 
 @_handle_project
+def test_with_context_overwrite():
+    with unify.Context("foo", overwrite=True):
+        [unify.log(a=i) for i in range(10)]
+        assert len(unify.get_logs()) == 10
+
+    with unify.Context("foo"):
+        assert len(unify.get_logs()) == 10
+        [unify.log(a=i) for i in range(10)]
+
+    with unify.Context("foo", overwrite=False):
+        assert len(unify.get_logs()) == 20
+
+    assert len(unify.get_logs(context="foo")) == 20
+
+    with unify.Context("foo", overwrite=True):
+        assert len(unify.get_logs()) == 0
+        [unify.log(a=i) for i in range(10)]
+        assert len(unify.get_logs()) == 10
+
+    assert len(unify.get_logs(context="foo")) == 10
+
+
+@_handle_project
 def test_with_context_nested():
 
     with unify.Context("Foo"):
@@ -447,6 +470,27 @@ def test_with_col_context_default_project():
     assert entries["science/physics/score"] == 1.0
     assert entries["science/chemistry/score"] == 0.5
     assert entries["science/biology/score"] == 0.0
+
+
+@_handle_project
+def test_with_col_context_overwrite():
+    with unify.ColumnContext("boo"):
+        [unify.log(a=i) for i in range(10)]
+        assert len(unify.get_logs()) == 10
+
+    with unify.ColumnContext("foo"):
+        [unify.log(a=i) for i in range(10)]
+        assert len(unify.get_logs()) == 10
+
+    with unify.ColumnContext("foo", overwrite=True):
+        [unify.log(a=i) for i in range(5)]
+        assert len(unify.get_logs()) == 5
+
+    with unify.ColumnContext("foo", overwrite=False):
+        assert len(unify.get_logs()) == 5
+        [unify.log(a=i) for i in range(5)]
+
+    assert len(unify.get_logs()) == 20
 
 
 @_handle_project
@@ -697,6 +741,24 @@ def test_with_entries_mode_restricted():
                 pass
 
 
+@_handle_project
+def test_with_entries_overwrite():
+    with unify.Entries(x=0):
+        [unify.log(x=i) for i in range(20)]
+        assert len(unify.get_logs()) == 20
+
+    with unify.Entries(x=0, overwrite=True):
+        [unify.log(x=i) for i in range(10)]
+        assert len(unify.get_logs()) == 10
+
+    assert len(unify.get_logs()) == 10
+
+    with unify.Entries(x=0, overwrite=True):
+        pass
+
+    assert len(unify.get_logs()) == 0
+
+
 # Params
 
 
@@ -862,6 +924,24 @@ def test_with_params_mode_restricted():
         with pytest.raises(Exception):
             with unify.Params(msg="foo", mode="read"):
                 pass
+
+
+@_handle_project
+def test_with_params_overwrite():
+    with unify.Params(msg="foo"):
+        [unify.log(x=i) for i in range(20)]
+        assert len(unify.get_logs()) == 20
+
+    with unify.Params(msg="foo", overwrite=True):
+        [unify.log(x=i) for i in range(10)]
+        assert len(unify.get_logs()) == 10
+
+    assert len(unify.get_logs()) == 10
+
+    with unify.Params(msg="foo", overwrite=True):
+        pass
+
+    assert len(unify.get_logs()) == 0
 
 
 @_handle_project
