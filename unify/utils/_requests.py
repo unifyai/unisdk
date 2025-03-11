@@ -23,6 +23,7 @@ if _log_enabled:
 
     _logger.setLevel(logging.DEBUG)
     _logger.addHandler(_handler)
+    _logger.propagate = False
 
 
 def _log(type, url: str, /, **kwargs):
