@@ -89,8 +89,8 @@ def _get_cache(
                 )
                 raise Exception(
                     f"Failed to get cache for function {fn_name} with kwargs {_dumps(kw, indent=4)} "
-                    f"from cache at {filename}. Corresponding string index {cache_str} was not found in the cache"
-                    f"the closest match was: {closest_match}",
+                    f"from cache at {filename}. \n\nCorresponding key\n{cache_str}\nwas not found in the cache.\n\n"
+                    f"The closest match was:\n{closest_match}\n",
                 )
             return
         ret = json.loads(_cache[cache_str])
