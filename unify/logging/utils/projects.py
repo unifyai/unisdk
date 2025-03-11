@@ -1,7 +1,7 @@
 from typing import Dict, List, Optional
 
-import requests
 from unify import BASE_URL
+from unify.utils import _requests
 
 from ...utils.helpers import _validate_api_key
 
@@ -39,7 +39,7 @@ def create_project(
     if overwrite:
         if name in list_projects(api_key=api_key):
             delete_project(name=name, api_key=api_key)
-    response = requests.post(BASE_URL + "/project", headers=headers, json=body)
+    response = _requests.post(BASE_URL + "/project", headers=headers, json=body)
     if response.status_code != 200:
         raise Exception(response.json())
     return response.json()
@@ -71,7 +71,11 @@ def rename_project(
         "Authorization": f"Bearer {api_key}",
     }
     body = {"name": new_name}
-    response = requests.patch(BASE_URL + f"/project/{name}", headers=headers, json=body)
+    response = _requests.patch(
+        BASE_URL + f"/project/{name}",
+        headers=headers,
+        json=body,
+    )
     if response.status_code != 200:
         raise Exception(response.json())
     return response.json()
@@ -99,7 +103,7 @@ def delete_project(
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    response = requests.delete(BASE_URL + f"/project/{name}", headers=headers)
+    response = _requests.delete(BASE_URL + f"/project/{name}", headers=headers)
     if response.status_code != 200:
         raise Exception(response.json())
     return response.json()
@@ -124,7 +128,7 @@ def list_projects(
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    response = requests.get(BASE_URL + "/projects", headers=headers)
+    response = _requests.get(BASE_URL + "/projects", headers=headers)
     if response.status_code != 200:
         raise Exception(response.json())
     return response.json()

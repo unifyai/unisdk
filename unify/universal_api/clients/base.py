@@ -17,6 +17,7 @@ from typing_extensions import Self
 
 # local
 from unify import BASE_URL
+from unify.utils import _requests
 
 # noinspection PyProtectedMember
 from unify.utils.helpers import _validate_api_key
@@ -964,7 +965,7 @@ class _Client(ABC):
             "Authorization": f"Bearer {self._api_key}",
         }
         try:
-            response = requests.get(url, headers=headers, timeout=10)
+            response = _requests.get(url, headers=headers, timeout=10)
             if response.status_code != 200:
                 raise Exception(response.json())
             return response.json()["credits"]

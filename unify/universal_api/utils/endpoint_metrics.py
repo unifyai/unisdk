@@ -1,9 +1,9 @@
 import datetime
 from typing import Dict, List, Optional, Union
 
-import requests
 from pydantic import BaseModel
 from unify import BASE_URL
+from unify.utils import _requests
 
 from ...utils.helpers import _validate_api_key
 
@@ -52,7 +52,7 @@ def get_endpoint_metrics(
         "start_time": start_time,
         "end_time": end_time,
     }
-    response = requests.get(
+    response = _requests.get(
         BASE_URL + "/endpoint-metrics",
         headers=headers,
         params=params,
@@ -108,7 +108,7 @@ def log_endpoint_metric(
         "value": value,
         "measured_at": measured_at,
     }
-    response = requests.post(
+    response = _requests.post(
         BASE_URL + "/endpoint-metrics",
         headers=headers,
         params=params,
@@ -133,7 +133,7 @@ def delete_endpoint_metrics(
         "endpoint_name": endpoint_name,
         "timestamps": timestamps,
     }
-    response = requests.delete(
+    response = _requests.delete(
         BASE_URL + "/endpoint-metrics",
         headers=headers,
         params=params,

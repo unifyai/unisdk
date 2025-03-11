@@ -1,7 +1,7 @@
 from typing import Dict, List, Optional
 
-import requests
 from unify import BASE_URL
+from unify.utils import _requests
 
 from ...utils.helpers import _get_and_maybe_create_project, _validate_api_key
 from .logs import CONTEXT_WRITE
@@ -51,7 +51,7 @@ def create_context(
         "description": description,
         "is_versioned": is_versioned,
     }
-    response = requests.post(
+    response = _requests.post(
         BASE_URL + f"/project/{project}/contexts",
         headers=headers,
         json=body,
@@ -94,7 +94,7 @@ def get_contexts(
         api_key=api_key,
         create_if_missing=False,
     )
-    response = requests.get(
+    response = _requests.get(
         BASE_URL + f"/project/{project}/contexts",
         headers=headers,
     )
@@ -138,7 +138,7 @@ def delete_context(
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    response = requests.delete(
+    response = _requests.delete(
         BASE_URL + f"/project/{project}/contexts/{name}",
         headers=headers,
     )
@@ -185,7 +185,7 @@ def add_logs_to_context(
         "context_name": context,
         "log_ids": log_ids,
     }
-    response = requests.post(
+    response = _requests.post(
         BASE_URL + f"/project/{project}/contexts/add_logs",
         headers=headers,
         json=body,

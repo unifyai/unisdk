@@ -10,10 +10,10 @@ import sys
 from contextvars import ContextVar
 from typing import Any, Callable, Dict, List, Optional, Union
 
-import requests
 import unify
 from tqdm import tqdm
 from unify import BASE_URL
+from unify.utils import _requests
 
 from ...utils._caching import (
     _get_cache,
@@ -448,7 +448,7 @@ def _sync_log(
         "params": params,
         "entries": entries,
     }
-    response = requests.post(BASE_URL + "/logs", headers=headers, json=body)
+    response = _requests.post(BASE_URL + "/logs", headers=headers, json=body)
     if response.status_code != 200:
         raise Exception(response.json())
     return unify.Log(
@@ -513,9 +513,9 @@ def create_logs(
         }
         body_size = sys.getsizeof(json.dumps(body))
         if body_size < CHUNK_LIMIT:
-            response = requests.post(BASE_URL + "/logs", headers=headers, json=body)
+            response = _requests.post(BASE_URL + "/logs", headers=headers, json=body)
         else:
-            response = requests.post(
+            response = _requests.post(
                 BASE_URL + "/logs",
                 headers=headers,
                 data=_json_chunker(body),
@@ -622,7 +622,7 @@ def _add_to_log(
             ), "All logs must share the same context if they're all being updated at the same time."
             data = all_kwargs[0]
         body = {"ids": log_ids, mode: data, "overwrite": overwrite, "context": context}
-        response = requests.put(BASE_URL + "/logs", headers=headers, json=body)
+        response = _requests.put(BASE_URL + "/logs", headers=headers, json=body)
         if response.status_code != 200:
             raise Exception(response.json())
         if nest_level.get() > 0:
@@ -750,7 +750,7 @@ def update_logs(
         # end ToDo
         "overwrite": overwrite,
     }
-    response = requests.put(BASE_URL + "/logs", headers=headers, json=body)
+    response = _requests.put(BASE_URL + "/logs", headers=headers, json=body)
     if response.status_code != 200:
         raise Exception(response.json())
     return response.json()
@@ -788,7 +788,7 @@ def delete_logs(
         "Authorization": f"Bearer {api_key}",
     }
     body = {"project": project, "ids_and_fields": [(log_ids, None)]}
-    response = requests.delete(BASE_URL + f"/logs", headers=headers, json=body)
+    response = _requests.delete(BASE_URL + f"/logs", headers=headers, json=body)
     if response.status_code != 200:
         raise Exception(response.json())
     if USR_LOGGING:
@@ -827,7 +827,7 @@ def delete_log_fields(
     }
     project = _get_and_maybe_create_project(project, api_key=api_key)
     body = {"project": project, "ids_and_fields": [(log_ids, field)]}
-    response = requests.delete(
+    response = _requests.delete(
         BASE_URL + f"/logs",
         headers=headers,
         json=body,
@@ -899,7 +899,7 @@ def get_logs(
         "return_ids_only": return_ids_only,
         "column_context": COLUMN_CONTEXT_READ.get(),
     }
-    response = requests.get(BASE_URL + "/logs", headers=headers, params=params)
+    response = _requests.get(BASE_URL + "/logs", headers=headers, params=params)
     if response.status_code != 200:
         raise Exception(response.json())
     if return_ids_only:
@@ -948,7 +948,7 @@ def get_log_by_id(
         "Authorization": f"Bearer {api_key}",
     }
     project = _get_and_maybe_create_project(project, api_key=api_key)
-    response = requests.get(
+    response = _requests.get(
         BASE_URL + "/logs",
         params={"project": project, "from_ids": [id]},
         headers=headers,
@@ -1006,7 +1006,7 @@ def get_logs_metric(
     }
     project = _get_and_maybe_create_project(project, api_key=api_key)
     params = {"project": project, "filter_expr": filter, "key": key}
-    response = requests.get(
+    response = _requests.get(
         BASE_URL + f"/logs/metric/{metric}",
         headers=headers,
         params=params,
@@ -1045,7 +1045,7 @@ def get_groups(
     }
     project = _get_and_maybe_create_project(project, api_key=api_key)
     params = {"project": project, "key": key}
-    response = requests.get(BASE_URL + "/logs/groups", headers=headers, params=params)
+    response = _requests.get(BASE_URL + "/logs/groups", headers=headers, params=params)
     if response.status_code != 200:
         raise Exception(response.json())
     return response.json()

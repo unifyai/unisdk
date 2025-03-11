@@ -1,7 +1,7 @@
 from typing import Optional
 
-import requests
 from unify import BASE_URL
+from unify.utils import _requests
 
 from ...utils.helpers import _res_to_list, _validate_api_key
 
@@ -25,7 +25,7 @@ def get_credits(*, api_key: Optional[str] = None) -> float:
         "Authorization": f"Bearer {api_key}",
     }
     # Send GET request to the /get_credits endpoint
-    response = requests.get(BASE_URL + "/credits", headers=headers)
+    response = _requests.get(BASE_URL + "/credits", headers=headers)
     if response.status_code != 200:
         raise Exception(response.json())
     return _res_to_list(response)["credits"]

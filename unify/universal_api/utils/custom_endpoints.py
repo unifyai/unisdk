@@ -1,7 +1,7 @@
 from typing import Any, Dict, List, Optional
 
-import requests
 from unify import BASE_URL
+from unify.utils import _requests
 
 from ...utils.helpers import _validate_api_key
 
@@ -51,7 +51,7 @@ def create_custom_endpoint(
     if provider:
         params["provider"] = provider
 
-    response = requests.post(
+    response = _requests.post(
         f"{BASE_URL}/custom_endpoint",
         headers=headers,
         params=params,
@@ -90,7 +90,7 @@ def delete_custom_endpoint(
 
     params = {"name": name}
 
-    response = requests.delete(url, headers=headers, params=params)
+    response = _requests.delete(url, headers=headers, params=params)
     if response.status_code != 200:
         raise Exception(response.json())
 
@@ -127,7 +127,7 @@ def rename_custom_endpoint(
 
     params = {"name": name, "new_name": new_name}
 
-    response = requests.post(url, headers=headers, params=params)
+    response = _requests.post(url, headers=headers, params=params)
     if response.status_code != 200:
         raise Exception(response.json())
 
@@ -159,7 +159,7 @@ def list_custom_endpoints(
     }
     url = f"{BASE_URL}/custom_endpoint/list"
 
-    response = requests.get(url, headers=headers)
+    response = _requests.get(url, headers=headers)
     if response.status_code != 200:
         raise Exception(response.json())
 

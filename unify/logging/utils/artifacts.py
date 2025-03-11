@@ -1,7 +1,7 @@
 from typing import Any, Dict, Optional
 
-import requests
 from unify import BASE_URL
+from unify.utils import _requests
 
 from ...utils.helpers import _get_and_maybe_create_project, _validate_api_key
 
@@ -38,7 +38,7 @@ def add_project_artifacts(
     }
     body = {"artifacts": kwargs}
     project = _get_and_maybe_create_project(project, api_key=api_key)
-    response = requests.post(
+    response = _requests.post(
         BASE_URL + f"/project/{project}/artifacts",
         headers=headers,
         json=body,
@@ -74,7 +74,7 @@ def delete_project_artifact(
         "Authorization": f"Bearer {api_key}",
     }
     project = _get_and_maybe_create_project(project, api_key=api_key)
-    response = requests.delete(
+    response = _requests.delete(
         BASE_URL + f"/project/{project}/artifacts/{key}",
         headers=headers,
     )
@@ -107,7 +107,10 @@ def get_project_artifacts(
         "Authorization": f"Bearer {api_key}",
     }
     project = _get_and_maybe_create_project(project, api_key=api_key)
-    response = requests.get(BASE_URL + f"/project/{project}/artifacts", headers=headers)
+    response = _requests.get(
+        BASE_URL + f"/project/{project}/artifacts",
+        headers=headers,
+    )
     if response.status_code != 200:
         raise Exception(response.json())
     return response.json()
