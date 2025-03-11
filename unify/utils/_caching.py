@@ -108,7 +108,7 @@ def _get_cache(
                     list(_cache.keys()),
                     n=1,
                     cutoff=0,
-                )
+                )[0]
                 minimal_char_diff = _minimal_char_diff(cache_str, closest_match)
                 raise Exception(
                     f"Failed to get cache for function {fn_name} with kwargs {_dumps(kw, indent=4)} "
