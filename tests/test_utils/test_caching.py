@@ -2,6 +2,7 @@ import os
 import time
 import traceback
 
+import pytest
 import unify
 from unify import Unify
 from unify.utils._caching import _cache_fpath
@@ -132,7 +133,8 @@ def test_cache_read_only() -> None:
         raise e
 
 
-def test_cache_closest_match_on_exception():
+@pytest.mark.parametrize("traced", [True, False])
+def test_cache_closest_match_on_exception(traced):
     local_cache_path = _cache_fpath.replace(".cache.json", ".test_cache.json")
     try:
         unify.utils._caching._cache_fpath = local_cache_path
@@ -140,6 +142,7 @@ def test_cache_closest_match_on_exception():
             os.remove(local_cache_path)
         client = Unify(
             endpoint="gpt-4o@openai",
+            traced=traced,
         )
         r0 = client.generate(user_message="hello", cache="write")
         assert os.path.exists(local_cache_path)
