@@ -1,6 +1,5 @@
 # global
 import abc
-import json
 import threading
 from typing import (
     AsyncGenerator,
@@ -36,7 +35,7 @@ from unify.universal_api.clients.helpers import (
     _assert_is_valid_provider,
 )
 
-from ...utils._caching import _get_cache, _get_caching, _write_to_cache
+from ...utils._caching import _dumps, _get_cache, _get_caching, _write_to_cache
 from ...utils.helpers import _default
 from ..clients.base import _Client
 from ..types import Prompt
@@ -868,7 +867,7 @@ class Unify(_UniClient):
             if chat_completion is None and "read-only" in [cache, _get_caching()]:
                 raise Exception(
                     f"read-only cache mode, "
-                    f"but failed to load cache for arguments {json.dumps(kw, indent=4)}",
+                    f"but failed to load cache for arguments {_dumps(kw, indent=4)}",
                 )
         if chat_completion is None:
             try:

@@ -116,6 +116,7 @@ def _dumps(
     obj: Any,
     cached_types: Dict[str, str] = None,
     idx: List[Union[str, int]] = None,
+    indent: int = None,
 ) -> Any:
     # prevents circular import
     from unify.logging.logs import Log
@@ -126,13 +127,13 @@ def _dumps(
         idx = list()
     if isinstance(obj, BaseModel):
         if cached_types is not None:
-            cached_types[json.dumps(idx)] = obj.__class__.__name__
+            cached_types[json.dumps(idx, indent=indent)] = obj.__class__.__name__
         ret = obj.model_dump()
     elif inspect.isclass(obj) and issubclass(obj, BaseModel):
         ret = obj.schema_json()
     elif isinstance(obj, Log):
         if cached_types is not None:
-            cached_types[json.dumps(idx)] = obj.__class__.__name__
+            cached_types[json.dumps(idx, indent=indent)] = obj.__class__.__name__
         ret = obj.to_json()
     elif isinstance(obj, dict):
         ret = {k: _dumps(v, cached_types, idx + ["k"]) for k, v in obj.items()}
@@ -142,7 +143,7 @@ def _dumps(
         ret = tuple(_dumps(v, cached_types, idx + [i]) for i, v in enumerate(obj))
     else:
         ret = obj
-    return json.dumps(ret) if base else ret
+    return json.dumps(ret, indent=indent) if base else ret
 
 
 # noinspection PyTypeChecker,PyUnresolvedReferences
