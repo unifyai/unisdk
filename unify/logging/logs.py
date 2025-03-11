@@ -479,6 +479,11 @@ def traced(
                 code = inspect.getsource(fn)
             except:
                 code = None
+        if name is not None:
+            for k, v in inputs.items():
+                substr = "{" + k + "}"
+                if substr in name:
+                    name = name.replace(substr, str(v))
         new_span = {
             "id": str(uuid.uuid4()),
             "type": span_type,
