@@ -3,6 +3,7 @@ from __future__ import annotations
 import ast
 import textwrap
 import time
+import traceback
 import uuid
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple, Union
@@ -516,7 +517,7 @@ def traced(
             result = fn(*args, **kwargs)
             return result
         except Exception as e:
-            new_span["errors"] = str(e)
+            new_span["errors"] = traceback.format_exc()
             raise e
         finally:
             if result is None:
