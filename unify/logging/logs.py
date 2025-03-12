@@ -532,37 +532,37 @@ def traced(
                         ACTIVE_LOG.set([])
             else:
                 outputs = _make_json_serializable(result)
-                t2 = time.perf_counter()
-                exec_time = t2 - t1
-                SPAN.get()["exec_time"] = exec_time
-                SPAN.get()["outputs"] = outputs
-                if SPAN.get()["type"] == "llm":
-                    SPAN.get()["llm_usage"] = outputs["usage"]
-                if SPAN.get()["type"] in ("llm", "llm-cached"):
-                    SPAN.get()["llm_usage_inc_cache"] = outputs["usage"]
-                # ToDo: ensure there is a global log set upon the first trace,
-                #  and removed on the last
-                trace = SPAN.get()
-                if prune_empty:
-                    trace = _prune_dict(trace)
-                unify.add_log_entries(
-                    trace=trace,
-                    overwrite=True,
-                    # mutable=SPAN.get()["parent_span_id"] is not None,
+            t2 = time.perf_counter()
+            exec_time = t2 - t1
+            SPAN.get()["exec_time"] = exec_time
+            SPAN.get()["outputs"] = outputs
+            if SPAN.get()["type"] == "llm":
+                SPAN.get()["llm_usage"] = outputs["usage"]
+            if SPAN.get()["type"] in ("llm", "llm-cached"):
+                SPAN.get()["llm_usage_inc_cache"] = outputs["usage"]
+            # ToDo: ensure there is a global log set upon the first trace,
+            #  and removed on the last
+            trace = SPAN.get()
+            if prune_empty:
+                trace = _prune_dict(trace)
+            unify.add_log_entries(
+                trace=trace,
+                overwrite=True,
+                # mutable=SPAN.get()["parent_span_id"] is not None,
+            )
+            SPAN.reset(token)
+            if token.old_value is not token.MISSING:
+                SPAN.get()["child_spans"].append(new_span)
+                SPAN.get()["llm_usage"] = _nested_add(
+                    SPAN.get()["llm_usage"],
+                    new_span["llm_usage"],
                 )
-                SPAN.reset(token)
-                if token.old_value is not token.MISSING:
-                    SPAN.get()["child_spans"].append(new_span)
-                    SPAN.get()["llm_usage"] = _nested_add(
-                        SPAN.get()["llm_usage"],
-                        new_span["llm_usage"],
-                    )
-                    SPAN.get()["llm_usage_inc_cache"] = _nested_add(
-                        SPAN.get()["llm_usage_inc_cache"],
-                        new_span["llm_usage_inc_cache"],
-                    )
-                if log_token:
-                    ACTIVE_LOG.set([])
+                SPAN.get()["llm_usage_inc_cache"] = _nested_add(
+                    SPAN.get()["llm_usage_inc_cache"],
+                    new_span["llm_usage_inc_cache"],
+                )
+            if log_token:
+                ACTIVE_LOG.set([])
 
     async def async_wrapped(*args, **kwargs):
         t1 = time.perf_counter()
