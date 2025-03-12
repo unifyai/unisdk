@@ -60,7 +60,7 @@ from .logging.utils.datasets import *
 from .logging.utils.logs import *
 from .logging.utils.projects import *
 
-from .utils import helpers, map, _caching
+from .utils import helpers, map, get_map_mode, set_map_mode, _caching
 from .utils._caching import set_caching, set_caching_fname
 
 from .universal_api import chatbot, clients, usage

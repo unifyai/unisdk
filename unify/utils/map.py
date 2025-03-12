@@ -6,6 +6,17 @@ from typing import Any, List
 from tqdm import tqdm
 from tqdm.asyncio import tqdm_asyncio
 
+MAP_MODE = "threading"
+
+
+def set_map_mode(mode: str):
+    global MAP_MODE
+    MAP_MODE = mode
+
+
+def get_map_mode() -> str:
+    return MAP_MODE
+
 
 def _is_iterable(item: Any) -> bool:
     try:
@@ -19,7 +30,7 @@ def _is_iterable(item: Any) -> bool:
 def map(
     fn: callable,
     *args,
-    mode="threading",
+    mode=None,
     name="",
     from_args=False,
     **kwargs,
@@ -29,6 +40,9 @@ def map(
         name = (
             " ".join(substr[0].upper() + substr[1:] for substr in name.split("_")) + " "
         )
+
+    if mode is None:
+        mode = get_map_mode()
 
     assert mode in (
         "threading",

@@ -67,6 +67,18 @@ def test_threaded_map() -> None:
                 evaluate_w_log(q)
 
 
+def test_map_mode() -> None:
+    unify.set_map_mode("threading")
+    assert unify.get_map_mode() == "threading"
+    unify.map(evaluate_w_log, qs)
+    unify.set_map_mode("asyncio")
+    assert unify.get_map_mode() == "asyncio"
+    unify.map(evaluate_w_log, qs)
+    unify.set_map_mode("loop")
+    assert unify.get_map_mode() == "loop"
+    unify.map(evaluate_w_log, qs)
+
+
 def test_threaded_map_from_args() -> None:
     with ProjectHandling():
         with unify.Project("test_project"):
