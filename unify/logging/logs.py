@@ -450,11 +450,13 @@ def traced(
     name: Optional[str] = None,
     trace_contexts: Optional[List[str]] = None,
 ):
+
     if fn is None:
         return lambda f: traced(
             f,
             prune_empty=prune_empty,
             span_type=span_type,
+            name=name,
             trace_contexts=trace_contexts,
         )
 

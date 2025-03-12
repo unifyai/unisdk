@@ -62,6 +62,20 @@ def test_traced():
 
 
 @_handle_project
+def test_traced_w_arg_naming():
+
+    @unify.traced(name="some_func_{arg}")
+    def some_func(arg):
+        return arg + 1
+
+    some_func(1)
+    entries = unify.get_logs()[0].entries
+
+    assert entries["trace"]["inputs"] == {"arg": 1}
+    assert entries["trace"]["span_name"] == "some_func_1"
+
+
+@_handle_project
 def test_traced_w_exception():
     @unify.traced
     def deeper_fn(inp):
