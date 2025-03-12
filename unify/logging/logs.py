@@ -474,11 +474,11 @@ def traced(
         inputs = _make_json_serializable(inputs)
         try:
             lines, start_line = inspect.getsourcelines(fn)
-            code = "".join(lines)
+            code = textwrap.dedent("".join(lines))
         except:
             lines, start_line = None, None
             try:
-                code = inspect.getsource(fn)
+                code = textwrap.dedent(inspect.getsource(fn))
             except:
                 code = None
         name_w_sub = name
