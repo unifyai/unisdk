@@ -3,7 +3,11 @@ from typing import Dict, List, Optional
 from unify import BASE_URL
 from unify.utils import _requests
 
-from ...utils.helpers import _get_and_maybe_create_project, _validate_api_key
+from ...utils.helpers import (
+    _check_response,
+    _get_and_maybe_create_project,
+    _validate_api_key,
+)
 from .logs import CONTEXT_WRITE
 
 # Contexts #
@@ -56,8 +60,7 @@ def create_context(
         headers=headers,
         json=body,
     )
-    if response.status_code != 200:
-        raise Exception(response.json())
+    _check_response(response)
     return response.json()
 
 
@@ -98,8 +101,7 @@ def get_contexts(
         BASE_URL + f"/project/{project}/contexts",
         headers=headers,
     )
-    if response.status_code != 200:
-        raise Exception(response.json())
+    _check_response(response)
     contexts = response.json()
     contexts = {context["name"]: context["description"] for context in contexts}
     if prefix:
@@ -142,8 +144,7 @@ def delete_context(
         BASE_URL + f"/project/{project}/contexts/{name}",
         headers=headers,
     )
-    if response.status_code != 200:
-        raise Exception(response.json())
+    _check_response(response)
     return response.json()
 
 
@@ -190,6 +191,5 @@ def add_logs_to_context(
         headers=headers,
         json=body,
     )
-    if response.status_code != 200:
-        raise Exception(response.json())
+    _check_response(response)
     return response.json()

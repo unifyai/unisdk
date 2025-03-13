@@ -3,7 +3,7 @@ from typing import Dict, List, Optional
 from unify import BASE_URL
 from unify.utils import _requests
 
-from ...utils.helpers import _validate_api_key
+from ...utils.helpers import _check_response, _validate_api_key
 
 # Projects #
 # ---------#
@@ -40,8 +40,7 @@ def create_project(
         if name in list_projects(api_key=api_key):
             delete_project(name=name, api_key=api_key)
     response = _requests.post(BASE_URL + "/project", headers=headers, json=body)
-    if response.status_code != 200:
-        raise Exception(response.json())
+    _check_response(response)
     return response.json()
 
 
@@ -76,8 +75,7 @@ def rename_project(
         headers=headers,
         json=body,
     )
-    if response.status_code != 200:
-        raise Exception(response.json())
+    _check_response(response)
     return response.json()
 
 
@@ -104,8 +102,7 @@ def delete_project(
         "Authorization": f"Bearer {api_key}",
     }
     response = _requests.delete(BASE_URL + f"/project/{name}", headers=headers)
-    if response.status_code != 200:
-        raise Exception(response.json())
+    _check_response(response)
     return response.json()
 
 
@@ -129,6 +126,5 @@ def list_projects(
         "Authorization": f"Bearer {api_key}",
     }
     response = _requests.get(BASE_URL + "/projects", headers=headers)
-    if response.status_code != 200:
-        raise Exception(response.json())
+    _check_response(response)
     return response.json()

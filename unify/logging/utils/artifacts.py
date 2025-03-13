@@ -3,7 +3,11 @@ from typing import Any, Dict, Optional
 from unify import BASE_URL
 from unify.utils import _requests
 
-from ...utils.helpers import _get_and_maybe_create_project, _validate_api_key
+from ...utils.helpers import (
+    _check_response,
+    _get_and_maybe_create_project,
+    _validate_api_key,
+)
 
 # Artifacts #
 # ----------#
@@ -43,8 +47,7 @@ def add_project_artifacts(
         headers=headers,
         json=body,
     )
-    if response.status_code != 200:
-        raise Exception(response.json())
+    _check_response(response)
     return response.json()
 
 
@@ -78,8 +81,7 @@ def delete_project_artifact(
         BASE_URL + f"/project/{project}/artifacts/{key}",
         headers=headers,
     )
-    if response.status_code != 200:
-        raise Exception(response.json())
+    _check_response(response)
     return response.json()
 
 
@@ -111,6 +113,5 @@ def get_project_artifacts(
         BASE_URL + f"/project/{project}/artifacts",
         headers=headers,
     )
-    if response.status_code != 200:
-        raise Exception(response.json())
+    _check_response(response)
     return response.json()
