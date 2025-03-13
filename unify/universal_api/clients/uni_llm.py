@@ -800,7 +800,11 @@ class Unify(_UniClient):
                     chat_completion = unify.traced(
                         self._client.chat.completions.create,
                         span_type="llm",
-                        name=endpoint,
+                        name=(
+                            endpoint
+                            if tags is None
+                            else endpoint + "[" + ",".join([str(t) for t in tags]) + "]"
+                        ),
                     )(**kw)
                 else:
                     chat_completion = self._client.chat.completions.create(**kw)
@@ -864,7 +868,11 @@ class Unify(_UniClient):
                 chat_completion = unify.traced(
                     _get_cache_traced,
                     span_type="llm-cached",
-                    name=endpoint,
+                    name=(
+                        endpoint
+                        if tags is None
+                        else endpoint + "[" + ",".join([str(t) for t in tags]) + "]"
+                    ),
                 )(**kw)
             else:
                 chat_completion = _get_cache(
@@ -888,7 +896,14 @@ class Unify(_UniClient):
                         chat_completion = unify.traced(
                             chat_method,
                             span_type="llm",
-                            name=endpoint,
+                            name=(
+                                endpoint
+                                if tags is None
+                                else endpoint
+                                + "["
+                                + ",".join([str(t) for t in tags])
+                                + "]"
+                            ),
                         )(**kw)
                     else:
                         chat_completion = chat_method(**kw)
@@ -1067,7 +1082,11 @@ class AsyncUnify(_UniClient):
                     async_stream = await unify.traced(
                         self._client.chat.completions.create,
                         span_type="llm",
-                        name=endpoint,
+                        name=(
+                            endpoint
+                            if tags is None
+                            else endpoint + "[" + ",".join([str(t) for t in tags]) + "]"
+                        ),
                     )(**kw)
                 else:
                     async_stream = await self._client.chat.completions.create(**kw)
@@ -1129,7 +1148,14 @@ class AsyncUnify(_UniClient):
                         chat_completion = await unify.traced(
                             self._client.chat.completions.create,
                             span_type="llm",
-                            name=endpoint,
+                            name=(
+                                endpoint
+                                if tags is None
+                                else endpoint
+                                + "["
+                                + ",".join([str(t) for t in tags])
+                                + "]"
+                            ),
                         )(**kw)
                     else:
                         chat_completion = await self._client.chat.completions.create(
