@@ -520,19 +520,7 @@ def traced(
             new_span["errors"] = traceback.format_exc()
             raise e
         finally:
-            if result is None:
-                outputs = None
-                if SPAN.get()["type"] == "llm-cached":
-                    # tried to load cache but nothing found,
-                    # do not add this failed cache load to trace
-                    if token.old_value is token.MISSING:
-                        SPAN.reset(token)
-                    else:
-                        SPAN.reset(token)
-                    if log_token:
-                        ACTIVE_LOG.set([])
-            else:
-                outputs = _make_json_serializable(result)
+            outputs = _make_json_serializable(result) if result is not None else None
             t2 = time.perf_counter()
             exec_time = t2 - t1
             SPAN.get()["exec_time"] = exec_time
