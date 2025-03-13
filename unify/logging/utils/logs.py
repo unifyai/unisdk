@@ -21,8 +21,11 @@ from ...utils._caching import (
     _get_caching_fname,
     _write_to_cache,
 )
-from ...utils.helpers import _get_and_maybe_create_project, _validate_api_key
-from . import _check_response
+from ...utils.helpers import (
+    _check_response,
+    _get_and_maybe_create_project,
+    _validate_api_key,
+)
 from .async_logger import AsyncLoggerManager
 
 # logging configuration
