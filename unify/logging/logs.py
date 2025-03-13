@@ -176,11 +176,18 @@ def _join_path(base_path: str, context: str) -> str:
     ).replace("\\", "/")
 
 
-def set_context(context: str, mode: str = "both"):
+def set_context(context: str, mode: str = "both", overwrite: bool = False):
     global MODE, MODE_TOKEN, CONTEXT_READ_TOKEN, CONTEXT_WRITE_TOKEN
     MODE = mode
     _validate_mode_nesting(CONTEXT_MODE.get(), mode)
     MODE_TOKEN = CONTEXT_MODE.set(mode)
+
+    if overwrite and context in unify.get_contexts():
+        if mode == "read":
+            raise Exception(f"Cannot overwrite logs in read mode.")
+
+        unify.delete_context(context)
+        unify.create_context(context)
 
     if mode in ("both", "write"):
         CONTEXT_WRITE_TOKEN = CONTEXT_WRITE.set(
