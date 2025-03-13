@@ -525,9 +525,9 @@ def traced(
             exec_time = t2 - t1
             SPAN.get()["exec_time"] = exec_time
             SPAN.get()["outputs"] = outputs
-            if SPAN.get()["type"] == "llm":
+            if SPAN.get()["type"] == "llm" and outputs is not None:
                 SPAN.get()["llm_usage"] = outputs["usage"]
-            if SPAN.get()["type"] in ("llm", "llm-cached"):
+            if SPAN.get()["type"] in ("llm", "llm-cached") and outputs is not None:
                 SPAN.get()["llm_usage_inc_cache"] = outputs["usage"]
             # ToDo: ensure there is a global log set upon the first trace,
             #  and removed on the last
