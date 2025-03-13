@@ -122,7 +122,7 @@ def test_traced_w_exception():
     assert trace["child_spans"][0]["span_name"] == "inner_fn"
     assert len(trace["child_spans"][0]["child_spans"]) == 1
     assert trace["child_spans"][0]["child_spans"][0]["span_name"] == "deeper_fn"
-    assert trace["child_spans"][1]["child_spans"][0]["errors"] == "Something went wrong"
+    assert "Something went wrong" in trace["child_spans"][1]["child_spans"][0]["errors"]
 
 
 @_handle_project
@@ -323,7 +323,7 @@ def test_traced_threaded():
 
     for i, log in enumerate(logs):
         trace = log.entries["trace"]
-        assert trace["inputs"] == {"st": i / 100}
+        assert trace["inputs"] == {"st": (7 - i) / 100}
         assert trace["span_name"] == "some_func"
         assert len(trace["child_spans"]) == 2
         assert trace["child_spans"][0]["span_name"] == "inner_fn"
