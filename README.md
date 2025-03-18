@@ -75,7 +75,7 @@ def evaluate_response(question: str, response: str) -> float:
 # define evaluation
 @unify.traced
 def evaluate(q: str):
-    response = client.generate(q)
+    response = client.copy().generate(q)
     score = evaluate_response(q, response)
     unify.log(
         question=q,
@@ -87,6 +87,8 @@ def evaluate(q: str):
 with unify.Experiment():
     unify.map(evaluate, qs)
 ```
+
+Check out our [Quickstart Video](https://youtu.be/fl9SzsoCegw?si=MhQZDfNS6U-ZsVYc) for a guided walkthrough.
 
 ## Focus on your *product*, not the *LLM* 🎯
 
