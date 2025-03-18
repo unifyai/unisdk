@@ -117,6 +117,7 @@ class Log:
         update_logs(
             logs=self._id,
             api_key=self._api_key,
+            context=self._context,
             entries=entries,
             overwrite=True,
         )

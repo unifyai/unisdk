@@ -516,12 +516,11 @@ class TestDatasetSync:
 
 
 class TestMultiDataset:
-    @pytest.mark.skip(reason="immutable field bug")
     @_handle_project
     def test_sub_dataset(self) -> None:
         dataset = unify.Dataset(["a", "b", "c"], name="test_dataset").sync()
         # even the commented line below fails due to "immutable field"
-        # [l.update_entries(data=c) for l, c in zip(dataset, ["A", "B", "C"])]
+        [l.update_entries(data=c) for l, c in zip(dataset, ["A", "B", "C"])]
         sub_dataset = dataset[0:2].set_name("sub_dataset")
         assert isinstance(sub_dataset, unify.Dataset)
         assert len(sub_dataset) == 2
