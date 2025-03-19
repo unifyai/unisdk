@@ -390,6 +390,7 @@ def test_with_context_threaded():
 
 
 @_handle_project
+@pytest.mark.skip(reason="Entries names are not handled properly from backend")
 def test_with_column_context():
 
     unify.log(a="a")
