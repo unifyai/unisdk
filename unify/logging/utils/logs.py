@@ -760,6 +760,7 @@ def delete_logs(
     *,
     logs: Optional[Union[int, unify.Log, List[Union[int, unify.Log]]]] = None,
     project: Optional[str] = None,
+    context: Optional[str] = None,
     api_key: Optional[str] = None,
 ) -> Dict[str, str]:
     """
@@ -777,17 +778,22 @@ def delete_logs(
         A message indicating whether the logs were successfully deleted.
     """
     if logs is None:
-        logs = get_logs(project=project, api_key=api_key)
+        logs = get_logs(project=project, context=context, api_key=api_key)
         if not logs:
             return {"message": "No logs to delete"}
     project = _get_and_maybe_create_project(project, api_key=api_key)
+    context = context if context else CONTEXT_READ.get()
     log_ids = _to_log_ids(logs)
     api_key = _validate_api_key(api_key)
     headers = {
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    body = {"project": project, "ids_and_fields": [(log_ids, None)]}
+    body = {
+        "project": project,
+        "context": context,
+        "ids_and_fields": [(log_ids, None)],
+    }
     response = _requests.delete(BASE_URL + f"/logs", headers=headers, json=body)
     _check_response(response)
     if USR_LOGGING:

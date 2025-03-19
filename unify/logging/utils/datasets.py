@@ -71,6 +71,7 @@ def upload_dataset(
     """
     api_key = _validate_api_key(api_key)
     project = _get_and_maybe_create_project(project, api_key=api_key)
+    context = f"Datasets/{name}"
     log_instances = [isinstance(item, unify.Log) for item in data]
     are_logs = False
     if not allow_duplicates and not overwrite:
@@ -95,7 +96,7 @@ def upload_dataset(
     if name in unify.list_datasets():
         upstream_ids = get_logs(
             project=project,
-            context=f"Datasets/{name}",
+            context=context,
             return_ids_only=True,
         )
     else:
@@ -103,7 +104,7 @@ def upload_dataset(
     if not are_logs:
         return upstream_ids + create_logs(
             project=project,
-            context=f"Datasets/{name}",
+            context=context,
             entries=data,
             mutable=True,
             batched=True,
@@ -128,6 +129,7 @@ def upload_dataset(
         if upstream_only_ids:
             delete_logs(
                 logs=upstream_only_ids,
+                context=context,
                 project=project,
                 api_key=api_key,
             )
@@ -136,7 +138,6 @@ def upload_dataset(
         id for id in local_ids if id not in matching_ids and id is not None
     ]
     if ids_not_in_dataset:
-        context = f"Datasets/{name}"
         if context not in unify.get_contexts():
             unify.create_context(
                 context,
@@ -153,7 +154,7 @@ def upload_dataset(
     if local_only_data:
         return upstream_ids + create_logs(
             project=project,
-            context=f"Datasets/{name}",
+            context=context,
             entries=local_only_data,
             mutable=True,
             batched=True,
