@@ -1,4 +1,3 @@
-import asyncio
 import os
 import random
 import time
@@ -228,9 +227,9 @@ def test_asyncio_map_with_context() -> None:
     with ProjectHandling():
         with unify.Project("test_project"):
 
-            async def contextual_func(a, b, c=3):
+            def contextual_func(a, b, c=3):
                 with unify.Entries(a=a, b=b, c=c):
-                    await asyncio.sleep(0.1)
+                    time.sleep(0.1)
                     unify.log(test="some random value")
                 return a + b + c
 
@@ -259,9 +258,9 @@ def test_asyncio_map_with_context_from_args() -> None:
     with ProjectHandling():
         with unify.Project("test_project"):
 
-            async def contextual_func(a, b, c=3):
+            def contextual_func(a, b, c=3):
                 with unify.Entries(a=a, b=b, c=c):
-                    await asyncio.sleep(0.1)
+                    time.sleep(0.1)
                     unify.log(test="some random value")
                 return a + b + c
 

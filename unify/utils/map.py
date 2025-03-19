@@ -93,10 +93,9 @@ def map(
             args_n_kwargs = [(item, {}) for item in args_n_kwargs]
         num_calls = len(args_n_kwargs)
 
-    pbar = tqdm(total=num_calls)
-
     if mode == "loop":
 
+        pbar = tqdm(total=num_calls)
         pbar.set_description(f"{name}Iterations")
 
         returns = list()
@@ -108,6 +107,7 @@ def map(
 
     elif mode == "threading":
 
+        pbar = tqdm(total=num_calls)
         pbar.set_description(f"{name}Threads")
 
         def fn_w_indexing(rets: List[None], thread_idx: int, *a, **kw):
@@ -134,19 +134,13 @@ def map(
         pbar.close()
         return returns
 
-    pbar.set_description(f"{name}Coroutines")
-
-    async def _wrapped(*a, **kw):
-        return await asyncio.to_thread(fn, *a, **kw)
-
     fns = []
     for _, a_n_kw in enumerate(args_n_kwargs):
         a, kw = a_n_kw
-        fns.append(_wrapped(*a, **kw))
+        fns.append(asyncio.to_thread(fn, *a, **kw))
 
     async def main(fns_chunk):
-        ret = await tqdm_asyncio.gather(*fns_chunk)
-        pbar.close()
+        ret = await tqdm_asyncio.gather(*fns_chunk, desc=f"{name}Coroutines")
         return ret
 
     chunk_size = 100
