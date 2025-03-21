@@ -45,39 +45,55 @@ url:{url}
 
 def request(method, url, **kwargs):
     _log(f"request:{method}", url, **kwargs)
-    return requests.request(method, url, **kwargs)
+    res = requests.request(method, url, **kwargs)
+    _log(f"response:{res.status_code}", url, **kwargs)
+    return res
 
 
 def get(url, params=None, **kwargs):
     _log("GET", url, params=params, **kwargs)
-    return requests.get(url, params=params, **kwargs)
+    res = requests.get(url, params=params, **kwargs)
+    _log(f"response:{res.status_code}", url, params=params, **kwargs)
+    return res
 
 
 def options(url, **kwargs):
     _log("OPTIONS", url, **kwargs)
-    return requests.options(url, **kwargs)
+    res = requests.options(url, **kwargs)
+    _log(f"response:{res.status_code}", url, **kwargs)
+    return res
 
 
 def head(url, **kwargs):
     _log("HEAD", url, **kwargs)
-    return requests.head(url, **kwargs)
+    res = requests.head(url, **kwargs)
+    _log(f"response:{res.status_code}", url, **kwargs)
+    return res
 
 
 def post(url, data=None, json=None, **kwargs):
     _log("POST", url, data=data, json=json, **kwargs)
-    return requests.post(url, data=data, json=json, **kwargs)
+    res = requests.post(url, data=data, json=json, **kwargs)
+    _log(f"response:{res.status_code}", url, data=data, json=json, **kwargs)
+    return res
 
 
 def put(url, data=None, **kwargs):
     _log("PUT", url, data=data, **kwargs)
-    return requests.put(url, data=data, **kwargs)
+    res = requests.put(url, data=data, **kwargs)
+    _log(f"response:{res.status_code}", url, data=data, **kwargs)
+    return res
 
 
 def patch(url, data=None, **kwargs):
     _log("PATCH", url, data=data, **kwargs)
-    return requests.patch(url, data=data, **kwargs)
+    res = requests.patch(url, data=data, **kwargs)
+    _log(f"response:{res.status_code}", url, data=data, **kwargs)
+    return res
 
 
 def delete(url, **kwargs):
     _log("DELETE", url, **kwargs)
-    return requests.delete(url, **kwargs)
+    res = requests.delete(url, **kwargs)
+    _log(f"response:{res.status_code}", url, **kwargs)
+    return res
