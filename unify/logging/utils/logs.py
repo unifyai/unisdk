@@ -103,9 +103,6 @@ def _removes_unique_trace_values(kw: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def initialize_async_logger(
-    batch_size: int = ASYNC_BATCH_SIZE,
-    flush_interval: float = ASYNC_FLUSH_INTERVAL,
-    max_queue_size: int = ASYNC_MAX_QUEUE_SIZE,
     api_key: Optional[str] = None,
 ) -> None:
     """
@@ -125,11 +122,7 @@ def initialize_async_logger(
     _async_logger = AsyncLoggerManager(
         base_url=BASE_URL,
         api_key=api_key,
-        batch_size=batch_size,
-        flush_interval=flush_interval,
-        max_queue_size=max_queue_size,
     )
-    _async_logger.start()
     ASYNC_LOGGING = True
 
     # Register shutdown handler
@@ -143,7 +136,7 @@ def shutdown_async_logger() -> None:
     global _async_logger, ASYNC_LOGGING
 
     if _async_logger is not None:
-        _async_logger.stop()
+        _async_logger.stop_sync()
         _async_logger = None
         ASYNC_LOGGING = False
 
