@@ -28,7 +28,6 @@ class AsyncLoggerManager:
         self.queue = asyncio.Queue()
         self.consumers: List[asyncio.Task] = []
         self.num_consumers = num_consumers
-        self.shutdown_flag = threading.Event()
         self.start_flag = threading.Event()
 
         headers = {
@@ -56,9 +55,6 @@ class AsyncLoggerManager:
             task = asyncio.ensure_future(self._log_consumer(), loop=self.loop)
             self.consumers.append(task)
 
-        if ASYNC_LOGGER_DEBUG:
-            asyncio.ensure_future(self.queue_debugger(), loop=self.loop)
-
         try:
             self.start_flag.set()
             self.loop.run_forever()
@@ -67,46 +63,40 @@ class AsyncLoggerManager:
         finally:
             self.loop.close()
 
-    if ASYNC_LOGGER_DEBUG:
-
-        async def queue_debugger(self):
-            self.start_time = time.perf_counter()
-            while True:
-                logger.debug(
-                    f"[{time.perf_counter() - self.start_time:.2f}] Remaining items in queue: {self.queue.qsize()}",
-                )
-                await asyncio.sleep(1)
-
-    async def _consume_create(self, body, future):
+    async def _consume_create(self, body, future, idx):
         async with self.session.post("logs", json=body) as res:
             if res.status != 200:
                 txt = await res.text()
-                logger.error(f"Error in consume_create: {txt}")
-                raise Exception(txt)
+                logger.error(f"Error in consume_create {idx}: {txt}")
+                return
             res_json = await res.json()
+            logger.debug(f"Created {idx} with response {res.status}: {res_json}")
             future.set_result(res_json[0])
             self.queue.task_done()
 
-    async def _consume_update(self, body, future):
+    async def _consume_update(self, body, future, idx):
         if not future.done():
             await future
         body["ids"] = [future.result()]
         async with self.session.put("logs", json=body) as res:
             if res.status != 200:
                 txt = await res.text()
-                logger.error(f"Error in consume_update: {txt}")
-                raise Exception(txt)
+                logger.error(f"Error in consume_update {idx}: {txt}")
+                return
+            res_json = await res.json()
+            logger.debug(f"Updated {idx} with response {res.status}: {res_json}")
             self.queue.task_done()
 
     async def _log_consumer(self):
         while True:
             try:
                 event = await self.queue.get()
-                logger.debug(f"Got event: {event}")
+                idx = self.queue.qsize() + 1
+                logger.debug(f"Processing event {event['type']}: {idx}")
                 if event["type"] == "create":
-                    await self._consume_create(event["_data"], event["future"])
+                    await self._consume_create(event["_data"], event["future"], idx)
                 elif event["type"] == "update":
-                    await self._consume_update(event["_data"], event["future"])
+                    await self._consume_update(event["_data"], event["future"], idx)
                 else:
                     raise Exception(f"Unknown event type: {event['type']}")
             except Exception as e:
