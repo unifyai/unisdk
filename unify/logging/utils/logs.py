@@ -586,7 +586,7 @@ def _add_to_log(
         _async_logger.log_update(
             project=_get_and_maybe_create_project(None, api_key=api_key),
             context=context,
-            log_future=lf,
+            future=lf,
             mode=mode,
             overwrite=overwrite,
             mutable=mutable,
