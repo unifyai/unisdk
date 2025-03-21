@@ -128,9 +128,7 @@ def test_map_w_cache() -> None:
             unify.map(fn, ["read-only"] * 10)
 
         cache_is_true()
-        breakpoint()
         cache_is_read_only()
-        breakpoint()
         os.remove(local_cache_path)
         unify.utils._caching._cache_fpath = _cache_fpath
     except Exception as e:
