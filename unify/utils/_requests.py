@@ -26,15 +26,23 @@ if _log_enabled:
     _logger.propagate = False
 
 
-def _log(type, url: str, /, **kwargs):
+def _log(type: str, url: str, mask_key: bool = True, /, **kwargs):
     if not _log_enabled:
         return
     _kwargs_str = ""
+    if mask_key and "headers" in kwargs:
+        key = kwargs["headers"]["Authorization"]
+        kwargs["headers"]["Authorization"] = "***"
+
     for k, v in kwargs.items():
         if isinstance(v, dict):
             _kwargs_str += f"{k:}:{json.dumps(v, indent=2)},\n"
         else:
             _kwargs_str += f"{k}:{v},\n"
+
+    if mask_key and "headers" in kwargs:
+        kwargs["headers"]["Authorization"] = key
+
     log_msg = f"""
 ====== {type} =======
 url:{url}
@@ -44,56 +52,56 @@ url:{url}
 
 
 def request(method, url, **kwargs):
-    _log(f"request:{method}", url, **kwargs)
+    _log(f"request:{method}", url, True, **kwargs)
     res = requests.request(method, url, **kwargs)
-    _log(f"response:{res.status_code}", url, **kwargs)
+    _log(f"request:{method} response:{res.status_code}", url, response=res.json())
     return res
 
 
 def get(url, params=None, **kwargs):
-    _log("GET", url, params=params, **kwargs)
+    _log("GET", url, True, params=params, **kwargs)
     res = requests.get(url, params=params, **kwargs)
-    _log(f"response:{res.status_code}", url, params=params, **kwargs)
+    _log(f"GET response:{res.status_code}", url, response=res.json())
     return res
 
 
 def options(url, **kwargs):
-    _log("OPTIONS", url, **kwargs)
+    _log("OPTIONS", url, True, **kwargs)
     res = requests.options(url, **kwargs)
-    _log(f"response:{res.status_code}", url, **kwargs)
+    _log(f"OPTIONS response:{res.status_code}", url, response=res.json())
     return res
 
 
 def head(url, **kwargs):
-    _log("HEAD", url, **kwargs)
+    _log("HEAD", url, True, **kwargs)
     res = requests.head(url, **kwargs)
-    _log(f"response:{res.status_code}", url, **kwargs)
+    _log(f"HEAD response:{res.status_code}", url, response=res.json())
     return res
 
 
 def post(url, data=None, json=None, **kwargs):
-    _log("POST", url, data=data, json=json, **kwargs)
+    _log("POST", url, True, data=data, json=json, **kwargs)
     res = requests.post(url, data=data, json=json, **kwargs)
-    _log(f"response:{res.status_code}", url, data=data, json=json, **kwargs)
+    _log(f"POST response:{res.status_code}", url, response=res.json())
     return res
 
 
 def put(url, data=None, **kwargs):
-    _log("PUT", url, data=data, **kwargs)
+    _log("PUT", url, True, data=data, **kwargs)
     res = requests.put(url, data=data, **kwargs)
-    _log(f"response:{res.status_code}", url, data=data, **kwargs)
+    _log(f"PUT response:{res.status_code}", url, response=res.json())
     return res
 
 
 def patch(url, data=None, **kwargs):
-    _log("PATCH", url, data=data, **kwargs)
+    _log("PATCH", url, True, data=data, **kwargs)
     res = requests.patch(url, data=data, **kwargs)
-    _log(f"response:{res.status_code}", url, data=data, **kwargs)
+    _log(f"PATCH response:{res.status_code}", url, response=res.json())
     return res
 
 
 def delete(url, **kwargs):
-    _log("DELETE", url, **kwargs)
+    _log("DELETE", url, True, **kwargs)
     res = requests.delete(url, **kwargs)
-    _log(f"response:{res.status_code}", url, **kwargs)
+    _log(f"DELETE response:{res.status_code}", url, response=res.json())
     return res
