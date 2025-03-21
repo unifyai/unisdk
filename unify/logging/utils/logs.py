@@ -589,7 +589,6 @@ def _add_to_log(
             future=lf,
             mode=mode,
             overwrite=overwrite,
-            mutable=mutable,
             data=data,
         )
         return {"detail": "Update queued asynchronously"}
