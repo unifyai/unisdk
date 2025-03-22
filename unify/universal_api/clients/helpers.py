@@ -111,6 +111,8 @@ def _is_meta_provider(provider: str, api_key: str = None):
 
 
 def _is_valid_endpoint(endpoint: str, api_key: str = None):
+    if endpoint == "user-input":
+        return True
     if _is_fallback_endpoint(endpoint, api_key):
         return True
     model, provider = endpoint.split("@")

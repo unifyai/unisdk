@@ -371,6 +371,8 @@ class _UniClient(_Client, abc.ABC):
         """
         _assert_is_valid_endpoint(value, api_key=self._api_key)
         self._endpoint = value
+        if value == "user-input":
+            return self
         lhs = value.split("->")[0]
         if "@" in lhs:
             self._model, self._provider = lhs.split("@")
@@ -850,6 +852,8 @@ class Unify(_UniClient):
         if "response_format" in kw:
             chat_method = self._client.beta.chat.completions.parse
             del kw["stream"]
+        elif endpoint == "user-input":
+            chat_method = lambda *a, **kw: input("write your agent response:\n")
         else:
             chat_method = self._client.chat.completions.create
         chat_completion = None
@@ -919,7 +923,7 @@ class Unify(_UniClient):
                     kw=kw,
                     response=chat_completion,
                 )
-        if return_full_completion:
+        if return_full_completion or endpoint == "user-input":
             return chat_completion
         content = chat_completion.choices[0].message.content
         if content:
