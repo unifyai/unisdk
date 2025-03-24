@@ -527,22 +527,28 @@ def create_logs(
             )
             for e, p, i in zip(entries, params, response.json())
         ]
-    return unify.map(
-        lambda p, e: log(
-            project=project,
-            context=context,
-            params=p,
-            new=True,
-            mutable=mutable,
-            api_key=api_key,
-            **e,
-        ),
-        params,
-        entries,
-        mode="asyncio",
-        name="CreateLog",
-        from_args=True,
-    )
+
+    pbar = tqdm(total=len(params), unit="logs", desc="Creating Logs")
+    unify.initialize_async_logger()
+    _async_logger.register_callback(lambda: pbar.update(1))
+    ret = []
+
+    for p, e in zip(params, entries):
+        ret.append(
+            log(
+                project=project,
+                context=context,
+                params=p,
+                new=True,
+                mutable=mutable,
+                api_key=api_key,
+                **e,
+            ),
+        )
+
+    unify.shutdown_async_logger()
+    pbar.close()
+    return ret
 
 
 def _add_to_log(
