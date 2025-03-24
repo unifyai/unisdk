@@ -134,21 +134,19 @@ def map(
         pbar.close()
         return returns
 
+    chunk_size = 100
+    semaphore = asyncio.Semaphore(chunk_size)
     fns = []
+
+    async def fn_wrapper(*args, **kwargs):
+        async with semaphore:
+            return await asyncio.to_thread(fn, *args, **kwargs)
+
     for _, a_n_kw in enumerate(args_n_kwargs):
         a, kw = a_n_kw
-        fns.append(asyncio.to_thread(fn, *a, **kw))
+        fns.append(fn_wrapper(*a, **kw))
 
-    async def main(fns_chunk):
-        ret = await tqdm_asyncio.gather(*fns_chunk, desc=f"{name}Coroutines")
-        return ret
+    async def main(fns):
+        return await tqdm_asyncio.gather(*fns, desc=f"{name}Coroutines")
 
-    chunk_size = 100
-    returns = list()
-    while fns:
-        fns_chunk = fns[0:chunk_size]
-        del fns[0:chunk_size]
-        ret = asyncio.run(main(fns_chunk))
-        returns.extend(ret)
-
-    return returns
+    return asyncio.run(main(fns))
