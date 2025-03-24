@@ -3,7 +3,6 @@ import asyncio
 import logging
 import os
 import threading
-import time
 from typing import List
 
 import aiohttp
@@ -47,6 +46,37 @@ class AsyncLoggerManager:
         self.thread = threading.Thread(target=self._run_loop, daemon=True)
         self.thread.start()
         self.start_flag.wait()
+        self.callbacks = []
+
+    def register_callback(self, fn):
+        self.callbacks.append(fn)
+
+    def clear_callbacks(self):
+        self.callbacks = []
+
+    def _notify_callbacks(self):
+        for fn in self.callbacks:
+            fn()
+
+    async def _join(self):
+        await self.queue.join()
+
+    def join(self):
+        try:
+            future = asyncio.run_coroutine_threadsafe(self._join(), self.loop)
+            while True:
+                try:
+                    future.result(timeout=0.5)
+                    break
+                except asyncio.TimeoutError:
+                    continue
+                except KeyboardInterrupt as e:
+                    for consumer in self.consumers:
+                        consumer.cancel()
+                    raise e
+        except Exception as e:
+            logger.error(f"Error in join: {e}")
+            raise e
 
     def _run_loop(self):
         asyncio.set_event_loop(self.loop)
@@ -72,7 +102,6 @@ class AsyncLoggerManager:
             res_json = await res.json()
             logger.debug(f"Created {idx} with response {res.status}: {res_json}")
             future.set_result(res_json[0])
-            self.queue.task_done()
 
     async def _consume_update(self, body, future, idx):
         if not future.done():
@@ -85,7 +114,6 @@ class AsyncLoggerManager:
                 return
             res_json = await res.json()
             logger.debug(f"Updated {idx} with response {res.status}: {res_json}")
-            self.queue.task_done()
 
     async def _log_consumer(self):
         while True:
@@ -101,7 +129,9 @@ class AsyncLoggerManager:
                     raise Exception(f"Unknown event type: {event['type']}")
             except Exception as e:
                 logger.error(f"Error in consumer: {e}")
+            finally:
                 self.queue.task_done()
+                self._notify_callbacks()
 
     def log_create(
         self,
@@ -146,6 +176,5 @@ class AsyncLoggerManager:
         self.loop.call_soon_threadsafe(self.queue.put_nowait, event)
 
     def stop_sync(self):
-        while self.queue.qsize() > 0:
-            time.sleep(0.1)
+        self.join()
         self.loop.stop()
