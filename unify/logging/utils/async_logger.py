@@ -28,6 +28,7 @@ class AsyncLoggerManager:
         self.consumers: List[asyncio.Task] = []
         self.num_consumers = num_consumers
         self.start_flag = threading.Event()
+        self.shutting_down = False
 
         headers = {
             "Authorization": f"Bearer {api_key}",
@@ -70,26 +71,25 @@ class AsyncLoggerManager:
                     break
                 except asyncio.TimeoutError:
                     continue
-                except KeyboardInterrupt as e:
-                    for consumer in self.consumers:
-                        consumer.cancel()
-                    raise e
         except Exception as e:
             logger.error(f"Error in join: {e}")
             raise e
+
+    async def _main_loop(self):
+        self.start_flag.set()
+        await asyncio.gather(*self.consumers, return_exceptions=True)
 
     def _run_loop(self):
         asyncio.set_event_loop(self.loop)
 
         for _ in range(self.num_consumers):
-            task = asyncio.ensure_future(self._log_consumer(), loop=self.loop)
-            self.consumers.append(task)
+            self.consumers.append(self._log_consumer())
 
         try:
-            self.start_flag.set()
-            self.loop.run_forever()
+            self.loop.run_until_complete(self._main_loop())
         except Exception as e:
             logger.error(f"Event loop error: {e}")
+            raise e
         finally:
             self.loop.close()
 
@@ -128,7 +128,9 @@ class AsyncLoggerManager:
                 else:
                     raise Exception(f"Unknown event type: {event['type']}")
             except Exception as e:
+                event["future"].set_exception(e)
                 logger.error(f"Error in consumer: {e}")
+                raise e
             finally:
                 self.queue.task_done()
                 self._notify_callbacks()
@@ -176,5 +178,8 @@ class AsyncLoggerManager:
         self.loop.call_soon_threadsafe(self.queue.put_nowait, event)
 
     def stop_sync(self):
+        if self.shutting_down:
+            return
+
+        self.shutting_down = True
         self.join()
-        self.loop.stop()
