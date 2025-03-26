@@ -20,7 +20,7 @@ def _to_raw_data(x: Dict[str, Any]):
 class Dataset(Sequence):
     def __init__(
         self,
-        data: Any,
+        data: Optional[Any] = None,
         *,
         name: str = None,
         allow_duplicates: bool = False,
