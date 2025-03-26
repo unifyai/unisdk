@@ -1,4 +1,3 @@
-# async_logger.py
 import asyncio
 import logging
 import os
@@ -8,9 +7,11 @@ from typing import List
 import aiohttp
 
 # Configure logging based on environment variable
-ASYNC_LOGGER_DEBUG = os.getenv("ASYNC_LOGGER_DEBUG", "").lower() == "true"
+ASYNC_LOGGER_DEBUG = os.getenv("UNIFY_ASYNC_LOGGER_DEBUG", "false").lower() in (
+    "true",
+    "1",
+)
 logger = logging.getLogger("async_logger")
-logger.addHandler(logging.FileHandler("async_logger.log", mode="w"))
 logger.setLevel(logging.DEBUG if ASYNC_LOGGER_DEBUG else logging.WARNING)
 
 
