@@ -33,6 +33,7 @@ def map(
     mode=None,
     name="",
     from_args=False,
+    raise_exceptions=False,
     **kwargs,
 ) -> Any:
 
@@ -49,6 +50,13 @@ def map(
         "asyncio",
         "loop",
     ), "map mode must be one of threading, asyncio or loop."
+
+    def fn_w_exception_handling(*a, **kw):
+        try:
+            return fn(*a, **kw)
+        except Exception as e:
+            if raise_exceptions:
+                raise e
 
     if from_args:
         args = list(args)
@@ -100,7 +108,8 @@ def map(
 
         returns = list()
         for a, kw in args_n_kwargs:
-            returns.append(fn(*a, **kw))
+            ret = fn_w_exception_handling(*a, **kw)
+            returns.append(ret)
             pbar.update(1)
         pbar.close()
         return returns
@@ -114,7 +123,7 @@ def map(
             for var, value in kw["context"].items():
                 var.set(value)
             del kw["context"]
-            ret = fn(*a, **kw)
+            ret = fn_w_exception_handling(*a, **kw)
             pbar.update(1)
             rets[thread_idx] = ret
 
@@ -140,7 +149,7 @@ def map(
 
     async def fn_wrapper(*args, **kwargs):
         async with semaphore:
-            return await asyncio.to_thread(fn, *args, **kwargs)
+            return await asyncio.to_thread(fn_w_exception_handling, *args, **kwargs)
 
     for _, a_n_kw in enumerate(args_n_kwargs):
         a, kw = a_n_kw
