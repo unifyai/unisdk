@@ -33,7 +33,7 @@ def map(
     mode=None,
     name="",
     from_args=False,
-    raise_exceptions=False,
+    raise_exceptions=True,
     **kwargs,
 ) -> Any:
 
