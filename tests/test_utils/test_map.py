@@ -1,10 +1,10 @@
-import os
 import random
 import time
 
 import pytest
 import unify
-from unify.utils._caching import _cache_fpath, _get_cache, _write_to_cache
+from tests.test_utils.helpers import _CacheHandler
+from unify.utils._caching import _get_cache, _write_to_cache
 
 from ..test_logging.helpers import _handle_project
 
@@ -86,11 +86,7 @@ def test_map_mode() -> None:
 
 @_handle_project
 def test_map_w_cache() -> None:
-    local_cache_path = _cache_fpath.replace(".cache.json", ".test_cache.json")
-    try:
-        unify.utils._caching._cache_fpath = local_cache_path
-        if os.path.exists(local_cache_path):
-            os.remove(local_cache_path)
+    with _CacheHandler():
 
         @unify.traced(name="gen{x}")
         def gen(x, cache):
@@ -129,13 +125,6 @@ def test_map_w_cache() -> None:
 
         cache_is_true()
         cache_is_read_only()
-        os.remove(local_cache_path)
-        unify.utils._caching._cache_fpath = _cache_fpath
-    except Exception as e:
-        unify.utils._caching._cache_fpath = _cache_fpath
-        if os.path.exists(local_cache_path):
-            os.remove(local_cache_path)
-        raise e
 
 
 def test_threaded_map_from_args() -> None:
