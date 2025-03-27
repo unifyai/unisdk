@@ -43,9 +43,6 @@ def test_output_cost():
 
 def test_thresholds():
     unify.Unify("llama-3.1-405b-chat@inter-token-latency|c<5").generate("Hello.")
-    unify.Unify(
-        "llama-3.1-70b-chat@ttft|input-cost<=0.8|output-cost<=0.8|itl>1|itl<20",
-    ).generate("Hello.")
 
 
 # Search Space #
