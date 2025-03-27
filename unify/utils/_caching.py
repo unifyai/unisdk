@@ -215,7 +215,7 @@ def _write_to_cache(
             _cache[cache_str + "_res_types"] = _res_types
         _cache[cache_str] = response_str
         if filename is None:
-            cache_fpath = _cache_fpath
+            cache_fpath = _get_caching_fpath()
         else:
             cache_fpath = os.path.join(_cache_dir, filename)
         with open(cache_fpath, "w") as outfile:
