@@ -26,11 +26,12 @@ def set_caching(value: bool) -> None:
 
 
 def set_caching_fname(value: Optional[str] = None) -> None:
-    global CACHE_FNAME
+    global CACHE_FNAME, _cache
     if value is not None:
         CACHE_FNAME = value
     else:
         CACHE_FNAME = ".cache.json"
+    _cache = None  # Force a reload of the cache
 
 
 def _get_caching():
@@ -41,10 +42,15 @@ def _get_caching_fname():
     return CACHE_FNAME
 
 
+def _get_caching_fpath():
+    global _cache_dir, CACHE_FNAME
+    return os.path.join(_cache_dir, CACHE_FNAME)
+
+
 def _create_cache_if_none(filename: str = None):
     global _cache, _cache_fpath, _cache_dir
     if filename is None:
-        cache_fpath = _cache_fpath
+        cache_fpath = _get_caching_fpath()
     else:
         cache_fpath = os.path.join(_cache_dir, filename)
     if _cache is None:
