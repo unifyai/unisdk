@@ -129,14 +129,14 @@ def initialize_async_logger(
     atexit.register(shutdown_async_logger)
 
 
-def shutdown_async_logger() -> None:
+def shutdown_async_logger(immediate=False) -> None:
     """
     Gracefully shutdown the async logger, ensuring all pending logs are flushed.
     """
     global _async_logger, ASYNC_LOGGING
 
     if _async_logger is not None:
-        _async_logger.stop_sync()
+        _async_logger.stop_sync(immediate=immediate)
         _async_logger = None
         ASYNC_LOGGING = False
 
