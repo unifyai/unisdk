@@ -143,19 +143,27 @@ def map(
         pbar.close()
         return returns
 
-    chunk_size = 100
-    semaphore = asyncio.Semaphore(chunk_size)
-    fns = []
+    def _run_asyncio_in_thread(ret):
+        asyncio.set_event_loop(asyncio.new_event_loop())
+        MAX_WORKERS = 100
+        semaphore = asyncio.Semaphore(MAX_WORKERS)
+        fns = []
 
-    async def fn_wrapper(*args, **kwargs):
-        async with semaphore:
-            return await asyncio.to_thread(fn_w_exception_handling, *args, **kwargs)
+        async def fn_wrapper(*args, **kwargs):
+            async with semaphore:
+                return await asyncio.to_thread(fn_w_exception_handling, *args, **kwargs)
 
-    for _, a_n_kw in enumerate(args_n_kwargs):
-        a, kw = a_n_kw
-        fns.append(fn_wrapper(*a, **kw))
+        for _, a_n_kw in enumerate(args_n_kwargs):
+            a, kw = a_n_kw
+            fns.append(fn_wrapper(*a, **kw))
 
-    async def main(fns):
-        return await tqdm_asyncio.gather(*fns, desc=f"{name}Coroutines")
+        async def main(fns):
+            return await tqdm_asyncio.gather(*fns, desc=f"{name}Coroutines")
 
-    return asyncio.run(main(fns))
+        ret += asyncio.run(main(fns))
+
+    ret = []
+    thread = threading.Thread(target=_run_asyncio_in_thread, args=(ret,))
+    thread.start()
+    thread.join()
+    return ret
