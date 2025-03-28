@@ -89,6 +89,7 @@ def _get_cache(
     kw: Dict[str, Any],
     filename: str = None,
     raise_on_empty: bool = False,
+    read_closest: bool = False,
 ) -> Optional[Any]:
     global CACHE_LOCK
     # prevents circular import
@@ -107,7 +108,7 @@ def _get_cache(
         kw_str = _dumps(kw)
         cache_str = fn_name + "_" + kw_str
         if cache_str not in _cache:
-            if raise_on_empty:
+            if raise_on_empty or read_closest:
                 closest_match = difflib.get_close_matches(
                     cache_str,
                     list(_cache.keys()),
@@ -115,15 +116,19 @@ def _get_cache(
                     cutoff=0,
                 )[0]
                 minimal_char_diff = _minimal_char_diff(cache_str, closest_match)
+                if raise_on_empty:
+                    CACHE_LOCK.release()
+                    raise Exception(
+                        f"Failed to get cache for function {fn_name} with kwargs {_dumps(kw, indent=4)} "
+                        f"from cache at {filename}. \n\nCorresponding key\n{cache_str}\nwas not found in the cache.\n\n"
+                        f"The closest match is:\n{closest_match}\n\n"
+                        f"The contracted diff is:\n{minimal_char_diff}\n\n",
+                    )
+                else:
+                    cache_str = closest_match
+            else:
                 CACHE_LOCK.release()
-                raise Exception(
-                    f"Failed to get cache for function {fn_name} with kwargs {_dumps(kw, indent=4)} "
-                    f"from cache at {filename}. \n\nCorresponding key\n{cache_str}\nwas not found in the cache.\n\n"
-                    f"The closest match is:\n{closest_match}\n\n"
-                    f"The contracted diff is:\n{minimal_char_diff}\n\n",
-                )
-            CACHE_LOCK.release()
-            return
+                return
         ret = json.loads(_cache[cache_str])
         if cache_str + "_res_types" not in _cache:
             CACHE_LOCK.release()
