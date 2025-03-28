@@ -856,6 +856,11 @@ class Unify(_UniClient):
             log_query_body=log_query_body,
             log_response_body=log_response_body,
         )
+        if isinstance(cache, str) and cache.endswith("-closest"):
+            cache = cache.rstrip("-closest")
+            read_closest = True
+        else:
+            read_closest = False
         if "response_format" in kw:
             chat_method = self._client.beta.chat.completions.parse
             del kw["stream"]
@@ -872,6 +877,7 @@ class Unify(_UniClient):
                         fn_name="chat.completions.create",
                         kw=kw,
                         raise_on_empty=cache == "read-only",
+                        read_closest=read_closest,
                     )
 
                 chat_completion = unify.traced(
@@ -888,6 +894,7 @@ class Unify(_UniClient):
                     fn_name="chat.completions.create",
                     kw=kw,
                     raise_on_empty=cache == "read-only",
+                    read_closest=read_closest,
                 )
         if chat_completion is None:
             try:
@@ -1159,6 +1166,7 @@ class AsyncUnify(_UniClient):
             log_query_body=log_query_body,
             log_response_body=log_response_body,
         )
+        # ToDo: add all proper cache support, as is done for synchronous version above
         if cache is True:
             chat_completion = _get_cache(fn_name="chat.completions.create", kw=kw)
         else:
