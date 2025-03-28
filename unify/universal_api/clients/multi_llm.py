@@ -199,8 +199,9 @@ class _MultiClient(_Client, abc.ABC):
             of running the LLM query. If "write" then the cache will only be written
             to, if "read" then the cache will be read from if a cache is available but
             will not write, and if "read-only" then the argument must be present in the
-            cache, else an exception will be raised. This argument only has any effect
-            when stream=False.
+            cache, else an exception will be raised. Finally, an appending "-closest"
+            will read the closest match from the cache, and overwrite it if cache writing
+            is enabled. This argument only has any effect when stream=False.
 
             extra_headers: Additional "passthrough" headers for the request which are
             provider-specific, and are not part of the OpenAI standard. They are handled
@@ -655,8 +656,9 @@ class _MultiClient(_Client, abc.ABC):
             of running the LLM query. If "write" then the cache will only be written
             to, if "read" then the cache will be read from if a cache is available but
             will not write, and if "read-only" then the argument must be present in the
-            cache, else an exception will be raised. This argument only has any effect
-            when stream=False.
+            cache, else an exception will be raised. Finally, an appending "-closest"
+            will read the closest match from the cache, and overwrite it if cache writing
+            is enabled. This argument only has any effect when stream=False.
 
             extra_headers: Additional "passthrough" headers for the request which are
             provider-specific, and are not part of the OpenAI standard. They are handled
