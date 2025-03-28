@@ -733,7 +733,7 @@ class _UniClient(_Client, abc.ABC):
             log_response_body=_default(log_response_body, self._log_response_body),
             # python client arguments
             return_full_completion=return_full_completion,
-            cache=_default(cache, self._cache),
+            cache=_default(_default(cache, self._cache), _get_caching()),
             # passthrough arguments
             extra_headers=_default(extra_headers, self._extra_headers),
             extra_query=_default(extra_query, self._extra_query),
@@ -862,16 +862,14 @@ class Unify(_UniClient):
         else:
             chat_method = self._client.chat.completions.create
         chat_completion = None
-        if cache in [True, "read", "read-only"] or (
-            _get_caching() in [True, "read", "read-only"] and cache is None
-        ):
+        if cache in [True, "read", "read-only"]:
             if self._traced:
 
                 def _get_cache_traced(**kw):
                     return _get_cache(
                         fn_name="chat.completions.create",
                         kw=kw,
-                        raise_on_empty="read-only" in [cache, _get_caching()],
+                        raise_on_empty=cache == "read-only",
                     )
 
                 chat_completion = unify.traced(
@@ -887,7 +885,7 @@ class Unify(_UniClient):
                 chat_completion = _get_cache(
                     fn_name="chat.completions.create",
                     kw=kw,
-                    raise_on_empty="read-only" in [cache, _get_caching()],
+                    raise_on_empty=cache == "read-only",
                 )
         if chat_completion is None:
             try:
@@ -920,9 +918,7 @@ class Unify(_UniClient):
                         print(f"done (thread {threading.get_ident()})")
             except openai.APIStatusError as e:
                 raise Exception(e.message)
-            if cache in [True, "write"] or (
-                _get_caching() in [True, "write"] and cache is None
-            ):
+            if cache in [True, "write"]:
                 _write_to_cache(
                     fn_name="chat.completions.create",
                     kw=kw,
@@ -1161,7 +1157,7 @@ class AsyncUnify(_UniClient):
             log_query_body=log_query_body,
             log_response_body=log_response_body,
         )
-        if cache is True or _get_caching() and cache is None:
+        if cache is True:
             chat_completion = _get_cache(fn_name="chat.completions.create", kw=kw)
         else:
             chat_completion = None
@@ -1201,7 +1197,7 @@ class AsyncUnify(_UniClient):
                         )
             except openai.APIStatusError as e:
                 raise Exception(e.message)
-            if cache is True or _get_caching() and cache is None:
+            if cache is True:
                 _write_to_cache(
                     fn_name="chat.completions.create",
                     kw=kw,
