@@ -116,7 +116,9 @@ def _get_cache(
                     cutoff=0,
                 )[0]
                 minimal_char_diff = _minimal_char_diff(cache_str, closest_match)
-                if raise_on_empty:
+                if read_closest:
+                    cache_str = closest_match
+                else:
                     CACHE_LOCK.release()
                     raise Exception(
                         f"Failed to get cache for function {fn_name} with kwargs {_dumps(kw, indent=4)} "
@@ -124,8 +126,6 @@ def _get_cache(
                         f"The closest match is:\n{closest_match}\n\n"
                         f"The contracted diff is:\n{minimal_char_diff}\n\n",
                     )
-                else:
-                    cache_str = closest_match
             else:
                 CACHE_LOCK.release()
                 return
