@@ -186,8 +186,8 @@ def set_context(context: str, mode: str = "both", overwrite: bool = False):
     if overwrite and context in unify.get_contexts():
         if mode == "read":
             raise Exception(f"Cannot overwrite logs in read mode.")
-
         unify.delete_context(context)
+    if context not in unify.get_contexts():
         unify.create_context(context)
 
     if mode in ("both", "write"):
