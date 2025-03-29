@@ -233,3 +233,63 @@ def _write_to_cache(
             f"Failed to write function {fn_name} with kwargs {kw} and "
             f"response {response} to cache at {filename}",
         )
+
+
+def cache_file_union(
+    first_cache_fpath: str,
+    second_cache_fpath: str,
+    target_cache_fpath: str,
+    conflict_mode="raise",
+):
+    with open(first_cache_fpath, "r") as file:
+        first_cache = json.load(file)
+    with open(second_cache_fpath, "r") as file:
+        second_cache = json.load(file)
+    if conflict_mode == "raise":
+        for key, value in first_cache.items():
+            if key in second_cache:
+                assert second_cache[key] == value, (
+                    f"key {key} found in both caches, but values conflict:"
+                    f"{first_cache_fpath} had value: {value}"
+                    f"{second_cache_fpath} had value: {second_cache[key]}"
+                )
+    elif conflict_mode == "first_overrides":
+        union_cache = {**second_cache, **first_cache}
+    elif conflict_mode == "second_overrides":
+        union_cache = {**first_cache, **second_cache}
+    else:
+        raise Exception(
+            "Invalud conflict_mode, must be one of: 'raise', 'first_overrides' or 'second_overrides'",
+        )
+    with open(target_cache_fpath, "w+") as file:
+        json.dump(union_cache, file)
+
+
+def cache_file_intersection(
+    first_cache_fpath: str,
+    second_cache_fpath: str,
+    target_cache_fpath: str,
+    conflict_mode="raise",
+):
+    with open(first_cache_fpath, "r") as file:
+        first_cache = json.load(file)
+    with open(second_cache_fpath, "r") as file:
+        second_cache = json.load(file)
+    if conflict_mode == "raise":
+        for key, value in first_cache.items():
+            if key in second_cache:
+                assert second_cache[key] == value, (
+                    f"key {key} found in both caches, but values conflict:"
+                    f"{first_cache_fpath} had value: {value}"
+                    f"{second_cache_fpath} had value: {second_cache[key]}"
+                )
+    elif conflict_mode == "first_overrides":
+        intersection_cache = {k: v for k, v in first_cache.items() if k in second_cache}
+    elif conflict_mode == "second_overrides":
+        intersection_cache = {k: v for k, v in second_cache.items() if k in first_cache}
+    else:
+        raise Exception(
+            "Invalud conflict_mode, must be one of: 'raise', 'first_overrides' or 'second_overrides'",
+        )
+    with open(target_cache_fpath, "w+") as file:
+        json.dump(intersection_cache, file)
