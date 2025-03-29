@@ -869,7 +869,7 @@ class Unify(_UniClient):
         else:
             chat_method = self._client.chat.completions.create
         chat_completion = None
-        if cache in [True, "read", "read-only"]:
+        if cache in [True, "both", "read", "read-only"]:
             if self._traced:
 
                 def _get_cache_traced(**kw):
@@ -927,7 +927,7 @@ class Unify(_UniClient):
                         print(f"done (thread {threading.get_ident()})")
             except openai.APIStatusError as e:
                 raise Exception(e.message)
-            if cache in [True, "write"]:
+            if cache in [True, "both", "write"]:
                 _write_to_cache(
                     fn_name="chat.completions.create",
                     kw=kw,
