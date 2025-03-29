@@ -138,6 +138,9 @@ def _get_cache(
             type_str = type_str.split("[")[0]
             idx_list = json.loads(idx_str)
             if len(idx_list) == 0:
+                if read_closest and delete_closest:
+                    del _cache[cache_str]
+                    del _cache[cache_str + "_res_types"]
                 CACHE_LOCK.release()
                 typ = type_str_to_type[type_str]
                 if issubclass(typ, BaseModel):
