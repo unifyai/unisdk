@@ -260,6 +260,7 @@ def cache_file_union(
                     f"{first_cache_fpath} had value: {value}"
                     f"{second_cache_fpath} had value: {second_cache[key]}"
                 )
+        union_cache = {**first_cache, **second_cache}
     elif conflict_mode == "first_overrides":
         union_cache = {**second_cache, **first_cache}
     elif conflict_mode == "second_overrides":
@@ -290,6 +291,7 @@ def cache_file_intersection(
                     f"{first_cache_fpath} had value: {value}"
                     f"{second_cache_fpath} had value: {second_cache[key]}"
                 )
+        intersection_cache = {k: v for k, v in first_cache.items() if k in second_cache}
     elif conflict_mode == "first_overrides":
         intersection_cache = {k: v for k, v in first_cache.items() if k in second_cache}
     elif conflict_mode == "second_overrides":
