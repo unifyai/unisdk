@@ -118,8 +118,6 @@ def _get_cache(
                 )[0]
                 minimal_char_diff = _minimal_char_diff(cache_str, closest_match)
                 if read_closest:
-                    if delete_closest:
-                        del _cache[cache_str]
                     cache_str = closest_match
                 else:
                     CACHE_LOCK.release()
@@ -159,6 +157,9 @@ def _get_cache(
                         )
                     break
                 item = item[idx]
+        if read_closest and delete_closest:
+            del _cache[cache_str]
+            del _cache[cache_str + "_res_types"]
         CACHE_LOCK.release()
         return ret
     except:
