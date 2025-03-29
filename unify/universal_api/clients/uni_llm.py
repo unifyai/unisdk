@@ -927,12 +927,16 @@ class Unify(_UniClient):
                         print(f"done (thread {threading.get_ident()})")
             except openai.APIStatusError as e:
                 raise Exception(e.message)
-            if cache in [True, "both", "write"]:
-                _write_to_cache(
-                    fn_name="chat.completions.create",
-                    kw=kw,
-                    response=chat_completion,
-                )
+        if (chat_completion is None or read_closest) and cache in [
+            True,
+            "both",
+            "write",
+        ]:
+            _write_to_cache(
+                fn_name="chat.completions.create",
+                kw=kw,
+                response=chat_completion,
+            )
         if return_full_completion:
             if endpoint == "user-input":
                 input_msg = sum(len(msg) for msg in prompt.components["messages"])
