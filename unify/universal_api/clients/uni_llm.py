@@ -878,6 +878,7 @@ class Unify(_UniClient):
                         kw=kw,
                         raise_on_empty=cache == "read-only",
                         read_closest=read_closest,
+                        delete_closest=read_closest,
                     )
 
                 chat_completion = unify.traced(
@@ -895,6 +896,7 @@ class Unify(_UniClient):
                     kw=kw,
                     raise_on_empty=cache == "read-only",
                     read_closest=read_closest,
+                    delete_closest=read_closest,
                 )
         if chat_completion is None:
             try:

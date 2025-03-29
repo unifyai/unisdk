@@ -90,6 +90,7 @@ def _get_cache(
     filename: str = None,
     raise_on_empty: bool = False,
     read_closest: bool = False,
+    delete_closest: bool = False,
 ) -> Optional[Any]:
     global CACHE_LOCK
     # prevents circular import
@@ -117,6 +118,8 @@ def _get_cache(
                 )[0]
                 minimal_char_diff = _minimal_char_diff(cache_str, closest_match)
                 if read_closest:
+                    if delete_closest:
+                        del _cache[cache_str]
                     cache_str = closest_match
                 else:
                     CACHE_LOCK.release()
