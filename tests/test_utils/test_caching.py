@@ -1,3 +1,4 @@
+import json
 import os
 import time
 import traceback
@@ -109,6 +110,57 @@ def test_cache_closest_match_on_exception(traced):
                 in traceback.format_exc()
             )
         assert raised_exception, "Failed to raise Exception"
+
+
+def test_cache_file_union() -> None:
+    first_cache_fpath = ".first_cache.json"
+    second_cache_fpath = ".second_cache.json"
+    target_cache_fpath = ".target_cache.json"
+    first_cache = {"a": 0, "b": 1, "c": 2}
+    second_cache = {"a": 0, "c": 3, "d": 4}
+    with open(first_cache_fpath, "w+") as file:
+        json.dump(first_cache, file)
+    with open(second_cache_fpath, "w+") as file:
+        json.dump(second_cache, file)
+
+    raised = False
+    try:
+        unify.cache_file_union(
+            first_cache_fpath,
+            second_cache_fpath,
+            target_cache_fpath,
+        )
+    except:
+        raised = True
+    assert raised, "conflict failed to raise exception"
+
+    unify.cache_file_union(
+        first_cache_fpath,
+        second_cache_fpath,
+        target_cache_fpath,
+        conflict_mode="first_overrides",
+    )
+
+    with open(target_cache_fpath, "r") as file:
+        target_cache = json.load(file)
+
+    assert target_cache == {"a": 0, "b": 1, "c": 2, "d": 4}
+
+    unify.cache_file_union(
+        first_cache_fpath,
+        second_cache_fpath,
+        target_cache_fpath,
+        conflict_mode="second_overrides",
+    )
+
+    with open(target_cache_fpath, "r") as file:
+        target_cache = json.load(file)
+
+    assert target_cache == {"a": 0, "b": 1, "c": 3, "d": 4}
+
+    os.remove(first_cache_fpath)
+    os.remove(second_cache_fpath)
+    os.remove(target_cache_fpath)
 
 
 if __name__ == "__main__":
