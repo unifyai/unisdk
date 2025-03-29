@@ -214,5 +214,44 @@ def test_cache_file_intersection() -> None:
     os.remove(target_cache_fpath)
 
 
+def test_subtract_cache_files():
+    first_cache_fpath = ".first_cache.json"
+    second_cache_fpath = ".second_cache.json"
+    target_cache_fpath = ".target_cache.json"
+    first_cache = {"a": 0, "b": 1, "c": 2}
+    second_cache = {"a": 0, "c": 3, "d": 4}
+    with open(first_cache_fpath, "w+") as file:
+        json.dump(first_cache, file)
+    with open(second_cache_fpath, "w+") as file:
+        json.dump(second_cache, file)
+
+    raised = False
+    try:
+        unify.subtract_cache_files(
+            first_cache_fpath,
+            second_cache_fpath,
+            target_cache_fpath,
+        )
+    except:
+        raised = True
+    assert raised, "conflict failed to raise exception"
+
+    unify.subtract_cache_files(
+        first_cache_fpath,
+        second_cache_fpath,
+        target_cache_fpath,
+        raise_on_conflict=False,
+    )
+
+    with open(target_cache_fpath, "r") as file:
+        target_cache = json.load(file)
+
+    assert target_cache == {"b": 1}
+
+    os.remove(first_cache_fpath)
+    os.remove(second_cache_fpath)
+    os.remove(target_cache_fpath)
+
+
 if __name__ == "__main__":
     pass
