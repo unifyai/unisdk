@@ -293,3 +293,26 @@ def cache_file_intersection(
         )
     with open(target_cache_fpath, "w+") as file:
         json.dump(intersection_cache, file)
+
+
+def subtract_cache_files(
+    first_cache_fpath: str,
+    second_cache_fpath: str,
+    target_cache_fpath: str,
+    raise_on_conflict=True,
+):
+    with open(first_cache_fpath, "r") as file:
+        first_cache = json.load(file)
+    with open(second_cache_fpath, "r") as file:
+        second_cache = json.load(file)
+    if raise_on_conflict:
+        for key, value in first_cache.items():
+            if key in second_cache:
+                assert second_cache[key] == value, (
+                    f"key {key} found in both caches, but values conflict:"
+                    f"{first_cache_fpath} had value: {value}"
+                    f"{second_cache_fpath} had value: {second_cache[key]}"
+                )
+    final_cache = {k: v for k, v in first_cache.items() if k not in second_cache}
+    with open(target_cache_fpath, "w+") as file:
+        json.dump(final_cache, file)
