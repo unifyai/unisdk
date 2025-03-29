@@ -701,6 +701,13 @@ class _UniClient(_Client, abc.ABC):
             if _default(tools, self._tools)
             else _default(return_full_completion, self._return_full_completion)
         )
+        cache = _default(cache, self._cache)
+        _cache_modes = ["read", "read-only", "write", "both"]
+        assert cache in _cache_modes + [m + "-closest" for m in _cache_modes] + [
+            True,
+            False,
+            None,
+        ]
         ret = self._generate(
             messages=messages,
             frequency_penalty=_default(frequency_penalty, self._frequency_penalty),
@@ -735,7 +742,7 @@ class _UniClient(_Client, abc.ABC):
             log_response_body=_default(log_response_body, self._log_response_body),
             # python client arguments
             return_full_completion=return_full_completion,
-            cache=_default(_default(cache, self._cache), _get_caching()),
+            cache=_default(cache, _get_caching()),
             # passthrough arguments
             extra_headers=_default(extra_headers, self._extra_headers),
             extra_query=_default(extra_query, self._extra_query),
