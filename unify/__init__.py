@@ -61,7 +61,13 @@ from .logging.utils.logs import *
 from .logging.utils.projects import *
 
 from .utils import helpers, map, get_map_mode, set_map_mode, _caching
-from .utils._caching import set_caching, set_caching_fname
+from .utils._caching import (
+    set_caching,
+    set_caching_fname,
+    cache_file_union,
+    cache_file_intersection,
+    subtract_cache_files,
+)
 
 from .universal_api import chatbot, clients, usage
 from .universal_api.clients import multi_llm
