@@ -6,8 +6,12 @@ on:
   workflow_dispatch:
 permissions:
   contents: write
+  actions: read
+  id-token: write
 
 jobs:
   test-demos:
     name: Test demos
     uses: unifyai/console/.github/workflows/test-demos.yml@main
+    secrets:
+      GITHUB_TOKEN: ${{ secrets.CONSOLE_TOKEN }}
