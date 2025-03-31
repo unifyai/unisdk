@@ -1,4 +1,4 @@
-name: Publish docs
+name: Test demos
 on:
   push:
     branches:
@@ -8,6 +8,6 @@ permissions:
   contents: write
 
 jobs:
-  publish-docs:
+  test-demos:
     name: Test demos
     uses: unifyai/console/.github/workflows/test-demos.yml@main
