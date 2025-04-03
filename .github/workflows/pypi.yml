@@ -8,6 +8,7 @@ on:
 jobs:
   publish_pypi_release:
     runs-on: ubuntu-latest
+    environment: pypi
     continue-on-error: false
 
     steps:
