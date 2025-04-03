@@ -96,10 +96,9 @@ def _get_and_maybe_create_project(
         # acquiring the project lock here will block the async logger
         # so we skip the lock if we are in async mode
         return project
-    PROJECT_LOCK.acquire()
-    if project not in unify.list_projects(api_key=api_key):
-        unify.create_project(project, api_key=api_key)
-    PROJECT_LOCK.release()
+    with PROJECT_LOCK:
+        if project not in unify.list_projects(api_key=api_key):
+            unify.create_project(project, api_key=api_key)
     return project
 
 
