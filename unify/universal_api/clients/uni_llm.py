@@ -864,7 +864,7 @@ class Unify(_UniClient):
             log_response_body=log_response_body,
         )
         if isinstance(cache, str) and cache.endswith("-closest"):
-            cache = cache.rstrip("-closest")
+            cache = cache.removesuffix("-closest")
             read_closest = True
         else:
             read_closest = False
