@@ -636,6 +636,10 @@ class LogTransformer(ast.NodeTransformer):
         if not node.args.kwarg:
             node.args.kwarg = ast.arg(arg="kwargs")
 
+        # TODO: this is a hack to ensure that the function always returns something
+        if not isinstance(node.body[-1], ast.Return):
+            node.body.append(ast.Return(value=ast.Constant(value=None)))
+
         node = self.generic_visit(node)
         self._in_function = False
         self.param_names = []
