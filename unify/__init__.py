@@ -109,6 +109,8 @@ def deactivate() -> None:
 
 def active_project() -> str:
     global PROJECT
+    if PROJECT is None:
+        return os.environ.get("UNIFY_PROJECT")
     return PROJECT
 
 
