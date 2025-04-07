@@ -936,7 +936,7 @@ class Unify(_UniClient):
                         print(f"done (thread {threading.get_ident()})")
             except openai.APIStatusError as e:
                 raise Exception(e.message)
-        if (chat_completion is None or read_closest) and cache in [
+        if (chat_completion is not None or read_closest) and cache in [
             True,
             "both",
             "write",
