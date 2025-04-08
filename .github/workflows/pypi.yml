@@ -4,6 +4,12 @@ on:
   push:
     branches:
     - main
+    paths:
+    - 'unify/**'
+    - 'LICENSE'
+    - 'README.md'
+    - 'pyproject.toml'
+    - 'poetry.lock'
 
 jobs:
   publish_pypi_release:
