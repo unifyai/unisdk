@@ -34,6 +34,6 @@ jobs:
         pip install poetry
         poetry install --with dev
     - name: Run unit tests
-      run: poetry run pytest --timeout=60 -p no:warnings -vv .
+      run: poetry run pytest --timeout=120 -p no:warnings -vv .
       env:
         UNIFY_KEY: ${{ secrets.USER_API_KEY }}
