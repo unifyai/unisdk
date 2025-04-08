@@ -133,6 +133,7 @@ class TestMathsEvaluator:
                     with pytest.raises(Exception):
                         unify.get_log_by_id(log.id)
 
+    @pytest.mark.timeout(120)
     def test_system_prompt_opt(self, maths_example) -> None:
         with ProjectHandling():
             with unify.Project("test_project"):
@@ -649,6 +650,7 @@ class TestCRMEvaluator:
                     score = crm_example.evaluate(data["correct_answer"], response)
                     unify.log(**data, response=response, score=score)
 
+    @pytest.mark.timeout(120)
     def test_system_prompt_opt(self, crm_example) -> None:
         with ProjectHandling():
             with unify.Project("test_project"):
