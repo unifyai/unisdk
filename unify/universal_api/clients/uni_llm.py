@@ -876,6 +876,7 @@ class Unify(_UniClient):
         else:
             chat_method = self._client.chat.completions.create
         chat_completion = None
+        in_cache = False
         if cache in [True, "both", "read", "read-only"]:
             if self._traced:
 
@@ -905,6 +906,7 @@ class Unify(_UniClient):
                     read_closest=read_closest,
                     delete_closest=read_closest,
                 )
+                in_cache = True if chat_completion is not None else False
         if chat_completion is None:
             try:
                 if endpoint in LOCAL_MODELS:
@@ -941,11 +943,12 @@ class Unify(_UniClient):
             "both",
             "write",
         ]:
-            _write_to_cache(
-                fn_name="chat.completions.create",
-                kw=kw,
-                response=chat_completion,
-            )
+            if not in_cache or cache == "write":
+                _write_to_cache(
+                    fn_name="chat.completions.create",
+                    kw=kw,
+                    response=chat_completion,
+                )
         if return_full_completion:
             if endpoint == "user-input":
                 input_msg = sum(len(msg) for msg in prompt.components["messages"])
