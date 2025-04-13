@@ -1022,7 +1022,7 @@ class _Client(ABC):
                         # passthrough arguments
                         extra_headers=self._extra_headers,
                         extra_query=self._extra_query,
-                        extra_body=self._extra_body,
+                        **self._extra_body,
                     ),
                 },
             ),
