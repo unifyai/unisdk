@@ -5,8 +5,10 @@ import traceback
 
 import pytest
 import unify
+from tests.test_logging.helpers import _handle_project
 from tests.test_utils.helpers import _CacheHandler
 from unify import Unify
+from unify.utils._caching import UPSTREAM_CACHE_CONTEXT_NAME
 
 
 # noinspection PyBroadException
@@ -251,6 +253,83 @@ def test_subtract_cache_files():
     os.remove(first_cache_fpath)
     os.remove(second_cache_fpath)
     os.remove(target_cache_fpath)
+
+
+@_handle_project
+def test_upstream_cache() -> None:
+    client = Unify(
+        endpoint="gpt-4o@openai",
+    )
+    r0 = client.generate(user_message="hello", cache=True, local_cache=False)
+    logs = unify.get_logs(context=UPSTREAM_CACHE_CONTEXT_NAME)
+    assert len(logs) == 1
+    r1 = client.generate(user_message="hello", cache=True, local_cache=False)
+    logs = unify.get_logs(context=UPSTREAM_CACHE_CONTEXT_NAME)
+    assert len(logs) == 1
+    assert r0 == r1
+
+
+@_handle_project
+def test_upstream_cache_write() -> None:
+    client = Unify(
+        endpoint="gpt-4o@openai",
+    )
+    client.generate(user_message="hello", cache="write", local_cache=False)
+    logs = unify.get_logs(context=UPSTREAM_CACHE_CONTEXT_NAME)
+    initial_logs_count = len(logs)
+    client.generate(user_message="hello", cache="write", local_cache=False)
+    logs = unify.get_logs(context=UPSTREAM_CACHE_CONTEXT_NAME)
+    assert len(logs) == initial_logs_count
+
+
+@_handle_project
+def test_upstream_cache_read() -> None:
+    client = Unify(
+        endpoint="gpt-4o@openai",
+    )
+    r0 = client.generate(user_message="hello", cache="write", local_cache=False)
+    logs = unify.get_logs(context=UPSTREAM_CACHE_CONTEXT_NAME)
+    initial_logs_count = len(logs)
+    r1 = client.generate(user_message="hello", cache="read", local_cache=False)
+    logs = unify.get_logs(context=UPSTREAM_CACHE_CONTEXT_NAME)
+    assert len(logs) == initial_logs_count
+    assert r0 == r1
+
+
+@_handle_project
+def test_upstream_cache_read_only() -> None:
+    client = Unify(
+        endpoint="gpt-4o@openai",
+    )
+    r0 = client.generate(user_message="hello", cache="write", local_cache=False)
+    logs = unify.get_logs(context=UPSTREAM_CACHE_CONTEXT_NAME)
+    initial_logs_count = len(logs)
+    r1 = client.generate(user_message="hello", cache="read-only", local_cache=False)
+    logs = unify.get_logs(context=UPSTREAM_CACHE_CONTEXT_NAME)
+    assert len(logs) == initial_logs_count
+    assert r0 == r1
+
+    # Test that read-only mode raises exception when cache doesn't exist
+    with pytest.raises(Exception):
+        client.generate(
+            user_message="new_message",
+            cache="read-only",
+            local_cache=False,
+        )
+
+
+@_handle_project
+def test_upstream_cache_closest_match_on_exception():
+    client = Unify(
+        endpoint="gpt-4o@openai",
+    )
+    r0 = client.generate(user_message="hello", cache="both", local_cache=False)
+    logs = unify.get_logs(context=UPSTREAM_CACHE_CONTEXT_NAME)
+    initial_logs_count = len(logs)
+    r1 = client.generate(user_message="helloo", cache="read-closest", local_cache=False)
+    logs = unify.get_logs(context=UPSTREAM_CACHE_CONTEXT_NAME)
+    assert len(logs) == initial_logs_count
+    assert r0 == r1
 
 
 if __name__ == "__main__":
