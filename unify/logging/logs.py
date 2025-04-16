@@ -619,7 +619,9 @@ def traced(
             t2 = time.perf_counter()
             exec_time = t2 - t1
             SPAN.get()["exec_time"] = exec_time
-            SPAN.get()["outputs"] = None if result is None else result
+            SPAN.get()["outputs"] = (
+                None if result is None else _make_json_serializable(result)
+            )
             if token.old_value is token.MISSING:
                 if ACTIVE_LOG.get():
                     trace = SPAN.get()
@@ -627,7 +629,6 @@ def traced(
                         trace = _prune_dict(trace)
                     unify.add_log_entries(trace=trace, overwrite=True)
                 else:
-                    # ToDo: ensure this is JSON serializable
                     unify.log(trace=SPAN.get())
                 SPAN.reset(token)
             else:
