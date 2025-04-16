@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import atexit
-import copy
 import inspect
 import json
 import logging
@@ -14,6 +13,7 @@ import unify
 from tqdm import tqdm
 from unify import BASE_URL
 from unify.utils import _requests
+from unify.utils.helpers import flexible_deepcopy
 
 from ...utils._caching import (
     _get_cache,
@@ -145,7 +145,7 @@ def _handle_cache(fn: Callable) -> Callable:
     def wrapped(*args, **kwargs):
         if not _get_caching():
             return fn(*args, **kwargs)
-        kw_for_key = copy.deepcopy(kwargs)
+        kw_for_key = flexible_deepcopy(kwargs)
         if fn.__name__ == "add_log_entries" and "trace" in kwargs:
             kw_for_key["trace"] = _removes_unique_trace_values(kw_for_key["trace"])
         combined_kw = {**{f"arg{i}": a for i, a in enumerate(args)}, **kw_for_key}
@@ -253,10 +253,10 @@ def _handle_mutability(
 
     if isinstance(data, list):
         single_item = False
-        new_data = copy.deepcopy(data)
+        new_data = flexible_deepcopy(data, on_fail="shallow")
     else:
         single_item = True
-        new_data = [copy.deepcopy(data)]
+        new_data = [flexible_deepcopy(data, on_fail="shallow")]
     if isinstance(mutable, dict):
         for field, mut in mutable.items():
             for item in new_data:
