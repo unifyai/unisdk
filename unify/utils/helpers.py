@@ -70,7 +70,11 @@ def _make_json_serializable(
     elif hasattr(item, "json") and callable(item.json):
         return _make_json_serializable(item.json())
     else:
-        return item
+        try:
+            json.dumps(item)
+            return item
+        except:
+            return str(item)
 
 
 def _get_and_maybe_create_project(

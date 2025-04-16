@@ -539,7 +539,7 @@ def traced(
                 SPAN.get()["llm_usage_inc_cache"] = outputs["usage"]
             # ToDo: ensure there is a global log set upon the first trace,
             #  and removed on the last
-            trace = _make_json_serializable(SPAN.get())
+            trace = SPAN.get()
             if prune_empty:
                 trace = _prune_dict(trace)
             unify.add_log_entries(
@@ -629,7 +629,7 @@ def traced(
                         trace = _prune_dict(trace)
                     unify.add_log_entries(trace=trace, overwrite=True)
                 else:
-                    unify.log(trace=_make_json_serializable(SPAN.get()))
+                    unify.log(trace=SPAN.get())
                 SPAN.reset(token)
             else:
                 SPAN.reset(token)
