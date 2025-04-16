@@ -563,23 +563,45 @@ def traced(
 
     async def async_wrapped(*args, **kwargs):
         t1 = time.perf_counter()
+        ts = datetime.now(timezone.utc).isoformat()
         if not SPAN.get():
             RUNNING_TIME.set(t1)
         signature = inspect.signature(fn)
         bound_args = signature.bind(*args, **kwargs)
         bound_args.apply_defaults()
         inputs = bound_args.arguments
+        inputs = inputs["kw"] if span_type == "llm-cached" else inputs
+        inputs = _make_json_serializable(inputs)
+        try:
+            lines, start_line = inspect.getsourcelines(fn)
+            code = textwrap.dedent("".join(lines))
+        except:
+            lines, start_line = None, None
+            try:
+                code = textwrap.dedent(inspect.getsource(fn))
+            except:
+                code = None
+        name_w_sub = name
+        if name_w_sub is not None:
+            for k, v in inputs.items():
+                substr = "{" + k + "}"
+                if substr in name_w_sub:
+                    name_w_sub = name_w_sub.replace(substr, str(v))
         new_span = {
             "id": str(uuid.uuid4()),
             "type": span_type,
             "parent_span_id": (None if not SPAN.get() else SPAN.get()["id"]),
-            "span_name": fn.__name__ if name is None else name,
+            "span_name": fn.__name__ if name_w_sub is None else name_w_sub,
             "exec_time": None,
+            "timestamp": ts,
             "offset": round(
                 0.0 if not SPAN.get() else t1 - RUNNING_TIME.get(),
                 2,
             ),
             "inputs": inputs,
+            "code": f"```python\n{code}```",
+            "code_fpath": inspect.getsourcefile(fn),
+            "code_start_line": start_line,
             "outputs": None,
             "errors": None,
             "child_spans": [],
@@ -591,7 +613,7 @@ def traced(
             result = await fn(*args, **kwargs)
             return result
         except Exception as e:
-            new_span["errors"] = str(e)
+            new_span["errors"] = traceback.format_exc()
             raise e
         finally:
             t2 = time.perf_counter()
