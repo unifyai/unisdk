@@ -332,5 +332,25 @@ def test_upstream_cache_closest_match_on_exception():
     assert r0 == r1
 
 
+@_handle_project
+def test_cached_decorator_both_mode():
+
+    @unify.cached(mode="both")
+    def add_two_numbers(x, y):
+        time.sleep(1)
+        return x + y
+
+    with _CacheHandler():
+        t0 = time.perf_counter()
+        z1 = add_two_numbers(1, 2)
+        t1 = time.perf_counter()
+        z2 = add_two_numbers(1, 2)
+        t2 = time.perf_counter()
+
+    assert z1 == z2 == 3
+    assert t1 - t0 > 1
+    assert t2 - t1 < 0.1
+
+
 if __name__ == "__main__":
     pass

@@ -67,6 +67,7 @@ from .utils._caching import (
     cache_file_union,
     cache_file_intersection,
     subtract_cache_files,
+    cached,
 )
 
 from .universal_api import chatbot, clients, usage

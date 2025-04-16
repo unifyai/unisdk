@@ -336,6 +336,65 @@ def _write_to_cache(
         )
 
 
+# Decorators #
+# -----------#
+
+
+def cached(
+    fn: callable = None,
+    *,
+    mode: Union[bool, str] = True,
+    local: bool = True,
+):
+    if fn is None:
+        return lambda f: cached(
+            f,
+            mode=mode,
+            local=local,
+        )
+
+    def wrapped(*args, **kwargs):
+        nonlocal mode
+        if isinstance(mode, str) and mode.endswith("-closest"):
+            mode = mode.removesuffix("-closest")
+            read_closest = True
+        else:
+            read_closest = False
+        in_cache = False
+        ret = None
+        if mode in [True, "both", "read", "read-only"]:
+            ret = _get_cache(
+                fn_name=fn.__name__,
+                kw=kwargs,
+                raise_on_empty=mode == "read-only",
+                read_closest=read_closest,
+                delete_closest=read_closest,
+                local=local,
+            )
+            in_cache = True if ret is not None else False
+        if ret is None:
+            ret = fn(*args, **kwargs)
+        if (ret is not None or read_closest) and mode in [
+            True,
+            "both",
+            "write",
+        ]:
+            if not in_cache or mode == "write":
+                _write_to_cache(
+                    fn_name=fn.__name__,
+                    kw=kwargs,
+                    response=ret,
+                    local=local,
+                )
+        return ret
+
+    return wrapped
+
+
+# File Manipulation #
+# ------------------#
+
+
 def cache_file_union(
     first_cache_fpath: str,
     second_cache_fpath: str,
