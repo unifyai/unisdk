@@ -627,6 +627,7 @@ def traced(
                         trace = _prune_dict(trace)
                     unify.add_log_entries(trace=trace, overwrite=True)
                 else:
+                    # ToDo: ensure this is JSON serializable
                     unify.log(trace=SPAN.get())
                 SPAN.reset(token)
             else:
