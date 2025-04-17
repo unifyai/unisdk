@@ -451,6 +451,88 @@ def _nested_add(a, b):
     return a + b
 
 
+def _create_span(fn, args, kwargs, span_type, name):
+    exec_start_time = time.perf_counter()
+    ts = datetime.now(timezone.utc).isoformat()
+    if not SPAN.get():
+        RUNNING_TIME.set(exec_start_time)
+    signature = inspect.signature(fn)
+    bound_args = signature.bind(*args, **kwargs)
+    bound_args.apply_defaults()
+    inputs = bound_args.arguments
+    inputs = inputs["kw"] if span_type == "llm-cached" else inputs
+    inputs = _make_json_serializable(inputs)
+    try:
+        lines, start_line = inspect.getsourcelines(fn)
+        code = textwrap.dedent("".join(lines))
+    except:
+        lines, start_line = None, None
+        try:
+            code = textwrap.dedent(inspect.getsource(fn))
+        except:
+            code = None
+    name_w_sub = name
+    if name_w_sub is not None:
+        for k, v in inputs.items():
+            substr = "{" + k + "}"
+            if substr in name_w_sub:
+                name_w_sub = name_w_sub.replace(substr, str(v))
+    new_span = {
+        "id": str(uuid.uuid4()),
+        "type": span_type,
+        "parent_span_id": (None if not SPAN.get() else SPAN.get()["id"]),
+        "span_name": fn.__name__ if name_w_sub is None else name_w_sub,
+        "exec_time": None,
+        "timestamp": ts,
+        "offset": round(
+            0.0 if not SPAN.get() else exec_start_time - RUNNING_TIME.get(),
+            2,
+        ),
+        "llm_usage": None,
+        "llm_usage_inc_cache": None,
+        "code": f"```python\n{code}\n```",
+        "code_fpath": inspect.getsourcefile(fn),
+        "code_start_line": start_line,
+        "inputs": inputs,
+        "outputs": None,
+        "errors": None,
+        "child_spans": [],
+    }
+    if inspect.ismethod(fn) and hasattr(fn.__self__, "endpoint"):
+        new_span["endpoint"] = fn.__self__.endpoint
+    return new_span, exec_start_time
+
+
+def _finalize_span(new_span, token, outputs, exec_time, prune_empty):
+    SPAN.get()["exec_time"] = exec_time
+    SPAN.get()["outputs"] = outputs
+    if SPAN.get()["type"] == "llm" and outputs is not None:
+        SPAN.get()["llm_usage"] = outputs["usage"]
+    if SPAN.get()["type"] in ("llm", "llm-cached") and outputs is not None:
+        SPAN.get()["llm_usage_inc_cache"] = outputs["usage"]
+    # ToDo: ensure there is a global log set upon the first trace,
+    #  and removed on the last
+    trace = SPAN.get()
+    if prune_empty:
+        trace = _prune_dict(trace)
+    unify.add_log_entries(
+        trace=trace,
+        overwrite=True,
+        # mutable=SPAN.get()["parent_span_id"] is not None,
+    )
+    SPAN.reset(token)
+    if token.old_value is not token.MISSING:
+        SPAN.get()["child_spans"].append(new_span)
+        SPAN.get()["llm_usage"] = _nested_add(
+            SPAN.get()["llm_usage"],
+            new_span["llm_usage"],
+        )
+        SPAN.get()["llm_usage_inc_cache"] = _nested_add(
+            SPAN.get()["llm_usage_inc_cache"],
+            new_span["llm_usage_inc_cache"],
+        )
+
+
 def traced(
     fn: callable = None,
     *,
@@ -471,54 +553,7 @@ def traced(
 
     def wrapped(*args, **kwargs):
         log_token = None if ACTIVE_LOG.get() else ACTIVE_LOG.set([unify.log()])
-        t1 = time.perf_counter()
-        ts = datetime.now(timezone.utc).isoformat()
-        if not SPAN.get():
-            RUNNING_TIME.set(t1)
-        signature = inspect.signature(fn)
-        bound_args = signature.bind(*args, **kwargs)
-        bound_args.apply_defaults()
-        inputs = bound_args.arguments
-        inputs = inputs["kw"] if span_type == "llm-cached" else inputs
-        inputs = _make_json_serializable(inputs)
-        try:
-            lines, start_line = inspect.getsourcelines(fn)
-            code = textwrap.dedent("".join(lines))
-        except:
-            lines, start_line = None, None
-            try:
-                code = textwrap.dedent(inspect.getsource(fn))
-            except:
-                code = None
-        name_w_sub = name
-        if name_w_sub is not None:
-            for k, v in inputs.items():
-                substr = "{" + k + "}"
-                if substr in name_w_sub:
-                    name_w_sub = name_w_sub.replace(substr, str(v))
-        new_span = {
-            "id": str(uuid.uuid4()),
-            "type": span_type,
-            "parent_span_id": (None if not SPAN.get() else SPAN.get()["id"]),
-            "span_name": fn.__name__ if name_w_sub is None else name_w_sub,
-            "exec_time": None,
-            "timestamp": ts,
-            "offset": round(
-                0.0 if not SPAN.get() else t1 - RUNNING_TIME.get(),
-                2,
-            ),
-            "llm_usage": None,
-            "llm_usage_inc_cache": None,
-            "code": f"```python\n{code}\n```",
-            "code_fpath": inspect.getsourcefile(fn),
-            "code_start_line": start_line,
-            "inputs": inputs,
-            "outputs": None,
-            "errors": None,
-            "child_spans": [],
-        }
-        if inspect.ismethod(fn) and hasattr(fn.__self__, "endpoint"):
-            new_span["endpoint"] = fn.__self__.endpoint
+        new_span, exec_start_time = _create_span(fn, args, kwargs, span_type, name)
         token = SPAN.set(new_span)
         result = None
         try:
@@ -529,87 +564,15 @@ def traced(
             raise e
         finally:
             outputs = _make_json_serializable(result) if result is not None else None
-            t2 = time.perf_counter()
-            exec_time = t2 - t1
-            SPAN.get()["exec_time"] = exec_time
-            SPAN.get()["outputs"] = outputs
-            if SPAN.get()["type"] == "llm" and outputs is not None:
-                SPAN.get()["llm_usage"] = outputs["usage"]
-            if SPAN.get()["type"] in ("llm", "llm-cached") and outputs is not None:
-                SPAN.get()["llm_usage_inc_cache"] = outputs["usage"]
-            # ToDo: ensure there is a global log set upon the first trace,
-            #  and removed on the last
-            trace = SPAN.get()
-            if prune_empty:
-                trace = _prune_dict(trace)
-            unify.add_log_entries(
-                trace=trace,
-                overwrite=True,
-                # mutable=SPAN.get()["parent_span_id"] is not None,
-            )
-            SPAN.reset(token)
-            if token.old_value is not token.MISSING:
-                SPAN.get()["child_spans"].append(new_span)
-                SPAN.get()["llm_usage"] = _nested_add(
-                    SPAN.get()["llm_usage"],
-                    new_span["llm_usage"],
-                )
-                SPAN.get()["llm_usage_inc_cache"] = _nested_add(
-                    SPAN.get()["llm_usage_inc_cache"],
-                    new_span["llm_usage_inc_cache"],
-                )
+            exec_time = time.perf_counter() - exec_start_time
+            _finalize_span(new_span, token, outputs, exec_time, prune_empty)
             if log_token:
                 ACTIVE_LOG.set([])
 
     async def async_wrapped(*args, **kwargs):
-        t1 = time.perf_counter()
-        ts = datetime.now(timezone.utc).isoformat()
-        if not SPAN.get():
-            RUNNING_TIME.set(t1)
-        signature = inspect.signature(fn)
-        bound_args = signature.bind(*args, **kwargs)
-        bound_args.apply_defaults()
-        inputs = bound_args.arguments
-        inputs = inputs["kw"] if span_type == "llm-cached" else inputs
-        inputs = _make_json_serializable(inputs)
-        try:
-            lines, start_line = inspect.getsourcelines(fn)
-            code = textwrap.dedent("".join(lines))
-        except:
-            lines, start_line = None, None
-            try:
-                code = textwrap.dedent(inspect.getsource(fn))
-            except:
-                code = None
-        name_w_sub = name
-        if name_w_sub is not None:
-            for k, v in inputs.items():
-                substr = "{" + k + "}"
-                if substr in name_w_sub:
-                    name_w_sub = name_w_sub.replace(substr, str(v))
-        new_span = {
-            "id": str(uuid.uuid4()),
-            "type": span_type,
-            "parent_span_id": (None if not SPAN.get() else SPAN.get()["id"]),
-            "span_name": fn.__name__ if name_w_sub is None else name_w_sub,
-            "exec_time": None,
-            "timestamp": ts,
-            "offset": round(
-                0.0 if not SPAN.get() else t1 - RUNNING_TIME.get(),
-                2,
-            ),
-            "llm_usage": None,
-            "llm_usage_inc_cache": None,
-            "code": f"```python\n{code}\n```",
-            "code_fpath": inspect.getsourcefile(fn),
-            "code_start_line": start_line,
-            "inputs": inputs,
-            "outputs": None,
-            "errors": None,
-            "child_spans": [],
-        }
+        log_token = None if ACTIVE_LOG.get() else ACTIVE_LOG.set([unify.log()])
+        new_span, exec_start_time = _create_span(fn, args, kwargs, span_type, name)
         token = SPAN.set(new_span)
-        # capture the arguments here
         result = None
         try:
             result = await fn(*args, **kwargs)
@@ -618,24 +581,11 @@ def traced(
             new_span["errors"] = traceback.format_exc()
             raise e
         finally:
-            t2 = time.perf_counter()
-            exec_time = t2 - t1
-            SPAN.get()["exec_time"] = exec_time
-            SPAN.get()["outputs"] = (
-                None if result is None else _make_json_serializable(result)
-            )
-            if token.old_value is token.MISSING:
-                if ACTIVE_LOG.get():
-                    trace = SPAN.get()
-                    if prune_empty:
-                        trace = _prune_dict(trace)
-                    unify.add_log_entries(trace=trace, overwrite=True)
-                else:
-                    unify.log(trace=SPAN.get())
-                SPAN.reset(token)
-            else:
-                SPAN.reset(token)
-                SPAN.get()["child_spans"].append(new_span)
+            outputs = _make_json_serializable(result) if result is not None else None
+            exec_time = time.perf_counter() - exec_start_time
+            _finalize_span(new_span, token, outputs, exec_time, prune_empty)
+            if log_token:
+                ACTIVE_LOG.set([])
 
     return wrapped if not inspect.iscoroutinefunction(fn) else async_wrapped
 
