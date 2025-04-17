@@ -184,7 +184,7 @@ def flexible_deepcopy(
     if obj_id in _memo:  # Handle circular references.
         return _memo[obj_id]
 
-    def _attempt(value: Any) -> Any | _SkipType:
+    def _attempt(value: Any) -> Union[Any, _SkipType]:
         """Try to deepcopy *value*; fall back per on_fail."""
         try:
             return flexible_deepcopy(value, on_fail, _memo)
