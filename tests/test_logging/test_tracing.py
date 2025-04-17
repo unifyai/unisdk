@@ -1,4 +1,5 @@
 import asyncio
+import inspect
 import threading
 import time
 
@@ -364,6 +365,74 @@ async def test_traced_async():
         assert trace["child_spans"][0]["span_name"] == "inner_fn"
         assert len(trace["child_spans"][0]["child_spans"]) == 1
         assert trace["child_spans"][0]["child_spans"][0]["span_name"] == "deeper_fn"
+
+
+@_handle_project
+@pytest.mark.asyncio
+async def test_traced_async_within_log_context():
+    @unify.traced
+    async def deeper_fn():
+        return 3
+
+    @unify.traced
+    async def inner_fn():
+        await deeper_fn()
+        return 2
+
+    @unify.traced
+    async def some_func():
+        await inner_fn()
+        await inner_fn()
+        return 1
+
+    with unify.Log(a="a", b="b"):
+        await some_func()
+
+    logs = unify.get_logs()
+
+    assert len(logs) == 1
+    entries = logs[0].entries
+    assert entries["a"] == "a"
+    assert entries["b"] == "b"
+    assert entries["trace"]["span_name"] == "some_func"
+    assert len(entries["trace"]["child_spans"]) == 2
+    assert entries["trace"]["child_spans"][0]["span_name"] == "inner_fn"
+    assert len(entries["trace"]["child_spans"][0]["child_spans"]) == 1
+    assert (
+        entries["trace"]["child_spans"][0]["child_spans"][0]["span_name"] == "deeper_fn"
+    )
+
+
+@_handle_project
+@pytest.mark.asyncio
+async def test_traced_async_source_code():
+    @unify.traced
+    async def some_func(a, b):
+        c = a + b
+        return c
+
+    await some_func(1, 2)
+    logs = unify.get_logs()
+    assert len(logs) == 1
+    source = inspect.getsource(some_func).replace(" ", "").replace("\n", "")
+    assert logs[0].entries["trace"]["code"].replace(" ", "").replace("\n", "") == source
+
+
+@_handle_project
+@pytest.mark.asyncio
+async def test_traced_async_with_exception():
+    @unify.traced
+    async def some_func():
+        raise ValueError("Something went wrong")
+
+    try:
+        await some_func()
+    except ValueError:
+        pass
+
+    logs = unify.get_logs()
+    assert len(logs) == 1
+    assert "Something went wrong" in logs[0].entries["trace"]["errors"]
 
 
 if __name__ == "__main__":
