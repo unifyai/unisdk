@@ -149,7 +149,7 @@ Container = Union[Dict[Any, Any], List[Any], Tuple[Any, ...], Set[Any]]
 def flexible_deepcopy(
     obj: Any,
     on_fail: str = "raise",
-    _memo: Dict[int, Any] | None = None,
+    _memo: Optional[Dict[int, Any]] = None,
 ) -> Any:
     """
     Perform a deepcopy that tolerates un‑copyable elements.
