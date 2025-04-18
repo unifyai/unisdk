@@ -448,7 +448,7 @@ def _sync_log(
     response = _requests.post(BASE_URL + "/logs", headers=headers, json=body)
     _check_response(response)
     return unify.Log(
-        id=response.json()[0],
+        id=response.json()["log_event_ids"][0],
         api_key=api_key,
         **entries,
         params=params,
