@@ -435,5 +435,35 @@ async def test_traced_async_with_exception():
     assert "Something went wrong" in logs[0].entries["trace"]["errors"]
 
 
+@_handle_project
+def test_traced_class():
+    @unify.traced
+    class Foo:
+        def __init__(self, a):
+            self.a = a
+
+        def add(self, b):
+            return self.a + b
+
+        def result(self):
+            return self.a
+
+    foo = Foo(0)
+    foo.add(1)
+    foo.result()
+
+    logs = unify.get_logs()
+
+    assert len(logs) == 2
+    sorted_logs = sorted(logs, key=lambda x: x.entries["trace"]["span_name"])
+
+    assert sorted_logs[0].entries["trace"]["span_name"] == "Foo.add"
+    assert ["self", "b"] == list(sorted_logs[0].entries["trace"]["inputs"].keys())
+
+    assert sorted_logs[0].entries["trace"]["inputs"]["b"] == 1
+    assert sorted_logs[1].entries["trace"]["span_name"] == "Foo.result"
+    assert ["self"] == list(sorted_logs[1].entries["trace"]["inputs"].keys())
+
+
 if __name__ == "__main__":
     pass

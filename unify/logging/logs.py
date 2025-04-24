@@ -552,6 +552,21 @@ def _finalize_span(new_span, token, outputs, exec_time, prune_empty):
         )
 
 
+def _trace_class(cls, prune_empty, span_type, name, filter):
+    for member_name, value in inspect.getmembers(cls, predicate=inspect.isfunction):
+        if member_name.startswith("__") and member_name.endswith("__"):
+            continue
+        if filter is not None and not filter(value):
+            continue
+        _name = f"{name if name is not None else cls.__name__}.{member_name}"
+        setattr(
+            cls,
+            member_name,
+            traced(value, prune_empty=prune_empty, span_type=span_type, name=_name),
+        )
+    return cls
+
+
 def traced(
     fn: callable = None,
     *,
@@ -560,6 +575,7 @@ def traced(
     name: Optional[str] = None,
     trace_contexts: Optional[List[str]] = None,
     trace_dirs: Optional[List[str]] = None,
+    filter: Optional[Callable[[callable], bool]] = None,
 ):
 
     if fn is None:
@@ -571,6 +587,9 @@ def traced(
             trace_contexts=trace_contexts,
             trace_dirs=trace_dirs,
         )
+
+    if inspect.isclass(fn):
+        return _trace_class(fn, prune_empty, span_type, name, filter)
 
     if trace_dirs is not None:
 
