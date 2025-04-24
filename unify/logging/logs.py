@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import ast
+import functools
+import inspect
 import textwrap
 import time
 import traceback
@@ -439,6 +441,23 @@ class Experiment:
 # --------#
 
 
+class TraceTransformer(ast.NodeTransformer):
+    def __init__(self, trace_dirs: list[str]):
+        self.trace_dirs = trace_dirs
+        self.trace_dir_ast = ast.List(
+            elts=[ast.Constant(value=dir) for dir in trace_dirs],
+            ctx=ast.Load(),
+        )
+
+    def visit_Call(self, node):
+        self.generic_visit(node)
+        return ast.Call(
+            func=ast.Name(id="check_path_at_runtime", ctx=ast.Load()),
+            args=[node.func, self.trace_dir_ast, *node.args],
+            keywords=node.keywords,
+        )
+
+
 def _nested_add(a, b):
     if a is None and isinstance(b, dict):
         a = {k: None if isinstance(v, dict) else 0 for k, v in b.items()}
@@ -540,6 +559,7 @@ def traced(
     span_type: str = "function",
     name: Optional[str] = None,
     trace_contexts: Optional[List[str]] = None,
+    trace_dirs: Optional[List[str]] = None,
 ):
 
     if fn is None:
@@ -549,8 +569,55 @@ def traced(
             span_type=span_type,
             name=name,
             trace_contexts=trace_contexts,
+            trace_dirs=trace_dirs,
         )
 
+    if trace_dirs is not None:
+
+        def check_path_at_runtime(fn, target_dirs, *args, **kwargs):
+            if (
+                inspect.isbuiltin(fn)
+                or not os.path.dirname(inspect.getsourcefile(fn)) in target_dirs
+            ):
+                return fn(*args, **kwargs)
+
+            try:
+                return traced(
+                    prune_empty=prune_empty,
+                    span_type=span_type,
+                    trace_dirs=target_dirs,
+                )(fn)(*args, **kwargs)
+            except Exception as e:
+                raise e
+
+        for i, dir_path in enumerate(trace_dirs):
+            if not os.path.isabs(dir_path):
+                dir_path = os.path.normpath(
+                    os.path.join(os.path.dirname(inspect.getsourcefile(fn)), dir_path),
+                )
+                trace_dirs[i] = dir_path
+
+        source = textwrap.dedent(inspect.getsource(fn))
+        source_lines = source.split("\n")
+        if source_lines[0].strip().startswith("@"):
+            source = "\n".join(source_lines[1:])
+
+        tree = ast.parse(source)
+        transformer = TraceTransformer(trace_dirs)
+        tree = transformer.visit(tree)
+        ast.fix_missing_locations(tree)
+        code = compile(tree, filename=inspect.getsourcefile(fn), mode="exec")
+        module = inspect.getmodule(fn)
+
+        func_globals = module.__dict__.copy() if module else globals().copy()
+        func_globals["check_path_at_runtime"] = check_path_at_runtime
+
+        exec(code, func_globals)
+        old_fn = fn
+        fn = func_globals[fn.__name__]
+        functools.update_wrapper(fn, old_fn)
+
+    @functools.wraps(fn)
     def wrapped(*args, **kwargs):
         log_token = None if ACTIVE_LOG.get() else ACTIVE_LOG.set([unify.log()])
         new_span, exec_start_time = _create_span(fn, args, kwargs, span_type, name)
