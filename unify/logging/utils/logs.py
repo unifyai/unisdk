@@ -4,6 +4,8 @@ import atexit
 import inspect
 import json
 import logging
+
+logger = logging.getLogger(__name__)
 import os
 import sys
 from contextvars import ContextVar
@@ -372,7 +374,7 @@ def log(
         )
         log = ACTIVE_LOG.get()[-1]
         if USR_LOGGING:
-            logging.info(f"Updated Log({log.id})")
+            logger.info(f"Updated Log({log.id})")
         return log
     # Process parameters and entries
     params = _apply_col_context(**(params if params else {}))
@@ -418,7 +420,7 @@ def log(
             },
         )
     if USR_LOGGING:
-        logging.info(f"Created Log({created_log.id})")
+        logger.info(f"Created Log({created_log.id})")
     return created_log
 
 
@@ -670,7 +672,7 @@ def add_log_params(
         **params,
     )
     if USR_LOGGING:
-        logging.info(
+        logger.info(
             f"Added Params {', '.join(list(params.keys()))} "
             f"to [Logs({', '.join([str(i) for i in _to_log_ids(logs)])})]",
         )
@@ -715,7 +717,7 @@ def add_log_entries(
         **entries,
     )
     if USR_LOGGING:
-        logging.info(
+        logger.info(
             f"Added Entries {', '.join(list(entries.keys()))} "
             f"to Logs({', '.join([str(i) for i in _to_log_ids(logs)])})",
         )
@@ -796,7 +798,7 @@ def delete_logs(
     response = _requests.delete(BASE_URL + f"/logs", headers=headers, json=body)
     _check_response(response)
     if USR_LOGGING:
-        logging.info(f"Deleted Logs({', '.join([str(i) for i in log_ids])})")
+        logger.info(f"Deleted Logs({', '.join([str(i) for i in log_ids])})")
     return response.json()
 
 
@@ -838,7 +840,7 @@ def delete_log_fields(
     )
     _check_response(response)
     if USR_LOGGING:
-        logging.info(
+        logger.info(
             f"Deleted Field `{field}` from Logs({', '.join([str(i) for i in log_ids])})",
         )
     return response.json()
