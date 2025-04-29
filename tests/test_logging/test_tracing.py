@@ -1,4 +1,5 @@
 import asyncio
+import importlib
 import inspect
 import threading
 import time
@@ -463,6 +464,44 @@ def test_traced_class():
     assert sorted_logs[0].entries["trace"]["inputs"]["b"] == 1
     assert sorted_logs[1].entries["trace"]["span_name"] == "Foo.result"
     assert ["self"] == list(sorted_logs[1].entries["trace"]["inputs"].keys())
+
+
+@_handle_project
+def test_traced_module():
+    source_code = """
+def add(a, b):
+    return a + b
+
+def sub(a, b):
+    return a - b
+
+class Foo:
+    def __init__(self, a):
+        self.a = a
+
+    def add(self, b):
+        return self.a + b
+
+"""
+    spec = importlib.util.spec_from_loader("test_module", loader=None)
+    module = importlib.util.module_from_spec(spec)
+    exec(source_code, module.__dict__)
+    unify.traced(module)
+    module.add(1, 0)
+    module.sub(1, 2)
+    module.Foo(0).add(2)
+
+    logs = list(reversed(unify.get_logs()))
+    assert len(logs) == 3
+    assert logs[0].entries["trace"]["span_name"] == "test_module.add"
+    assert logs[0].entries["trace"]["inputs"] == {"a": 1, "b": 0}
+    assert logs[0].entries["trace"]["outputs"] == 1
+
+    assert logs[1].entries["trace"]["span_name"] == "test_module.sub"
+    assert logs[1].entries["trace"]["inputs"] == {"a": 1, "b": 2}
+    assert logs[1].entries["trace"]["outputs"] == -1
+
+    assert logs[2].entries["trace"]["span_name"] == "test_module.Foo.add"
 
 
 if __name__ == "__main__":
