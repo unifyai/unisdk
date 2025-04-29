@@ -567,6 +567,22 @@ def _trace_class(cls, prune_empty, span_type, name, filter):
     return cls
 
 
+def _trace_module(module, prune_empty, span_type, name, filter):
+    _obj_filter = lambda obj: inspect.isfunction(obj) or inspect.isclass(obj)
+    for member_name, value in inspect.getmembers(module, predicate=_obj_filter):
+        if member_name.startswith("__") and member_name.endswith("__"):
+            continue
+        if filter is not None and not filter(value):
+            continue
+        _name = f"{name if name is not None else module.__name__}.{member_name}"
+        setattr(
+            module,
+            member_name,
+            traced(value, prune_empty=prune_empty, span_type=span_type, name=_name),
+        )
+    return module
+
+
 def traced(
     fn: callable = None,
     *,
@@ -590,6 +606,9 @@ def traced(
 
     if inspect.isclass(fn):
         return _trace_class(fn, prune_empty, span_type, name, filter)
+
+    if inspect.ismodule(fn):
+        return _trace_module(fn, prune_empty, span_type, name, filter)
 
     if trace_dirs is not None:
 
