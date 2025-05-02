@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import ast
+import copy
 import functools
 import inspect
 import textwrap
@@ -12,7 +13,11 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 from ..utils.helpers import _make_json_serializable, _prune_dict, _validate_api_key
 from .utils.compositions import *
-from .utils.logs import _handle_special_types
+from .utils.logs import (
+    _get_trace_logger,
+    _handle_special_types,
+    _initialize_trace_logger,
+)
 from .utils.logs import log as unify_log
 
 # Context Handlers #
@@ -516,32 +521,44 @@ def _create_span(fn, args, kwargs, span_type, name):
         "outputs": None,
         "errors": None,
         "child_spans": [],
+        "completed": False,
     }
     if inspect.ismethod(fn) and hasattr(fn.__self__, "endpoint"):
         new_span["endpoint"] = fn.__self__.endpoint
-    return new_span, exec_start_time
+    if not GLOBAL_SPAN.get():
+        global_token = GLOBAL_SPAN.set(new_span)
+        local_token = SPAN.set(GLOBAL_SPAN.get())
+    else:
+        global_token = None
+        SPAN.get()["child_spans"].append(new_span)
+        local_token = SPAN.set(new_span)
+    _get_trace_logger().update_trace(ACTIVE_LOG.get(), copy.deepcopy(GLOBAL_SPAN.get()))
+    return new_span, exec_start_time, local_token, global_token
 
 
-def _finalize_span(new_span, token, outputs, exec_time, prune_empty):
+def _finalize_span(
+    new_span,
+    local_token,
+    outputs,
+    exec_time,
+    prune_empty,
+    global_token,
+):
     SPAN.get()["exec_time"] = exec_time
     SPAN.get()["outputs"] = outputs
+    SPAN.get()["completed"] = True
     if SPAN.get()["type"] == "llm" and outputs is not None:
         SPAN.get()["llm_usage"] = outputs["usage"]
     if SPAN.get()["type"] in ("llm", "llm-cached") and outputs is not None:
         SPAN.get()["llm_usage_inc_cache"] = outputs["usage"]
-    # ToDo: ensure there is a global log set upon the first trace,
-    #  and removed on the last
     trace = SPAN.get()
     if prune_empty:
         trace = _prune_dict(trace)
-    unify.add_log_entries(
-        trace=trace,
-        overwrite=True,
-        # mutable=SPAN.get()["parent_span_id"] is not None,
-    )
-    SPAN.reset(token)
-    if token.old_value is not token.MISSING:
-        SPAN.get()["child_spans"].append(new_span)
+        SPAN.set(trace)
+        if global_token:
+            GLOBAL_SPAN.set(trace)
+    SPAN.reset(local_token)
+    if local_token.old_value is not local_token.MISSING:
         SPAN.get()["llm_usage"] = _nested_add(
             SPAN.get()["llm_usage"],
             new_span["llm_usage"],
@@ -550,6 +567,9 @@ def _finalize_span(new_span, token, outputs, exec_time, prune_empty):
             SPAN.get()["llm_usage_inc_cache"],
             new_span["llm_usage_inc_cache"],
         )
+    _get_trace_logger().update_trace(ACTIVE_LOG.get(), copy.deepcopy(GLOBAL_SPAN.get()))
+    if global_token:
+        GLOBAL_SPAN.reset(global_token)
 
 
 def _trace_class(cls, prune_empty, span_type, name, filter):
@@ -583,6 +603,128 @@ def _trace_module(module, prune_empty, span_type, name, filter):
     return module
 
 
+def _transform_function(fn, prune_empty, span_type, trace_dirs):
+    def check_path_at_runtime(fn, target_dirs, *args, **kwargs):
+        if (
+            inspect.isbuiltin(fn)
+            or not os.path.dirname(inspect.getsourcefile(fn)) in target_dirs
+        ):
+            return fn(*args, **kwargs)
+
+        try:
+            return traced(
+                prune_empty=prune_empty,
+                span_type=span_type,
+                trace_dirs=target_dirs,
+            )(fn)(*args, **kwargs)
+        except Exception as e:
+            raise e
+
+    for i, dir_path in enumerate(trace_dirs):
+        if not os.path.isabs(dir_path):
+            dir_path = os.path.normpath(
+                os.path.join(os.path.dirname(inspect.getsourcefile(fn)), dir_path),
+            )
+            trace_dirs[i] = dir_path
+
+    source = textwrap.dedent(inspect.getsource(fn))
+    source_lines = source.split("\n")
+    if source_lines[0].strip().startswith("@"):
+        source = "\n".join(source_lines[1:])
+
+    tree = ast.parse(source)
+    transformer = TraceTransformer(trace_dirs)
+    tree = transformer.visit(tree)
+    ast.fix_missing_locations(tree)
+    code = compile(tree, filename=inspect.getsourcefile(fn), mode="exec")
+    module = inspect.getmodule(fn)
+
+    func_globals = module.__dict__.copy() if module else globals().copy()
+    func_globals["check_path_at_runtime"] = check_path_at_runtime
+
+    exec(code, func_globals)
+    old_fn = fn
+    fn = func_globals[fn.__name__]
+    functools.update_wrapper(fn, old_fn)
+    return fn
+
+
+def _trace_function(
+    fn,
+    prune_empty,
+    span_type,
+    name,
+    trace_contexts,
+    trace_dirs,
+    filter,
+):
+    if trace_dirs is not None:
+        fn = _transform_function(fn, prune_empty, span_type, trace_dirs)
+
+    @functools.wraps(fn)
+    def wrapped(*args, **kwargs):
+        log_token = None if ACTIVE_LOG.get() else ACTIVE_LOG.set([unify.log()])
+        new_span, exec_start_time, local_token, global_token = _create_span(
+            fn,
+            args,
+            kwargs,
+            span_type,
+            name,
+        )
+        result = None
+        try:
+            result = fn(*args, **kwargs)
+            return result
+        except Exception as e:
+            new_span["errors"] = traceback.format_exc()
+            raise e
+        finally:
+            outputs = _make_json_serializable(result) if result is not None else None
+            exec_time = time.perf_counter() - exec_start_time
+            _finalize_span(
+                new_span,
+                local_token,
+                outputs,
+                exec_time,
+                prune_empty,
+                global_token,
+            )
+            if log_token:
+                ACTIVE_LOG.set([])
+
+    async def async_wrapped(*args, **kwargs):
+        log_token = None if ACTIVE_LOG.get() else ACTIVE_LOG.set([unify.log()])
+        new_span, exec_start_time, local_token, global_token = _create_span(
+            fn,
+            args,
+            kwargs,
+            span_type,
+            name,
+        )
+        result = None
+        try:
+            result = await fn(*args, **kwargs)
+            return result
+        except Exception as e:
+            new_span["errors"] = traceback.format_exc()
+            raise e
+        finally:
+            outputs = _make_json_serializable(result) if result is not None else None
+            exec_time = time.perf_counter() - exec_start_time
+            _finalize_span(
+                new_span,
+                local_token,
+                outputs,
+                exec_time,
+                prune_empty,
+                global_token,
+            )
+            if log_token:
+                ACTIVE_LOG.set([])
+
+    return wrapped if not inspect.iscoroutinefunction(fn) else async_wrapped
+
+
 def traced(
     fn: callable = None,
     *,
@@ -593,6 +735,7 @@ def traced(
     trace_dirs: Optional[List[str]] = None,
     filter: Optional[Callable[[callable], bool]] = None,
 ):
+    _initialize_trace_logger()
 
     if fn is None:
         return lambda f: traced(
@@ -610,89 +753,15 @@ def traced(
     if inspect.ismodule(fn):
         return _trace_module(fn, prune_empty, span_type, name, filter)
 
-    if trace_dirs is not None:
-
-        def check_path_at_runtime(fn, target_dirs, *args, **kwargs):
-            if (
-                inspect.isbuiltin(fn)
-                or not os.path.dirname(inspect.getsourcefile(fn)) in target_dirs
-            ):
-                return fn(*args, **kwargs)
-
-            try:
-                return traced(
-                    prune_empty=prune_empty,
-                    span_type=span_type,
-                    trace_dirs=target_dirs,
-                )(fn)(*args, **kwargs)
-            except Exception as e:
-                raise e
-
-        for i, dir_path in enumerate(trace_dirs):
-            if not os.path.isabs(dir_path):
-                dir_path = os.path.normpath(
-                    os.path.join(os.path.dirname(inspect.getsourcefile(fn)), dir_path),
-                )
-                trace_dirs[i] = dir_path
-
-        source = textwrap.dedent(inspect.getsource(fn))
-        source_lines = source.split("\n")
-        if source_lines[0].strip().startswith("@"):
-            source = "\n".join(source_lines[1:])
-
-        tree = ast.parse(source)
-        transformer = TraceTransformer(trace_dirs)
-        tree = transformer.visit(tree)
-        ast.fix_missing_locations(tree)
-        code = compile(tree, filename=inspect.getsourcefile(fn), mode="exec")
-        module = inspect.getmodule(fn)
-
-        func_globals = module.__dict__.copy() if module else globals().copy()
-        func_globals["check_path_at_runtime"] = check_path_at_runtime
-
-        exec(code, func_globals)
-        old_fn = fn
-        fn = func_globals[fn.__name__]
-        functools.update_wrapper(fn, old_fn)
-
-    @functools.wraps(fn)
-    def wrapped(*args, **kwargs):
-        log_token = None if ACTIVE_LOG.get() else ACTIVE_LOG.set([unify.log()])
-        new_span, exec_start_time = _create_span(fn, args, kwargs, span_type, name)
-        token = SPAN.set(new_span)
-        result = None
-        try:
-            result = fn(*args, **kwargs)
-            return result
-        except Exception as e:
-            new_span["errors"] = traceback.format_exc()
-            raise e
-        finally:
-            outputs = _make_json_serializable(result) if result is not None else None
-            exec_time = time.perf_counter() - exec_start_time
-            _finalize_span(new_span, token, outputs, exec_time, prune_empty)
-            if log_token:
-                ACTIVE_LOG.set([])
-
-    async def async_wrapped(*args, **kwargs):
-        log_token = None if ACTIVE_LOG.get() else ACTIVE_LOG.set([unify.log()])
-        new_span, exec_start_time = _create_span(fn, args, kwargs, span_type, name)
-        token = SPAN.set(new_span)
-        result = None
-        try:
-            result = await fn(*args, **kwargs)
-            return result
-        except Exception as e:
-            new_span["errors"] = traceback.format_exc()
-            raise e
-        finally:
-            outputs = _make_json_serializable(result) if result is not None else None
-            exec_time = time.perf_counter() - exec_start_time
-            _finalize_span(new_span, token, outputs, exec_time, prune_empty)
-            if log_token:
-                ACTIVE_LOG.set([])
-
-    return wrapped if not inspect.iscoroutinefunction(fn) else async_wrapped
+    return _trace_function(
+        fn,
+        prune_empty,
+        span_type,
+        name,
+        trace_contexts,
+        trace_dirs,
+        filter,
+    )
 
 
 class LogTransformer(ast.NodeTransformer):

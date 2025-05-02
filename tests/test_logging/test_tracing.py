@@ -6,11 +6,17 @@ import time
 
 import pytest
 import unify
+from unify.logging.utils.logs import _get_trace_logger
 
 from .helpers import _handle_project
 
 # Trace #
 # ------#
+
+
+def _wait_for_trace_logger():
+    while _get_trace_logger().queue.qsize() > 0:
+        time.sleep(0.1)
 
 
 @_handle_project
@@ -34,6 +40,7 @@ def test_traced():
         return 1
 
     some_func(0.5)
+    _wait_for_trace_logger()
     entries = unify.get_logs()[0].entries
 
     assert entries["trace"]["inputs"] == {"st": 0.5}
@@ -71,6 +78,7 @@ def test_traced_w_arg_naming():
         return arg + 1
 
     some_func(1)
+    _wait_for_trace_logger()
     entries = unify.get_logs()[0].entries
 
     assert entries["trace"]["inputs"] == {"arg": 1}
@@ -100,6 +108,7 @@ def test_traced_w_exception():
         some_func(1)
     except ValueError:
         pass
+    _wait_for_trace_logger()
     trace = unify.get_logs()[0].entries["trace"]
 
     assert trace["inputs"] == {"inp": 1}
@@ -132,6 +141,7 @@ def test_traced_uni_llm():
 
     client = unify.Unify("gpt-4o@openai", traced=True)
     client.generate("hello")
+    _wait_for_trace_logger()
     trace = unify.get_logs()[0].entries["trace"]
 
     assert trace["type"] == "llm"
@@ -169,6 +179,7 @@ def test_traced_uni_llm_w_caching():
     client.generate("hello")
     client.set_traced(True)
     client.generate("hello")
+    _wait_for_trace_logger()
     trace = unify.get_logs()[0].entries["trace"]
 
     assert trace["type"] == "llm-cached"
@@ -206,6 +217,7 @@ def test_traced_none_handling():
         return [a, b, c, d]
 
     some_func(1, 2, None, 4)
+    _wait_for_trace_logger()
     logs = unify.get_logs()
     assert len(logs) == 1
     entries = logs[0].entries
@@ -232,6 +244,7 @@ def test_traced_none_handling():
         return [a, b, c, d]
 
     some_func(1, 2, None, 4)
+    _wait_for_trace_logger()
     logs = unify.get_logs()
     assert len(logs) == 2
     entries = logs[0].entries
@@ -276,6 +289,7 @@ def test_traced_within_log_context():
 
     with unify.Log(a="a", b="b"):
         some_func(0.5)
+    _wait_for_trace_logger()
     logs = unify.get_logs()
     assert len(logs) == 1
     entries = logs[0].entries
@@ -321,6 +335,7 @@ def test_traced_threaded():
     [t.start() for t in threads]
     [t.join() for t in threads]
 
+    _wait_for_trace_logger()
     logs = unify.get_logs()
 
     for i, log in enumerate(logs):
@@ -356,6 +371,7 @@ async def test_traced_async():
 
     await asyncio.gather(*[some_func(i / 100) for i in range(8)])
 
+    _wait_for_trace_logger()
     logs = unify.get_logs()
 
     for i, log in enumerate(logs):
@@ -389,6 +405,7 @@ async def test_traced_async_within_log_context():
     with unify.Log(a="a", b="b"):
         await some_func()
 
+    _wait_for_trace_logger()
     logs = unify.get_logs()
 
     assert len(logs) == 1
@@ -413,6 +430,7 @@ async def test_traced_async_source_code():
         return c
 
     await some_func(1, 2)
+    _wait_for_trace_logger()
     logs = unify.get_logs()
     assert len(logs) == 1
     source = inspect.getsource(some_func).replace(" ", "").replace("\n", "")
@@ -431,6 +449,7 @@ async def test_traced_async_with_exception():
     except ValueError:
         pass
 
+    _wait_for_trace_logger()
     logs = unify.get_logs()
     assert len(logs) == 1
     assert "Something went wrong" in logs[0].entries["trace"]["errors"]
@@ -453,6 +472,7 @@ def test_traced_class():
     foo.add(1)
     foo.result()
 
+    _wait_for_trace_logger()
     logs = unify.get_logs()
 
     assert len(logs) == 2
@@ -491,6 +511,7 @@ class Foo:
     module.sub(1, 2)
     module.Foo(0).add(2)
 
+    _wait_for_trace_logger()
     logs = list(reversed(unify.get_logs()))
     assert len(logs) == 3
     assert logs[0].entries["trace"]["span_name"] == "test_module.add"

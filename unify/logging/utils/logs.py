@@ -4,6 +4,8 @@ import atexit
 import inspect
 import json
 import logging
+import queue
+import threading
 
 logger = logging.getLogger(__name__)
 import os
@@ -39,6 +41,7 @@ ASYNC_MAX_QUEUE_SIZE = 10000  # Default maximum queue size
 
 # Async logger instance
 _async_logger: Optional[AsyncLoggerManager] = None
+_trace_logger: Optional[_AsyncTraceLogger] = None
 
 # log
 ACTIVE_LOG = ContextVar("active_log", default=[])
@@ -85,11 +88,51 @@ ACTIVE_PARAMS_MODE = ContextVar("active_params_mode", default="both")
 PARAMS_NEST_LEVEL = ContextVar("params_nest_level", default=0)
 
 # span
+GLOBAL_SPAN = ContextVar("global_span", default={})
 SPAN = ContextVar("span", default={})
 RUNNING_TIME = ContextVar("running_time", default=0.0)
 
 # chunking
 CHUNK_LIMIT = 5000000
+
+
+class _AsyncTraceLogger(threading.Thread):
+    class _StopEvent:
+        pass
+
+    def __init__(self):
+        super().__init__(name="TraceLoggerThread", daemon=True)
+        self.queue = queue.Queue()
+        self.start()
+        atexit.register(self.stop)
+
+    def run(self):
+        while True:
+            item = self.queue.get()
+            if isinstance(item, self._StopEvent):
+                break
+
+            log_id, trace = item
+            unify.add_log_entries(logs=log_id, trace=trace, overwrite=True)
+
+    def update_trace(self, log_id, trace):
+        self.queue.put_nowait((log_id, trace))
+
+    def stop(self):
+        """Stop normally, waiting for queue to be processed"""
+        self.queue.put_nowait(self._StopEvent())
+        while self.is_alive():
+            try:
+                self.join(timeout=0.1)
+            except KeyboardInterrupt:
+                self.stop_immediate()
+                raise
+
+    def stop_immediate(self):
+        """Stop immediately, ignoring remaining queue items"""
+        self.queue = queue.Queue()
+        self.queue.put_nowait(self._StopEvent())
+        self.join()
 
 
 def _removes_unique_trace_values(kw: Dict[str, Any]) -> Dict[str, Any]:
@@ -141,6 +184,16 @@ def shutdown_async_logger(immediate=False) -> None:
         _async_logger.stop_sync(immediate=immediate)
         _async_logger = None
         ASYNC_LOGGING = False
+
+
+def _initialize_trace_logger():
+    global _trace_logger
+    if _trace_logger is None:
+        _trace_logger = _AsyncTraceLogger()
+
+
+def _get_trace_logger():
+    return _trace_logger
 
 
 def _handle_cache(fn: Callable) -> Callable:
