@@ -518,7 +518,7 @@ def create_logs(
     params: Optional[Union[List[Dict[str, Any]], Dict[str, Any]]] = None,
     entries: Optional[Union[List[Dict[str, Any]], Dict[str, Any]]] = None,
     mutable: Optional[Union[bool, Dict[str, bool]]] = True,
-    batched: bool = False,
+    batched: Optional[bool] = None,
     api_key: Optional[str] = None,
 ) -> List[int]:
     """
@@ -555,14 +555,16 @@ def create_logs(
     params = [{}] * len(entries) if params in [None, []] else params
     entries = [{}] * len(params) if entries in [None, []] else entries
     # end ToDo
+    body = {
+        "project": project,
+        "context": context,
+        "params": params,
+        "entries": entries,
+    }
+    body_size = sys.getsizeof(json.dumps(body))
+    if batched is None:
+        batched = body_size < CHUNK_LIMIT
     if batched:
-        body = {
-            "project": project,
-            "context": context,
-            "params": params,
-            "entries": entries,
-        }
-        body_size = sys.getsizeof(json.dumps(body))
         if body_size < CHUNK_LIMIT:
             response = _requests.post(BASE_URL + "/logs", headers=headers, json=body)
         else:
