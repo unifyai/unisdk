@@ -860,6 +860,7 @@ def delete_log_fields(
     field: str,
     logs: Optional[Union[int, unify.Log, List[Union[int, unify.Log]]]] = None,
     project: Optional[str] = None,
+    context: Optional[str] = None,
     api_key: Optional[str] = None,
 ) -> Dict[str, str]:
     """
@@ -871,6 +872,8 @@ def delete_log_fields(
         logs: log(s) to delete entries from.
 
         project: Name of the project to delete logs from.
+
+        context: Context of the logs to delete entries from.
 
         api_key: If specified, unify API key to be used. Defaults to the value in the
         `UNIFY_KEY` environment variable.
@@ -885,7 +888,12 @@ def delete_log_fields(
         "Authorization": f"Bearer {api_key}",
     }
     project = _get_and_maybe_create_project(project, api_key=api_key)
-    body = {"project": project, "ids_and_fields": [(log_ids, field)]}
+    context = context if context else CONTEXT_READ.get()
+    body = {
+        "project": project,
+        "context": context,
+        "ids_and_fields": [(log_ids, field)],
+    }
     response = _requests.delete(
         BASE_URL + f"/logs",
         headers=headers,
