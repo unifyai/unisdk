@@ -971,6 +971,7 @@ def get_logs(
             id=dct["id"],
             ts=dct["ts"],
             **dct["entries"],
+            **dct["derived_entries"],
             params={
                 param_name: (param_ver, params[param_name][param_ver])
                 for param_name, param_ver in dct["params"].items()
@@ -1023,6 +1024,7 @@ def get_log_by_id(
         id=lg["id"],
         ts=lg["ts"],
         **lg["entries"],
+        **lg["derived_entries"],
         params={k: (v, params[k][v]) for k, v in lg["params"].items()},
         api_key=api_key,
     )
