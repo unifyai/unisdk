@@ -41,7 +41,7 @@ jobs:
     - name: Publish to TestPyPI
       run: |
         poetry config repositories.testpypi https://test.pypi.org/legacy/
-        poetry publish -r testpypi -u __token__ -p ${{ secrets.TEST_PYPI_API_KEY }}
+        poetry publish --skip-existing -r testpypi -u __token__ -p ${{ secrets.TEST_PYPI_API_KEY }}
 
     - name: Publish to PyPI
       run: |
