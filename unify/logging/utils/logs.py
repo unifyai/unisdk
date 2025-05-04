@@ -582,7 +582,7 @@ def create_logs(
                 **p,
                 id=i,
             )
-            for e, p, i in zip(entries, params, response.json())
+            for e, p, i in zip(entries, params, response.json()["log_event_ids"])
         ]
 
     pbar = tqdm(total=len(params), unit="logs", desc="Creating Logs")
