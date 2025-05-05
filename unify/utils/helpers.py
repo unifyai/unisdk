@@ -4,7 +4,6 @@ import os
 import threading
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-import openai
 import requests
 import unify
 from pydantic import BaseModel, ValidationError
@@ -108,7 +107,7 @@ def _get_and_maybe_create_project(
 
 def _prune_dict(val):
     def keep(v):
-        if v in (None, openai.NotGiven, openai.NOT_GIVEN):
+        if v in (None, "NOT_GIVEN"):
             return False
         else:
             ret = _prune_dict(v)
