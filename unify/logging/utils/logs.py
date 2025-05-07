@@ -679,7 +679,7 @@ def _add_to_log(
                 kw == all_kwargs[0] for kw in all_kwargs
             ), "All logs must share the same context if they're all being updated at the same time."
             data = all_kwargs[0]
-        body = {"ids": log_ids, mode: data, "overwrite": overwrite, "context": context}
+        body = {"logs": log_ids, mode: data, "overwrite": overwrite, "context": context}
         response = _requests.put(BASE_URL + "/logs", headers=headers, json=body)
         _check_response(response)
         if nest_level.get() > 0:
@@ -799,7 +799,7 @@ def update_logs(
         "Authorization": f"Bearer {api_key}",
     }
     body = {
-        "ids": _to_log_ids(logs),
+        "logs": _to_log_ids(logs),
         "context": context,
         # ToDo: remove once this [https://app.clickup.com/t/86c25g263] is done
         "params": [{}] * len(entries) if params is None else params,

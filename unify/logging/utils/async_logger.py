@@ -109,7 +109,7 @@ class AsyncLoggerManager:
     async def _consume_update(self, body, future, idx):
         if not future.done():
             await future
-        body["ids"] = [future.result()]
+        body["logs"] = [future.result()]
         async with self.session.put("logs", json=body) as res:
             if res.status != 200:
                 txt = await res.text()
