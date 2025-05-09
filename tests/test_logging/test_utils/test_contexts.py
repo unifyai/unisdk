@@ -61,5 +61,37 @@ def test_add_logs_to_context():
     ]
 
 
+@_handle_project
+def test_rename_context():
+    unify.log(x=0, context="a/b")
+    unify.rename_context("a/b", "a/c")
+    contexts = unify.get_contexts()
+    assert "a/b" not in contexts
+    assert "a/c" in contexts
+    logs = unify.get_logs(context="a/c")
+    assert len(logs) == 1
+    assert logs[0].context == "a/c"
+
+
+@_handle_project
+def test_get_context():
+    name = "foo"
+    desc = "my_description"
+    is_versioned = True
+    allow_duplicates = True
+    unify.create_context(
+        name,
+        description=desc,
+        is_versioned=is_versioned,
+        allow_duplicates=allow_duplicates,
+    )
+
+    context = unify.get_context(name)
+    assert context["name"] == name
+    assert context["description"] == desc
+    assert context["is_versioned"] is is_versioned
+    assert context["allow_duplicates"] is allow_duplicates
+
+
 if __name__ == "__main__":
     pass

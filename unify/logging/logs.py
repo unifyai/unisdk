@@ -177,6 +177,15 @@ class Log:
         ACTIVE_LOG.reset(self._log_token)
 
 
+class LogGroup:
+    def __init__(self, field, value: Union[List[unify.Log], "LogGroup"] = None):
+        self.field = field
+        self.value = value
+
+    def __repr__(self):
+        return f"LogGroup(field={self.field}, value={self.value})"
+
+
 def _join_path(base_path: str, context: str) -> str:
     return os.path.join(
         base_path,

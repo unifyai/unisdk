@@ -106,6 +106,54 @@ def delete_project(
     return response.json()
 
 
+def delete_project_logs(
+    name: str,
+    *,
+    api_key: Optional[str] = None,
+) -> None:
+    """
+    Deletes all logs from a project.
+
+    Args:
+        name: Name of the project to delete logs from.
+
+        api_key: If specified, unify API key to be used. Defaults to the value in the
+        `UNIFY_KEY` environment variable.
+    """
+    api_key = _validate_api_key(api_key)
+    headers = {
+        "accept": "application/json",
+        "Authorization": f"Bearer {api_key}",
+    }
+    response = _requests.delete(BASE_URL + f"/project/{name}/logs", headers=headers)
+    _check_response(response)
+    return response.json()
+
+
+def delete_project_contexts(
+    name: str,
+    *,
+    api_key: Optional[str] = None,
+) -> None:
+    """
+    Deletes all contexts and their associated logs from a project
+
+    Args:
+        name: Name of the project to delete contexts from.
+
+        api_key: If specified, unify API key to be used. Defaults to the value in the
+        `UNIFY_KEY` environment variable.
+    """
+    api_key = _validate_api_key(api_key)
+    headers = {
+        "accept": "application/json",
+        "Authorization": f"Bearer {api_key}",
+    }
+    response = _requests.delete(BASE_URL + f"/project/{name}/contexts", headers=headers)
+    _check_response(response)
+    return response.json()
+
+
 def list_projects(
     *,
     api_key: Optional[str] = None,

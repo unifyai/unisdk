@@ -222,9 +222,214 @@ def test_get_logs():
 
 
 @_handle_project
+def test_get_logs_from_ids():
+    logs = [unify.log(x=i) for i in range(5)]
+    ids = [l.id for l in logs]
+
+    logs_from_ids = unify.get_logs(from_ids=[ids[0]])
+    assert len(logs_from_ids) == 1
+    assert logs_from_ids[0].id == ids[0]
+
+    logs_from_ids = unify.get_logs(from_ids=ids)
+    assert len(logs_from_ids) == 5
+    for l in logs_from_ids:
+        assert l.id in ids
+
+    logs_from_ids = unify.get_logs(from_ids=ids[0:2])
+    assert len(logs_from_ids) == 2
+    for l in logs_from_ids:
+        assert l.id in ids[0:2]
+
+
+@_handle_project
+def test_get_logs_from_fields():
+    [unify.log(x=i) for i in range(3)]
+    logs = unify.get_logs(from_fields=["x"])
+    assert len(logs) == 3
+
+    [unify.log(y=i) for i in range(3)]
+    logs = unify.get_logs(from_fields=["y"])
+    assert len(logs) == 3
+
+    logs = unify.get_logs(from_fields=["x", "y"])
+    assert len(logs) == 6
+
+
+@_handle_project
+def test_get_logs_exclude_fields():
+    [unify.log(x=i) for i in range(3)]
+    assert len(unify.get_logs()) == 3
+
+    logs = unify.get_logs(exclude_fields=["x"])
+    assert len(logs) == 0
+
+    [unify.log(y=i) for i in range(3)]
+    logs = unify.get_logs(exclude_fields=["x"])
+    assert len(logs) == 3
+
+    logs = unify.get_logs(exclude_fields=["x", "y"])
+    assert len(logs) == 0
+
+
+@_handle_project
+def test_get_logs_exclude_ids():
+    logs = [unify.log(x=i) for i in range(5)]
+    ids = [l.id for l in logs]
+
+    logs_exclude_ids = unify.get_logs(exclude_ids=[ids[0]])
+    assert len(logs_exclude_ids) == 4
+    for l in logs_exclude_ids:
+        assert l.id != ids[0]
+
+    logs_exclude_ids = unify.get_logs(exclude_ids=ids)
+    assert len(logs_exclude_ids) == 0
+
+    logs_exclude_ids = unify.get_logs(exclude_ids=ids[0:2])
+    assert len(logs_exclude_ids) == 3
+
+
+@_handle_project
+def test_get_logs_value_limit():
+    msg = "hello world"
+    unify.log(msg=msg)
+    logs = unify.get_logs(value_limit=5)
+    assert len(logs) == 1
+    assert logs[0].entries["msg"] == msg[:5] + "..."
+
+    logs = unify.get_logs(value_limit=None)
+    assert logs[0].entries["msg"] == msg
+
+
+@_handle_project
+def test_get_logs_group_by():
+    for i in range(2):
+        for y in range(3):
+            unify.log(x=i, y=y)
+
+    logs = unify.get_logs(group_by=["x"])
+    assert isinstance(logs, unify.LogGroup)
+    assert logs.field == "x"
+    assert len(logs.value) == 2
+    assert "0" in logs.value
+    assert "1" in logs.value
+    assert len(logs.value["0"]) == 3
+    assert len(logs.value["1"]) == 3
+
+    logs = unify.get_logs(group_by=["y"])
+    assert isinstance(logs, unify.LogGroup)
+    assert logs.field == "y"
+    assert len(logs.value) == 3
+
+
+@_handle_project
+def test_get_logs_group_by_entries():
+    unify.log(name="John", age=21, msg="Hello")
+    unify.log(name="John", age=21, msg="Bye")
+
+    logs = unify.get_logs(group_by=["name", "msg"])
+    assert isinstance(logs, unify.LogGroup)
+    assert logs.field == "name"
+    assert "John" in logs.value
+
+    second_group = logs.value["John"]
+    assert isinstance(second_group, unify.LogGroup)
+    assert second_group.field == "msg"
+    assert "Hello" in second_group.value
+    assert "Bye" in second_group.value
+
+    log = logs.value["John"].value["Hello"][0]
+    assert log.entries["name"] == "John"
+    assert log.entries["msg"] == "Hello"
+
+    log = logs.value["John"].value["Bye"][0]
+    assert log.entries["name"] == "John"
+    assert log.entries["msg"] == "Bye"
+
+
+@_handle_project
+def test_get_logs_group_by_not_nested():
+    for i in range(2):
+        for y in range(3):
+            unify.log(x=i, y=y)
+
+    logs = unify.get_logs(group_by=["x"], nested_groups=False)
+    assert isinstance(logs, list)
+    assert len(logs) == 1
+    for _, v in logs[0].value.items():
+        assert isinstance(v, list)
+        for log in v:
+            assert isinstance(log, unify.Log)
+
+
+@_handle_project
 def test_get_source():
     source = unify.get_source()
     assert "source = unify.get_source()" in source
+
+
+@_handle_project
+def test_delete_logs_by_ids():
+    logs = [unify.log(x=i) for i in range(3)]
+    assert len(unify.get_logs()) == 3
+
+    unify.delete_logs(logs=logs[0])
+    logs = unify.get_logs()
+    assert len(logs) == 2
+    assert all(log.id != logs[0].id for log in logs)
+
+    unify.delete_logs(logs=logs[1:])
+    assert len(unify.get_logs()) == 0
+
+
+@_handle_project
+def test_create_fields():
+    field_name = "full_name"
+    unify.create_fields(fields={field_name: "str"})
+    fields = unify.get_fields()
+    assert field_name in fields
+    assert fields[field_name]["data_type"] == "str"
+
+
+@_handle_project
+def test_rename_field():
+    field_name = "full_name"
+    unify.create_fields([field_name])
+    fields = unify.get_fields()
+    assert field_name in fields
+
+    new_field_name = "first_name"
+    unify.rename_field(name=field_name, new_name=new_field_name)
+
+    fields = unify.get_fields()
+    assert new_field_name in fields
+    assert field_name not in fields
+
+
+@_handle_project
+def test_get_fields():
+    assert len(unify.get_fields()) == 0
+
+    field_name = "full_name"
+    unify.create_fields(fields={field_name: None})
+    fields = unify.get_fields()
+    assert field_name in fields
+
+
+@_handle_project
+def test_delete_fields():
+    field_name = "full_name"
+    unify.create_fields(fields={field_name: None})
+    fields = unify.get_fields()
+    assert field_name in fields
+
+    unify.log(first_name="John")
+    assert len(unify.get_logs()) == 1
+
+    unify.delete_fields([field_name])
+    assert len(unify.get_logs()) == 0
+
+    fields = unify.get_fields()
+    assert field_name not in fields
 
 
 if __name__ == "__main__":

@@ -511,6 +511,90 @@ def _sync_log(
     )
 
 
+def _create_log(dct, params, context, api_key, context_entries=None):
+    if context_entries is None:
+        context_entries = {}
+    return unify.Log(
+        id=dct["id"],
+        ts=dct["ts"],
+        **dct["entries"],
+        **dct["derived_entries"],
+        **context_entries,
+        params={
+            param_name: (param_ver, params[param_name][param_ver])
+            for param_name, param_ver in dct["params"].items()
+        },
+        context=context,
+        api_key=api_key,
+    )
+
+
+def _create_log_groups_nested(
+    params,
+    context,
+    api_key,
+    node,
+    context_entries,
+    prev_key=None,
+):
+    if isinstance(node, dict) and "group" not in node:
+        ret = unify.LogGroup(list(node.keys())[0])
+        ret.value = _create_log_groups_nested(
+            params,
+            context,
+            api_key,
+            node[ret.field],
+            context_entries,
+            ret.field,
+        )
+        return ret
+    else:
+        if isinstance(node["group"][0]["value"], list):
+            ret = {}
+            for n in node["group"]:
+                context_entries[prev_key] = n["key"]
+                ret[n["key"]] = [
+                    _create_log(
+                        item,
+                        item["params"],
+                        context,
+                        api_key,
+                        context_entries,
+                    )
+                    for item in n["value"]
+                ]
+            return ret
+        else:
+            ret = {}
+            for n in node["group"]:
+                context_entries[prev_key] = n["key"]
+                ret[n["key"]] = _create_log_groups_nested(
+                    params,
+                    context,
+                    api_key,
+                    n["value"],
+                    context_entries,
+                    n["key"],
+                )
+            return ret
+
+
+def _create_log_groups_not_nested(logs, groups, params, context, api_key):
+    logs_mapping = {}
+    for dct in logs:
+        logs_mapping[dct["id"]] = _create_log(dct, params, context, api_key)
+
+    ret = []
+    for group_key, group_value in groups.items():
+        if isinstance(group_value, dict):
+            val = {}
+            for k, v in group_value.items():
+                if isinstance(v, list):
+                    val[k] = [logs_mapping[log_id] for log_id in v]
+            ret.append(unify.LogGroup(group_key, val))
+    return ret
+
+
 def create_logs(
     *,
     project: Optional[str] = None,
@@ -817,6 +901,8 @@ def delete_logs(
     logs: Optional[Union[int, unify.Log, List[Union[int, unify.Log]]]] = None,
     project: Optional[str] = None,
     context: Optional[str] = None,
+    delete_empty_logs: bool = False,
+    source_type: str = "all",
     api_key: Optional[str] = None,
 ) -> Dict[str, str]:
     """
@@ -826,6 +912,13 @@ def delete_logs(
         logs: log(s) to delete from a project.
 
         project: Name of the project to delete logs from.
+
+        context: Context of the logs to delete. Logs will be removed from that context instead of being entirely deleted,
+        unless it is the last context associated with the log.
+
+        delete_empty_logs: Whether to delete logs that become empty after deleting the specified fields.
+
+        source_type: Type of logs to delete. Can be "all", "derived", or "base".
 
         api_key: If specified, unify API key to be used. Defaults to the value in the
         `UNIFY_KEY` environment variable.
@@ -849,8 +942,15 @@ def delete_logs(
         "project": project,
         "context": context,
         "ids_and_fields": [(log_ids, None)],
+        "source_type": source_type,
     }
-    response = _requests.delete(BASE_URL + f"/logs", headers=headers, json=body)
+    params = {"delete_empty_logs": delete_empty_logs}
+    response = _requests.delete(
+        BASE_URL + "/logs",
+        headers=headers,
+        params=params,
+        json=body,
+    )
     _check_response(response)
     if USR_LOGGING:
         logger.info(f"Deleted Logs({', '.join([str(i) for i in log_ids])})")
@@ -918,9 +1018,25 @@ def get_logs(
     filter: Optional[str] = None,
     limit: Optional[int] = None,
     offset: int = 0,
+    return_versions: Optional[bool] = None,
+    group_threshold: Optional[int] = None,
+    value_limit: Optional[int] = None,
+    sorting: Optional[Dict[str, Any]] = None,
+    group_sorting: Optional[Dict[str, Any]] = None,
+    from_ids: Optional[List[int]] = None,
+    exclude_ids: Optional[List[int]] = None,
+    from_fields: Optional[List[str]] = None,
+    exclude_fields: Optional[List[str]] = None,
+    group_by: Optional[List[str]] = None,
+    group_limit: Optional[int] = None,
+    group_offset: Optional[int] = 0,
+    group_depth: Optional[int] = None,
+    nested_groups: Optional[bool] = True,
+    groups_only: Optional[bool] = None,
+    return_timestamps: Optional[bool] = None,
     return_ids_only: bool = False,
     api_key: Optional[str] = None,
-) -> List[unify.Log]:
+) -> Union[List[unify.Log], Dict[str, Any]]:
     """
     Returns a list of filtered logs from a project.
 
@@ -937,6 +1053,38 @@ def get_logs(
         limit: The maximum number of logs to return. Default is None (unlimited).
 
         offset: The starting index of the logs to return. Default is 0.
+
+        return_versions: Whether to return all versions of logs.
+
+        group_threshold: Entries that appear in at least this many logs will be grouped together.
+
+        value_limit: Maximum number of characters to return for string values.
+
+        sorting: A dictionary specifying the sorting order for the logs by field names.
+
+        group_sorting: A dictionary specifying the sorting order for the groups relative to each other based on aggregated metrics.
+
+        from_ids: A list of log IDs to include in the results.
+
+        exclude_ids: A list of log IDs to exclude from the results.
+
+        from_fields: A list of field names to include in the results.
+
+        exclude_fields: A list of field names to exclude from the results.
+
+        group_by: A list of field names to group the logs by.
+
+        group_limit: The maximum number of groups to return at each level.
+
+        group_offset: Number of groups to skip at each level.
+
+        group_depth: Maximum depth of nested groups to return.
+
+        nested_groups: Whether to return nested groups.
+
+        groups_only: Whether to return only the groups.
+
+        return_timestamps: Whether to return the timestamps of the logs.
 
         return_ids_only: Whether to return only the log ids.
 
@@ -970,27 +1118,41 @@ def get_logs(
         "offset": offset,
         "return_ids_only": return_ids_only,
         "column_context": column_context,
+        "return_versions": return_versions,
+        "group_threshold": group_threshold,
+        "value_limit": value_limit,
+        "sorting": json.dumps(sorting) if sorting is not None else None,
+        "group_sorting": (
+            json.dumps(group_sorting) if group_sorting is not None else None
+        ),
+        "from_ids": "&".join(map(str, from_ids)) if from_ids else None,
+        "exclude_ids": "&".join(map(str, exclude_ids)) if exclude_ids else None,
+        "from_fields": "&".join(from_fields) if from_fields else None,
+        "exclude_fields": "&".join(exclude_fields) if exclude_fields else None,
+        "group_by": group_by,
+        "group_limit": group_limit,
+        "group_offset": group_offset,
+        "group_depth": group_depth,
+        "nested_groups": nested_groups,
+        "groups_only": groups_only,
+        "return_timestamps": return_timestamps,
     }
+
     response = _requests.get(BASE_URL + "/logs", headers=headers, params=params)
     _check_response(response)
-    if return_ids_only:
-        return response.json()
-    params, logs, _ = response.json().values()
-    return [
-        unify.Log(
-            id=dct["id"],
-            ts=dct["ts"],
-            **dct["entries"],
-            **dct["derived_entries"],
-            params={
-                param_name: (param_ver, params[param_name][param_ver])
-                for param_name, param_ver in dct["params"].items()
-            },
-            context=context,
-            api_key=api_key,
-        )
-        for dct in logs
-    ]
+
+    if not group_by:
+        if return_ids_only:
+            return response.json()
+        params, logs, _ = response.json().values()
+        return [_create_log(dct, params, context, api_key) for dct in logs]
+
+    if nested_groups:
+        params, logs, _ = response.json().values()
+        return _create_log_groups_nested(params, context, api_key, logs, {})
+    else:
+        params, groups, logs, _ = response.json().values()
+        return _create_log_groups_not_nested(logs, groups, params, context, api_key)
 
 
 # noinspection PyShadowingBuiltins
@@ -1047,6 +1209,9 @@ def get_logs_metric(
     key: str,
     filter: Optional[str] = None,
     project: Optional[str] = None,
+    context: Optional[str] = None,
+    from_ids: Optional[List[int]] = None,
+    exclude_ids: Optional[List[int]] = None,
     api_key: Optional[str] = None,
 ) -> Union[float, int, bool]:
     """
@@ -1064,6 +1229,12 @@ def get_logs_metric(
 
         project: The id of the project to retrieve the logs for.
 
+        context: The context of the logs to retrieve the metrics for.
+
+        from_ids: A list of log IDs to include in the results.
+
+        exclude_ids: A list of log IDs to exclude from the results.
+
         api_key: If specified, unify API key to be used. Defaults to the value in the
         `UNIFY_KEY` environment variable.
 
@@ -1077,7 +1248,14 @@ def get_logs_metric(
         "Authorization": f"Bearer {api_key}",
     }
     project = _get_and_maybe_create_project(project, api_key=api_key)
-    params = {"project": project, "filter_expr": filter, "key": key}
+    params = {
+        "project": project,
+        "filter_expr": filter,
+        "key": key,
+        "from_ids": "&".join(map(str, from_ids)) if from_ids else None,
+        "exclude_ids": "&".join(map(str, exclude_ids)) if exclude_ids else None,
+        "context": context if context else CONTEXT_READ.get(),
+    }
     response = _requests.get(
         BASE_URL + f"/logs/metric/{metric}",
         headers=headers,
@@ -1091,6 +1269,9 @@ def get_groups(
     *,
     key: str,
     project: Optional[str] = None,
+    filter: Optional[Dict[str, Any]] = None,
+    from_ids: Optional[List[int]] = None,
+    exclude_ids: Optional[List[int]] = None,
     api_key: Optional[str] = None,
 ) -> Dict[str, List[Dict[str, Any]]]:
     """
@@ -1101,6 +1282,13 @@ def get_groups(
         key: Name of the log entry to do equality matching for.
 
         project: Name of the project to get logs from.
+
+        filter: Boolean string to filter logs, for example:
+        "(temperature > 0.5 and (len(system_msg) < 100 or 'no' in usr_response))"
+
+        from_ids: A list of log IDs to include in the results.
+
+        exclude_ids: A list of log IDs to exclude from the results.
 
         api_key: If specified, unify API key to be used. Defaults to the value in the
         `UNIFY_KEY` environment variable.
@@ -1115,8 +1303,284 @@ def get_groups(
         "Authorization": f"Bearer {api_key}",
     }
     project = _get_and_maybe_create_project(project, api_key=api_key)
-    params = {"project": project, "key": key}
+    params = {
+        "project": project,
+        "key": key,
+        "filter_expr": filter,
+        "from_ids": from_ids,
+        "exclude_ids": exclude_ids,
+    }
     response = _requests.get(BASE_URL + "/logs/groups", headers=headers, params=params)
+    _check_response(response)
+    return response.json()
+
+
+def get_logs_latest_timestamp(
+    *,
+    project: Optional[str] = None,
+    context: Optional[str] = None,
+    column_context: Optional[str] = None,
+    filter: Optional[str] = None,
+    sort_by: Optional[str] = None,
+    from_ids: Optional[List[int]] = None,
+    exclude_ids: Optional[List[int]] = None,
+    limit: Optional[int] = None,
+    offset: Optional[int] = None,
+    api_key: Optional[str] = None,
+) -> int:
+    """
+    Returns the update timestamp of the most recently updated log within the specified page and filter bounds.
+    """
+    api_key = _validate_api_key(api_key)
+    headers = {
+        "accept": "application/json",
+        "Authorization": f"Bearer {api_key}",
+    }
+    project = _get_and_maybe_create_project(project, api_key=api_key)
+    context = context if context else CONTEXT_READ.get()
+    column_context = column_context if column_context else COLUMN_CONTEXT_READ.get()
+    params = {
+        "project": project,
+        "context": context,
+        "column_context": column_context,
+        "filter_expr": filter,
+        "sort_by": sort_by,
+        "from_ids": "&".join(map(str, from_ids)) if from_ids else None,
+        "exclude_ids": "&".join(map(str, exclude_ids)) if exclude_ids else None,
+        "limit": limit,
+        "offset": offset,
+    }
+    response = _requests.get(
+        BASE_URL + "/logs/latest_timestamp",
+        headers=headers,
+        params=params,
+    )
+    _check_response(response)
+    return response.json()
+
+
+def update_derived_log(
+    *,
+    target: Union[List[int], int],
+    key: Optional[str] = None,
+    equation: Optional[str] = None,
+    referenced_logs: Optional[List[int]] = None,
+    project: Optional[str] = None,
+    context: Optional[str] = None,
+    api_key: Optional[str] = None,
+) -> None:
+    """
+    Update the derived entries for a log.
+    """
+    api_key = _validate_api_key(api_key)
+    headers = {
+        "accept": "application/json",
+        "Authorization": f"Bearer {api_key}",
+    }
+    project = _get_and_maybe_create_project(project, api_key=api_key)
+    context = context if context else CONTEXT_READ.get()
+    params = {
+        "project": project,
+        "context": context,
+        "target": target,
+        "key": key,
+        "equation": equation,
+        "referenced_logs": referenced_logs,
+    }
+    response = _requests.put(BASE_URL + "/logs/derived", headers=headers, params=params)
+    _check_response(response)
+    return response.json()
+
+
+def join_logs(
+    *,
+    pair_of_args: List[Dict[str, Any]],
+    join_expr: str,
+    mode: str,
+    new_context: str,
+    columns: Optional[List[str]] = None,
+    project: Optional[str] = None,
+    api_key: Optional[str] = None,
+):
+    """
+    Join two sets of logs based on specified criteria and creates new logs with the joined data.
+    """
+    api_key = _validate_api_key(api_key)
+    headers = {
+        "accept": "application/json",
+        "Authorization": f"Bearer {api_key}",
+    }
+    project = _get_and_maybe_create_project(project, api_key=api_key)
+    params = {
+        "project": project,
+        "pair_of_args": pair_of_args,
+        "join_expr": join_expr,
+        "mode": mode,
+        "new_context": new_context,
+        "columns": columns,
+    }
+    response = _requests.post(BASE_URL + "/logs/join", headers=headers, params=params)
+    _check_response(response)
+    return response.json()
+
+
+def create_fields(
+    fields: Union[Dict[str, Any], List[str]],
+    *,
+    project: Optional[str] = None,
+    context: Optional[str] = None,
+    api_key: Optional[str] = None,
+):
+    """
+    Creates one or more fields in a project.
+
+    Args:
+        fields: Dictionary mapping field names to their types (or None if no explicit type).
+
+        project: Name of the project to create fields in.
+
+        context: The context to create fields in.
+
+        api_key: If specified, unify API key to be used. Defaults to the value in the
+        `UNIFY_KEY` environment variable.
+    """
+    api_key = _validate_api_key(api_key)
+    headers = {
+        "accept": "application/json",
+        "Authorization": f"Bearer {api_key}",
+    }
+    project = _get_and_maybe_create_project(project, api_key=api_key)
+    context = context if context else CONTEXT_WRITE.get()
+    if isinstance(fields, list):
+        fields = {field: None for field in fields}
+    body = {
+        "project": project,
+        "context": context,
+        "fields": fields,
+    }
+    response = _requests.post(BASE_URL + "/logs/fields", headers=headers, json=body)
+    _check_response(response)
+    return response.json()
+
+
+def rename_field(
+    name: str,
+    new_name: str,
+    *,
+    project: Optional[str] = None,
+    context: Optional[str] = None,
+    api_key: Optional[str] = None,
+):
+    """
+    Rename a field in a project.
+
+    Args:
+        name: The name of the field to rename.
+
+        new_name: The new name for the field.
+
+        project: Name of the project to rename the field in.
+
+        context: The context to rename the field in.
+
+        api_key: If specified, unify API key to be used. Defaults to the value in the
+        `UNIFY_KEY` environment variable.
+    """
+    api_key = _validate_api_key(api_key)
+    headers = {
+        "accept": "application/json",
+        "Authorization": f"Bearer {api_key}",
+    }
+    project = _get_and_maybe_create_project(project, api_key=api_key)
+    context = context if context else CONTEXT_WRITE.get()
+    body = {
+        "project": project,
+        "context": context,
+        "old_field_name": name,
+        "new_field_name": new_name,
+    }
+    response = _requests.post(
+        BASE_URL + "/logs/rename_field",
+        headers=headers,
+        json=body,
+    )
+    _check_response(response)
+    return response.json()
+
+
+def get_fields(
+    *,
+    project: Optional[str] = None,
+    context: Optional[str] = None,
+    api_key: Optional[str] = None,
+):
+    """
+    Get a dictionary of fields names and their types
+
+    Args:
+        project: Name of the project to get fields from.
+
+        context: The context to get fields from.
+
+        api_key: If specified, unify API key to be used. Defaults to the value in the
+        `UNIFY_KEY` environment variable.
+
+    Returns:
+        A dictionary of fields names and their types
+    """
+    api_key = _validate_api_key(api_key)
+    headers = {
+        "accept": "application/json",
+        "Authorization": f"Bearer {api_key}",
+    }
+    project = _get_and_maybe_create_project(project, api_key=api_key)
+    context = context if context else CONTEXT_READ.get()
+    params = {
+        "project": project,
+        "context": context,
+    }
+    response = _requests.get(BASE_URL + "/logs/fields", headers=headers, params=params)
+    _check_response(response)
+    return response.json()
+
+
+def delete_fields(
+    fields: List[str],
+    *,
+    project: Optional[str] = None,
+    context: Optional[str] = None,
+    api_key: Optional[str] = None,
+):
+    """
+    Delete one or more fields from a project.
+
+    Args:
+        fields: List of field names to delete.
+
+        project: Name of the project to delete fields from.
+
+        context: The context to delete fields from.
+
+        api_key: If specified, unify API key to be used. Defaults to the value in the
+        `UNIFY_KEY` environment variable.
+    """
+    api_key = _validate_api_key(api_key)
+    headers = {
+        "accept": "application/json",
+        "Authorization": f"Bearer {api_key}",
+    }
+    project = _get_and_maybe_create_project(project, api_key=api_key)
+    context = context if context else CONTEXT_WRITE.get()
+    body = {
+        "project": project,
+        "context": context,
+        "fields": fields,
+    }
+    response = _requests.delete(
+        BASE_URL + "/logs/fields",
+        headers=headers,
+        json=body,
+    )
     _check_response(response)
     return response.json()
 

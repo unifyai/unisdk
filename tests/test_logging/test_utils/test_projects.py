@@ -1,5 +1,7 @@
 import unify
 
+from ..helpers import _handle_project
+
 
 def test_project():
     name = "my_project"
@@ -27,6 +29,27 @@ def test_project_thread_lock():
         from_args=True,
     )
     unify.delete_project("test_project")
+
+
+@_handle_project
+def test_delete_project_logs():
+    [unify.log(x=i) for i in range(10)]
+    assert len(unify.get_logs()) == 10
+    unify.delete_project_logs("test_delete_project_logs")
+    assert len(unify.get_logs()) == 0
+    assert "test_delete_project_logs" in unify.list_projects()
+
+
+@_handle_project
+def test_delete_project_contexts():
+    unify.create_context("foo")
+    unify.create_context("bar")
+
+    assert len(unify.get_contexts()) == 2
+    unify.delete_project_contexts("test_delete_project_contexts")
+
+    assert len(unify.get_contexts()) == 0
+    assert "test_delete_project_contexts" in unify.list_projects()
 
 
 if __name__ == "__main__":
