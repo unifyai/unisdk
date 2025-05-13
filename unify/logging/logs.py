@@ -581,12 +581,20 @@ def _finalize_span(
         GLOBAL_SPAN.reset(global_token)
 
 
+def _default_trace_filter(obj, name):
+    return not (name.startswith("__") and name.endswith("__"))
+
+
 def _trace_class(cls, prune_empty, span_type, name, filter):
-    for member_name, value in inspect.getmembers(cls, predicate=inspect.isfunction):
-        if member_name.startswith("__") and member_name.endswith("__"):
+    _obj_filter = (
+        lambda obj: inspect.isfunction(obj)
+        or inspect.isclass(obj)
+        or inspect.ismethod(obj)
+    )
+    for member_name, value in inspect.getmembers(cls, predicate=_obj_filter):
+        if not filter(value, member_name):
             continue
-        if filter is not None and not filter(value):
-            continue
+
         _name = f"{name if name is not None else cls.__name__}.{member_name}"
         setattr(
             cls,
@@ -597,12 +605,15 @@ def _trace_class(cls, prune_empty, span_type, name, filter):
 
 
 def _trace_module(module, prune_empty, span_type, name, filter):
-    _obj_filter = lambda obj: inspect.isfunction(obj) or inspect.isclass(obj)
+    _obj_filter = (
+        lambda obj: inspect.isfunction(obj)
+        or inspect.isclass(obj)
+        or inspect.ismethod(obj)
+    )
     for member_name, value in inspect.getmembers(module, predicate=_obj_filter):
-        if member_name.startswith("__") and member_name.endswith("__"):
+        if not filter(value, member_name):
             continue
-        if filter is not None and not filter(value):
-            continue
+
         _name = f"{name if name is not None else module.__name__}.{member_name}"
         setattr(
             module,
@@ -757,10 +768,22 @@ def traced(
         )
 
     if inspect.isclass(fn):
-        return _trace_class(fn, prune_empty, span_type, name, filter)
+        return _trace_class(
+            fn,
+            prune_empty,
+            span_type,
+            name,
+            filter if filter else _default_trace_filter,
+        )
 
     if inspect.ismodule(fn):
-        return _trace_module(fn, prune_empty, span_type, name, filter)
+        return _trace_module(
+            fn,
+            prune_empty,
+            span_type,
+            name,
+            filter if filter else _default_trace_filter,
+        )
 
     return _trace_function(
         fn,
