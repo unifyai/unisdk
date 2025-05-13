@@ -510,6 +510,12 @@ def _create_span(fn, args, kwargs, span_type, name):
             substr = "{" + k + "}"
             if substr in name_w_sub:
                 name_w_sub = name_w_sub.replace(substr, str(v))
+
+    try:
+        code_fpath = inspect.getsourcefile(fn)
+    except Exception as e:
+        code_fpath = None
+
     new_span = {
         "id": str(uuid.uuid4()),
         "type": span_type,
@@ -524,7 +530,7 @@ def _create_span(fn, args, kwargs, span_type, name):
         "llm_usage": None,
         "llm_usage_inc_cache": None,
         "code": f"```python\n{code}\n```",
-        "code_fpath": inspect.getsourcefile(fn),
+        "code_fpath": code_fpath,
         "code_start_line": start_line,
         "inputs": inputs,
         "outputs": None,
