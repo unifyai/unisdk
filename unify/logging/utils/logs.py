@@ -1361,7 +1361,7 @@ def get_logs_latest_timestamp(
 
 def update_derived_log(
     *,
-    target: Union[List[int], int],
+    target: Union[List[int], Dict[str, str]],
     key: Optional[str] = None,
     equation: Optional[str] = None,
     referenced_logs: Optional[List[int]] = None,
@@ -1371,6 +1371,25 @@ def update_derived_log(
 ) -> None:
     """
     Update the derived entries for a log.
+
+    Args:
+        target: The derived logs to update
+
+        key: New key name for the derived entries
+
+        equation: New equation for computing derived values
+
+        referenced_logs: Optional new referenced logs to use for computation.
+
+        project: The project to update the derived logs for
+
+        context: The context to update the derived logs for
+
+        api_key: If specified, unify API key to be used. Defaults to the value in the
+        `UNIFY_KEY` environment variable.
+
+    Returns:
+        A message indicating whether the derived logs were successfully updated.
     """
     api_key = _validate_api_key(api_key)
     headers = {
@@ -1378,16 +1397,16 @@ def update_derived_log(
         "Authorization": f"Bearer {api_key}",
     }
     project = _get_and_maybe_create_project(project, api_key=api_key)
-    context = context if context else CONTEXT_READ.get()
-    params = {
+    context = context if context else CONTEXT_WRITE.get()
+    body = {
         "project": project,
         "context": context,
-        "target": target,
+        "target_derived_logs": target,
         "key": key,
         "equation": equation,
         "referenced_logs": referenced_logs,
     }
-    response = _requests.put(BASE_URL + "/logs/derived", headers=headers, params=params)
+    response = _requests.put(BASE_URL + "/logs/derived", headers=headers, json=body)
     _check_response(response)
     return response.json()
 
