@@ -1,6 +1,7 @@
 import asyncio
 import importlib
 import inspect
+import sys
 import threading
 import time
 
@@ -523,6 +524,69 @@ class Foo:
     assert logs[1].entries["trace"]["outputs"] == -1
 
     assert logs[2].entries["trace"]["span_name"] == "test_module.Foo.add"
+
+
+@_handle_project
+def test_traced_install_and_disable_tracing_hook():
+    from unify.logging.utils.tracing import TraceFinder
+
+    unify.install_tracing_hook(["test_tracing_package"])
+    assert any(isinstance(finder, TraceFinder) for finder in sys.meta_path)
+
+    unify.disable_tracing_hook()
+    assert not any(isinstance(finder, TraceFinder) for finder in sys.meta_path)
+
+
+@_handle_project
+def test_traced_install_tracing_hook(tmpdir):
+    package_dir = tmpdir.join("test_tracing_package")
+    package_dir.mkdir()
+
+    with open(package_dir.join("__init__.py"), "w") as f:
+        f.write("# Package initialization\n")
+        f.write("from .module1 import add_abs\n")
+
+    with open(package_dir.join("module1.py"), "w") as f:
+        f.write(
+            """
+from .module2 import abs
+
+def add_abs(a, b):
+    return abs(a) + abs(b)
+""",
+        )
+
+    with open(package_dir.join("module2.py"), "w") as f:
+        f.write(
+            """
+def abs(a):
+    return a if a > 0 else -a
+""",
+        )
+
+    sys.path.insert(0, tmpdir.strpath)
+    unify.install_tracing_hook(["test_tracing_package"])
+
+    try:
+        import test_tracing_package
+
+        test_tracing_package.add_abs(-2, -3)
+
+    finally:
+        sys.path.remove(tmpdir.strpath)
+        unify.disable_tracing_hook()
+
+    _wait_for_trace_logger()
+    logs = unify.get_logs()
+    assert len(logs) == 1
+
+    entry = logs[0].entries["trace"]
+    assert entry["span_name"] == "test_tracing_package.module1.add_abs"
+    assert entry["inputs"] == {"a": -2, "b": -3}
+    assert entry["outputs"] == 5
+    assert len(entry["child_spans"]) == 2
+    assert entry["child_spans"][0]["span_name"] == "test_tracing_package.module2.abs"
+    assert entry["child_spans"][1]["span_name"] == "test_tracing_package.module2.abs"
 
 
 if __name__ == "__main__":
