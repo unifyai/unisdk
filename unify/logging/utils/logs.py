@@ -824,6 +824,7 @@ def add_log_entries(
     overwrite: bool = False,
     mutable: Optional[Union[bool, Dict[str, bool]]] = True,
     api_key: Optional[str] = None,
+    context: Optional[str] = None,
     **entries,
 ) -> Dict[str, str]:
     """
@@ -853,6 +854,7 @@ def add_log_entries(
         overwrite=overwrite,
         mutable=mutable,
         api_key=api_key,
+        context=context,
         **entries,
     )
     if USR_LOGGING:

@@ -117,7 +117,12 @@ class Log:
         self._entries = log._entries
 
     def add_entries(self, **entries) -> None:
-        add_log_entries(logs=self._id, api_key=self._api_key, **entries)
+        add_log_entries(
+            logs=self._id,
+            context=self._context,
+            api_key=self._api_key,
+            **entries,
+        )
         self._entries = {**self._entries, **entries}
 
     def update_entries(self, **entries) -> None:
