@@ -589,5 +589,40 @@ def abs(a):
     assert entry["child_spans"][1]["span_name"] == "test_tracing_package.module2.abs"
 
 
+@_handle_project
+def test_traced_context():
+    unify.set_trace_context("Tracing")
+
+    @unify.traced
+    def some_func(arg):
+        return arg + 1
+
+    with unify.Context("Foo"):
+        unify.log(a=1)
+
+    [some_func(i) for i in range(5)]
+
+    with unify.Context("Foo"):
+        unify.log(a=2)
+
+    _wait_for_trace_logger()
+    logs = unify.get_logs(context="Foo")
+    assert len(logs) == 2
+
+    logs = unify.get_logs(context="Tracing")
+    assert len(logs) == 5
+
+    unify.set_trace_context(None)
+
+
+@_handle_project
+def test_traced_context_set_get():
+    unify.set_trace_context("Tracing")
+    assert unify.get_trace_context() == "Tracing"
+
+    unify.set_trace_context(None)
+    assert unify.get_trace_context() is None
+
+
 if __name__ == "__main__":
     pass

@@ -92,6 +92,9 @@ GLOBAL_SPAN = ContextVar("global_span", default={})
 SPAN = ContextVar("span", default={})
 RUNNING_TIME = ContextVar("running_time", default=0.0)
 
+# tracing
+TRACING_LOG_CONTEXT = None
+
 # chunking
 CHUNK_LIMIT = 5000000
 
@@ -112,11 +115,16 @@ class _AsyncTraceLogger(threading.Thread):
             if isinstance(item, self._StopEvent):
                 break
 
-            log_id, trace = item
-            unify.add_log_entries(logs=log_id, trace=trace, overwrite=True)
+            log_id, trace, context = item
+            unify.add_log_entries(
+                logs=log_id,
+                trace=trace,
+                overwrite=True,
+                context=context,
+            )
 
-    def update_trace(self, log_id, trace):
-        self.queue.put_nowait((log_id, trace))
+    def update_trace(self, log_id, trace, context):
+        self.queue.put_nowait((log_id, trace, context))
 
     def stop(self):
         """Stop normally, waiting for queue to be processed"""
@@ -194,6 +202,21 @@ def _initialize_trace_logger():
 
 def _get_trace_logger():
     return _trace_logger
+
+
+def set_trace_context(context: str):
+    global TRACING_LOG_CONTEXT
+    TRACING_LOG_CONTEXT = context
+    if context is None:
+        return
+    names = [name for name, _ in unify.get_contexts().items()]
+    if context not in names:
+        unify.create_context(name=context)
+
+
+def get_trace_context():
+    global TRACING_LOG_CONTEXT
+    return TRACING_LOG_CONTEXT
 
 
 def _handle_cache(fn: Callable) -> Callable:

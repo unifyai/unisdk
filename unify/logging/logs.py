@@ -17,6 +17,7 @@ from .utils.logs import (
     _get_trace_logger,
     _handle_special_types,
     _initialize_trace_logger,
+    get_trace_context,
 )
 from .utils.logs import log as unify_log
 
@@ -552,7 +553,11 @@ def _create_span(fn, args, kwargs, span_type, name):
         global_token = None
         SPAN.get()["child_spans"].append(new_span)
         local_token = SPAN.set(new_span)
-    _get_trace_logger().update_trace(ACTIVE_LOG.get(), copy.deepcopy(GLOBAL_SPAN.get()))
+    _get_trace_logger().update_trace(
+        ACTIVE_LOG.get(),
+        copy.deepcopy(GLOBAL_SPAN.get()),
+        ACTIVE_LOG.get()[0].context,
+    )
     return new_span, exec_start_time, local_token, global_token
 
 
@@ -587,7 +592,11 @@ def _finalize_span(
             SPAN.get()["llm_usage_inc_cache"],
             new_span["llm_usage_inc_cache"],
         )
-    _get_trace_logger().update_trace(ACTIVE_LOG.get(), copy.deepcopy(GLOBAL_SPAN.get()))
+    _get_trace_logger().update_trace(
+        ACTIVE_LOG.get(),
+        copy.deepcopy(GLOBAL_SPAN.get()),
+        ACTIVE_LOG.get()[0].context,
+    )
     if global_token:
         GLOBAL_SPAN.reset(global_token)
 
@@ -694,7 +703,11 @@ def _trace_function(
 
     @functools.wraps(fn)
     def wrapped(*args, **kwargs):
-        log_token = None if ACTIVE_LOG.get() else ACTIVE_LOG.set([unify.log()])
+        log_token = (
+            None
+            if ACTIVE_LOG.get()
+            else ACTIVE_LOG.set([unify.log(context=get_trace_context())])
+        )
         new_span, exec_start_time, local_token, global_token = _create_span(
             fn,
             args,
