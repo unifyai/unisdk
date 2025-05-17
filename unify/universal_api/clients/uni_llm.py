@@ -1,12 +1,15 @@
 # global
 import abc
+import inspect
 import threading
 
 # noinspection PyProtectedMember
 import time
 import uuid
 from typing import (
+    Any,
     AsyncGenerator,
+    Coroutine,
     Dict,
     Generator,
     Iterable,
@@ -472,6 +475,194 @@ class _UniClient(_Client, abc.ABC):
     def __str__(self):
         return "{}(endpoint={})".format(self.__class__.__name__, self._endpoint)
 
+    # --------------------------------------------------------------------- #
+    #  Helper(s) – keep the public surface of _UniClient unchanged          #
+    # --------------------------------------------------------------------- #
+
+    def _append_to_history(self, assistant_msg: dict) -> None:
+        """Append a single assistant message to the internal history."""
+        if self._messages is None:
+            self._messages = []
+        self._messages.append(assistant_msg)
+
+    # --------------------------------------------------------------------- #
+    #  Streaming wrappers                                                   #
+    # --------------------------------------------------------------------- #
+
+    def _wrap_sync_stream(
+        self,
+        stream: Generator[Any, None, None],
+        *,
+        stateful: bool,
+        return_full_completion: bool,
+    ) -> Generator[Any, None, None]:
+        """
+        Proxy a *synchronous* stream, collecting the emitted content so we can
+        update or clear the history once (and only once) when the stream
+        finishes.
+        """
+        collected: list[str] = []
+
+        def _take(item: Any) -> str:
+            if return_full_completion:
+                # ChatCompletionChunk → extract incremental delta
+                try:
+                    delta = item.choices[0].delta.content
+                    return delta or ""  # may be None
+                except Exception:  # noqa: BLE001
+                    return ""
+            return str(item)
+
+        try:
+            for chunk in stream:
+                if stateful:
+                    piece = _take(chunk)
+                    if piece:
+                        collected.append(piece)
+                yield chunk
+        finally:  # executes on normal end *and* on .close()
+            if stateful:
+                if collected:
+                    self._append_to_history(
+                        {"role": "assistant", "content": "".join(collected).strip()},
+                    )
+            elif self._messages:
+                self._messages.clear()
+
+    def _wrap_async_stream(  # noqa: WPS231
+        self,
+        stream: AsyncGenerator[Any, None],
+        *,
+        stateful: bool,
+        return_full_completion: bool,
+    ) -> AsyncGenerator[Any, None]:
+        """
+        Same as `_wrap_sync_stream` but for *async* generators.
+        """
+        collected: list[str] = []
+
+        async def _internal():
+            async for chunk in stream:
+                if stateful:
+                    if return_full_completion:
+                        try:
+                            delta = chunk.choices[0].delta.content
+                            if delta:
+                                collected.append(delta)
+                        except Exception:  # noqa: BLE001
+                            pass
+                    else:
+                        collected.append(str(chunk))
+                yield chunk
+
+            # async-generator exhausted
+            if stateful:
+                if collected:
+                    self._append_to_history(
+                        {"role": "assistant", "content": "".join(collected).strip()},
+                    )
+            elif self._messages:
+                self._messages.clear()
+
+        return _internal()
+
+    # --------------------------------------------------------------------- #
+    #  Single place that decides which helper to call                       #
+    # --------------------------------------------------------------------- #
+
+    def _apply_stateful_logic(  # noqa: WPS231,WPS211
+        self,
+        *,
+        response: Any,
+        stateful: bool,
+        was_stream: bool,
+        return_full_completion: bool,
+    ) -> Any:
+        """
+        Ensures the conversation history is updated (or cleared) **once** per
+        call, for all four modalities.
+        """
+
+        if was_stream:
+
+            if inspect.iscoroutine(response):
+
+                async def _await_then_wrap(coro):
+                    inner = await coro  # real result from _generate
+
+                    # inner is expected to be async-gen, but handle sync-gen too
+                    if inspect.isasyncgen(inner):
+                        return self._wrap_async_stream(
+                            inner,
+                            stateful=stateful,
+                            return_full_completion=return_full_completion,
+                        )
+                    if isinstance(inner, (list, tuple)) or inspect.isgenerator(inner):
+                        # rare case: provider gave back sync generator
+                        return self._wrap_sync_stream(
+                            inner,
+                            stateful=stateful,
+                            return_full_completion=return_full_completion,
+                        )
+                    # not a generator at all – treat like non-stream single result
+                    return self._apply_stateful_logic(
+                        response=inner,
+                        stateful=stateful,
+                        was_stream=False,
+                        return_full_completion=return_full_completion,
+                    )
+
+                # Return *the coroutine itself* so the caller still needs to `await`
+                return _await_then_wrap(response)
+
+            # choose correct wrapper (sync vs async)
+            if inspect.isasyncgen(response):
+                return self._wrap_async_stream(
+                    response,
+                    stateful=stateful,
+                    return_full_completion=return_full_completion,
+                )
+            return self._wrap_sync_stream(
+                response,
+                stateful=stateful,
+                return_full_completion=return_full_completion,
+            )
+
+        # ───── coroutine (async-non-stream) path ──────────────────────────
+        if inspect.iscoroutine(response):
+
+            async def _await_and_process(coro: Coroutine[Any, Any, Any]):
+                res = await coro  # wait for real answer first
+
+                # run the same non-stream bookkeeping now that we have `res`
+                if stateful:
+                    if return_full_completion:
+                        assistant_dict = res.choices[0].message.model_dump()
+                    else:
+                        assistant_dict = {
+                            "role": "assistant",
+                            "content": str(res),
+                        }
+                    self._append_to_history(assistant_dict)
+                elif self._messages:
+                    self._messages.clear()
+
+                return res
+
+            return _await_and_process(response)
+
+        # ---------- non-streaming path ----------
+        if stateful:
+            if return_full_completion:
+                assistant_dict = response.choices[0].message.model_dump()
+            else:
+                assistant_dict = {"role": "assistant", "content": str(response)}
+            self._append_to_history(assistant_dict)
+        elif self._messages:
+            self._messages.clear()
+
+        return response
+
     # Abstract #
     # ---------#
 
@@ -752,16 +943,12 @@ class _UniClient(_Client, abc.ABC):
             extra_query=_default(extra_query, self._extra_query),
             **{**self._extra_body, **kwargs},
         )
-        if stateful:
-            if return_full_completion:
-                msg = [ret.choices[0].message.model_dump()]
-            else:
-                msg = [{"role": "assistant", "content": ret}]
-            if self._messages is None:
-                self._messages = []
-            self._messages += msg
-        elif self._messages:
-            self._messages.clear()
+        ret = self._apply_stateful_logic(
+            response=ret,
+            stateful=stateful,
+            was_stream=_default(stream, self._stream),
+            return_full_completion=return_full_completion,
+        )
         return ret
 
 
