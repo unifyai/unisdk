@@ -9,7 +9,7 @@ import time
 import traceback
 import uuid
 from datetime import datetime, timezone
-from types import ModuleType
+from types import MethodType, ModuleType
 from typing import Any, Dict, List, Optional, Tuple, Type, Union
 
 from ..utils.helpers import _make_json_serializable, _prune_dict, _validate_api_key
@@ -625,6 +625,37 @@ def _trace_class(cls, prune_empty, span_type, name, filter):
     return cls
 
 
+def _trace_instance(inst, prune_empty, span_type, name, filter):
+    """
+    Trace *only this instance* – the class itself is left untouched.
+    Every callable attribute that passes `filter` is wrapped and rebound
+    to the original instance so that `self` works exactly as before.
+    """
+    cls_name = type(inst).__name__
+    obj_filter = lambda obj: callable(obj)
+
+    for member_name, value in inspect.getmembers(inst, predicate=obj_filter):
+        if not filter(value, member_name):
+            continue
+
+        span_name = f"{name if name is not None else cls_name}.{member_name}"
+
+        # Use the class-level (unbound) function if it exists – cleaner `@wraps`
+        unbound = getattr(type(inst), member_name, value)
+        traced_fn = traced(
+            unbound,
+            prune_empty=prune_empty,
+            span_type=span_type,
+            name=span_name,
+            filter=filter,
+        )
+
+        # Re-bind *just for this instance*
+        setattr(inst, member_name, MethodType(traced_fn, inst))
+
+    return inst
+
+
 def _trace_module(module, prune_empty, span_type, name, filter):
     _obj_filter = (
         lambda obj: inspect.isfunction(obj)
@@ -821,6 +852,14 @@ def traced(
             trace_contexts,
             trace_dirs,
             filter,
+        )
+    else:
+        ret = _trace_instance(
+            obj,
+            prune_empty,
+            span_type,
+            name,
+            filter if filter else _default_trace_filter,
         )
 
     if ret is not None:

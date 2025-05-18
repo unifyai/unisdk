@@ -487,6 +487,39 @@ def test_traced_class():
 
 
 @_handle_project
+def test_traced_instance():
+    class Foo:
+        def __init__(self, a):
+            self.a = a
+
+        def add(self, b):
+            return self.a + b
+
+        def sub(self, b):
+            return self.a - b
+
+    foo = Foo(10)
+    unify.traced(foo)  # trace only *this* instance
+    foo.add(3)
+    foo.sub(5)
+
+    _wait_for_trace_logger()
+    logs = unify.get_logs()
+    assert len(logs) == 2
+
+    # order in the queue isn't guaranteed – sort by span name
+    sorted_logs = sorted(logs, key=lambda x: x.entries["trace"]["span_name"])
+
+    assert sorted_logs[0].entries["trace"]["span_name"] == "Foo.add"
+    assert sorted_logs[0].entries["trace"]["inputs"]["b"] == 3
+    assert sorted_logs[0].entries["trace"]["outputs"] == 13
+
+    assert sorted_logs[1].entries["trace"]["span_name"] == "Foo.sub"
+    assert sorted_logs[1].entries["trace"]["inputs"]["b"] == 5
+    assert sorted_logs[1].entries["trace"]["outputs"] == 5
+
+
+@_handle_project
 def test_traced_module():
     source_code = """
 def add(a, b):
