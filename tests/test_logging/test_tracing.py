@@ -139,7 +139,6 @@ def test_traced_w_exception():
 
 @_handle_project
 def test_traced_uni_llm():
-
     client = unify.Unify("gpt-4o@openai", traced=True)
     client.generate("hello")
     _wait_for_trace_logger()

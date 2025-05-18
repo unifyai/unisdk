@@ -812,7 +812,7 @@ def traced(
             name,
             filter if filter else _default_trace_filter,
         )
-    elif inspect.isfunction(obj):
+    elif inspect.isfunction(obj) or inspect.ismethod(obj):
         ret = _trace_function(
             obj,
             prune_empty,
