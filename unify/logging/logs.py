@@ -9,7 +9,8 @@ import time
 import traceback
 import uuid
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Tuple, Union
+from types import ModuleType
+from typing import Any, Dict, List, Optional, Tuple, Type, Union
 
 from ..utils.helpers import _make_json_serializable, _prune_dict, _validate_api_key
 from .utils.compositions import *
@@ -770,7 +771,7 @@ def _trace_function(
 
 
 def traced(
-    fn: callable = None,
+    obj: Union[Callable, ModuleType, Type[Any], Any] = None,
     *,
     prune_empty: bool = True,
     span_type: str = "function",
@@ -781,7 +782,7 @@ def traced(
 ):
     _initialize_trace_logger()
 
-    if fn is None:
+    if obj is None:
         return lambda f: traced(
             f,
             prune_empty=prune_empty,
@@ -791,29 +792,29 @@ def traced(
             trace_dirs=trace_dirs,
         )
 
-    if hasattr(fn, "__unify_traced"):
-        return fn
+    if hasattr(obj, "__unify_traced"):
+        return obj
 
     ret = None
-    if inspect.isclass(fn):
+    if inspect.isclass(obj):
         ret = _trace_class(
-            fn,
+            obj,
             prune_empty,
             span_type,
             name,
             filter if filter else _default_trace_filter,
         )
-    elif inspect.ismodule(fn):
+    elif inspect.ismodule(obj):
         ret = _trace_module(
-            fn,
+            obj,
             prune_empty,
             span_type,
             name,
             filter if filter else _default_trace_filter,
         )
-    elif inspect.isfunction(fn):
+    elif inspect.isfunction(obj):
         ret = _trace_function(
-            fn,
+            obj,
             prune_empty,
             span_type,
             name,
