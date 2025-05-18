@@ -54,26 +54,55 @@ def _dict_aligns_with_pydantic(dict_in: Dict, pydantic_cls: type(BaseModel)) -> 
 
 
 def _make_json_serializable(
-    item: Union[Dict, List, Tuple],
+    item: Any,
 ) -> Union[Dict, List, Tuple]:
-    if isinstance(item, list):
-        return [_make_json_serializable(i) for i in item]
-    elif isinstance(item, dict):
-        return {k: _make_json_serializable(v) for k, v in item.items()}
-    elif isinstance(item, tuple):
-        return tuple(_make_json_serializable(i) for i in item)
-    elif inspect.isclass(item) and issubclass(item, BaseModel):
-        return item.schema()
-    elif isinstance(item, BaseModel):
-        return item.dict()
-    elif hasattr(item, "json") and callable(item.json):
-        return _make_json_serializable(item.json())
-    else:
-        try:
-            json.dumps(item)
-            return item
-        except:
-            return str(item)
+    # Add a recursion guard using getattr to avoid infinite recursion
+    if hasattr(item, "_being_serialized") and getattr(item, "_being_serialized", False):
+        return "<circular reference>"
+
+    try:
+        # For objects that might cause recursion, set a flag
+        if hasattr(item, "__dict__") and not isinstance(
+            item,
+            (dict, list, tuple, BaseModel),
+        ):
+            setattr(item, "_being_serialized", True)
+
+        if isinstance(item, list):
+            result = [_make_json_serializable(i) for i in item]
+        elif isinstance(item, dict):
+            result = {k: _make_json_serializable(v) for k, v in item.items()}
+        elif isinstance(item, tuple):
+            result = tuple(_make_json_serializable(i) for i in item)
+        elif inspect.isclass(item) and issubclass(item, BaseModel):
+            result = item.model_json_schema()
+        elif isinstance(item, BaseModel):
+            result = item.model_dump()
+        elif hasattr(item, "json") and callable(item.json):
+            result = _make_json_serializable(item.json())
+        # Handle threading objects specifically
+        elif "threading" in type(item).__module__:
+            result = f"<{type(item).__name__} at {id(item)}>"
+        else:
+            try:
+                result = json.dumps(item)
+            except Exception:
+                try:
+                    result = str(item)
+                except Exception:
+                    result = f"<{type(item).__name__} at {id(item)}>"
+
+        return result
+    finally:
+        # Clean up the recursion guard flag
+        if hasattr(item, "__dict__") and not isinstance(
+            item,
+            (dict, list, tuple, BaseModel),
+        ):
+            try:
+                delattr(item, "_being_serialized")
+            except (AttributeError, TypeError):
+                pass
 
 
 def _get_and_maybe_create_project(
@@ -135,7 +164,7 @@ from typing import Any, Dict, List, Set, Tuple, Union
 __all__ = ["flexible_deepcopy"]
 
 
-# Internal sentinel: return this to signal “skip me”.
+# Internal sentinel: return this to signal "skip me".
 class _SkipType:
     pass
 
