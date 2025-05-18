@@ -911,8 +911,8 @@ def update_logs(
         "logs": _to_log_ids(logs),
         "context": context,
         # ToDo: remove once this [https://app.clickup.com/t/86c25g263] is done
-        "params": [{}] * len(entries) if params is None else params,
-        "entries": [{}] * len(params) if entries is None else entries,
+        "params": [{}] * len(logs) if params is None else params,
+        "entries": [{}] * len(logs) if entries is None else entries,
         # end ToDo
         "overwrite": overwrite,
     }
