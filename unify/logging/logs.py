@@ -617,11 +617,14 @@ def _trace_class(cls, prune_empty, span_type, name, filter):
             continue
 
         _name = f"{name if name is not None else cls.__name__}.{member_name}"
-        setattr(
-            cls,
-            member_name,
-            traced(value, prune_empty=prune_empty, span_type=span_type, name=_name),
-        )
+        try:
+            setattr(
+                cls,
+                member_name,
+                traced(value, prune_empty=prune_empty, span_type=span_type, name=_name),
+            )
+        except AttributeError:
+            pass
     return cls
 
 
@@ -651,7 +654,10 @@ def _trace_instance(inst, prune_empty, span_type, name, filter):
         )
 
         # Re-bind *just for this instance*
-        setattr(inst, member_name, MethodType(traced_fn, inst))
+        try:
+            setattr(inst, member_name, MethodType(traced_fn, inst))
+        except AttributeError:
+            pass
 
     return inst
 
@@ -667,11 +673,14 @@ def _trace_module(module, prune_empty, span_type, name, filter):
             continue
 
         _name = f"{name if name is not None else module.__name__}.{member_name}"
-        setattr(
-            module,
-            member_name,
-            traced(value, prune_empty=prune_empty, span_type=span_type, name=_name),
-        )
+        try:
+            setattr(
+                module,
+                member_name,
+                traced(value, prune_empty=prune_empty, span_type=span_type, name=_name),
+            )
+        except AttributeError:
+            pass
     return module
 
 
@@ -863,7 +872,10 @@ def traced(
         )
 
     if ret is not None:
-        setattr(ret, "__unify_traced", True)
+        try:
+            setattr(ret, "__unify_traced", True)
+        except AttributeError:
+            pass
 
     return ret
 
