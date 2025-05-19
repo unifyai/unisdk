@@ -206,7 +206,11 @@ def _get_trace_logger():
 
 def set_trace_context(context: str):
     global TRACING_LOG_CONTEXT
-    TRACING_LOG_CONTEXT = context
+    ctx_wrt = CONTEXT_WRITE.get()
+    if ctx_wrt:
+        TRACING_LOG_CONTEXT = f"{ctx_wrt}/{context}"
+    else:
+        TRACING_LOG_CONTEXT = context
     if context is None:
         return
     names = [name for name, _ in unify.get_contexts().items()]
