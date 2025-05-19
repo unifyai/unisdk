@@ -233,7 +233,7 @@ def unset_context():
     CONTEXT_MODE.reset(MODE_TOKEN)
 
 
-def get_context():
+def _get_context():
     return {"read": CONTEXT_READ.get(), "write": CONTEXT_WRITE.get()}
 
 
