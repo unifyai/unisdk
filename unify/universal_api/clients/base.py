@@ -148,6 +148,29 @@ class _Client(ABC):
         self.set_extra_query(extra_query)
         self.set_extra_body(kwargs)
 
+        # Store defaults
+        self._defaults = {
+            "system_message": system_message,
+            "messages": messages,
+            "frequency_penalty": frequency_penalty,
+            "logit_bias": logit_bias,
+            "logprobs": logprobs,
+            "top_logprobs": top_logprobs,
+            "max_completion_tokens": max_completion_tokens,
+            "n": n,
+            "presence_penalty": presence_penalty,
+            "response_format": response_format,
+            "seed": seed,
+            "stop": stop,
+            "stream": stream,
+            "stream_options": stream_options,
+            "temperature": temperature,
+            "top_p": top_p,
+            "tools": tools,
+            "tool_choice": tool_choice,
+            "parallel_tool_calls": parallel_tool_calls,
+        }
+
     # Properties #
     # -----------#
 
@@ -960,6 +983,208 @@ class _Client(ABC):
             This client, useful for chaining inplace calls.
         """
         self._extra_body = value
+        return self
+
+    # Reset Methods #
+    # -------------#
+
+    def reset_system_message(self) -> Self:
+        """
+        Reset the system message to its default value.
+
+        Returns:
+            This client, useful for chaining inplace calls.
+        """
+        return self.set_system_message(self._defaults["system_message"])
+
+    def reset_messages(self) -> Self:
+        """
+        Reset the messages to their default value.
+
+        Returns:
+            This client, useful for chaining inplace calls.
+        """
+        return self.set_messages(self._defaults["messages"])
+
+    def reset_frequency_penalty(self) -> Self:
+        """
+        Reset the frequency penalty to its default value.
+
+        Returns:
+            This client, useful for chaining inplace calls.
+        """
+        return self.set_frequency_penalty(self._defaults["frequency_penalty"])
+
+    def reset_logit_bias(self) -> Self:
+        """
+        Reset the logit bias to its default value.
+
+        Returns:
+            This client, useful for chaining inplace calls.
+        """
+        return self.set_logit_bias(self._defaults["logit_bias"])
+
+    def reset_logprobs(self) -> Self:
+        """
+        Reset the logprobs to its default value.
+
+        Returns:
+            This client, useful for chaining inplace calls.
+        """
+        return self.set_logprobs(self._defaults["logprobs"])
+
+    def reset_top_logprobs(self) -> Self:
+        """
+        Reset the top logprobs to its default value.
+
+        Returns:
+            This client, useful for chaining inplace calls.
+        """
+        return self.set_top_logprobs(self._defaults["top_logprobs"])
+
+    def reset_max_completion_tokens(self) -> Self:
+        """
+        Reset the max completion tokens to its default value.
+
+        Returns:
+            This client, useful for chaining inplace calls.
+        """
+        return self.set_max_completion_tokens(self._defaults["max_completion_tokens"])
+
+    def reset_n(self) -> Self:
+        """
+        Reset n to its default value.
+
+        Returns:
+            This client, useful for chaining inplace calls.
+        """
+        return self.set_n(self._defaults["n"])
+
+    def reset_presence_penalty(self) -> Self:
+        """
+        Reset the presence penalty to its default value.
+
+        Returns:
+            This client, useful for chaining inplace calls.
+        """
+        return self.set_presence_penalty(self._defaults["presence_penalty"])
+
+    def reset_response_format(self) -> Self:
+        """
+        Reset the response format to its default value.
+
+        Returns:
+            This client, useful for chaining inplace calls.
+        """
+        return self.set_response_format(self._defaults["response_format"])
+
+    def reset_seed(self) -> Self:
+        """
+        Reset the seed to its default value.
+
+        Returns:
+            This client, useful for chaining inplace calls.
+        """
+        return self.set_seed(self._defaults["seed"])
+
+    def reset_stop(self) -> Self:
+        """
+        Reset the stop value to its default value.
+
+        Returns:
+            This client, useful for chaining inplace calls.
+        """
+        return self.set_stop(self._defaults["stop"])
+
+    def reset_stream(self) -> Self:
+        """
+        Reset the stream value to its default value.
+
+        Returns:
+            This client, useful for chaining inplace calls.
+        """
+        return self.set_stream(self._defaults["stream"])
+
+    def reset_stream_options(self) -> Self:
+        """
+        Reset the stream options to their default value.
+
+        Returns:
+            This client, useful for chaining inplace calls.
+        """
+        return self.set_stream_options(self._defaults["stream_options"])
+
+    def reset_temperature(self) -> Self:
+        """
+        Reset the temperature to its default value.
+
+        Returns:
+            This client, useful for chaining inplace calls.
+        """
+        return self.set_temperature(self._defaults["temperature"])
+
+    def reset_top_p(self) -> Self:
+        """
+        Reset the top p value to its default value.
+
+        Returns:
+            This client, useful for chaining inplace calls.
+        """
+        return self.set_top_p(self._defaults["top_p"])
+
+    def reset_tools(self) -> Self:
+        """
+        Reset the tools to their default value.
+
+        Returns:
+            This client, useful for chaining inplace calls.
+        """
+        return self.set_tools(self._defaults["tools"])
+
+    def reset_tool_choice(self) -> Self:
+        """
+        Reset the tool choice to its default value.
+
+        Returns:
+            This client, useful for chaining inplace calls.
+        """
+        return self.set_tool_choice(self._defaults["tool_choice"])
+
+    def reset_parallel_tool_calls(self) -> Self:
+        """
+        Reset the parallel tool calls to its default value.
+
+        Returns:
+            This client, useful for chaining inplace calls.
+        """
+        return self.set_parallel_tool_calls(self._defaults["parallel_tool_calls"])
+
+    def reset_all(self) -> Self:
+        """
+        Reset base client properties to their default values.
+
+        Returns:
+            This client, useful for chaining inplace calls.
+        """
+        self.reset_system_message()
+        self.reset_messages()
+        self.reset_frequency_penalty()
+        self.reset_logit_bias()
+        self.reset_logprobs()
+        self.reset_top_logprobs()
+        self.reset_max_completion_tokens()
+        self.reset_n()
+        self.reset_presence_penalty()
+        self.reset_response_format()
+        self.reset_seed()
+        self.reset_stop()
+        self.reset_stream()
+        self.reset_stream_options()
+        self.reset_temperature()
+        self.reset_top_p()
+        self.reset_tools()
+        self.reset_tool_choice()
+        self.reset_parallel_tool_calls()
         return self
 
     # Credits #
