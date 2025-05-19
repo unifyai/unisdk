@@ -194,6 +194,7 @@ def get_contexts(
 def delete_context(
     name: str,
     *,
+    delete_children: bool = True,
     project: Optional[str] = None,
     api_key: Optional[str] = None,
 ) -> None:
@@ -202,6 +203,8 @@ def delete_context(
 
     Args:
         name: Name of the context to delete.
+
+        delete_children: Whether to delete child contexts (which share the same "/" separated prefix).
 
         project: Name of the project the context belongs to.
 
@@ -218,11 +221,14 @@ def delete_context(
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    response = _requests.delete(
-        BASE_URL + f"/project/{project}/contexts/{name}",
-        headers=headers,
-    )
-    _check_response(response)
+
+    # ToDo: remove this hack once this task [https://app.clickup.com/t/86c3kuch6] is done
+    for ctx in get_contexts(project, prefix=name):
+        response = _requests.delete(
+            BASE_URL + f"/project/{project}/contexts/{ctx}",
+            headers=headers,
+        )
+        _check_response(response)
     return response.json()
 
 
