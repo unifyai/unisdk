@@ -913,12 +913,13 @@ def update_logs(
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
+    log_ids = _to_log_ids(logs)
     body = {
-        "logs": _to_log_ids(logs),
+        "logs": log_ids,
         "context": context,
         # ToDo: remove once this [https://app.clickup.com/t/86c25g263] is done
-        "params": [{}] * len(logs) if params is None else params,
-        "entries": [{}] * len(logs) if entries is None else entries,
+        "params": [{}] * len(log_ids) if params is None else params,
+        "entries": [{}] * len(log_ids) if entries is None else entries,
         # end ToDo
         "overwrite": overwrite,
     }
