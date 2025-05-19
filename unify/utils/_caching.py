@@ -185,6 +185,12 @@ def _get_cache(
         if not _is_key_in_cache(cache_str, local):
             if raise_on_empty or read_closest:
                 keys_to_search = _get_cache_keys(local)
+                if len(keys_to_search) == 0:
+                    CACHE_LOCK.release()
+                    raise Exception(
+                        f"Failed to get cache for function {fn_name} with kwargs {_dumps(kw, indent=4)} "
+                        f"Cache is empty, mode is read-only ",
+                    )
                 closest_match = difflib.get_close_matches(
                     cache_str,
                     keys_to_search,
@@ -336,6 +342,32 @@ def _write_to_cache(
         )
 
 
+def _handle_reading_from_cache(
+    fn_name: str,
+    kwargs: Dict[str, Any],
+    mode: str,
+    local: bool = True,
+):
+    if isinstance(mode, str) and mode.endswith("-closest"):
+        mode = mode.removesuffix("-closest")
+        read_closest = True
+    else:
+        read_closest = False
+    in_cache = False
+    ret = None
+    if mode in [True, "both", "read", "read-only"]:
+        ret = _get_cache(
+            fn_name=fn_name,
+            kw=kwargs,
+            raise_on_empty=mode == "read-only",
+            read_closest=read_closest,
+            delete_closest=read_closest,
+            local=local,
+        )
+        in_cache = True if ret is not None else False
+    return ret, read_closest, in_cache
+
+
 # Decorators #
 # -----------#
 
@@ -354,24 +386,12 @@ def cached(
         )
 
     def wrapped(*args, **kwargs):
-        nonlocal mode
-        if isinstance(mode, str) and mode.endswith("-closest"):
-            mode = mode.removesuffix("-closest")
-            read_closest = True
-        else:
-            read_closest = False
-        in_cache = False
-        ret = None
-        if mode in [True, "both", "read", "read-only"]:
-            ret = _get_cache(
-                fn_name=fn.__name__,
-                kw=kwargs,
-                raise_on_empty=mode == "read-only",
-                read_closest=read_closest,
-                delete_closest=read_closest,
-                local=local,
-            )
-            in_cache = True if ret is not None else False
+        ret, read_closest, in_cache = _handle_reading_from_cache(
+            fn.__name__,
+            kwargs,
+            mode,
+            local,
+        )
         if ret is None:
             ret = fn(*args, **kwargs)
         if (ret is not None or read_closest) and mode in [
@@ -388,7 +408,30 @@ def cached(
                 )
         return ret
 
-    return wrapped
+    async def async_wrapped(*args, **kwargs):
+        ret, read_closest, in_cache = _handle_reading_from_cache(
+            fn.__name__,
+            kwargs,
+            mode,
+            local,
+        )
+        if ret is None:
+            ret = await fn(*args, **kwargs)
+        if (ret is not None or read_closest) and mode in [
+            True,
+            "both",
+            "write",
+        ]:
+            if not in_cache or mode == "write":
+                _write_to_cache(
+                    fn_name=fn.__name__,
+                    kw=kwargs,
+                    response=ret,
+                    local=local,
+                )
+        return ret
+
+    return wrapped if not inspect.iscoroutinefunction(fn) else async_wrapped
 
 
 # File Manipulation #

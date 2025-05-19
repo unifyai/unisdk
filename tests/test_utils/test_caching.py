@@ -1,3 +1,4 @@
+import asyncio
 import json
 import os
 import time
@@ -332,7 +333,6 @@ def test_upstream_cache_closest_match_on_exception():
     assert r0 == r1
 
 
-@_handle_project
 def test_cached_decorator_both_mode():
 
     @unify.cached(mode="both")
@@ -350,6 +350,163 @@ def test_cached_decorator_both_mode():
     assert z1 == z2 == 3
     assert t1 - t0 > 1
     assert t2 - t1 < 0.1
+
+
+@pytest.mark.asyncio
+async def test_cached_decorator_async():
+    @unify.cached
+    async def add_two_numbers(x, y):
+        await asyncio.sleep(1)
+        return x + y
+
+    with _CacheHandler() as cache_handler:
+        t0 = time.perf_counter()
+        z1 = await add_two_numbers(1, 2)
+        t0 = time.perf_counter() - t0
+
+        assert os.path.exists(cache_handler.test_path)
+        mt1 = os.path.getmtime(cache_handler.test_path)
+
+        t1 = time.perf_counter()
+        z2 = await add_two_numbers(1, 2)
+        t1 = time.perf_counter() - t1
+        mt2 = os.path.getmtime(cache_handler.test_path)
+
+        assert mt2 == mt1
+        assert t1 < t0
+        assert z1 == z2 == 3
+
+
+@_handle_project
+def test_cached_decorator_upstream_cache():
+    @unify.cached(local=False)
+    def add_two_numbers(x, y):
+        return x + y
+
+    add_two_numbers(1, 2)
+    logs = unify.get_logs(context=UPSTREAM_CACHE_CONTEXT_NAME)
+    assert len(logs) == 1
+
+
+@_handle_project
+@pytest.mark.asyncio
+async def test_cached_decorator_upstream_cache_async():
+    @unify.cached(local=False)
+    async def add_two_numbers(x, y):
+        return x + y
+
+    await add_two_numbers(1, 2)
+    logs = unify.get_logs(context=UPSTREAM_CACHE_CONTEXT_NAME)
+    assert len(logs) == 1
+
+
+@pytest.mark.asyncio
+async def test_cached_decorator_mode_read_only_async():
+    @unify.cached(mode="read-only")
+    async def add_two_numbers(x, y):
+        return x + y
+
+    with _CacheHandler():
+        with pytest.raises(Exception):
+            await add_two_numbers(1, 2)
+
+
+@pytest.mark.asyncio
+async def test_cached_decorator_mode_read_async():
+    @unify.cached(mode="read")
+    async def add_two_numbers(x, y):
+        return x + y
+
+    with _CacheHandler() as cache_handler:
+        r0 = await add_two_numbers(1, 2)
+        assert os.path.exists(cache_handler.test_path)
+        mt1 = os.path.getmtime(cache_handler.test_path)
+        r1 = await add_two_numbers(1, 2)
+        mt2 = os.path.getmtime(cache_handler.test_path)
+        assert mt2 == mt1
+        assert r0 == r1
+
+
+@pytest.mark.asyncio
+async def test_cached_decorator_mode_write_async():
+    @unify.cached(mode="write")
+    async def add_two_numbers(x, y):
+        return x + y
+
+    with _CacheHandler() as cache_handler:
+        await add_two_numbers(1, 2)
+        assert os.path.exists(cache_handler.test_path)
+        mt1 = os.path.getmtime(cache_handler.test_path)
+        await asyncio.gather(
+            *[add_two_numbers(1, 2) for _ in range(100)],
+        )
+        mt2 = os.path.getmtime(cache_handler.test_path)
+        assert mt2 > mt1
+
+
+def test_cached_decorator_mode_read():
+    @unify.cached(mode="read")
+    def add_two_numbers(x, y):
+        return x + y
+
+    with _CacheHandler() as cache_handler:
+        t0 = time.perf_counter()
+        r0 = add_two_numbers(1, 1)
+        mt1 = os.path.getmtime(cache_handler.test_path)
+        t0 = time.perf_counter() - t0
+        t1 = time.perf_counter()
+        r1 = add_two_numbers(1, 1)
+        t1 = time.perf_counter() - t1
+        mt2 = os.path.getmtime(cache_handler.test_path)
+        assert mt1 == mt2
+        assert t1 < t0
+        assert r0 == r1
+
+
+def test_cached_decorator_mode_read_only():
+    @unify.cached(mode="read-only")
+    def add_two_numbers(x, y):
+        return x + y
+
+    with _CacheHandler():
+        with pytest.raises(Exception):
+            add_two_numbers(1, 1)
+
+
+def test_cached_decorator_mode_read_closest():
+    @unify.cached(mode="write")
+    def squared(y):
+        return y * y * 2
+
+    @unify.cached(mode="read-closest")
+    def square(x):
+        return x * x
+
+    with _CacheHandler() as cache_handler:
+        r0 = squared(1)
+        assert os.path.exists(cache_handler.test_path)
+        mt1 = os.path.getmtime(cache_handler.test_path)
+
+        r1 = square(2)
+        mt2 = os.path.getmtime(cache_handler.test_path)
+        assert mt2 == mt1
+        assert r0 == r1
+
+
+def test_cached_decorator_mode_write():
+    @unify.cached(mode="write")
+    def square(x):
+        time.sleep(0.5)
+        return x * x
+
+    with _CacheHandler() as cache_handler:
+        square(1)
+        assert os.path.exists(cache_handler.test_path)
+        mt1 = os.path.getmtime(cache_handler.test_path)
+
+        square(1)
+        mt2 = os.path.getmtime(cache_handler.test_path)
+        assert mt2 > mt1
 
 
 if __name__ == "__main__":
