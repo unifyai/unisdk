@@ -233,6 +233,10 @@ def unset_context():
     CONTEXT_MODE.reset(MODE_TOKEN)
 
 
+def get_context():
+    return {"read": CONTEXT_READ.get(), "write": CONTEXT_WRITE.get()}
+
+
 class Context:
     def __init__(self, context: str, mode: str = "both", overwrite: bool = False):
         self._context = context
