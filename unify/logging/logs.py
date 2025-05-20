@@ -657,9 +657,23 @@ def _trace_instance(inst, prune_empty, span_type, name, filter):
             filter=filter,
         )
 
-        # Re-bind *just for this instance*
+        # Determine the original attribute type (regular, staticmethod, classmethod)
         try:
-            setattr(inst, member_name, MethodType(traced_fn, inst))
+            original_attr = inspect.getattr_static(type(inst), member_name)
+        except AttributeError:
+            original_attr = None
+
+        # Re-bind based on attribute type
+        try:
+            if isinstance(original_attr, staticmethod):
+                # For staticmethods we do NOT bind to the instance – they behave like plain functions
+                setattr(inst, member_name, traced_fn)
+            elif isinstance(original_attr, classmethod):
+                # For classmethods we bind to the *class*, not the instance
+                setattr(inst, member_name, MethodType(traced_fn, type(inst)))
+            else:
+                # Regular instance methods get bound to the instance so that `self` is passed correctly
+                setattr(inst, member_name, MethodType(traced_fn, inst))
         except AttributeError:
             pass
 
