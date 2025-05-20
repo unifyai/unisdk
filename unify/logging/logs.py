@@ -559,9 +559,9 @@ def _create_span(fn, args, kwargs, span_type, name):
         SPAN.get()["child_spans"].append(new_span)
         local_token = SPAN.set(new_span)
     _get_trace_logger().update_trace(
-        ACTIVE_LOG.get(),
+        ACTIVE_TRACE_LOG.get(),
         copy.deepcopy(GLOBAL_SPAN.get()),
-        ACTIVE_LOG.get()[0].context,
+        ACTIVE_TRACE_LOG.get()[0].context,
     )
     return new_span, exec_start_time, local_token, global_token
 
@@ -598,9 +598,9 @@ def _finalize_span(
             new_span["llm_usage_inc_cache"],
         )
     _get_trace_logger().update_trace(
-        ACTIVE_LOG.get(),
+        ACTIVE_TRACE_LOG.get(),
         copy.deepcopy(GLOBAL_SPAN.get()),
-        ACTIVE_LOG.get()[0].context,
+        ACTIVE_TRACE_LOG.get()[0].context,
     )
     if global_token:
         GLOBAL_SPAN.reset(global_token)
@@ -750,8 +750,8 @@ def _trace_function(
     def wrapped(*args, **kwargs):
         log_token = (
             None
-            if ACTIVE_LOG.get()
-            else ACTIVE_LOG.set([unify.log(context=get_trace_context())])
+            if ACTIVE_TRACE_LOG.get()
+            else ACTIVE_TRACE_LOG.set([unify.log(context=get_trace_context())])
         )
         new_span, exec_start_time, local_token, global_token = _create_span(
             fn,
@@ -779,10 +779,12 @@ def _trace_function(
                 global_token,
             )
             if log_token:
-                ACTIVE_LOG.set([])
+                ACTIVE_TRACE_LOG.set([])
 
     async def async_wrapped(*args, **kwargs):
-        log_token = None if ACTIVE_LOG.get() else ACTIVE_LOG.set([unify.log()])
+        log_token = (
+            None if ACTIVE_TRACE_LOG.get() else ACTIVE_TRACE_LOG.set([unify.log()])
+        )
         new_span, exec_start_time, local_token, global_token = _create_span(
             fn,
             args,
@@ -809,7 +811,7 @@ def _trace_function(
                 global_token,
             )
             if log_token:
-                ACTIVE_LOG.set([])
+                ACTIVE_TRACE_LOG.set([])
 
     return wrapped if not inspect.iscoroutinefunction(fn) else async_wrapped
 

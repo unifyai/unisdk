@@ -39,7 +39,8 @@ ASYNC_BATCH_SIZE = 100  # Default batch size for async logging
 ASYNC_FLUSH_INTERVAL = 5.0  # Default flush interval in secondss
 ASYNC_MAX_QUEUE_SIZE = 10000  # Default maximum queue size
 
-# Async logger instance
+# Tracing
+ACTIVE_TRACE_LOG = ContextVar("active_trace_log", default=[])
 _async_logger: Optional[AsyncLoggerManager] = None
 _trace_logger: Optional[_AsyncTraceLogger] = None
 
