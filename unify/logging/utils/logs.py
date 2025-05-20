@@ -163,9 +163,6 @@ def initialize_async_logger(
     Initialize the async logger with the specified configuration.
 
     Args:
-        batch_size: Number of logs to batch together before sending
-        flush_interval: How often to flush logs in seconds
-        max_queue_size: Maximum size of the log queue
         api_key: API key for authentication
     """
     global _async_logger, ASYNC_LOGGING

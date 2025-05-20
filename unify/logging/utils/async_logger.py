@@ -6,6 +6,7 @@ from concurrent.futures import TimeoutError
 from typing import List
 
 import aiohttp
+from unify import BASE_URL
 
 # Configure logging based on environment variable
 ASYNC_LOGGER_DEBUG = os.getenv("UNIFY_ASYNC_LOGGER_DEBUG", "false").lower() in (
@@ -20,7 +21,7 @@ class AsyncLoggerManager:
     def __init__(
         self,
         *,
-        base_url: str,
+        base_url: str = BASE_URL,
         api_key: str = os.getenv("UNIFY_KEY"),
         num_consumers: int = 256,
     ):
