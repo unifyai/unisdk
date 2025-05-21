@@ -105,7 +105,7 @@ class AsyncLoggerManager:
                 return
             res_json = await res.json()
             logger.debug(f"Created {idx} with response {res.status}: {res_json}")
-            future.set_result(res_json[0])
+            future.set_result(res_json["log_event_ids"][0])
 
     async def _consume_update(self, body, future, idx):
         if not future.done():
