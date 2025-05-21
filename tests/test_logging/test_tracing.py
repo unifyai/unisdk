@@ -373,6 +373,7 @@ async def test_traced_async():
 
     _wait_for_trace_logger()
     logs = unify.get_logs()
+    logs = sorted(logs, key=lambda x: x.entries["trace"]["inputs"]["st"])
 
     for i, log in enumerate(logs):
         trace = log.entries["trace"]
