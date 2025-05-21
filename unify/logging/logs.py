@@ -795,6 +795,7 @@ def _trace_function(
             if log_token:
                 ACTIVE_TRACE_LOG.set([])
 
+    @functools.wraps(fn)
     async def async_wrapped(*args, **kwargs):
         log_token = (
             None if ACTIVE_TRACE_LOG.get() else ACTIVE_TRACE_LOG.set([unify.log()])
