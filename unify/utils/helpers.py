@@ -83,6 +83,8 @@ def _make_json_serializable(
         # Handle threading objects specifically
         elif "threading" in type(item).__module__:
             result = f"<{type(item).__name__} at {id(item)}>"
+        elif isinstance(item, (int, float, bool, str, type(None))):
+            result = item
         else:
             try:
                 result = json.dumps(item)
