@@ -223,6 +223,63 @@ def get_trace_context():
     return TRACING_LOG_CONTEXT
 
 
+def mark_spans_as_done(
+    log_ids: Optional[Union[int, List[int]]] = None,
+    span_ids: Optional[Union[str, List[str]]] = None,
+    *,
+    project: Optional[str] = None,
+    contexts: Optional[Union[str, List[str]]] = None,
+):
+    """
+    Marks all of the listed span ids for the listed logs in the listed contexts as completed.
+    In all cases of this specification hierarchy, if none are provided then all associated spans are marked as complete.
+    """
+    if log_ids is not None:
+        log_ids = [log_ids] if isinstance(log_ids, int) else log_ids
+
+    if span_ids is not None:
+        span_ids = [span_ids] if isinstance(span_ids, str) else span_ids
+
+    def _traverse_trace_and_mark_done(trace: dict):
+        if span_ids is None:
+            trace["completed"] = True
+        elif trace["id"] in span_ids:
+            trace["completed"] = True
+
+        for span in trace["child_spans"]:
+            _traverse_trace_and_mark_done(span)
+
+    if log_ids:
+        logs = unify.get_logs(project=project, context=contexts, from_ids=log_ids)
+    else:
+        if isinstance(contexts, list):
+            logs = []
+            for context in contexts:
+                logs.extend(
+                    unify.get_logs(
+                        project=project,
+                        context=context,
+                        from_fields=["trace"],
+                        filter=f"trace != None",
+                    ),
+                )
+        else:
+            logs = unify.get_logs(
+                project=project,
+                context=contexts,
+                from_fields=["trace"],
+                filter=f"trace != None",
+            )
+
+    for log in logs:
+        _traverse_trace_and_mark_done(log.entries["trace"])
+        unify.update_logs(
+            logs=log.id,
+            entries={"trace": log.entries["trace"]},
+            overwrite=True,
+        )
+
+
 def _handle_cache(fn: Callable) -> Callable:
     def wrapped(*args, **kwargs):
         if not _get_caching():
