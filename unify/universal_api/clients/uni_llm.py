@@ -631,19 +631,37 @@ class _UniClient(_Client, abc.ABC):
         # ───── coroutine (async-non-stream) path ──────────────────────────
         if inspect.iscoroutine(response):
 
-            async def _await_and_process(coro: Coroutine[Any, Any, Any]):
-                res = await coro  # wait for real answer first
+            # 1. Immediately push a placeholder so ordering is preserved
+            placeholder_idx: int | None = None
+            if stateful:
+                placeholder: Dict[str, Any]
+                if return_full_completion:
+                    placeholder = {"role": "assistant", "content": "", "tool_calls": None}
+                else:
+                    placeholder = {"role": "assistant", "content": ""}
 
-                # run the same non-stream bookkeeping now that we have `res`
-                if stateful:
+                self._append_to_history(placeholder)
+                placeholder_idx = len(self._messages) - 1
+
+            # 2. Await the real coroutine and overwrite the placeholder in-place
+            async def _await_and_process(coro: Coroutine[Any, Any, Any]):
+                try:
+                    res = await coro
+                except Exception:
+                    # remove placeholder on failure, then re-raise
+                    if placeholder_idx is not None and placeholder_idx < len(self._messages):
+                        del self._messages[placeholder_idx]
+                    raise
+
+                if stateful and placeholder_idx is not None:
                     if return_full_completion:
-                        assistant_dict = res.choices[0].message.model_dump()
+                        self._messages[placeholder_idx].clear()
+                        self._messages[placeholder_idx].update(
+                            res.choices[0].message.model_dump()
+                        )
                     else:
-                        assistant_dict = {
-                            "role": "assistant",
-                            "content": str(res),
-                        }
-                    self._append_to_history(assistant_dict)
+                        # keep same dict object, just replace its content
+                        self._messages[placeholder_idx]["content"] = str(res)
                 elif self._messages:
                     self._messages.clear()
 
