@@ -157,7 +157,7 @@ def _removes_unique_trace_values(kw: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def initialize_async_logger(
-    queue_size: Optional[int] = None,
+    queue_size: Optional[int] = 10000,
     api_key: Optional[str] = None,
 ) -> None:
     """

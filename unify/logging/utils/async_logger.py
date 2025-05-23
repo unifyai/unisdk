@@ -159,7 +159,7 @@ class AsyncLoggerManager:
             "type": "create",
             "future": fut,
         }
-        asyncio.run_coroutine_threadsafe(self.queue.put(event), self.loop)
+        asyncio.run_coroutine_threadsafe(self.queue.put(event), self.loop).result()
         return fut
 
     def log_update(
@@ -181,7 +181,7 @@ class AsyncLoggerManager:
             "type": "update",
             "future": future,
         }
-        asyncio.run_coroutine_threadsafe(self.queue.put(event), self.loop)
+        asyncio.run_coroutine_threadsafe(self.queue.put(event), self.loop).result()
 
     def stop_sync(self, immediate=False):
         if self.shutting_down:
