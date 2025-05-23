@@ -756,6 +756,7 @@ def _trace_function(
     trace_contexts,
     trace_dirs,
     filter,
+    fn_type,
 ):
     if trace_dirs is not None:
         fn = _transform_function(fn, prune_empty, span_type, trace_dirs)
@@ -830,7 +831,10 @@ def _trace_function(
             if log_token:
                 ACTIVE_TRACE_LOG.set([])
 
-    return wrapped if not inspect.iscoroutinefunction(inspect.unwrap(fn)) else async_wrapped
+    if inspect.iscoroutinefunction(inspect.unwrap(fn)) or fn_type == "async":
+        return async_wrapped
+
+    return wrapped
 
 
 def traced(
@@ -842,6 +846,7 @@ def traced(
     trace_contexts: Optional[List[str]] = None,
     trace_dirs: Optional[List[str]] = None,
     filter: Optional[Callable[[callable], bool]] = None,
+    fn_type: Optional[str] = None,
 ):
     _initialize_trace_logger()
 
@@ -884,6 +889,7 @@ def traced(
             trace_contexts,
             trace_dirs,
             filter,
+            fn_type,
         )
     else:
         ret = _trace_instance(

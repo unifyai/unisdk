@@ -8,7 +8,7 @@ import pytest
 import unify
 from tests.test_logging.helpers import _handle_project
 from tests.test_utils.helpers import _CacheHandler
-from unify import Unify
+from unify import AsyncUnify, Unify
 from unify.utils._caching import UPSTREAM_CACHE_CONTEXT_NAME
 
 
@@ -32,6 +32,31 @@ def test_cache() -> None:
         assert r0 == r1
 
 
+@pytest.mark.asyncio
+async def test_cache_async():
+    with _CacheHandler() as cache_handler:
+        client = AsyncUnify(
+            endpoint="gpt-4o@openai",
+            cache=True,
+        )
+
+        t = time.perf_counter()
+        r0 = await client.generate(user_message="hello")
+        t0 = time.perf_counter() - t
+        mt0 = os.path.getmtime(cache_handler.test_path)
+
+        t = time.perf_counter()
+        r1 = await client.generate(user_message="hello")
+        mt1 = os.path.getmtime(cache_handler.test_path)
+        t1 = time.perf_counter() - t
+
+        await client.close()
+        assert os.path.exists(cache_handler.test_path)
+        assert t1 < t0
+        assert mt0 == mt1
+        assert r0 == r1
+
+
 # noinspection PyBroadException
 def test_cache_write() -> None:
     with _CacheHandler() as cache_handler:
@@ -44,6 +69,21 @@ def test_cache_write() -> None:
         client.generate(user_message="hello", cache="write")
         mt1 = os.path.getmtime(cache_handler.test_path)
         assert mt0 < mt1
+
+
+@pytest.mark.asyncio
+async def test_cache_write_async() -> None:
+    with _CacheHandler() as cache_handler:
+        client = AsyncUnify(
+            endpoint="gpt-4o@openai",
+        )
+        await client.generate(user_message="hello", cache="write")
+        assert os.path.exists(cache_handler.test_path)
+        mt0 = os.path.getmtime(cache_handler.test_path)
+        await client.generate(user_message="hello", cache="write")
+        mt1 = os.path.getmtime(cache_handler.test_path)
+        assert mt0 < mt1
+        await client.close()
 
 
 # noinspection PyBroadException
@@ -64,6 +104,27 @@ def test_cache_read() -> None:
         assert t1 < t0
         assert mt0 == mt1
         assert r0 == r1
+
+
+@pytest.mark.asyncio
+async def test_cache_read_async() -> None:
+    with _CacheHandler() as cache_handler:
+        client = AsyncUnify(
+            endpoint="gpt-4o@openai",
+        )
+        t = time.perf_counter()
+        r0 = await client.generate(user_message="hello", cache="write")
+        t0 = time.perf_counter() - t
+        assert os.path.exists(cache_handler.test_path)
+        mt0 = os.path.getmtime(cache_handler.test_path)
+        t = time.perf_counter()
+        r1 = await client.generate(user_message="hello", cache="read")
+        mt1 = os.path.getmtime(cache_handler.test_path)
+        t1 = time.perf_counter() - t
+        assert t1 < t0
+        assert mt0 == mt1
+        assert r0 == r1
+        await client.close()
 
 
 # noinspection PyBroadException
@@ -92,6 +153,35 @@ def test_cache_read_only() -> None:
         except Exception:
             raised_exception = True
         assert raised_exception, "read-only mode should have raised exception"
+
+
+@pytest.mark.asyncio
+async def test_cache_read_only_async() -> None:
+    with _CacheHandler() as cache_handler:
+        client = AsyncUnify(
+            endpoint="gpt-4o@openai",
+        )
+        t = time.perf_counter()
+        r0 = await client.generate(user_message="hello", cache="write")
+        t0 = time.perf_counter() - t
+        assert os.path.exists(cache_handler.test_path)
+        mt0 = os.path.getmtime(cache_handler.test_path)
+        t = time.perf_counter()
+        r1 = await client.generate(user_message="hello", cache="read-only")
+        mt1 = os.path.getmtime(cache_handler.test_path)
+        t1 = time.perf_counter() - t
+        assert t1 < t0
+        assert mt0 == mt1
+        assert r0 == r1
+        os.remove(cache_handler.test_path)
+        unify._caching._cache = None
+        try:
+            await client.generate(user_message="hello", cache="read-only")
+            raised_exception = False
+        except Exception:
+            raised_exception = True
+        assert raised_exception, "read-only mode should have raised exception"
+        await client.close()
 
 
 @pytest.mark.parametrize("traced", [True, False])
