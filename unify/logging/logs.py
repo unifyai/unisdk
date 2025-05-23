@@ -830,7 +830,7 @@ def _trace_function(
             if log_token:
                 ACTIVE_TRACE_LOG.set([])
 
-    return wrapped if not inspect.iscoroutinefunction(fn) else async_wrapped
+    return wrapped if not inspect.iscoroutinefunction(inspect.unwrap(fn)) else async_wrapped
 
 
 def traced(
