@@ -157,12 +157,16 @@ def _removes_unique_trace_values(kw: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def initialize_async_logger(
+    queue_size: Optional[int] = None,
     api_key: Optional[str] = None,
 ) -> None:
     """
     Initialize the async logger with the specified configuration.
 
     Args:
+        queue_size: Maximum number of log events to store in the queue, defaults to 10000.
+        if maximum queue size is exceeded, calls to unify.log will block until space is available.
+
         api_key: API key for authentication
     """
     global _async_logger, ASYNC_LOGGING
@@ -173,6 +177,7 @@ def initialize_async_logger(
     _async_logger = AsyncLoggerManager(
         base_url=BASE_URL,
         api_key=api_key,
+        max_queue_size=queue_size,
     )
     ASYNC_LOGGING = True
 

@@ -24,6 +24,7 @@ class AsyncLoggerManager:
         base_url: str = BASE_URL,
         api_key: str = os.getenv("UNIFY_KEY"),
         num_consumers: int = 256,
+        max_queue_size: int = 10000,
     ):
 
         self.loop = asyncio.new_event_loop()
@@ -32,6 +33,7 @@ class AsyncLoggerManager:
         self.num_consumers = num_consumers
         self.start_flag = threading.Event()
         self.shutting_down = False
+        self.max_queue_size = max_queue_size
 
         headers = {
             "Authorization": f"Bearer {api_key}",
@@ -84,7 +86,7 @@ class AsyncLoggerManager:
 
     def _run_loop(self):
         asyncio.set_event_loop(self.loop)
-        self.queue = asyncio.Queue()
+        self.queue = asyncio.Queue(maxsize=self.max_queue_size)
 
         for _ in range(self.num_consumers):
             self.consumers.append(self._log_consumer())
@@ -157,7 +159,7 @@ class AsyncLoggerManager:
             "type": "create",
             "future": fut,
         }
-        self.loop.call_soon_threadsafe(self.queue.put_nowait, event)
+        asyncio.run_coroutine_threadsafe(self.queue.put(event), self.loop)
         return fut
 
     def log_update(
@@ -179,7 +181,7 @@ class AsyncLoggerManager:
             "type": "update",
             "future": future,
         }
-        self.loop.call_soon_threadsafe(self.queue.put_nowait, event)
+        asyncio.run_coroutine_threadsafe(self.queue.put(event), self.loop)
 
     def stop_sync(self, immediate=False):
         if self.shutting_down:
