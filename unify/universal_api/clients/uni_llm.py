@@ -893,12 +893,20 @@ class _UniClient(_Client, abc.ABC):
         system_message = _default(system_message, self._system_message)
         messages = _default(messages, self._messages)
         stateful = _default(stateful, self._stateful)
-        if not messages:
+        if messages:
+            sys_msg_inside = any(msg["role"] == "system" for msg in messages)
+            if not sys_msg_inside and system_message is not None:
+                messages = [
+                    {"role": "system", "content": system_message},
+                ] + messages
+            if user_message is not None:
+                messages += [{"role": "user", "content": user_message}]
+        else:
             messages = list()
-        if system_message is not None:
-            messages += [{"role": "system", "content": system_message}]
-        if user_message is not None:
-            messages += [{"role": "user", "content": user_message}]
+            if system_message is not None:
+                messages += [{"role": "system", "content": system_message}]
+            if user_message is not None:
+                messages += [{"role": "user", "content": user_message}]
             self._messages = messages
         return_full_completion = (
             True
