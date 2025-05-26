@@ -736,5 +736,88 @@ def test_traced_context_set_get():
     assert unify.get_trace_context() is None
 
 
+@_handle_project
+def test_with_traced_context():
+    a = 0
+    b = 1
+    ll = []
+    msg = "Bye"
+    e = 10
+    with unify.Traced("First Context"):
+        c = a + b
+        b = 20
+        d = b - 20
+        msg = f"Hello {msg}"
+        ll.append(0)
+
+    _wait_for_trace_logger()
+    logs = unify.get_logs()
+    assert len(logs) == 1
+    trace = logs[0].entries["trace"]
+    assert trace["span_name"] == "First Context"
+    assert trace["type"] == "context"
+    assert trace["inputs"] == {"a": 0, "b": 1, "ll": [], "msg": "Bye"}
+    assert trace["outputs"] == {"c": 1, "b": 20, "d": 0, "msg": "Hello Bye", "ll": [0]}
+    assert len(trace["child_spans"]) == 0
+
+
+@_handle_project
+def test_with_traced_context_nested():
+    with unify.Traced("First Context"):
+        with unify.Traced("Second Context"):
+            pass
+
+    _wait_for_trace_logger()
+    logs = unify.get_logs()
+    assert len(logs) == 1
+    trace = logs[0].entries["trace"]
+    assert trace["span_name"] == "First Context"
+    assert trace["type"] == "context"
+    assert len(trace["child_spans"]) == 1
+    assert trace["child_spans"][0]["span_name"] == "Second Context"
+    assert trace["child_spans"][0]["type"] == "context"
+
+
+@_handle_project
+def test_with_traced_context_w_exception():
+    try:
+        with unify.Traced("exception"):
+            raise ValueError("Something went wrong")
+    except ValueError:
+        pass
+
+    _wait_for_trace_logger()
+    logs = unify.get_logs()
+    assert len(logs) == 1
+    trace = logs[0].entries["trace"]
+    assert trace["span_name"] == "exception"
+    assert trace["type"] == "context"
+    assert trace["inputs"] is None
+    assert trace["outputs"] is None
+    assert len(trace["child_spans"]) == 0
+    assert "Something went wrong" in trace["errors"]
+
+
+@_handle_project
+def test_with_traced_context_and_traced_fn():
+    @unify.traced
+    def some_func(a, b):
+        return a + b
+
+    with unify.Traced("Foo"):
+        ret = some_func(1, 2)
+
+    _wait_for_trace_logger()
+    logs = unify.get_logs()
+    assert len(logs) == 1
+    trace = logs[0].entries["trace"]
+    assert trace["span_name"] == "Foo"
+    assert trace["type"] == "context"
+    assert trace["outputs"] == {"ret": 3}
+    assert len(trace["child_spans"]) == 1
+    assert trace["child_spans"][0]["span_name"] == "some_func"
+    assert trace["child_spans"][0]["type"] == "function"
+
+
 if __name__ == "__main__":
     pass

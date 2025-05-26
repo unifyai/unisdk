@@ -466,6 +466,141 @@ class Experiment:
 # --------#
 
 
+class Traced:
+    def __init__(self, name):
+        self.name = name
+        _initialize_trace_logger()
+
+    def __enter__(self):
+        self.frame = inspect.currentframe().f_back
+        self.locals_before = copy.deepcopy(self.frame.f_locals.copy())
+
+        try:
+            self.code = inspect.getsource(self.frame.f_code)
+            self.code_fpath = inspect.getsourcefile(self.frame.f_code)
+            self.start_linenumber = inspect.getsourcelines(self.frame.f_code)[1]
+        except OSError:
+            self.code = ""
+            self.code_fpath = ""
+            self.start_linenumber = 0
+
+        self.runtime_lineno = self.frame.f_lineno
+
+        self.log_token = (
+            None
+            if ACTIVE_TRACE_LOG.get()
+            else ACTIVE_TRACE_LOG.set([unify.log(context=get_trace_context())])
+        )
+
+        self.exec_start_time = time.perf_counter()
+        ts = datetime.now(timezone.utc).isoformat()
+        if not SPAN.get():
+            RUNNING_TIME.set(self.exec_start_time)
+
+        input_vars = self._extract_read_vars()
+        inputs = {
+            k: self.locals_before[k] for k in input_vars if k in self.locals_before
+        }
+
+        new_span = {
+            "id": str(uuid.uuid4()),
+            "type": "context",
+            "parent_span_id": (None if not SPAN.get() else SPAN.get()["id"]),
+            "span_name": self.name,
+            "exec_time": None,
+            "timestamp": ts,
+            "offset": round(
+                0.0 if not SPAN.get() else self.exec_start_time - RUNNING_TIME.get(),
+                2,
+            ),
+            "llm_usage": None,
+            "llm_usage_inc_cache": None,
+            "code": f"```python\n{self.code}\n```",
+            "code_fpath": self.code_fpath,
+            "code_start_line": self.runtime_lineno,
+            "inputs": _make_json_serializable(inputs) if inputs else None,
+            "outputs": None,
+            "errors": None,
+            "child_spans": [],
+            "completed": False,
+        }
+
+        if not GLOBAL_SPAN.get():
+            self.global_token = GLOBAL_SPAN.set(new_span)
+            self.local_token = SPAN.set(GLOBAL_SPAN.get())
+        else:
+            self.global_token = None
+            SPAN.get()["child_spans"].append(new_span)
+            self.local_token = SPAN.set(new_span)
+
+        _get_trace_logger().update_trace(
+            ACTIVE_TRACE_LOG.get(),
+            copy.deepcopy(GLOBAL_SPAN.get()),
+            ACTIVE_TRACE_LOG.get()[0].context,
+        )
+        return self
+
+    def __exit__(self, exc_type, exc_value, exc_tb):
+        SPAN.get()["exec_time"] = time.perf_counter() - self.exec_start_time
+
+        locals_after = self.frame.f_locals
+        outputs = {
+            k: v
+            for k, v in locals_after.items()
+            if k not in self.locals_before or self.locals_before[k] != v
+        }
+
+        SPAN.get()["outputs"] = _make_json_serializable(outputs) if outputs else None
+        SPAN.get()["completed"] = True
+        if exc_tb:
+            SPAN.get()["errors"] = traceback.format_exc()
+
+        SPAN.reset(self.local_token)
+        _get_trace_logger().update_trace(
+            ACTIVE_TRACE_LOG.get(),
+            copy.deepcopy(GLOBAL_SPAN.get()),
+            ACTIVE_TRACE_LOG.get()[0].context,
+        )
+        if self.global_token:
+            GLOBAL_SPAN.reset(self.global_token)
+        if self.log_token:
+            ACTIVE_TRACE_LOG.set([])
+
+    class _VarReadVisitor(ast.NodeVisitor):
+        def __init__(self):
+            self.read_vars = set()
+
+        def visit_Name(self, node):
+            if isinstance(node.ctx, ast.Load):
+                self.read_vars.add(node.id)
+
+    class _WithBlockFinder(ast.NodeVisitor):
+        def __init__(self, lineno):
+            self.lineno = lineno
+            self.target_node = None
+
+        def visit_With(self, node):
+            if node.lineno <= self.lineno <= node.end_lineno:
+                self.target_node = node
+
+    def _extract_read_vars(self):
+        if not self.code:
+            return set(self.locals_before)  # fallback: assume all are used
+
+        tree = ast.parse(textwrap.dedent(self.code))
+
+        finder = self._WithBlockFinder(self.runtime_lineno - self.start_linenumber + 1)
+        finder.visit(tree)
+
+        if not finder.target_node:
+            return set(self.locals_before)
+
+        reader = self._VarReadVisitor()
+        reader.visit(finder.target_node)
+
+        return reader.read_vars
+
+
 class TraceTransformer(ast.NodeTransformer):
     def __init__(self, trace_dirs: list[str]):
         self.trace_dirs = trace_dirs
