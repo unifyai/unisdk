@@ -636,7 +636,11 @@ class _UniClient(_Client, abc.ABC):
             if stateful:
                 placeholder: Dict[str, Any]
                 if return_full_completion:
-                    placeholder = {"role": "assistant", "content": "", "tool_calls": None}
+                    placeholder = {
+                        "role": "assistant",
+                        "content": "",
+                        "tool_calls": None,
+                    }
                 else:
                     placeholder = {"role": "assistant", "content": ""}
 
@@ -649,7 +653,9 @@ class _UniClient(_Client, abc.ABC):
                     res = await coro
                 except Exception:
                     # remove placeholder on failure, then re-raise
-                    if placeholder_idx is not None and placeholder_idx < len(self._messages):
+                    if placeholder_idx is not None and placeholder_idx < len(
+                        self._messages,
+                    ):
                         del self._messages[placeholder_idx]
                     raise
 
@@ -657,7 +663,7 @@ class _UniClient(_Client, abc.ABC):
                     if return_full_completion:
                         self._messages[placeholder_idx].clear()
                         self._messages[placeholder_idx].update(
-                            res.choices[0].message.model_dump()
+                            res.choices[0].message.model_dump(),
                         )
                     else:
                         # keep same dict object, just replace its content
