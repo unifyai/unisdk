@@ -631,46 +631,32 @@ class _UniClient(_Client, abc.ABC):
         # ───── coroutine (async-non-stream) path ──────────────────────────
         if inspect.iscoroutine(response):
 
-            # 1. Immediately push a placeholder so ordering is preserved
-            placeholder_idx: int | None = None
-            if stateful:
-                placeholder: Dict[str, Any]
-                if return_full_completion:
-                    placeholder = {
-                        "role": "assistant",
-                        "content": "",
-                        "tool_calls": None,
-                    }
-                else:
-                    placeholder = {"role": "assistant", "content": ""}
-
-                self._append_to_history(placeholder)
-                placeholder_idx = len(self._messages) - 1
+            # 1. Capture the index where the assistant reply will go, but
+            #    **do not** insert the placeholder yet.  This avoids sending an
+            #    empty assistant message to the LLM while still fixing order.
+            placeholder_idx: int | None = len(self._messages) if stateful else None
 
             # 2. Await the real coroutine and overwrite the placeholder in-place
             async def _await_and_process(coro: Coroutine[Any, Any, Any]):
                 try:
                     res = await coro
                 except Exception:
-                    # remove placeholder on failure, then re-raise
-                    if placeholder_idx is not None and placeholder_idx < len(
-                        self._messages,
-                    ):
-                        del self._messages[placeholder_idx]
+                    # nothing was inserted yet, just re-raise
                     raise
 
                 if stateful and placeholder_idx is not None:
                     if return_full_completion:
-                        self._messages[placeholder_idx].clear()
-                        self._messages[placeholder_idx].update(
+                        self._messages.insert(
+                            placeholder_idx,
                             res.choices[0].message.model_dump(),
                         )
                     else:
-                        # keep same dict object, just replace its content
-                        self._messages[placeholder_idx]["content"] = str(res)
+                        self._messages.insert(
+                            placeholder_idx,
+                            {"role": "assistant", "content": str(res)},
+                        )
                 elif self._messages:
                     self._messages.clear()
-
                 return res
 
             return _await_and_process(response)
