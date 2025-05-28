@@ -571,8 +571,7 @@ class Traced:
             self.read_vars = set()
 
         def visit_Name(self, node):
-            if isinstance(node.ctx, ast.Load):
-                self.read_vars.add(node.id)
+            self.read_vars.add(node.id)
 
     class _WithBlockFinder(ast.NodeVisitor):
         def __init__(self, lineno):
