@@ -54,13 +54,16 @@ def test_project_env_var():
     assert unify.active_project() is None
     os.environ["UNIFY_PROJECT"] = "test_project_env_var"
     assert unify.active_project() == "test_project_env_var"
+    unify.delete_logs(project="test_project_env_var")
     unify.log(x=0, y=1, z=2)
     del os.environ["UNIFY_PROJECT"]
     assert unify.active_project() is None
-    logs = unify.get_logs(project="test_project_env_var")
-    assert len(logs) == 1
-    assert logs[0].entries == {"x": 0, "y": 1, "z": 2}
-    unify.delete_project("test_project_env_var")
+    try:
+        logs = unify.get_logs(project="test_project_env_var")
+        assert len(logs) == 1
+        assert logs[0].entries == {"x": 0, "y": 1, "z": 2}
+    finally:
+        unify.delete_project("test_project_env_var")
 
 
 if __name__ == "__main__":
