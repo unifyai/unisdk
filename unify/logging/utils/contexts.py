@@ -223,13 +223,15 @@ def delete_context(
     }
 
     # ToDo: remove this hack once this task [https://app.clickup.com/t/86c3kuch6] is done
-    for ctx in get_contexts(project, prefix=name):
+    all_contexts = get_contexts(project, prefix=name)
+    for ctx in all_contexts:
         response = _requests.delete(
             BASE_URL + f"/project/{project}/contexts/{ctx}",
             headers=headers,
         )
         _check_response(response)
-    return response.json()
+    if all_contexts:
+        return response.json()
 
 
 def add_logs_to_context(
