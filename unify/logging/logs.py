@@ -4,6 +4,7 @@ import ast
 import copy
 import functools
 import inspect
+import logging
 import textwrap
 import time
 import traceback
@@ -18,9 +19,18 @@ from .utils.logs import (
     _get_trace_logger,
     _handle_special_types,
     _initialize_trace_logger,
+    _reset_active_trace_parameters,
+    _set_active_trace_parameters,
     get_trace_context,
 )
 from .utils.logs import log as unify_log
+
+_traced_logger = logging.getLogger("unify_tracer")
+_traced_logger_enabled = os.getenv("UNIFY_TRACED_DEBUG", "false").lower() in (
+    "true",
+    "1",
+)
+_traced_logger.setLevel(logging.DEBUG if _traced_logger_enabled else logging.ERROR)
 
 # Context Handlers #
 # -----------------#
@@ -466,6 +476,174 @@ class Experiment:
 # --------#
 
 
+class TracerCallCollector(ast.NodeVisitor):
+    def __init__(self, main_function_name):
+        self.main_function_name = main_function_name
+        self.call_names = set()
+        self.local_function_names = set()
+
+    def visit_FunctionDef(self, node):
+        self.generic_visit(node)
+        self.local_function_names.add(node.name)
+        return node
+
+    def visit_AsyncFunctionDef(self, node):
+        self.generic_visit(node)
+        self.local_function_names.add(node.name)
+        return node
+
+    def visit_Call(self, node):
+        self.generic_visit(node)
+
+        if isinstance(node.func, ast.Name):
+            self.call_names.add(node.func.id)
+
+        if isinstance(node.func, ast.Attribute):
+            self.call_names.add(node.func.attr)
+
+    def get_external_call_names(self):
+        return self.call_names - self.local_function_names
+
+    def get_local_function_names(self):
+        return self.local_function_names - set([self.main_function_name])
+
+
+class TracerCallTransformer(ast.NodeTransformer):
+    def __init__(self, local_defined_functions_names, non_local_call_names):
+        self.local_defined_functions_names = local_defined_functions_names
+        self.non_local_call_names = non_local_call_names
+
+    def visit_FunctionDef(self, node):
+        if node.name in self.local_defined_functions_names:
+            node.decorator_list.append(
+                ast.Call(
+                    func=ast.Name(id="traced", ctx=ast.Load()),
+                    args=[],
+                    keywords=[],
+                ),
+            )
+        self.generic_visit(node)
+        return node
+
+    def visit_AsyncFunctionDef(self, node):
+        if node.name in self.local_defined_functions_names:
+            node.decorator_list.append(
+                ast.Call(
+                    func=ast.Name(id="traced", ctx=ast.Load()),
+                    args=[],
+                    keywords=[],
+                ),
+            )
+        self.generic_visit(node)
+        return node
+
+    def visit_Call(self, node):
+        self.generic_visit(node)
+
+        # Handle direct function calls
+        if (
+            isinstance(node.func, ast.Name)
+            and node.func.id in self.non_local_call_names
+        ):
+            tracer_call = ast.Call(
+                func=ast.Name(id="traced", ctx=ast.Load()),
+                args=[
+                    ast.Name(id=node.func.id, ctx=ast.Load()),
+                ],
+                keywords=[],
+            )
+            return ast.Call(
+                func=tracer_call,
+                args=node.args,
+                keywords=node.keywords,
+            )
+
+        # Handle nested attribute calls like x.y.sth()
+        if isinstance(node.func, ast.Attribute):
+            # Get the full attribute chain
+            attrs = []
+            current = node.func
+            while isinstance(current, ast.Attribute):
+                attrs.insert(0, current.attr)
+                current = current.value
+
+            # If the final value is a Name and the last attribute is in call_names
+            if isinstance(current, ast.Name) and attrs[-1] in self.non_local_call_names:
+                # Reconstruct the attribute chain
+                func_name = current
+                for attr in attrs[:-1]:
+                    func_name = ast.Attribute(
+                        value=func_name,
+                        attr=attr,
+                        ctx=ast.Load(),
+                    )
+
+                tracer_call = ast.Call(
+                    func=ast.Name(id="traced", ctx=ast.Load()),
+                    args=[
+                        ast.Attribute(
+                            value=func_name,
+                            attr=attrs[-1],
+                            ctx=ast.Load(),
+                        ),
+                    ],
+                    keywords=[],
+                )
+                return ast.Call(
+                    func=tracer_call,
+                    args=node.args,
+                    keywords=node.keywords,
+                )
+
+        return node
+
+
+class _Traced:
+    def __init__(self, fn, args, kwargs, span_type, name, prune_empty):
+        self.fn = fn
+        self.args = args
+        self.kwargs = kwargs
+        self.span_type = span_type
+        self.name = name
+        self.prune_empty = prune_empty
+        self.result = None
+
+    def __enter__(self):
+        self.log_token = (
+            None
+            if ACTIVE_TRACE_LOG.get()
+            else ACTIVE_TRACE_LOG.set([unify.log(context=get_trace_context())])
+        )
+        self.new_span, self.exec_start_time, self.local_token, self.global_token = (
+            _create_span(
+                self.fn,
+                self.args,
+                self.kwargs,
+                self.span_type,
+                self.name,
+            )
+        )
+        return self
+
+    def __exit__(self, exc_type, exc_value, exc_tb):
+        exec_time = time.perf_counter() - self.exec_start_time
+        if exc_type:
+            self.new_span["errors"] = traceback.format_exc()
+        outputs = (
+            _make_json_serializable(self.result) if self.result is not None else None
+        )
+        _finalize_span(
+            self.new_span,
+            self.local_token,
+            outputs,
+            exec_time,
+            self.prune_empty,
+            self.global_token,
+        )
+        if self.log_token:
+            ACTIVE_TRACE_LOG.set([])
+
+
 class Traced:
     def __init__(self, name, *, globals_filter=None):
         self.name = name
@@ -631,21 +809,11 @@ class Traced:
         return reader.read_vars
 
 
-class TraceTransformer(ast.NodeTransformer):
-    def __init__(self, trace_dirs: list[str]):
-        self.trace_dirs = trace_dirs
-        self.trace_dir_ast = ast.List(
-            elts=[ast.Constant(value=dir) for dir in trace_dirs],
-            ctx=ast.Load(),
-        )
-
-    def visit_Call(self, node):
-        self.generic_visit(node)
-        return ast.Call(
-            func=ast.Name(id="check_path_at_runtime", ctx=ast.Load()),
-            args=[node.func, self.trace_dir_ast, *node.args],
-            keywords=node.keywords,
-        )
+def _print_tree_source_with_lineno(fn_name, tree):
+    source_unparsed = "\n".join(
+        f"{i+1}: {line}" for i, line in enumerate(ast.unparse(tree).split("\n"))
+    )
+    _traced_logger.debug(f"AST[{fn_name}]:\n{source_unparsed}")
 
 
 def _nested_add(a, b):
@@ -867,50 +1035,126 @@ def _trace_module(module, prune_empty, span_type, name, filter):
     return module
 
 
-def _transform_function(fn, prune_empty, span_type, trace_dirs):
-    def check_path_at_runtime(fn, target_dirs, *args, **kwargs):
-        if (
-            inspect.isbuiltin(fn)
-            or not os.path.dirname(inspect.getsourcefile(fn)) in target_dirs
-        ):
-            return fn(*args, **kwargs)
+def _get_or_compile(func, compiled_ast):
+    if hasattr(func, "__cached_tracer"):
+        transformed_func = getattr(func, "__cached_tracer")
+        _traced_logger.debug(f"Using cached tracer for {func.__name__}")
+    else:
+        is_bound = hasattr(func, "__self__") and func.__self__ is not None
+        orig_fn = func.__func__ if is_bound else func
+        instance = func.__self__ if is_bound else None
+        global_ns = func.__globals__.copy()
 
+        # TODO: This is a hack to get the original function's closure
+        if orig_fn.__closure__:
+            for var, cell in zip(orig_fn.__code__.co_freevars, orig_fn.__closure__):
+                global_ns[var] = cell.cell_contents
+
+        global_ns["traced"] = traced
+        local_ns = {}
+        _traced_logger.debug(f"Executing compiled AST for {func.__name__}")
+        exec(compiled_ast, global_ns, local_ns)
+        transformed_func = local_ns[orig_fn.__name__]
+        if is_bound:
+            transformed_func = MethodType(transformed_func, instance)
         try:
-            return traced(
+            setattr(func, "__cached_tracer", transformed_func)
+        except:
+            pass
+
+    return transformed_func
+
+
+def _trace_wrapper_factory(
+    *,
+    fn,
+    fn_type,
+    span_type,
+    name,
+    prune_empty,
+    recursive,
+    filter,
+    depth,
+    compiled_ast,
+    skip_modules,
+    skip_functions,
+):
+
+    is_coroutine = inspect.iscoroutinefunction(inspect.unwrap(fn)) or fn_type == "async"
+    if is_coroutine and recursive:
+
+        @functools.wraps(fn)
+        async def async_wrapped(*args, **kwargs):
+            token = _set_active_trace_parameters(
                 prune_empty=prune_empty,
                 span_type=span_type,
-                trace_dirs=target_dirs,
-            )(fn)(*args, **kwargs)
-        except Exception as e:
-            raise e
-
-    for i, dir_path in enumerate(trace_dirs):
-        if not os.path.isabs(dir_path):
-            dir_path = os.path.normpath(
-                os.path.join(os.path.dirname(inspect.getsourcefile(fn)), dir_path),
+                name=name,
+                filter=filter,
+                fn_type=fn_type,
+                recursive=recursive,
+                depth=depth,
+                skip_modules=skip_modules,
+                skip_functions=skip_functions,
             )
-            trace_dirs[i] = dir_path
+            transformed_fn = _get_or_compile(fn, compiled_ast)
+            with _Traced(fn, args, kwargs, span_type, name, prune_empty) as _t:
+                result = await transformed_fn(*args, **kwargs)
+                _t.result = result
+                _reset_active_trace_parameters(token)
+                return result
 
-    source = textwrap.dedent(inspect.getsource(fn))
-    source_lines = source.split("\n")
-    if source_lines[0].strip().startswith("@"):
-        source = "\n".join(source_lines[1:])
+        return async_wrapped
 
-    tree = ast.parse(source)
-    transformer = TraceTransformer(trace_dirs)
-    tree = transformer.visit(tree)
-    ast.fix_missing_locations(tree)
-    code = compile(tree, filename=inspect.getsourcefile(fn), mode="exec")
-    module = inspect.getmodule(fn)
+    if is_coroutine and not recursive:
 
-    func_globals = module.__dict__.copy() if module else globals().copy()
-    func_globals["check_path_at_runtime"] = check_path_at_runtime
+        @functools.wraps(fn)
+        async def async_wrapped(*args, **kwargs):
+            with _Traced(fn, args, kwargs, span_type, name, prune_empty) as _t:
+                result = await fn(*args, **kwargs)
+                _t.result = result
+                return result
 
-    exec(code, func_globals)
-    old_fn = fn
-    fn = func_globals[fn.__name__]
-    functools.update_wrapper(fn, old_fn)
-    return fn
+        return async_wrapped
+
+    is_function = inspect.isfunction(fn) or inspect.ismethod(fn)
+    if is_function and recursive:
+
+        @functools.wraps(fn)
+        def wrapped(*args, **kwargs):
+            token = _set_active_trace_parameters(
+                prune_empty=prune_empty,
+                span_type=span_type,
+                name=name,
+                filter=filter,
+                fn_type=fn_type,
+                recursive=recursive,
+                depth=depth,
+                skip_modules=skip_modules,
+                skip_functions=skip_functions,
+            )
+            transformed_fn = _get_or_compile(fn, compiled_ast)
+            with _Traced(fn, args, kwargs, span_type, name, prune_empty) as _t:
+                result = transformed_fn(*args, **kwargs)
+                _t.result = result
+                _reset_active_trace_parameters(token)
+                return result
+
+        return wrapped
+
+    if is_function and not recursive:
+
+        @functools.wraps(fn)
+        def wrapped(*args, **kwargs):
+            with _Traced(fn, args, kwargs, span_type, name, prune_empty) as _t:
+                result = fn(*args, **kwargs)
+                _t.result = result
+                return result
+
+        return wrapped
+
+    raise TypeError(
+        f"Unsupported object type, should be function, coroutine or method: {fn_type}",
+    )
 
 
 def _trace_function(
@@ -918,88 +1162,101 @@ def _trace_function(
     prune_empty,
     span_type,
     name,
-    trace_contexts,
-    trace_dirs,
     filter,
     fn_type,
+    recursive,
+    depth,
+    skip_modules,
+    skip_functions,
 ):
-    if trace_dirs is not None:
-        fn = _transform_function(fn, prune_empty, span_type, trace_dirs)
+    _traced_logger.debug(f"Applying trace decorator to function {fn.__name__}")
 
-    @functools.wraps(fn)
-    def wrapped(*args, **kwargs):
-        log_token = (
-            None
-            if ACTIVE_TRACE_LOG.get()
-            else ACTIVE_TRACE_LOG.set([unify.log(context=get_trace_context())])
+    if not recursive or depth <= 0:
+        return _trace_wrapper_factory(
+            fn=fn,
+            fn_type=fn_type,
+            span_type=span_type,
+            name=name,
+            prune_empty=prune_empty,
+            recursive=False,
+            filter=filter,
+            depth=0,
+            compiled_ast=None,
+            skip_modules=skip_modules,
+            skip_functions=skip_functions,
         )
-        new_span, exec_start_time, local_token, global_token = _create_span(
-            fn,
-            args,
-            kwargs,
-            span_type,
-            name,
-        )
-        result = None
-        try:
-            result = fn(*args, **kwargs)
-            return result
-        except Exception as e:
-            new_span["errors"] = traceback.format_exc()
-            raise e
-        finally:
-            outputs = _make_json_serializable(result) if result is not None else None
-            exec_time = time.perf_counter() - exec_start_time
-            _finalize_span(
-                new_span,
-                local_token,
-                outputs,
-                exec_time,
-                prune_empty,
-                global_token,
-            )
-            if log_token:
-                ACTIVE_TRACE_LOG.set([])
 
-    @functools.wraps(fn)
-    async def async_wrapped(*args, **kwargs):
-        log_token = (
-            None
-            if ACTIVE_TRACE_LOG.get()
-            else ACTIVE_TRACE_LOG.set([unify.log(context=get_trace_context())])
+    try:
+        source = inspect.getsource(fn)
+        source = textwrap.dedent(source)
+    except Exception as e:
+        _traced_logger.warning(f"Error getting source for {fn.__name__}: {e}")
+        # Fallback to non-recursive tracing
+        return _trace_wrapper_factory(
+            fn=fn,
+            fn_type=fn_type,
+            span_type=span_type,
+            name=name,
+            prune_empty=prune_empty,
+            recursive=False,
+            filter=filter,
+            depth=depth,
+            compiled_ast=None,
+            skip_modules=skip_modules,
+            skip_functions=skip_functions,
         )
-        new_span, exec_start_time, local_token, global_token = _create_span(
-            fn,
-            args,
-            kwargs,
-            span_type,
-            name,
+
+    parsed_ast = ast.parse(source)
+    func_def = parsed_ast.body[0]
+    if not isinstance(func_def, (ast.FunctionDef, ast.AsyncFunctionDef)):
+        # Fallback to non-recursive tracing
+        return _trace_wrapper_factory(
+            fn=fn,
+            fn_type=fn_type,
+            span_type=span_type,
+            name=name,
+            prune_empty=prune_empty,
+            recursive=False,
+            filter=filter,
+            depth=depth,
+            compiled_ast=None,
+            skip_modules=skip_modules,
+            skip_functions=skip_functions,
         )
-        result = None
-        try:
-            result = await fn(*args, **kwargs)
-            return result
-        except Exception as e:
-            new_span["errors"] = traceback.format_exc()
-            raise e
-        finally:
-            outputs = _make_json_serializable(result) if result is not None else None
-            exec_time = time.perf_counter() - exec_start_time
-            _finalize_span(
-                new_span,
-                local_token,
-                outputs,
-                exec_time,
-                prune_empty,
-                global_token,
-            )
-            if log_token:
-                ACTIVE_TRACE_LOG.set([])
 
-    if inspect.iscoroutinefunction(inspect.unwrap(fn)) or fn_type == "async":
-        return async_wrapped
+    # Remove decorators
+    # TODO should only remove traced decorator
+    func_def.decorator_list = []
 
-    return wrapped
+    collector = TracerCallCollector(func_def.name)
+    collector.visit(func_def)
+
+    transformer = TracerCallTransformer(
+        collector.get_local_function_names(),
+        collector.get_external_call_names(),
+    )
+    transformer.visit(parsed_ast)
+    ast.fix_missing_locations(parsed_ast)
+    _traced_logger.debug(f"Compiling AST for {fn.__name__}")
+
+    if _traced_logger_enabled:
+        _print_tree_source_with_lineno(fn.__name__, parsed_ast)
+
+    compiled_ast = compile(parsed_ast, filename="<ast>", mode="exec")
+
+    return _trace_wrapper_factory(
+        fn=fn,
+        fn_type=fn_type,
+        span_type=span_type,
+        name=name,
+        prune_empty=prune_empty,
+        recursive=True,
+        filter=filter,
+        depth=depth - 1,
+        compiled_ast=compiled_ast,
+        skip_modules=skip_modules,
+        skip_functions=skip_functions,
+    )
 
 
 def traced(
@@ -1008,24 +1265,45 @@ def traced(
     prune_empty: bool = True,
     span_type: str = "function",
     name: Optional[str] = None,
-    trace_contexts: Optional[List[str]] = None,
-    trace_dirs: Optional[List[str]] = None,
     filter: Optional[Callable[[callable], bool]] = None,
     fn_type: Optional[str] = None,
+    recursive: bool = False,  # Only valid for Functions.
+    depth: Optional[int] = None,
+    skip_modules: Optional[List[ModuleType]] = None,
+    skip_functions: Optional[List[Callable]] = None,
 ):
     _initialize_trace_logger()
 
     if obj is None:
+        # Any changes to the arguments of traced should be reflected here.
         return lambda f: traced(
             f,
             prune_empty=prune_empty,
             span_type=span_type,
             name=name,
-            trace_contexts=trace_contexts,
-            trace_dirs=trace_dirs,
+            filter=filter,
+            fn_type=fn_type,
+            recursive=recursive,
+            depth=depth,
+            skip_modules=skip_modules,
+            skip_functions=skip_functions,
         )
 
-    if hasattr(obj, "__unify_traced"):
+    if ACTIVE_TRACE_PARAMETERS.get() is not None:
+        args = ACTIVE_TRACE_PARAMETERS.get()
+        prune_empty = args["prune_empty"]
+        span_type = args["span_type"]
+        name = args["name"]
+        filter = args["filter"]
+        fn_type = args["fn_type"]
+        recursive = args["recursive"]
+        depth = args["depth"]
+        skip_modules = args["skip_modules"]
+        skip_functions = args["skip_functions"]
+
+    if hasattr(obj, "__unify_traced") or (
+        skip_modules is not None and inspect.getmodule(obj) in skip_modules
+    ):
         return obj
 
     ret = None
@@ -1046,15 +1324,22 @@ def traced(
             filter if filter else _default_trace_filter,
         )
     elif inspect.isfunction(obj) or inspect.ismethod(obj):
+        if skip_functions is not None and obj in skip_functions:
+            return obj
+
+        if depth is None:
+            depth = float("inf")
         ret = _trace_function(
             obj,
             prune_empty,
             span_type,
             name,
-            trace_contexts,
-            trace_dirs,
             filter,
             fn_type,
+            recursive,
+            depth,
+            skip_modules,
+            skip_functions,
         )
     else:
         ret = _trace_instance(
@@ -1068,7 +1353,7 @@ def traced(
     if ret is not None:
         try:
             setattr(ret, "__unify_traced", True)
-        except AttributeError:
+        except (AttributeError, TypeError):
             pass
 
     return ret
