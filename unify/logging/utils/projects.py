@@ -14,6 +14,7 @@ def create_project(
     *,
     overwrite: bool = False,
     api_key: Optional[str] = None,
+    is_versioned: bool = True,
 ) -> Dict[str, str]:
     """
     Creates a logging project and adds this to your account. This project will have
@@ -27,6 +28,8 @@ def create_project(
         api_key: If specified, unify API key to be used. Defaults to the value in the
         `UNIFY_KEY` environment variable.
 
+        is_versioned: Whether the project is tracked via version control.
+
     Returns:
         A message indicating whether the project was created successfully.
     """
@@ -35,7 +38,7 @@ def create_project(
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    body = {"name": name}
+    body = {"name": name, "is_versioned": is_versioned}
     if overwrite:
         if name in list_projects(api_key=api_key):
             delete_project(name=name, api_key=api_key)
@@ -174,5 +177,93 @@ def list_projects(
         "Authorization": f"Bearer {api_key}",
     }
     response = _requests.get(BASE_URL + "/projects", headers=headers)
+    _check_response(response)
+    return response.json()
+
+
+def commit_project(
+    name: str,
+    commit_message: str,
+    *,
+    api_key: Optional[str] = None,
+) -> Dict[str, str]:
+    """
+    Creates a commit for the entire project, saving a snapshot of all versioned contexts.
+
+    Args:
+        name: Name of the project to commit.
+        commit_message: A description of the changes being saved.
+        api_key: If specified, unify API key to be used. Defaults to the value in the
+        `UNIFY_KEY` environment variable.
+
+    Returns:
+        A dictionary containing the new commit_hash.
+    """
+    api_key = _validate_api_key(api_key)
+    headers = {
+        "accept": "application/json",
+        "Authorization": f"Bearer {api_key}",
+    }
+    body = {"commit_message": commit_message}
+    response = _requests.post(
+        BASE_URL + f"/project/{name}/commit",
+        headers=headers,
+        json=body,
+    )
+    _check_response(response)
+    return response.json()
+
+
+def rollback_project(
+    name: str,
+    commit_hash: str,
+    *,
+    api_key: Optional[str] = None,
+) -> Dict[str, str]:
+    """
+    Rolls back the entire project to a specific commit.
+
+    Args:
+        name: Name of the project to roll back.
+        commit_hash: The hash of the commit to restore.
+        api_key: If specified, unify API key to be used. Defaults to the value in the
+        `UNIFY_KEY` environment variable.
+
+    Returns:
+        A message indicating the success of the rollback operation.
+    """
+    api_key = _validate_api_key(api_key)
+    headers = {
+        "accept": "application/json",
+        "Authorization": f"Bearer {api_key}",
+    }
+    body = {"commit_hash": commit_hash}
+    response = _requests.post(
+        BASE_URL + f"/project/{name}/rollback",
+        headers=headers,
+        json=body,
+    )
+    _check_response(response)
+    return response.json()
+
+
+def get_project_commits(name: str, *, api_key: Optional[str] = None) -> List[Dict]:
+    """
+    Retrieves the commit history for a project.
+
+    Args:
+        name: Name of the project.
+        api_key: If specified, unify API key to be used. Defaults to the value in the
+        `UNIFY_KEY` environment variable.
+
+    Returns:
+        A list of dictionaries, each representing a commit.
+    """
+    api_key = _validate_api_key(api_key)
+    headers = {
+        "accept": "application/json",
+        "Authorization": f"Bearer {api_key}",
+    }
+    response = _requests.get(BASE_URL + f"/project/{name}/commits", headers=headers)
     _check_response(response)
     return response.json()
