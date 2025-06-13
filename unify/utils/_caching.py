@@ -65,8 +65,24 @@ def _create_cache_if_none(filename: str = None, local: bool = True):
         if not os.path.exists(cache_fpath):
             with open(cache_fpath, "w") as outfile:
                 json.dump({}, outfile)
-        with open(cache_fpath) as outfile:
-            _cache = json.load(outfile)
+
+        # Check if file is empty or contains invalid JSON
+        try:
+            with open(cache_fpath) as outfile:
+                content = outfile.read().strip()
+                if not content:
+                    # File is empty, initialize with empty dict
+                    with open(cache_fpath, "w") as outfile:
+                        json.dump({}, outfile)
+                    _cache = {}
+                else:
+                    # Try to parse the JSON
+                    _cache = json.loads(content)
+        except json.JSONDecodeError:
+            # File contains invalid JSON, reinitialize
+            with open(cache_fpath, "w") as outfile:
+                json.dump({}, outfile)
+            _cache = {}
 
 
 def _minimal_char_diff(a: str, b: str, context: int = 5) -> str:
