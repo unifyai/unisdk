@@ -1,5 +1,6 @@
 import asyncio
 import contextvars
+import os
 import threading
 from typing import Any, List
 
@@ -103,7 +104,7 @@ def map(
 
     if mode == "loop":
 
-        pbar = tqdm(total=num_calls)
+        pbar = tqdm(total=num_calls, disable=os.environ.get("TQDM_DISABLE", "0") == "1")
         pbar.set_description(f"{name}Iterations")
 
         returns = list()
@@ -116,7 +117,7 @@ def map(
 
     elif mode == "threading":
 
-        pbar = tqdm(total=num_calls)
+        pbar = tqdm(total=num_calls, disable=os.environ.get("TQDM_DISABLE", "0") == "1")
         pbar.set_description(f"{name}Threads")
 
         def fn_w_indexing(rets: List[None], thread_idx: int, *a, **kw):
@@ -158,7 +159,11 @@ def map(
             fns.append(fn_wrapper(*a, **kw))
 
         async def main(fns):
-            return await tqdm_asyncio.gather(*fns, desc=f"{name}Coroutines")
+            return await tqdm_asyncio.gather(
+                *fns,
+                desc=f"{name}Coroutines",
+                disable=os.environ.get("TQDM_DISABLE", "0") == "1",
+            )
 
         ret += asyncio.run(main(fns))
 
