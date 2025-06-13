@@ -17,7 +17,7 @@ from .logs import CONTEXT_WRITE
 def create_context(
     name: str,
     description: str = None,
-    is_versioned: bool = False,
+    is_versioned: bool = True,
     allow_duplicates: bool = True,
     *,
     project: Optional[str] = None,
@@ -31,7 +31,7 @@ def create_context(
 
         description: Description of the context to create.
 
-        is_versioned: Whether the context is versioned.
+        is_versioned: Whether the context is tracked via version control.
 
         allow_duplicates: Whether to allow duplicates in the context.
 
@@ -276,6 +276,122 @@ def add_logs_to_context(
         BASE_URL + f"/project/{project}/contexts/add_logs",
         headers=headers,
         json=body,
+    )
+    _check_response(response)
+    return response.json()
+
+
+def commit_context(
+    name: str,
+    commit_message: str,
+    *,
+    project: Optional[str] = None,
+    api_key: Optional[str] = None,
+) -> Dict[str, str]:
+    """
+    Creates a commit for a single context.
+
+    Args:
+        name: Name of the context to commit.
+        commit_message: A description of the changes being saved.
+        project: Name of the project the context belongs to.
+        api_key: If specified, unify API key to be used. Defaults to the value in the
+        `UNIFY_KEY` environment variable.
+
+    Returns:
+        A dictionary containing the new commit_hash.
+    """
+    api_key = _validate_api_key(api_key)
+    project = _get_and_maybe_create_project(
+        project,
+        api_key=api_key,
+        create_if_missing=False,
+    )
+    headers = {
+        "accept": "application/json",
+        "Authorization": f"Bearer {api_key}",
+    }
+    body = {"commit_message": commit_message}
+    response = _requests.post(
+        BASE_URL + f"/project/{project}/contexts/{name}/commit",
+        headers=headers,
+        json=body,
+    )
+    _check_response(response)
+    return response.json()
+
+
+def rollback_context(
+    name: str,
+    commit_hash: str,
+    *,
+    project: Optional[str] = None,
+    api_key: Optional[str] = None,
+) -> Dict[str, str]:
+    """
+    Rolls back a single context to a specific commit.
+
+    Args:
+        name: Name of the context to roll back.
+        commit_hash: The hash of the commit to restore.
+        project: Name of the project the context belongs to.
+        api_key: If specified, unify API key to be used. Defaults to the value in the
+        `UNIFY_KEY` environment variable.
+
+    Returns:
+        A message indicating the success of the rollback operation.
+    """
+    api_key = _validate_api_key(api_key)
+    project = _get_and_maybe_create_project(
+        project,
+        api_key=api_key,
+        create_if_missing=False,
+    )
+    headers = {
+        "accept": "application/json",
+        "Authorization": f"Bearer {api_key}",
+    }
+    body = {"commit_hash": commit_hash}
+    response = _requests.post(
+        BASE_URL + f"/project/{project}/contexts/{name}/rollback",
+        headers=headers,
+        json=body,
+    )
+    _check_response(response)
+    return response.json()
+
+
+def get_context_commits(
+    name: str,
+    *,
+    project: Optional[str] = None,
+    api_key: Optional[str] = None,
+) -> List[Dict]:
+    """
+    Retrieves the commit history for a context.
+
+    Args:
+        name: Name of the context.
+        project: Name of the project the context belongs to.
+        api_key: If specified, unify API key to be used. Defaults to the value in the
+        `UNIFY_KEY` environment variable.
+
+    Returns:
+        A list of dictionaries, each representing a commit.
+    """
+    api_key = _validate_api_key(api_key)
+    project = _get_and_maybe_create_project(
+        project,
+        api_key=api_key,
+        create_if_missing=False,
+    )
+    headers = {
+        "accept": "application/json",
+        "Authorization": f"Bearer {api_key}",
+    }
+    response = _requests.get(
+        BASE_URL + f"/project/{project}/contexts/{name}/commits",
+        headers=headers,
     )
     _check_response(response)
     return response.json()

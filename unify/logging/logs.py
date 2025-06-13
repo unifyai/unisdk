@@ -248,11 +248,18 @@ def get_active_context():
 
 
 class Context:
-    def __init__(self, context: str, mode: str = "both", overwrite: bool = False):
+    def __init__(
+        self,
+        context: str,
+        mode: str = "both",
+        overwrite: bool = False,
+        is_versioned: bool = True,
+    ):
         self._context = context
         _validate_mode(mode)
         self._mode = mode
         self._overwrite = overwrite
+        self._is_versioned = is_versioned
 
     def __enter__(self):
         _validate_mode_nesting(CONTEXT_MODE.get(), self._mode)
@@ -272,7 +279,7 @@ class Context:
                 raise Exception(f"Cannot overwrite logs in read mode.")
 
             unify.delete_context(self._context)
-            unify.create_context(self._context)
+            unify.create_context(self._context, is_versioned=self._is_versioned)
 
     def __exit__(self, *args, **kwargs):
         if self._mode in ("both", "write"):
