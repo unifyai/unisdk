@@ -545,62 +545,35 @@ class TracerCallTransformer(ast.NodeTransformer):
         return node
 
     def visit_Call(self, node):
-        self.generic_visit(node)
+        node = self.generic_visit(node)
 
-        # Handle direct function calls
         if (
             isinstance(node.func, ast.Name)
             and node.func.id in self.non_local_call_names
         ):
-            tracer_call = ast.Call(
+            tracer = ast.Call(
                 func=ast.Name(id="traced", ctx=ast.Load()),
-                args=[
-                    ast.Name(id=node.func.id, ctx=ast.Load()),
-                ],
+                args=[ast.Name(id=node.func.id, ctx=ast.Load())],
                 keywords=[],
             )
-            return ast.Call(
-                func=tracer_call,
-                args=node.args,
-                keywords=node.keywords,
+            return ast.copy_location(
+                ast.Call(func=tracer, args=node.args, keywords=node.keywords),
+                node,
             )
 
-        # Handle nested attribute calls like x.y.sth()
-        if isinstance(node.func, ast.Attribute):
-            # Get the full attribute chain
-            attrs = []
-            current = node.func
-            while isinstance(current, ast.Attribute):
-                attrs.insert(0, current.attr)
-                current = current.value
-
-            # If the final value is a Name and the last attribute is in call_names
-            if isinstance(current, ast.Name) and attrs[-1] in self.non_local_call_names:
-                # Reconstruct the attribute chain
-                func_name = current
-                for attr in attrs[:-1]:
-                    func_name = ast.Attribute(
-                        value=func_name,
-                        attr=attr,
-                        ctx=ast.Load(),
-                    )
-
-                tracer_call = ast.Call(
-                    func=ast.Name(id="traced", ctx=ast.Load()),
-                    args=[
-                        ast.Attribute(
-                            value=func_name,
-                            attr=attrs[-1],
-                            ctx=ast.Load(),
-                        ),
-                    ],
-                    keywords=[],
-                )
-                return ast.Call(
-                    func=tracer_call,
-                    args=node.args,
-                    keywords=node.keywords,
-                )
+        if (
+            isinstance(node.func, ast.Attribute)
+            and node.func.attr in self.non_local_call_names
+        ):
+            tracer = ast.Call(
+                func=ast.Name(id="traced", ctx=ast.Load()),
+                args=[node.func],
+                keywords=[],
+            )
+            return ast.copy_location(
+                ast.Call(func=tracer, args=node.args, keywords=node.keywords),
+                node,
+            )
 
         return node
 

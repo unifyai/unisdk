@@ -966,6 +966,38 @@ def test_traced_recursive_skip_function():
     assert trace["child_spans"][0]["outputs"] == 1
 
 
+@_handle_project
+def test_traced_recursive_chained_methods():
+    class A:
+        def __init__(self):
+            self.x = 0
+
+        def set_value(self, value):
+            self.x = value
+            return self
+
+        def get_value(self):
+            return self.x
+
+    a = A()
+
+    @unify.traced(recursive=True)
+    def foo():
+        a.set_value(1).get_value()
+
+    foo()
+
+    _wait_for_trace_logger()
+    logs = unify.get_logs()
+    assert len(logs) == 1
+    trace = logs[0].entries["trace"]
+    assert trace["span_name"] == "foo"
+    assert len(trace["child_spans"]) == 2
+    assert trace["child_spans"][0]["span_name"] == "set_value"
+    assert trace["child_spans"][1]["span_name"] == "get_value"
+    assert trace["child_spans"][1]["outputs"] == 1
+
+
 # -----------------#
 
 if __name__ == "__main__":
