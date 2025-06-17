@@ -15,6 +15,13 @@ class ResponseDecodeError(Exception):
         super().__init__(f"Request failed to parse response: {response.text}")
 
 
+class RequestError(Exception):
+    def __init__(self, url: str, r_type: str, response: requests.Response, /, **kwargs):
+        super().__init__(
+            f"{r_type}:{url} with {kwargs} failed with status code {response.status_code}: {response.text}",
+        )
+
+
 def _log(type: str, url: str, mask_key: bool = True, /, **kwargs):
     if not _log_enabled:
         return
@@ -40,9 +47,21 @@ url:{url}
     _logger.debug(log_msg)
 
 
+def _mask_auth_key(kwargs: dict):
+    if "headers" in kwargs:
+        kwargs["headers"]["Authorization"] = "***"
+    return kwargs
+
+
 def request(method, url, **kwargs):
     _log(f"request:{method}", url, True, **kwargs)
-    res = requests.request(method, url, **kwargs)
+    try:
+        res = requests.request(method, url, **kwargs)
+        res.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        kwargs = _mask_auth_key(kwargs)
+        raise RequestError(url, method, e.response, **kwargs)
+
     try:
         _log(f"request:{method} response:{res.status_code}", url, response=res.json())
     except requests.exceptions.JSONDecodeError as e:
@@ -52,7 +71,13 @@ def request(method, url, **kwargs):
 
 def get(url, params=None, **kwargs):
     _log("GET", url, True, params=params, **kwargs)
-    res = requests.get(url, params=params, **kwargs)
+    try:
+        res = requests.get(url, params=params, **kwargs)
+        res.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        kwargs = _mask_auth_key(kwargs)
+        raise RequestError(url, "GET", e.response, params=params, **kwargs)
+
     try:
         _log(f"GET response:{res.status_code}", url, response=res.json())
     except requests.exceptions.JSONDecodeError as e:
@@ -62,7 +87,13 @@ def get(url, params=None, **kwargs):
 
 def options(url, **kwargs):
     _log("OPTIONS", url, True, **kwargs)
-    res = requests.options(url, **kwargs)
+    try:
+        res = requests.options(url, **kwargs)
+        res.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        kwargs = _mask_auth_key(kwargs)
+        raise RequestError(url, "OPTIONS", e.response, **kwargs)
+
     try:
         _log(f"OPTIONS response:{res.status_code}", url, response=res.json())
     except requests.exceptions.JSONDecodeError as e:
@@ -72,7 +103,12 @@ def options(url, **kwargs):
 
 def head(url, **kwargs):
     _log("HEAD", url, True, **kwargs)
-    res = requests.head(url, **kwargs)
+    try:
+        res = requests.head(url, **kwargs)
+    except requests.exceptions.HTTPError as e:
+        kwargs = _mask_auth_key(kwargs)
+        raise RequestError(url, "HEAD", e.response, **kwargs)
+
     try:
         _log(f"HEAD response:{res.status_code}", url, response=res.json())
     except requests.exceptions.JSONDecodeError as e:
@@ -82,7 +118,13 @@ def head(url, **kwargs):
 
 def post(url, data=None, json=None, **kwargs):
     _log("POST", url, True, data=data, json=json, **kwargs)
-    res = requests.post(url, data=data, json=json, **kwargs)
+    try:
+        res = requests.post(url, data=data, json=json, **kwargs)
+        res.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        kwargs = _mask_auth_key(kwargs)
+        raise RequestError(url, "POST", e.response, data=data, json=json, **kwargs)
+
     try:
         _log(f"POST response:{res.status_code}", url, response=res.json())
     except requests.exceptions.JSONDecodeError as e:
@@ -92,7 +134,13 @@ def post(url, data=None, json=None, **kwargs):
 
 def put(url, data=None, **kwargs):
     _log("PUT", url, True, data=data, **kwargs)
-    res = requests.put(url, data=data, **kwargs)
+    try:
+        res = requests.put(url, data=data, **kwargs)
+        res.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        kwargs = _mask_auth_key(kwargs)
+        raise RequestError(url, "PUT", e.response, data=data, **kwargs)
+
     try:
         _log(f"PUT response:{res.status_code}", url, response=res.json())
     except requests.exceptions.JSONDecodeError as e:
@@ -102,7 +150,13 @@ def put(url, data=None, **kwargs):
 
 def patch(url, data=None, **kwargs):
     _log("PATCH", url, True, data=data, **kwargs)
-    res = requests.patch(url, data=data, **kwargs)
+    try:
+        res = requests.patch(url, data=data, **kwargs)
+        res.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        kwargs = _mask_auth_key(kwargs)
+        raise RequestError(url, "PATCH", e.response, data=data, **kwargs)
+
     try:
         _log(f"PATCH response:{res.status_code}", url, response=res.json())
     except requests.exceptions.JSONDecodeError as e:
@@ -112,7 +166,13 @@ def patch(url, data=None, **kwargs):
 
 def delete(url, **kwargs):
     _log("DELETE", url, True, **kwargs)
-    res = requests.delete(url, **kwargs)
+    try:
+        res = requests.delete(url, **kwargs)
+        res.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        kwargs = _mask_auth_key(kwargs)
+        raise RequestError(url, "DELETE", e.response, **kwargs)
+
     try:
         _log(f"DELETE response:{res.status_code}", url, response=res.json())
     except requests.exceptions.JSONDecodeError as e:
