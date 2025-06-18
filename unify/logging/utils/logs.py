@@ -624,8 +624,12 @@ def _sync_log(
     }
     response = _requests.post(BASE_URL + "/logs", headers=headers, json=body)
     _check_response(response)
+    resp_json = response.json()
+    if resp_json["row_ids"]["ids"][0] is not None:
+        entries[resp_json["row_ids"]["name"]] = resp_json["row_ids"]["ids"][0]
+
     return unify.Log(
-        id=response.json()["log_event_ids"][0],
+        id=resp_json["log_event_ids"][0],
         api_key=api_key,
         **entries,
         params=params,
@@ -780,6 +784,13 @@ def create_logs(
                 data=_json_chunker(body),
             )
         _check_response(response)
+        resp_json = response.json()
+
+        if resp_json["row_ids"]["ids"][0] is not None:
+            unique_column_name = resp_json["row_ids"]["name"]
+            for e, i in zip(entries, range(len(resp_json["row_ids"]["ids"]))):
+                e[unique_column_name] = resp_json["row_ids"]["ids"][i]
+
         return [
             unify.Log(
                 project=project,
@@ -788,7 +799,7 @@ def create_logs(
                 **p,
                 id=i,
             )
-            for e, p, i in zip(entries, params, response.json()["log_event_ids"])
+            for e, p, i in zip(entries, params, resp_json["log_event_ids"])
         ]
 
     pbar = tqdm(total=len(params), unit="logs", desc="Creating Logs")

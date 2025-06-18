@@ -1319,5 +1319,31 @@ async def test_async_log_decorator():
     assert result == 20
 
 
+@_handle_project
+def test_create_log_unique_column():
+    unify.create_context("foo", unique_id_column=True, unique_id_name="unique_id")
+    ret = unify.log(context="foo")
+
+    entries = ret.entries
+    assert entries["unique_id"] is not None
+    assert entries["unique_id"] == 0
+
+    unify.delete_context("foo")
+    unify.create_context("foo", unique_id_column=False)
+    ret = unify.log(context="foo")
+    entries = ret.entries
+    assert len(entries) == 0
+
+
+@_handle_project
+def test_create_log_unique_column_batch():
+    unify.create_context("foo", unique_id_column=True, unique_id_name="unique_id")
+    ret = unify.create_logs(context="foo", entries=[{"x": 1}, {"x": 2}, {"x": 3}])
+
+    for i, r in enumerate(ret):
+        assert "unique_id" in r.entries
+        assert r.entries["unique_id"] == i
+
+
 if __name__ == "__main__":
     pass
