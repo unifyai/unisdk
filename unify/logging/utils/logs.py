@@ -585,6 +585,8 @@ def log(
             api_key=api_key,
         )
 
+    created_log.entries.pop("explicit_types", None)
+
     if PARAMS_NEST_LEVEL.get() > 0 or ENTRIES_NEST_LEVEL.get() > 0:
         LOGGED.set(
             {
