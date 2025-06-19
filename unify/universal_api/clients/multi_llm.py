@@ -26,7 +26,6 @@ from unify.utils import _requests
 from unify.utils.helpers import _default, _validate_api_key
 
 from ..clients import AsyncUnify, _Client, _UniClient
-from ..utils.endpoint_metrics import Metrics
 
 
 class _MultiClient(_Client, abc.ABC):
@@ -415,31 +414,6 @@ class _MultiClient(_Client, abc.ABC):
             raise Exception("There was an error with the request.") from e
         except (KeyError, ValueError) as e:
             raise ValueError("Error parsing JSON response.") from e
-
-    # Read-only Properties #
-    # ---------------------#
-
-    def _get_metrics(self) -> Dict[str, Metrics]:
-        return {
-            ep: unify.get_endpoint_metrics(ep, api_key=self._api_key)[0]
-            for ep in self._endpoints
-        }
-
-    @property
-    def input_cost(self) -> Dict[str, float]:
-        return {ep: metrics.input_cost for ep, metrics in self._get_metrics().items()}
-
-    @property
-    def output_cost(self) -> Dict[str, float]:
-        return {ep: metrics.output_cost for ep, metrics in self._get_metrics().items()}
-
-    @property
-    def ttft(self) -> Dict[str, float]:
-        return {ep: metrics.ttft for ep, metrics in self._get_metrics().items()}
-
-    @property
-    def itl(self) -> Dict[str, float]:
-        return {ep: metrics.itl for ep, metrics in self._get_metrics().items()}
 
     # Settable Properties #
     # --------------------#

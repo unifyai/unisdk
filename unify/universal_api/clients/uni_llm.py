@@ -47,7 +47,6 @@ from ...utils._caching import _get_cache, _get_caching, _write_to_cache
 from ...utils.helpers import _default
 from ..clients.base import _Client
 from ..types import Prompt
-from ..utils.endpoint_metrics import Metrics
 
 
 class _UniClient(_Client, abc.ABC):
@@ -311,28 +310,6 @@ class _UniClient(_Client, abc.ABC):
             self.set_provider(provider)
         if model:
             self.set_model(model)
-
-    # Read-only Properties #
-    # ---------------------#
-
-    def _get_metric(self) -> Metrics:
-        return unify.get_endpoint_metrics(self._endpoint, api_key=self._api_key)[0]
-
-    @property
-    def input_cost(self) -> float:
-        return self._get_metric().input_cost
-
-    @property
-    def output_cost(self) -> float:
-        return self._get_metric().output_cost
-
-    @property
-    def ttft(self) -> float:
-        return self._get_metric().ttft
-
-    @property
-    def itl(self) -> float:
-        return self._get_metric().itl
 
     # Settable Properties #
     # --------------------#

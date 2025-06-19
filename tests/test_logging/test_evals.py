@@ -83,32 +83,6 @@ def maths_example():
 
 
 class TestMathsEvaluator:
-    def test_add_artifacts(self, maths_example) -> None:
-        with ProjectHandling():
-            with unify.Project("test_project"):
-                unify.add_project_artifacts(
-                    dataset=maths_example.dataset,
-                    client=str(maths_example.client),
-                )
-                artifacts = unify.get_project_artifacts()
-                assert len(artifacts) == 2
-                assert artifacts == dict(
-                    dataset=maths_example.dataset,
-                    client=str(maths_example.client),
-                )
-
-    def test_remove_artifacts(self, maths_example) -> None:
-        with ProjectHandling():
-            with unify.Project("test_project"):
-                unify.add_project_artifacts(
-                    dataset=maths_example.dataset,
-                    client=str(maths_example.client),
-                )
-                unify.delete_project_artifact("client")
-                artifacts = unify.get_project_artifacts()
-                assert len(artifacts) == 1
-                assert artifacts == dict(dataset=maths_example.dataset)
-
     def test_evals(self, maths_example) -> None:
         for data in maths_example.dataset:
             question = data["question"]
@@ -593,42 +567,6 @@ def crm_example():
 
 
 class TestCRMEvaluator:
-    def test_add_artifacts(self, crm_example) -> None:
-        with ProjectHandling():
-            with unify.Project("test_project"):
-                unify.add_project_artifacts(
-                    questions=crm_example.questions,
-                    sales_call_transcripts=crm_example.sales_call_transcripts,
-                    correct_answers=crm_example.correct_answers,
-                    client=str(crm_example.client),
-                )
-                artifacts = unify.get_project_artifacts()
-                assert len(artifacts) == 4
-                assert artifacts == dict(
-                    questions=crm_example.questions,
-                    sales_call_transcripts=crm_example.sales_call_transcripts,
-                    correct_answers=crm_example.correct_answers,
-                    client=str(crm_example.client),
-                )
-
-    def test_remove_artifacts(self, crm_example) -> None:
-        with ProjectHandling():
-            with unify.Project("test_project"):
-                unify.add_project_artifacts(
-                    questions=crm_example.questions,
-                    sales_call_transcripts=crm_example.sales_call_transcripts,
-                    correct_answers=crm_example.correct_answers,
-                    client=str(crm_example.client),
-                )
-                unify.delete_project_artifact("sales_call_transcripts")
-                unify.delete_project_artifact("client")
-                artifacts = unify.get_project_artifacts()
-                assert len(artifacts) == 2
-                assert artifacts == dict(
-                    questions=crm_example.questions,
-                    correct_answers=crm_example.correct_answers,
-                )
-
     def test_evals(self, crm_example) -> None:
         for data in crm_example.dataset:
             msg = (
