@@ -1146,12 +1146,12 @@ def update_logs(
     body = {
         "logs": log_ids,
         "context": context,
-        # ToDo: remove once this [https://app.clickup.com/t/86c25g263] is done
-        "params": [{}] * len(log_ids) if params is None else params,
-        "entries": [{}] * len(log_ids) if entries is None else entries,
-        # end ToDo
         "overwrite": overwrite,
     }
+    if entries is not None:
+        body["entries"] = entries
+    if params is not None:
+        body["params"] = params
     response = _requests.put(BASE_URL + "/logs", headers=headers, json=body)
     _check_response(response)
     return response.json()
