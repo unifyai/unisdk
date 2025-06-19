@@ -16,7 +16,8 @@ from .helpers import _handle_project
 
 
 def _wait_for_trace_logger():
-    while _get_trace_logger().queue.qsize() > 0:
+    logger = _get_trace_logger()
+    while logger.is_processing():
         time.sleep(0.1)
 
 

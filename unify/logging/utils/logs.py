@@ -1,15 +1,19 @@
 from __future__ import annotations
 
+import asyncio
 import atexit
 import inspect
 import json
 import logging
-import queue
+import signal
 import threading
+
+import aiohttp
 
 logger = logging.getLogger(__name__)
 import os
 import sys
+from concurrent.futures import ThreadPoolExecutor
 from contextvars import ContextVar
 from types import ModuleType
 from typing import Any, Callable, Dict, List, Optional, Union
@@ -100,48 +104,169 @@ RUNNING_TIME = ContextVar("running_time", default=0.0)
 CHUNK_LIMIT = 5000000
 
 
-class _AsyncTraceLogger(threading.Thread):
-    class _StopEvent:
-        pass
+class _TraceLogState:
+    __slots__ = ("lock", "processing", "pending_value")
 
-    def __init__(self):
-        super().__init__(name="TraceLoggerThread", daemon=True)
-        self.queue = queue.Queue()
-        self.start()
-        atexit.register(self.stop)
+    def __init__(self) -> None:
+        self.lock = asyncio.Lock()
+        self.processing = False
+        self.pending_value: Dict[str, Any] | None = None
 
-    def run(self):
-        while True:
-            item = self.queue.get()
-            if isinstance(item, self._StopEvent):
-                break
 
-            log_id, trace, context = item
-            unify.add_log_entries(
-                logs=log_id,
-                trace=trace,
-                overwrite=True,
-                context=context,
+class _AsyncTraceLogger:
+    def __init__(self) -> None:
+        self._states: dict[str, _TraceLogState] = {}
+        self.stopped = False
+        self._api_key = _validate_api_key(None)
+        self._pending_submit_requests = 0
+
+        atexit.register(self.shutdown, flush=True)
+        signal.signal(signal.SIGINT, self._on_sigint)
+
+        headers = {
+            "accept": "application/json",
+            "Authorization": f"Bearer {self._api_key}",
+        }
+
+        self._loop = asyncio.new_event_loop()
+        self._loop.set_default_executor(ThreadPoolExecutor())
+        self._client = aiohttp.ClientSession(loop=self._loop, headers=headers)
+        self._thread = threading.Thread(
+            name="UnifyTraceLogger",
+            target=self._loop.run_forever,
+            daemon=True,
+        )
+        self._thread.start()
+
+    def update_trace(self, log: unify.Log, trace: dict):
+        metadata = {
+            "id": log.id,
+            "project": unify.active_project(),
+            "context": log.context,
+        }
+        fut = asyncio.run_coroutine_threadsafe(
+            self._update_log(metadata, trace),
+            self._loop,
+        )
+        self._pending_submit_requests += 1
+        fut.add_done_callback(self._update_log_callback)
+
+    def is_processing(self) -> bool:
+        return self._pending_submit_requests > 0 or len(self._states) > 0
+
+    def _update_log_callback(self, fut):
+        self._pending_submit_requests -= 1
+
+    def shutdown(self, flush: bool = True) -> None:
+        if self.stopped:
+            return
+        self.stopped = True
+
+        if flush:
+            drain_future = asyncio.run_coroutine_threadsafe(
+                self._drain(),
+                self._loop,
+            )
+            from concurrent.futures import TimeoutError
+
+            while True:
+                try:
+                    drain_future.result(
+                        timeout=0.1,
+                    )  # blocks until all requests are done
+                except (asyncio.TimeoutError, TimeoutError):
+                    continue
+                else:
+                    break
+        else:
+            asyncio.run_coroutine_threadsafe(
+                self._shutdown_tasks(),
+                self._loop,
             )
 
-    def update_trace(self, log_id, trace, context):
-        self.queue.put_nowait((log_id, trace, context))
+        close_future = asyncio.run_coroutine_threadsafe(
+            self._close_client(),
+            self._loop,
+        )
+        close_future.result()
 
-    def stop(self):
-        """Stop normally, waiting for queue to be processed"""
-        self.queue.put_nowait(self._StopEvent())
-        while self.is_alive():
-            try:
-                self.join(timeout=0.1)
-            except KeyboardInterrupt:
-                self.stop_immediate()
-                raise
+        self._loop.call_soon_threadsafe(self._loop.stop)
+        self._thread.join()
+        self._loop.close()
 
-    def stop_immediate(self):
-        """Stop immediately, ignoring remaining queue items"""
-        self.queue = queue.Queue()
-        self.queue.put_nowait(self._StopEvent())
-        self.join()
+    async def _update_log(self, log_metadata, trace) -> None:
+        state = self._states.setdefault(log_metadata["id"], _TraceLogState())
+        async with state.lock:
+            state.pending_value = {
+                "trace": trace,
+                "project": log_metadata["project"],
+                "context": log_metadata["context"],
+            }
+            if not state.processing:
+                state.processing = True
+                asyncio.create_task(self._process_log(log_metadata["id"], state))
+
+    async def _process_log(self, log_id: int, state: _TraceLogState):
+        try:
+            while True:
+                async with state.lock:
+                    value = state.pending_value
+                    state.pending_value = None
+
+                if value is None:
+                    async with state.lock:
+                        state.processing = False
+                    return
+
+                try:
+                    await self._send_request(log_id, value)
+                except Exception as e:
+                    logger.error(f"error updating trace {log_id!r}: {e}")
+
+                if value["trace"].get("completed") == True:
+                    async with state.lock:
+                        state.processing = False
+                    self._states.pop(log_id, None)
+                    return
+        except asyncio.CancelledError:
+            pass
+
+    async def _send_request(self, log_id: str, value: Dict[str, Any]):
+        entries = {"trace": value["trace"]}
+        entries = _apply_col_context(**entries)
+        entries = {**entries, **ACTIVE_ENTRIES_WRITE.get()}
+        entries = _handle_special_types(entries)
+        entries = _handle_mutability(True, entries)
+
+        body = {
+            "logs": [log_id],
+            "project": value["project"],
+            "context": value["context"],
+            "entries": entries,
+            "overwrite": True,
+        }
+
+        async with self._client.put(
+            f"{BASE_URL}/logs",
+            json=body,
+        ) as resp:
+            resp.raise_for_status()
+
+    async def _drain(self):
+        while any(state.processing for state in self._states.values()):
+            await asyncio.sleep(0.05)
+
+    async def _shutdown_tasks(self):
+        for task in self.tasks:
+            await task.cancel()
+
+    async def _close_client(self):
+        await self._client.close()
+        await asyncio.sleep(1)
+
+    def _on_sigint(self, signum, frame):
+        self.shutdown(flush=False)
+        exit(0)
 
 
 def _removes_unique_trace_values(kw: Dict[str, Any]) -> Dict[str, Any]:

@@ -711,9 +711,8 @@ class Traced:
             self.local_token = SPAN.set(new_span)
 
         _get_trace_logger().update_trace(
-            ACTIVE_TRACE_LOG.get(),
+            ACTIVE_TRACE_LOG.get()[0],
             copy.deepcopy(GLOBAL_SPAN.get()),
-            ACTIVE_TRACE_LOG.get()[0].context,
         )
         return self
 
@@ -743,9 +742,8 @@ class Traced:
 
         SPAN.reset(self.local_token)
         _get_trace_logger().update_trace(
-            ACTIVE_TRACE_LOG.get(),
+            ACTIVE_TRACE_LOG.get()[0],
             copy.deepcopy(GLOBAL_SPAN.get()),
-            ACTIVE_TRACE_LOG.get()[0].context,
         )
         if self.global_token:
             GLOBAL_SPAN.reset(self.global_token)
@@ -872,9 +870,8 @@ def _create_span(fn, args, kwargs, span_type, name):
         SPAN.get()["child_spans"].append(new_span)
         local_token = SPAN.set(new_span)
     _get_trace_logger().update_trace(
-        ACTIVE_TRACE_LOG.get(),
+        ACTIVE_TRACE_LOG.get()[0],
         copy.deepcopy(GLOBAL_SPAN.get()),
-        ACTIVE_TRACE_LOG.get()[0].context,
     )
     return new_span, exec_start_time, local_token, global_token
 
@@ -911,9 +908,8 @@ def _finalize_span(
             new_span["llm_usage_inc_cache"],
         )
     _get_trace_logger().update_trace(
-        ACTIVE_TRACE_LOG.get(),
+        ACTIVE_TRACE_LOG.get()[0],
         copy.deepcopy(GLOBAL_SPAN.get()),
-        ACTIVE_TRACE_LOG.get()[0].context,
     )
     if global_token:
         GLOBAL_SPAN.reset(global_token)
