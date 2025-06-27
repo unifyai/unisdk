@@ -920,17 +920,19 @@ def create_logs(
         _check_response(response)
         resp_json = response.json()
 
-        row_ids = resp_json.get("row_ids")
-        if row_ids:
-            # Case 1: Nested IDs (response is a list of dicts)
-            if isinstance(row_ids, list):
-                for entry, id_dict in zip(entries, row_ids):
-                    if isinstance(id_dict, dict):
-                        entry.update(id_dict)
-            # Case 2: Single ID (response is a dict with "name" and "ids")
-            elif isinstance(row_ids, dict) and "name" in row_ids and "ids" in row_ids:
-                unique_column_names = row_ids["name"]
-                for entry, unique_id in zip(entries, row_ids["ids"]):
+        row_ids_data = resp_json.get("row_ids")
+        if row_ids_data and "name" in row_ids_data and "ids" in row_ids_data:
+            unique_column_names = row_ids_data["name"]
+            id_values_list = row_ids_data["ids"]
+
+            # Case 1: Nested IDs (name is a list, ids is a list of lists)
+            if isinstance(unique_column_names, list):
+                for entry, id_values in zip(entries, id_values_list):
+                    id_dict = dict(zip(unique_column_names, id_values))
+                    entry.update(id_dict)
+            # Case 2: Single ID (name is a string, ids is a list of values)
+            else:
+                for entry, unique_id in zip(entries, id_values_list):
                     if unique_id is not None:
                         entry[unique_column_names] = unique_id
 
