@@ -852,6 +852,7 @@ def create_logs(
     context: Optional[str] = None,
     params: Optional[Union[List[Dict[str, Any]], Dict[str, Any]]] = None,
     entries: Optional[Union[List[Dict[str, Any]], Dict[str, Any]]] = None,
+    unique_id_parents: Optional[Dict[str, Any]] = None,
     mutable: Optional[Union[bool, Dict[str, bool]]] = True,
     batched: Optional[bool] = None,
     api_key: Optional[str] = None,
@@ -869,6 +870,13 @@ def create_logs(
         params: List of dictionaries with the params to be logged.
 
         mutable: Either a boolean to apply uniform mutability for all fields, or a dictionary mapping field names to booleans for per-field control. Defaults to True.
+
+        unique_id_parents: A dictionary specifying the parent IDs to use when
+        generating a nested unique ID. This tells the system which specific
+        counter to increment. For example, if a context's unique IDs are
+        `["run_id", "step_id"]`, providing `unique_id_parents={"run_id": 0}` will
+        generate the next `step_id` for that particular run. If this argument is
+        omitted, the system will increment the major (leftmost) ID.
 
         api_key: If specified, unify API key to be used. Defaults to the value in the
         `UNIFY_KEY` environment variable.
@@ -895,6 +903,7 @@ def create_logs(
         "context": context,
         "params": params,
         "entries": entries,
+        "unique_id_parents": unique_id_parents,
     }
     body_size = sys.getsizeof(json.dumps(body))
     if batched is None:
@@ -911,15 +920,24 @@ def create_logs(
         _check_response(response)
         resp_json = response.json()
 
-        if resp_json["row_ids"]["ids"][0] is not None:
-            unique_column_name = resp_json["row_ids"]["name"]
-            for e, i in zip(entries, range(len(resp_json["row_ids"]["ids"]))):
-                e[unique_column_name] = resp_json["row_ids"]["ids"][i]
+        row_ids = resp_json.get("row_ids")
+        if row_ids:
+            # Case 1: Nested IDs (response is a list of dicts)
+            if isinstance(row_ids, list):
+                for entry, id_dict in zip(entries, row_ids):
+                    if isinstance(id_dict, dict):
+                        entry.update(id_dict)
+            # Case 2: Single ID (response is a dict with "name" and "ids")
+            elif isinstance(row_ids, dict) and "name" in row_ids and "ids" in row_ids:
+                unique_column_name = row_ids["name"]
+                for entry, unique_id in zip(entries, row_ids["ids"]):
+                    if unique_id is not None:
+                        entry[unique_column_name] = unique_id
 
         return [
             unify.Log(
                 project=project,
-                context=context,
+                context=context["name"] if isinstance(context, dict) else context,
                 **{k: v for k, v in e.items() if k != "explicit_types"},
                 **p,
                 id=i,
@@ -927,6 +945,7 @@ def create_logs(
             for e, p, i in zip(entries, params, resp_json["log_event_ids"])
         ]
 
+    # Fallback for non-batched (iterative) logging
     pbar = tqdm(total=len(params), unit="logs", desc="Creating Logs")
     try:
         unify.initialize_async_logger()

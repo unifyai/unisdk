@@ -1345,5 +1345,34 @@ def test_create_log_unique_column_batch():
         assert r.entries["unique_id"] == i
 
 
+@_handle_project
+def test_create_logs_nested_ids():
+    context_name = "foo_nested"
+    unique_id_names = ["run_id", "step_id"]
+
+    unify.create_context(
+        context_name, unique_id_column=True, unique_id_name=unique_id_names
+    )
+    logs = unify.create_logs(context=context_name, entries=[{}])
+    assert len(logs) == 1
+    log = logs[0]
+    print(log.entries)
+    assert log.entries["run_id"] == 0
+    assert log.entries["step_id"] == 0
+
+    batch_size = 3
+    child_logs = unify.create_logs(
+        context=context_name,
+        entries=[{"data": f"step_{i}"} for i in range(batch_size)],
+        unique_id_parents={"run_id": 0},
+    )
+    assert len(child_logs) == batch_size
+    for i, child_log in enumerate(child_logs):
+        assert "run_id" in child_log.entries
+        assert "step_id" in child_log.entries
+        assert child_log.entries["run_id"] == 0
+        assert child_log.entries["step_id"] == i + 1
+
+
 if __name__ == "__main__":
     pass
