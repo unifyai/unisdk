@@ -929,10 +929,10 @@ def create_logs(
                         entry.update(id_dict)
             # Case 2: Single ID (response is a dict with "name" and "ids")
             elif isinstance(row_ids, dict) and "name" in row_ids and "ids" in row_ids:
-                unique_column_name = row_ids["name"]
+                unique_column_names = row_ids["name"]
                 for entry, unique_id in zip(entries, row_ids["ids"]):
                     if unique_id is not None:
-                        entry[unique_column_name] = unique_id
+                        entry[unique_column_names] = unique_id
 
         return [
             unify.Log(
