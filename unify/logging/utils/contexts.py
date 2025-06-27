@@ -20,7 +20,7 @@ def create_context(
     is_versioned: bool = True,
     allow_duplicates: bool = True,
     unique_id_column: bool = False,
-    unique_id_name: str = "row_id",
+    unique_id_names: str = "row_id",
     *,
     project: Optional[str] = None,
     api_key: Optional[str] = None,
@@ -39,7 +39,7 @@ def create_context(
 
         unique_id_column: Whether to include an explicit column for an auto-incrementing unique row id.
 
-        unique_id_name: If `unique_id_column` is `True`, then the name for this unique column. Default is "row_id".
+        unique_id_names: If `unique_id_column` is `True`, then the names for this unique column. Default is "row_id".
 
         project: Name of the project the context belongs to.
 
@@ -65,7 +65,7 @@ def create_context(
         "is_versioned": is_versioned,
         "allow_duplicates": allow_duplicates,
         "unique_id_column": unique_id_column,
-        "unique_id_name": unique_id_name,
+        "unique_id_names": unique_id_names,
     }
     response = _requests.post(
         BASE_URL + f"/project/{project}/contexts",

@@ -1321,7 +1321,7 @@ async def test_async_log_decorator():
 
 @_handle_project
 def test_create_log_unique_column():
-    unify.create_context("foo", unique_id_column=True, unique_id_name="unique_id")
+    unify.create_context("foo", unique_id_column=True, unique_id_names="unique_id")
     ret = unify.log(context="foo")
 
     entries = ret.entries
@@ -1337,7 +1337,7 @@ def test_create_log_unique_column():
 
 @_handle_project
 def test_create_log_unique_column_batch():
-    unify.create_context("foo", unique_id_column=True, unique_id_name="unique_id")
+    unify.create_context("foo", unique_id_column=True, unique_id_names="unique_id")
     ret = unify.create_logs(context="foo", entries=[{"x": 1}, {"x": 2}, {"x": 3}])
 
     for i, r in enumerate(ret):
@@ -1351,7 +1351,7 @@ def test_create_logs_nested_ids():
     unique_id_names = ["run_id", "step_id"]
 
     unify.create_context(
-        context_name, unique_id_column=True, unique_id_name=unique_id_names
+        context_name, unique_id_column=True, unique_id_names=unique_id_names
     )
     logs = unify.create_logs(context=context_name, entries=[{}])
     assert len(logs) == 1
