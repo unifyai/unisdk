@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Union
 
 from unify import BASE_URL
 from unify.utils import _requests
@@ -20,7 +20,7 @@ def create_context(
     is_versioned: bool = True,
     allow_duplicates: bool = True,
     unique_id_column: bool = False,
-    unique_id_names: str = "row_id",
+    unique_id_names: Union[List[str], str] = "row_id",
     *,
     project: Optional[str] = None,
     api_key: Optional[str] = None,
