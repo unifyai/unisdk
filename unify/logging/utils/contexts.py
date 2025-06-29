@@ -62,9 +62,10 @@ def create_context(
         "is_versioned": is_versioned,
         "allow_duplicates": allow_duplicates,
         # remove 'unique_id_column' when orchestra is updated
-        "unique_id_column": unique_id_names is not None,
-        "unique_id_names": unique_id_names,
     }
+    if unique_id_names is not None:
+        body["unique_id_column"] = True
+        body["unique_id_names"] = unique_id_names
     response = _requests.post(
         BASE_URL + f"/project/{project}/contexts",
         headers=headers,
