@@ -441,6 +441,48 @@ def mark_spans_as_done(
         )
 
 
+def _apply_row_ids(
+    row_ids_data: Optional[Dict[str, Any]], entries: List[Dict[str, Any]]
+) -> None:
+    """
+    Apply row_ids data from server response to entry dictionaries.
+
+    Handles the new standardized format {'names': List[str], 'ids': List[List[int]]}
+    while maintaining backward compatibility with the old format during transition.
+
+    Args:
+        row_ids_data: The row_ids data from server response
+        entries: List of entry dictionaries to update with row_ids
+    """
+    if not row_ids_data:
+        return
+
+    names = row_ids_data.get("names")
+    ids = row_ids_data.get("ids")
+
+    if not names or not ids:
+        return
+
+    # Ensure names is always treated as a list for consistent processing
+    if not isinstance(names, list):
+        names = [names]
+
+    # Apply IDs to entries
+    for entry, id_values in zip(entries, ids):
+        if id_values is not None:
+            # Handle both nested ID format (list of lists) and flat format (list of values)
+            if isinstance(id_values, list) and len(names) > 1:
+                # Nested format: zip names with id_values
+                id_dict = dict(zip(names, id_values))
+                entry.update(id_dict)
+            else:
+                # Single ID format: use first name with the id_value
+                if isinstance(id_values, list) and len(id_values) == 1:
+                    entry[names[0]] = id_values[0]
+                else:
+                    entry[names[0]] = id_values
+
+
 def _handle_cache(fn: Callable) -> Callable:
     def wrapped(*args, **kwargs):
         if not _get_caching():
@@ -750,8 +792,9 @@ def _sync_log(
     response = _requests.post(BASE_URL + "/logs", headers=headers, json=body)
     _check_response(response)
     resp_json = response.json()
-    if resp_json["row_ids"]["ids"][0] is not None:
-        entries[resp_json["row_ids"]["name"]] = resp_json["row_ids"]["ids"][0]
+
+    # Apply row_ids to entries using the centralized helper
+    _apply_row_ids(resp_json.get("row_ids"), [entries])
 
     return unify.Log(
         id=resp_json["log_event_ids"][0],
@@ -920,21 +963,8 @@ def create_logs(
         _check_response(response)
         resp_json = response.json()
 
-        row_ids_data = resp_json.get("row_ids")
-        if row_ids_data and "name" in row_ids_data and "ids" in row_ids_data:
-            unique_column_names = row_ids_data["name"]
-            id_values_list = row_ids_data["ids"]
-
-            # Case 1: Nested IDs (name is a list, ids is a list of lists)
-            if isinstance(unique_column_names, list):
-                for entry, id_values in zip(entries, id_values_list):
-                    id_dict = dict(zip(unique_column_names, id_values))
-                    entry.update(id_dict)
-            # Case 2: Single ID (name is a string, ids is a list of values)
-            else:
-                for entry, unique_id in zip(entries, id_values_list):
-                    if unique_id is not None:
-                        entry[unique_column_names] = unique_id
+        # Apply row_ids to entries using the centralized helper
+        _apply_row_ids(resp_json.get("row_ids"), entries)
 
         return [
             unify.Log(
