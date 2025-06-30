@@ -19,7 +19,7 @@ def create_context(
     description: str = None,
     is_versioned: bool = True,
     allow_duplicates: bool = True,
-    unique_id_names: Optional[Union[List[str], str]] = None,
+    unique_column_ids: Optional[Union[List[str], str]] = None,
     *,
     project: Optional[str] = None,
     api_key: Optional[str] = None,
@@ -61,11 +61,10 @@ def create_context(
         "description": description,
         "is_versioned": is_versioned,
         "allow_duplicates": allow_duplicates,
-        # remove 'unique_id_column' when orchestra is updated
+        "unique_column_ids": unique_column_ids,
     }
-    if unique_id_names is not None:
-        body["unique_id_column"] = True
-        body["unique_id_names"] = unique_id_names
+    if isinstance(unique_column_ids, str):
+        body["unique_column_ids"] = [unique_column_ids]
     response = _requests.post(
         BASE_URL + f"/project/{project}/contexts",
         headers=headers,
