@@ -36,7 +36,7 @@ def create_context(
 
         allow_duplicates: Whether to allow duplicates in the context.
 
-        unique_id_names: The names for any unique automatic integer ascending columns. Default is None.
+        unique_column_ids: The names for any unique automatic integer ascending columns. Default is None.
 
         project: Name of the project the context belongs to.
 
@@ -56,6 +56,8 @@ def create_context(
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
+    if isinstance(unique_column_ids, str):
+        unique_column_ids = [unique_column_ids]
     body = {
         "name": name,
         "description": description,
@@ -63,8 +65,6 @@ def create_context(
         "allow_duplicates": allow_duplicates,
         "unique_column_ids": unique_column_ids,
     }
-    if isinstance(unique_column_ids, str):
-        body["unique_column_ids"] = [unique_column_ids]
     response = _requests.post(
         BASE_URL + f"/project/{project}/contexts",
         headers=headers,
