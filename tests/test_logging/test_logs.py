@@ -1361,8 +1361,7 @@ def test_create_logs_nested_ids():
     batch_size = 3
     child_logs = unify.create_logs(
         context=context_name,
-        entries=[{"data": f"step_{i}"} for i in range(batch_size)],
-        unique_id_parents={"run_id": 0},
+        entries=[{"data": f"step_{i}", "run_id": 0} for i in range(batch_size)],
     )
     assert len(child_logs) == batch_size
     for i, child_log in enumerate(child_logs):

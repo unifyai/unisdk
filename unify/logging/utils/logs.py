@@ -895,7 +895,6 @@ def create_logs(
     context: Optional[str] = None,
     params: Optional[Union[List[Dict[str, Any]], Dict[str, Any]]] = None,
     entries: Optional[Union[List[Dict[str, Any]], Dict[str, Any]]] = None,
-    unique_id_parents: Optional[Dict[str, Any]] = None,
     mutable: Optional[Union[bool, Dict[str, bool]]] = True,
     batched: Optional[bool] = None,
     api_key: Optional[str] = None,
@@ -908,18 +907,16 @@ def create_logs(
 
         context: Context for the logs.
 
-        entries: List of dictionaries with the entries to be logged.
+        entries: List of dictionaries with the entries to be logged. For contexts with
+        nested unique IDs, parent ID values can be passed directly in the entries
+        dictionaries. For example, if a context has unique IDs `["run_id", "step_id"]`,
+        you can pass `{"run_id": 0, "data": "value"}` in entries to generate the next
+        `step_id` for that particular run. The leftmost N-1 unique columns can be
+        supplied as normal entry keys, and the rightmost column is always auto-incremented.
 
         params: List of dictionaries with the params to be logged.
 
         mutable: Either a boolean to apply uniform mutability for all fields, or a dictionary mapping field names to booleans for per-field control. Defaults to True.
-
-        unique_id_parents: A dictionary specifying the parent IDs to use when
-        generating a nested unique ID. This tells the system which specific
-        counter to increment. For example, if a context's unique IDs are
-        `["run_id", "step_id"]`, providing `unique_id_parents={"run_id": 0}` will
-        generate the next `step_id` for that particular run. If this argument is
-        omitted, the system will increment the major (leftmost) ID.
 
         api_key: If specified, unify API key to be used. Defaults to the value in the
         `UNIFY_KEY` environment variable.
@@ -946,7 +943,6 @@ def create_logs(
         "context": context,
         "params": params,
         "entries": entries,
-        "unique_id_parents": unique_id_parents,
     }
     body_size = sys.getsizeof(json.dumps(body))
     if batched is None:
