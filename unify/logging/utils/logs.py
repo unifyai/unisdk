@@ -322,7 +322,10 @@ def shutdown_async_logger(immediate=False) -> None:
         ASYNC_LOGGING = False
 
 
-def _initialize_trace_logger():
+def initialize_trace_logger():
+    """
+    Initialize the trace logger. Must be called from the main thread.
+    """
     global _trace_logger
     if _trace_logger is None:
         _trace_logger = _AsyncTraceLogger()

@@ -18,7 +18,7 @@ from .utils.compositions import *
 from .utils.logs import (
     _get_trace_logger,
     _handle_special_types,
-    _initialize_trace_logger,
+    initialize_trace_logger,
     _reset_active_trace_parameters,
     _set_active_trace_parameters,
     get_trace_context,
@@ -628,7 +628,7 @@ class Traced:
     def __init__(self, name, *, globals_filter=None):
         self.name = name
         self.globals_filter = globals_filter or self._default_globals_filter
-        _initialize_trace_logger()
+        initialize_trace_logger()
 
     def _default_globals_filter(self, name, obj):
         return not (
@@ -1248,7 +1248,7 @@ def traced(
     skip_modules: Optional[List[ModuleType]] = None,
     skip_functions: Optional[List[Callable]] = None,
 ):
-    _initialize_trace_logger()
+    initialize_trace_logger()
 
     if obj is None:
         # Any changes to the arguments of traced should be reflected here.
