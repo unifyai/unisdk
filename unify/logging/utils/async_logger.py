@@ -49,7 +49,11 @@ class AsyncLoggerManager:
             connector=connector,
         )
 
-        self.thread = threading.Thread(target=self._run_loop, daemon=True)
+        self.thread = threading.Thread(
+            target=self._run_loop,
+            daemon=True,
+            name="UnifyAsyncLogger",
+        )
         self.thread.start()
         self.start_flag.wait()
         self.callbacks = []

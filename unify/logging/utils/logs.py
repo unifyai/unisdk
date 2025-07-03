@@ -129,7 +129,9 @@ class _AsyncTraceLogger:
         }
 
         self._loop = asyncio.new_event_loop()
-        self._loop.set_default_executor(ThreadPoolExecutor())
+        self._loop.set_default_executor(
+            ThreadPoolExecutor(thread_name_prefix="UnifyTraceLogger"),
+        )
         self._client = aiohttp.ClientSession(loop=self._loop, headers=headers)
         self._thread = threading.Thread(
             name="UnifyTraceLogger",
