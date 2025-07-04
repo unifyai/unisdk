@@ -21,12 +21,13 @@ class AsyncLoggerManager:
     def __init__(
         self,
         *,
+        name: str = "",
         base_url: str = BASE_URL,
         api_key: str = os.getenv("UNIFY_KEY"),
         num_consumers: int = 256,
         max_queue_size: int = 10000,
     ):
-
+        self.name = f"UnifyAsyncLogger_{name}" if name else "UnifyAsyncLogger"
         self.loop = asyncio.new_event_loop()
         self.queue = None
         self.consumers: List[asyncio.Task] = []
@@ -52,7 +53,7 @@ class AsyncLoggerManager:
         self.thread = threading.Thread(
             target=self._run_loop,
             daemon=True,
-            name="UnifyAsyncLogger",
+            name=self.name,
         )
         self.thread.start()
         self.start_flag.wait()
@@ -81,7 +82,7 @@ class AsyncLoggerManager:
                 except (asyncio.TimeoutError, TimeoutError):
                     continue
         except Exception as e:
-            logger.error(f"Error in join: {e}")
+            logger.error(f"[{self.name}] Error in join: {e}")
             raise e
 
     async def _main_loop(self):
@@ -98,7 +99,7 @@ class AsyncLoggerManager:
         try:
             self.loop.run_until_complete(self._main_loop())
         except Exception as e:
-            logger.error(f"Event loop error: {e}")
+            logger.error(f"[{self.name}] Event loop error: {e}")
             raise e
         finally:
             self.loop.close()
@@ -107,10 +108,12 @@ class AsyncLoggerManager:
         async with self.session.post("logs", json=body) as res:
             if res.status != 200:
                 txt = await res.text()
-                logger.error(f"Error in consume_create {idx}: {txt}")
+                logger.error(f"[{self.name}] Error in consume_create {idx}: {txt}")
                 return
             res_json = await res.json()
-            logger.debug(f"Created {idx} with response {res.status}: {res_json}")
+            logger.debug(
+                f"[{self.name}] Created {idx} with response {res.status}: {res_json}",
+            )
             future.set_result(res_json["log_event_ids"][0])
 
     async def _consume_update(self, body, future, idx):
@@ -120,17 +123,19 @@ class AsyncLoggerManager:
         async with self.session.put("logs", json=body) as res:
             if res.status != 200:
                 txt = await res.text()
-                logger.error(f"Error in consume_update {idx}: {txt}")
+                logger.error(f"[{self.name}] Error in consume_update {idx}: {txt}")
                 return
             res_json = await res.json()
-            logger.debug(f"Updated {idx} with response {res.status}: {res_json}")
+            logger.debug(
+                f"[{self.name}] Updated {idx} with response {res.status}: {res_json}",
+            )
 
     async def _log_consumer(self):
         while True:
             try:
                 event = await self.queue.get()
                 idx = self.queue.qsize() + 1
-                logger.debug(f"Processing event {event['type']}: {idx}")
+                logger.debug(f"[{self.name}] Processing event {event['type']}: {idx}")
                 if event["type"] == "create":
                     await self._consume_create(event["_data"], event["future"], idx)
                 elif event["type"] == "update":
@@ -139,7 +144,7 @@ class AsyncLoggerManager:
                     raise Exception(f"Unknown event type: {event['type']}")
             except Exception as e:
                 event["future"].set_exception(e)
-                logger.error(f"Error in consumer: {e}")
+                logger.error(f"[{self.name}] Error in consumer: {e}")
                 raise e
             finally:
                 self.queue.task_done()
@@ -193,7 +198,7 @@ class AsyncLoggerManager:
 
         self.shutting_down = True
         if immediate:
-            logger.debug("Stopping async logger immediately")
+            logger.debug(f"[{self.name}] Stopping async logger immediately")
             self.loop.stop()
         else:
             self.join()
