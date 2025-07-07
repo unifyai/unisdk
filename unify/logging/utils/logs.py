@@ -1828,7 +1828,7 @@ def rename_field(
         "old_field_name": name,
         "new_field_name": new_name,
     }
-    response = _requests.post(
+    response = _requests.patch(
         BASE_URL + "/logs/rename_field",
         headers=headers,
         json=body,
