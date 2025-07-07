@@ -1,4 +1,5 @@
 import asyncio
+import atexit
 import logging
 import os
 import threading
@@ -35,6 +36,9 @@ class AsyncLoggerManager:
         self.start_flag = threading.Event()
         self.shutting_down = False
         self.max_queue_size = max_queue_size
+
+        # Register shutdown handler
+        atexit.register(self.stop_sync, immediate=False)
 
         headers = {
             "Authorization": f"Bearer {api_key}",

@@ -308,9 +308,6 @@ def initialize_async_logger(
     )
     ASYNC_LOGGING = True
 
-    # Register shutdown handler
-    atexit.register(shutdown_async_logger)
-
 
 def shutdown_async_logger(immediate=False) -> None:
     """
