@@ -18,10 +18,10 @@ from .utils.compositions import *
 from .utils.logs import (
     _get_trace_logger,
     _handle_special_types,
-    initialize_trace_logger,
     _reset_active_trace_parameters,
     _set_active_trace_parameters,
     get_trace_context,
+    initialize_trace_logger,
 )
 from .utils.logs import log as unify_log
 
@@ -803,6 +803,10 @@ def _nested_add(a, b):
         return {k: _nested_add(a[k], b[k]) for k in a if k in b}
     elif a is None and b is None:
         return None
+    elif a is None:
+        return b
+    elif b is None:
+        return a
     return a + b
 
 
