@@ -14,21 +14,19 @@ ASYNC_LOGGER_DEBUG = os.getenv("UNIFY_ASYNC_LOGGER_DEBUG", "false").lower() in (
     "true",
     "1",
 )
-logger = logging.getLogger("async_logger")
-logger.setLevel(logging.DEBUG if ASYNC_LOGGER_DEBUG else logging.WARNING)
 
 
 class AsyncLoggerManager:
     def __init__(
         self,
         *,
-        name: str = "",
+        name: str = "unknown",
         base_url: str = BASE_URL,
         api_key: str = os.getenv("UNIFY_KEY"),
         num_consumers: int = 256,
         max_queue_size: int = 10000,
     ):
-        self.name = f"UnifyAsyncLogger_{name}" if name else "UnifyAsyncLogger"
+        self.name = f"UnifyAsyncLogger.{name}"
         self.loop = asyncio.new_event_loop()
         self.queue = None
         self.consumers: List[asyncio.Task] = []
@@ -36,6 +34,9 @@ class AsyncLoggerManager:
         self.start_flag = threading.Event()
         self.shutting_down = False
         self.max_queue_size = max_queue_size
+        self.logger = logging.getLogger(self.name)
+        if ASYNC_LOGGER_DEBUG:
+            self.logger.setLevel(logging.DEBUG)
 
         # Register shutdown handler
         atexit.register(self.stop_sync, immediate=False)
@@ -84,13 +85,17 @@ class AsyncLoggerManager:
                     future.result(timeout=0.5)
                     break
                 except (asyncio.TimeoutError, TimeoutError):
+                    self.logger.debug(
+                        f"Join waiting for {self.queue._unfinished_tasks} tasks to complete",
+                    )
                     continue
         except Exception as e:
-            logger.error(f"[{self.name}] Error in join: {e}")
+            self.logger.error(f"Error in join: {e}")
             raise e
 
     async def _main_loop(self):
         self.start_flag.set()
+        self.logger.debug(f"Spawning {self.num_consumers} consumers")
         await asyncio.gather(*self.consumers, return_exceptions=True)
 
     def _run_loop(self):
@@ -103,7 +108,7 @@ class AsyncLoggerManager:
         try:
             self.loop.run_until_complete(self._main_loop())
         except Exception as e:
-            logger.error(f"[{self.name}] Event loop error: {e}")
+            self.logger.error(f"Event loop error: {e}")
             raise e
         finally:
             self.loop.close()
@@ -112,11 +117,13 @@ class AsyncLoggerManager:
         async with self.session.post("logs", json=body) as res:
             if res.status != 200:
                 txt = await res.text()
-                logger.error(f"[{self.name}] Error in consume_create {idx}: {txt}")
+                self.logger.error(
+                    f"Failed to create log {idx} {res.status}: {txt}",
+                )
                 return
             res_json = await res.json()
-            logger.debug(
-                f"[{self.name}] Created {idx} with response {res.status}: {res_json}",
+            self.logger.debug(
+                f"Created log {res_json['log_event_ids'][0]} with status {res.status}",
             )
             future.set_result(res_json["log_event_ids"][0])
 
@@ -127,11 +134,13 @@ class AsyncLoggerManager:
         async with self.session.put("logs", json=body) as res:
             if res.status != 200:
                 txt = await res.text()
-                logger.error(f"[{self.name}] Error in consume_update {idx}: {txt}")
+                self.logger.error(
+                    f"Failed to update log {idx} {body['logs'][0]} {res.status}: {txt}",
+                )
                 return
             res_json = await res.json()
-            logger.debug(
-                f"[{self.name}] Updated {idx} with response {res.status}: {res_json}",
+            self.logger.debug(
+                f"Updated log {res_json['log_event_ids'][0]} with status {res.status}",
             )
 
     async def _log_consumer(self):
@@ -139,7 +148,7 @@ class AsyncLoggerManager:
             try:
                 event = await self.queue.get()
                 idx = self.queue.qsize() + 1
-                logger.debug(f"[{self.name}] Processing event {event['type']}: {idx}")
+                self.logger.debug(f"'{event['type']}' processing {idx}")
                 if event["type"] == "create":
                     await self._consume_create(event["_data"], event["future"], idx)
                 elif event["type"] == "update":
@@ -148,7 +157,7 @@ class AsyncLoggerManager:
                     raise Exception(f"Unknown event type: {event['type']}")
             except Exception as e:
                 event["future"].set_exception(e)
-                logger.error(f"[{self.name}] Error in consumer: {e}")
+                self.logger.error(f"Error in consumer: {e}")
                 raise e
             finally:
                 self.queue.task_done()
@@ -198,11 +207,13 @@ class AsyncLoggerManager:
 
     def stop_sync(self, immediate=False):
         if self.shutting_down:
+            self.logger.debug(f"Already shutting down, skipping stop")
             return
 
         self.shutting_down = True
         if immediate:
-            logger.debug(f"[{self.name}] Stopping async logger immediately")
+            self.logger.debug(f"Shutting down immediately")
             self.loop.stop()
         else:
+            self.logger.debug(f"Shutting down gracefully")
             self.join()

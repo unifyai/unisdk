@@ -302,6 +302,7 @@ def initialize_async_logger(
         return
     api_key = _validate_api_key(api_key)
     _async_logger = AsyncLoggerManager(
+        name="default",
         base_url=BASE_URL,
         api_key=api_key,
         max_queue_size=queue_size,
