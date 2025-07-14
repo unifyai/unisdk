@@ -33,6 +33,7 @@ class AsyncLoggerManager:
         self.num_consumers = num_consumers
         self.start_flag = threading.Event()
         self.shutting_down = False
+        self.thread_raised_exception = threading.Event()
         self.max_queue_size = max_queue_size
         self.logger = logging.getLogger(self.name)
         if ASYNC_LOGGER_DEBUG:
@@ -62,6 +63,8 @@ class AsyncLoggerManager:
         )
         self.thread.start()
         self.start_flag.wait()
+        if self.thread_raised_exception.is_set():
+            raise RuntimeError(f"{self.name} thread failed to start")
         self.callbacks = []
 
     def register_callback(self, fn):
@@ -75,6 +78,8 @@ class AsyncLoggerManager:
             fn()
 
     async def _join(self):
+        if self.queue is None:
+            return
         await self.queue.join()
 
     def join(self):
@@ -108,7 +113,9 @@ class AsyncLoggerManager:
         try:
             self.loop.run_until_complete(self._main_loop())
         except Exception as e:
-            self.logger.error(f"Event loop error: {e}")
+            self.shutting_down = True
+            self.thread_raised_exception.set()
+            self.start_flag.set()
             raise e
         finally:
             self.loop.close()
@@ -170,6 +177,9 @@ class AsyncLoggerManager:
         params: dict,
         entries: dict,
     ) -> asyncio.Future:
+        if self.shutting_down:
+            self.logger.warning(f"Not running, skipping log create")
+            return None
         fut = self.loop.create_future()
         event = {
             "_data": {
@@ -193,6 +203,9 @@ class AsyncLoggerManager:
         overwrite: bool,
         data: dict,
     ) -> None:
+        if self.shutting_down:
+            self.logger.warning(f"Not running, skipping log update")
+            return
         event = {
             "_data": {
                 mode: data,
