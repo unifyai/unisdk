@@ -205,6 +205,16 @@ class AsyncLoggerManager:
         }
         asyncio.run_coroutine_threadsafe(self.queue.put(event), self.loop).result()
 
+    def clear_queue(self):
+        if self.queue is None:
+            return
+
+        orig_size = self.queue.qsize()
+        while not self.queue.empty():
+            self.queue.get_nowait()
+            self.queue.task_done()
+        self.logger.debug(f"{orig_size} log requests cleared")
+
     def stop_sync(self, immediate=False):
         if self.shutting_down:
             self.logger.debug(f"Already shutting down, skipping stop")
