@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Union
 
 from unify import BASE_URL
 from unify.utils import _requests
@@ -12,7 +12,7 @@ from ...utils.helpers import _check_response, _validate_api_key
 def create_project(
     name: str,
     *,
-    overwrite: bool = False,
+    overwrite: Union[bool, str] = False,
     api_key: Optional[str] = None,
     is_versioned: bool = True,
 ) -> Dict[str, str]:
@@ -23,7 +23,11 @@ def create_project(
     Args:
         name: A unique, user-defined name used when referencing the project.
 
-        overwrite: Whether to overwrite an existing project if is already exists.
+        overwrite: Controls how to handle existing projects with the same name.
+            If False (default), raises an error if project exists.
+            If True, deletes the entire existing project before creating new one.
+            If "logs", only deletes the project's logs before creating.
+            If "contexts", only deletes the project's contexts before creating.
 
         api_key: If specified, unify API key to be used. Defaults to the value in the
         `UNIFY_KEY` environment variable.
@@ -41,7 +45,12 @@ def create_project(
     body = {"name": name, "is_versioned": is_versioned}
     if overwrite:
         if name in list_projects(api_key=api_key):
-            delete_project(name=name, api_key=api_key)
+            if overwrite == "logs":
+                delete_project_logs(name=name, api_key=api_key)
+            elif overwrite == "contexts":
+                delete_project_contexts(name=name, api_key=api_key)
+            else:
+                delete_project(name=name, api_key=api_key)
     response = _requests.post(BASE_URL + "/project", headers=headers, json=body)
     _check_response(response)
     return response.json()

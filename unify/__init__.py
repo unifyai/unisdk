@@ -91,11 +91,15 @@ PROJECT: Optional[str] = None
 
 
 # noinspection PyShadowingNames
-def activate(project: str, overwrite: bool = False, api_key: str = None) -> None:
+def activate(
+    project: str,
+    overwrite: Union[bool, str] = False,
+    api_key: str = None,
+) -> None:
     if project not in list_projects(api_key=api_key):
         create_project(project, api_key=api_key)
     elif overwrite:
-        create_project(project, api_key=api_key, overwrite=True)
+        create_project(project, api_key=api_key, overwrite=overwrite)
     global PROJECT
     PROJECT = project
 
