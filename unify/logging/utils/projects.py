@@ -46,9 +46,9 @@ def create_project(
     if overwrite:
         if name in list_projects(api_key=api_key):
             if overwrite == "logs":
-                delete_project_logs(name=name, api_key=api_key)
+                return delete_project_logs(name=name, api_key=api_key)
             elif overwrite == "contexts":
-                delete_project_contexts(name=name, api_key=api_key)
+                return delete_project_contexts(name=name, api_key=api_key)
             else:
                 delete_project(name=name, api_key=api_key)
     response = _requests.post(BASE_URL + "/project", headers=headers, json=body)
