@@ -1411,7 +1411,7 @@ def get_logs(
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    project = _get_and_maybe_create_project(project, api_key=api_key)
+    project = _get_and_maybe_create_project(project, api_key=api_key, create_if_missing=False)
     context = context if context else CONTEXT_READ.get()
     column_context = column_context if column_context else COLUMN_CONTEXT_READ.get()
     merged_filters = ACTIVE_PARAMS_READ.get() | ACTIVE_ENTRIES_READ.get()
