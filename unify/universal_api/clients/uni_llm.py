@@ -1372,6 +1372,12 @@ class AsyncUnify(_UniClient):
             read_closest = True
         else:
             read_closest = False
+        if "response_format" in kw and kw["response_format"]:
+            chat_method = self._client.beta.chat.completions.parse
+            if "stream" in kw:
+                del kw["stream"] # .parse() does not accept the stream argument
+        else:
+            chat_method = self._client.chat.completions.create
         chat_completion = None
         in_cache = False
         if cache in [True, "both", "read", "read-only"]:
@@ -1420,7 +1426,7 @@ class AsyncUnify(_UniClient):
                         )
                     if self.traced:
                         chat_completion = await unify.traced(
-                            self._client.chat.completions.create,
+                            chat_method,
                             span_type="llm",
                             name=(
                                 endpoint
@@ -1433,7 +1439,7 @@ class AsyncUnify(_UniClient):
                             fn_type="async",
                         )(**kw)
                     else:
-                        chat_completion = await self._client.chat.completions.create(
+                        chat_completion = await chat_method(
                             **kw,
                         )
                     if unify.CLIENT_LOGGING:
