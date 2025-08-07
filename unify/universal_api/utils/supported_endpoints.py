@@ -1,3 +1,4 @@
+import functools
 from typing import List, Optional
 
 from unify import BASE_URL
@@ -6,6 +7,7 @@ from unify.utils import _requests
 from ...utils.helpers import _res_to_list, _validate_api_key
 
 
+@functools.lru_cache(maxsize=32)
 def list_providers(
     model: Optional[str] = None,
     *,
@@ -42,6 +44,7 @@ def list_providers(
     return _res_to_list(response)
 
 
+@functools.lru_cache(maxsize=32)
 def list_models(
     provider: Optional[str] = None,
     *,
@@ -77,6 +80,7 @@ def list_models(
     return _res_to_list(response)
 
 
+@functools.lru_cache(maxsize=32)
 def list_endpoints(
     model: Optional[str] = None,
     provider: Optional[str] = None,
