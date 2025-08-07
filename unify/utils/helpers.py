@@ -111,7 +111,7 @@ def _get_and_maybe_create_project(
     project: Optional[str] = None,
     required: bool = True,
     api_key: Optional[str] = None,
-    create_if_missing: bool = True,
+    create_if_missing: bool = False,
 ) -> Optional[str]:
     # noinspection PyUnresolvedReferences
     from unify.logging.utils.logs import ASYNC_LOGGING
