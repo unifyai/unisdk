@@ -1252,6 +1252,9 @@ def traced(
     skip_modules: Optional[List[ModuleType]] = None,
     skip_functions: Optional[List[Callable]] = None,
 ):
+    if not json.loads(os.environ.get("UNIFY_TRACED", "true")):
+        return obj
+
     initialize_trace_logger()
 
     if obj is None:
