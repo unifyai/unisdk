@@ -20,6 +20,7 @@ class RequestError(Exception):
         super().__init__(
             f"{r_type}:{url} with {kwargs} failed with status code {response.status_code}: {response.text}",
         )
+        self.response = response
 
 
 def _log(type: str, url: str, mask_key: bool = True, /, **kwargs):
