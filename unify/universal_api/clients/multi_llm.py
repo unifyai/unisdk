@@ -55,6 +55,7 @@ class _MultiClient(_Client, abc.ABC):
         tools: Optional[Iterable[ChatCompletionToolParam]] = None,
         tool_choice: Optional[ChatCompletionToolChoiceOptionParam] = None,
         parallel_tool_calls: Optional[bool] = None,
+        reasoning_effort: Optional[str] = None,
         # platform arguments
         use_custom_keys: bool = False,
         tags: Optional[List[str]] = None,
@@ -238,6 +239,7 @@ class _MultiClient(_Client, abc.ABC):
             tools=tools,
             tool_choice=tool_choice,
             parallel_tool_calls=parallel_tool_calls,
+            reasoning_effort=reasoning_effort,
             # platform arguments
             use_custom_keys=use_custom_keys,
             tags=tags,
@@ -292,6 +294,7 @@ class _MultiClient(_Client, abc.ABC):
                 tools=self.tools,
                 tool_choice=self.tool_choice,
                 parallel_tool_calls=self.parallel_tool_calls,
+                reasoning_effort=self.reasoning_effort,
                 # platform arguments
                 use_custom_keys=self.use_custom_keys,
                 tags=self.tags,
@@ -480,6 +483,7 @@ class _MultiClient(_Client, abc.ABC):
         tools: Optional[Iterable[ChatCompletionToolParam]] = None,
         tool_choice: Optional[ChatCompletionToolChoiceOptionParam] = None,
         parallel_tool_calls: Optional[bool] = None,
+        reasoning_effort: Optional[str] = None,
         # platform arguments
         use_custom_keys: Optional[bool] = None,
         tags: Optional[List[str]] = None,
@@ -705,6 +709,7 @@ class _MultiClient(_Client, abc.ABC):
                 parallel_tool_calls,
                 self._parallel_tool_calls,
             ),
+            reasoning_effort=_default(reasoning_effort, self._reasoning_effort),
             # platform arguments
             use_custom_keys=_default(use_custom_keys, self._use_custom_keys),
             tags=_default(tags, self._tags),
@@ -756,6 +761,7 @@ class MultiUnify(_MultiClient):
         tools: Optional[Iterable[ChatCompletionToolParam]] = None,
         tool_choice: Optional[ChatCompletionToolChoiceOptionParam] = None,
         parallel_tool_calls: Optional[bool] = None,
+        reasoning_effort: Optional[str] = None,
         # platform arguments
         use_custom_keys: bool = False,
         tags: Optional[List[str]] = None,
@@ -788,6 +794,7 @@ class MultiUnify(_MultiClient):
             tools=tools,
             tool_choice=tool_choice,
             parallel_tool_calls=parallel_tool_calls,
+            reasoning_effort=reasoning_effort,
             use_custom_keys=use_custom_keys,
             tags=tags,
             drop_params=drop_params,
@@ -912,6 +919,7 @@ class AsyncMultiUnify(_MultiClient):
         tools: Optional[Iterable[ChatCompletionToolParam]] = None,
         tool_choice: Optional[ChatCompletionToolChoiceOptionParam] = None,
         parallel_tool_calls: Optional[bool] = None,
+        reasoning_effort: Optional[str] = None,
         # platform arguments
         use_custom_keys: bool = False,
         tags: Optional[List[str]] = None,
@@ -944,6 +952,7 @@ class AsyncMultiUnify(_MultiClient):
             tools=tools,
             tool_choice=tool_choice,
             parallel_tool_calls=parallel_tool_calls,
+            reasoning_effort=reasoning_effort,
             use_custom_keys=use_custom_keys,
             tags=tags,
             drop_params=drop_params,

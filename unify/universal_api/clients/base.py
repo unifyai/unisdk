@@ -54,6 +54,7 @@ class _Client(ABC):
         tools: Optional[Iterable[ChatCompletionToolParam]],
         tool_choice: Optional[ChatCompletionToolChoiceOptionParam],
         parallel_tool_calls: Optional[bool],
+        reasoning_effort: Optional[str],
         # platform arguments
         use_custom_keys: bool,
         tags: Optional[List[str]],
@@ -95,6 +96,7 @@ class _Client(ABC):
         self._tools = None
         self._tool_choice = None
         self._parallel_tool_calls = None
+        self._reasoning_effort = None
         self._use_custom_keys = None
         self._tags = None
         self._drop_params = None
@@ -130,6 +132,7 @@ class _Client(ABC):
         self.set_tools(tools)
         self.set_tool_choice(tool_choice)
         self.set_parallel_tool_calls(parallel_tool_calls)
+        self.set_reasoning_effort(reasoning_effort)
         # platform arguments
         self.set_use_custom_keys(use_custom_keys)
         self.set_tags(tags)
@@ -169,6 +172,7 @@ class _Client(ABC):
             "tools": tools,
             "tool_choice": tool_choice,
             "parallel_tool_calls": parallel_tool_calls,
+            "reasoning_effort": reasoning_effort,
         }
 
     # Properties #
@@ -370,6 +374,16 @@ class _Client(ABC):
             The default parallel tool calls bool.
         """
         return self._parallel_tool_calls
+
+    @property
+    def reasoning_effort(self) -> Optional[str]:
+        """
+        Get the default reasoning, if set.
+
+        Returns:
+            The default reasoning.
+        """
+        return self._reasoning_effort
 
     @property
     def use_custom_keys(self) -> bool:
@@ -800,6 +814,19 @@ class _Client(ABC):
             This client, useful for chaining inplace calls.
         """
         self._parallel_tool_calls = value
+        return self
+
+    def set_reasoning_effort(self, value: str) -> Self:
+        """
+        Set the default reasoning effort.  # noqa: DAR101.
+
+        Args:
+            value: The default reasoning effort.
+
+        Returns:
+            This client, useful for chaining inplace calls.
+        """
+        self._reasoning_effort = value
         return self
 
     def set_use_custom_keys(self, value: bool) -> Self:
@@ -1347,6 +1374,7 @@ class _Client(ABC):
         tools: Optional[Iterable[ChatCompletionToolParam]],
         tool_choice: Optional[ChatCompletionToolChoiceOptionParam],
         parallel_tool_calls: Optional[bool],
+        reasoning_effort: Optional[str],
         # platform arguments
         use_custom_keys: bool,
         tags: Optional[List[str]],

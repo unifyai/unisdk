@@ -75,6 +75,7 @@ class _UniClient(_Client, abc.ABC):
         tools: Optional[Iterable[ChatCompletionToolParam]] = None,
         tool_choice: Optional[ChatCompletionToolChoiceOptionParam] = None,
         parallel_tool_calls: Optional[bool] = None,
+        reasoning_effort: Optional[str] = None,
         # platform arguments
         use_custom_keys: bool = False,
         tags: Optional[List[str]] = None,
@@ -269,6 +270,7 @@ class _UniClient(_Client, abc.ABC):
             tools=tools,
             tool_choice=tool_choice,
             parallel_tool_calls=parallel_tool_calls,
+            reasoning_effort=reasoning_effort,
             # platform arguments
             use_custom_keys=use_custom_keys,
             tags=tags,
@@ -688,6 +690,7 @@ class _UniClient(_Client, abc.ABC):
         tools: Optional[Iterable[ChatCompletionToolParam]] = None,
         tool_choice: Optional[ChatCompletionToolChoiceOptionParam] = None,
         parallel_tool_calls: Optional[bool] = None,
+        reasoning_effort: Optional[str] = None,
         # platform arguments
         use_custom_keys: Optional[bool] = None,
         tags: Optional[List[str]] = None,
@@ -914,6 +917,7 @@ class _UniClient(_Client, abc.ABC):
                 parallel_tool_calls,
                 self._parallel_tool_calls,
             ),
+            reasoning_effort=_default(reasoning_effort, self._reasoning_effort),
             # platform arguments
             use_custom_keys=_default(use_custom_keys, self._use_custom_keys),
             tags=_default(tags, self._tags),
@@ -1184,6 +1188,7 @@ class Unify(_UniClient):
         tools: Optional[Iterable[ChatCompletionToolParam]],
         tool_choice: Optional[ChatCompletionToolChoiceOptionParam],
         parallel_tool_calls: Optional[bool],
+        reasoning_effort: Optional[str],
         # platform arguments
         use_custom_keys: bool,
         tags: Optional[List[str]],
@@ -1217,6 +1222,7 @@ class Unify(_UniClient):
             tools=tools,
             tool_choice=tool_choice,
             parallel_tool_calls=parallel_tool_calls,
+            reasoning_effort=reasoning_effort,
             extra_headers=extra_headers,
             extra_query=extra_query,
             extra_body=kwargs,
@@ -1488,6 +1494,7 @@ class AsyncUnify(_UniClient):
         tools: Optional[Iterable[ChatCompletionToolParam]],
         tool_choice: Optional[ChatCompletionToolChoiceOptionParam],
         parallel_tool_calls: Optional[bool],
+        reasoning_effort: Optional[str],
         # platform arguments
         use_custom_keys: bool,
         tags: Optional[List[str]],
@@ -1524,6 +1531,7 @@ class AsyncUnify(_UniClient):
             extra_headers=extra_headers,
             extra_query=extra_query,
             extra_body=kwargs,
+            reasoning_effort=reasoning_effort,
         )
         if stream:
             return self._generate_stream(
