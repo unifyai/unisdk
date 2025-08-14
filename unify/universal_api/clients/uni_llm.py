@@ -1381,7 +1381,7 @@ class AsyncUnify(_UniClient):
         if "response_format" in kw and kw["response_format"]:
             chat_method = self._client.beta.chat.completions.parse
             if "stream" in kw:
-                del kw["stream"] # .parse() does not accept the stream argument
+                del kw["stream"]  # .parse() does not accept the stream argument
         else:
             chat_method = self._client.chat.completions.create
         chat_completion = None

@@ -445,7 +445,8 @@ def mark_spans_as_done(
 
 
 def _apply_row_ids(
-    row_ids_data: Optional[Dict[str, Any]], entries: List[Dict[str, Any]]
+    row_ids_data: Optional[Dict[str, Any]],
+    entries: List[Dict[str, Any]],
 ) -> None:
     """
     Apply row_ids data from server response to entry dictionaries.
@@ -1411,7 +1412,11 @@ def get_logs(
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    project = _get_and_maybe_create_project(project, api_key=api_key, create_if_missing=False)
+    project = _get_and_maybe_create_project(
+        project,
+        api_key=api_key,
+        create_if_missing=False,
+    )
     context = context if context else CONTEXT_READ.get()
     column_context = column_context if column_context else COLUMN_CONTEXT_READ.get()
     merged_filters = ACTIVE_PARAMS_READ.get() | ACTIVE_ENTRIES_READ.get()
