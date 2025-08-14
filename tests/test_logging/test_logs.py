@@ -316,6 +316,12 @@ def test_with_context_threaded():
     BAR_LOGS_PER_THREAD = 5
     BAZ_LOGS_PER_THREAD = 7
 
+    # Ensure context created before threads are started
+    # Otherwise, each thread may try to create the context at the same time
+    unify.create_context("Foo")
+    unify.create_context("Foo/Bar")
+    unify.create_context("Foo/Bar/Baz")
+
     def fn(i):
         with unify.Context("Foo"):
             [unify.log(x=j) for j in range(i, i + FOO_LOGS_PER_THREAD)]

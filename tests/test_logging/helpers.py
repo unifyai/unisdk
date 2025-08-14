@@ -15,6 +15,7 @@ def _handle_project(test_fn):
             unify.delete_project(project)
         try:
             with unify.Project(project):
+                unify.unset_context()
                 test_fn(*args, **kwargs)
             unify.delete_project(project)
         except:
@@ -30,6 +31,7 @@ def _handle_project(test_fn):
             unify.delete_project(project)
         try:
             with unify.Project(project):
+                unify.unset_context()
                 await test_fn(*args, **kwargs)
             unify.delete_project(project)
         except:
