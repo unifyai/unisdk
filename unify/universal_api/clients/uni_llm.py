@@ -72,6 +72,7 @@ class _UniClient(_Client, abc.ABC):
         stream_options: Optional[ChatCompletionStreamOptionsParam] = None,
         temperature: Optional[float] = 1.0,
         top_p: Optional[float] = None,
+        service_tier: Optional[str] = None,
         tools: Optional[Iterable[ChatCompletionToolParam]] = None,
         tool_choice: Optional[ChatCompletionToolChoiceOptionParam] = None,
         parallel_tool_calls: Optional[bool] = None,
@@ -267,6 +268,7 @@ class _UniClient(_Client, abc.ABC):
             stream_options=stream_options,
             temperature=temperature,
             top_p=top_p,
+            service_tier=service_tier,
             tools=tools,
             tool_choice=tool_choice,
             parallel_tool_calls=parallel_tool_calls,
@@ -706,6 +708,7 @@ class _UniClient(_Client, abc.ABC):
         # passthrough arguments
         extra_headers: Optional[Headers] = None,
         extra_query: Optional[Query] = None,
+        service_tier: Optional[str] = None,
         **kwargs,
     ):
         """Generate a ChatCompletion response for the specified endpoint,
@@ -911,6 +914,7 @@ class _UniClient(_Client, abc.ABC):
             stream_options=_default(stream_options, self._stream_options),
             temperature=_default(temperature, self._temperature),
             top_p=_default(top_p, self._top_p),
+            service_tier=_default(service_tier, self._service_tier),
             tools=_default(tools, self._tools),
             tool_choice=_default(tool_choice, self._tool_choice),
             parallel_tool_calls=_default(
@@ -1185,6 +1189,7 @@ class Unify(_UniClient):
         stream_options: Optional[ChatCompletionStreamOptionsParam],
         temperature: Optional[float],
         top_p: Optional[float],
+        service_tier: Optional[str],
         tools: Optional[Iterable[ChatCompletionToolParam]],
         tool_choice: Optional[ChatCompletionToolChoiceOptionParam],
         parallel_tool_calls: Optional[bool],
@@ -1219,6 +1224,7 @@ class Unify(_UniClient):
             stop=stop,
             temperature=temperature,
             top_p=top_p,
+            service_tier=service_tier,
             tools=tools,
             tool_choice=tool_choice,
             parallel_tool_calls=parallel_tool_calls,
@@ -1509,6 +1515,7 @@ class AsyncUnify(_UniClient):
         # passthrough arguments
         extra_headers: Optional[Headers],
         extra_query: Optional[Query],
+        service_tier: Optional[str] = None,
         **kwargs,
     ) -> Union[AsyncGenerator[str, None], str]:  # noqa: DAR101, DAR201, DAR401
         prompt = Prompt(
@@ -1532,6 +1539,7 @@ class AsyncUnify(_UniClient):
             extra_query=extra_query,
             extra_body=kwargs,
             reasoning_effort=reasoning_effort,
+            service_tier=service_tier,
         )
         if stream:
             return self._generate_stream(

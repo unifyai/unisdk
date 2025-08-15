@@ -51,6 +51,7 @@ class _Client(ABC):
         stream_options: Optional[ChatCompletionStreamOptionsParam],
         temperature: Optional[float],
         top_p: Optional[float],
+        service_tier: Optional[str],
         tools: Optional[Iterable[ChatCompletionToolParam]],
         tool_choice: Optional[ChatCompletionToolChoiceOptionParam],
         parallel_tool_calls: Optional[bool],
@@ -93,6 +94,7 @@ class _Client(ABC):
         self._stream_options = None
         self._temperature = None
         self._top_p = None
+        self._service_tier = None
         self._tools = None
         self._tool_choice = None
         self._parallel_tool_calls = None
@@ -129,6 +131,7 @@ class _Client(ABC):
         self.set_stream_options(stream_options)
         self.set_temperature(temperature)
         self.set_top_p(top_p)
+        self.set_service_tier(service_tier)
         self.set_tools(tools)
         self.set_tool_choice(tool_choice)
         self.set_parallel_tool_calls(parallel_tool_calls)
@@ -169,6 +172,7 @@ class _Client(ABC):
             "stream_options": stream_options,
             "temperature": temperature,
             "top_p": top_p,
+            "service_tier": service_tier,
             "tools": tools,
             "tool_choice": tool_choice,
             "parallel_tool_calls": parallel_tool_calls,
@@ -344,6 +348,16 @@ class _Client(ABC):
             The default top p value.
         """
         return self._top_p
+
+    @property
+    def service_tier(self) -> Optional[str]:
+        """
+        Get the default service tier, if set.
+
+        Returns:
+            The default service tier.
+        """
+        return self._service_tier
 
     @property
     def tools(self) -> Optional[Iterable[ChatCompletionToolParam]]:
@@ -777,6 +791,19 @@ class _Client(ABC):
         self._top_p = value
         return self
 
+    def set_service_tier(self, value: Optional[str]) -> Self:
+        """
+        Set the default service tier.  # noqa: DAR101.
+
+        Args:
+            value: The default service tier.
+
+        Returns:
+            This client, useful for chaining inplace calls.
+        """
+        self._service_tier = value
+        return self
+
     def set_tools(self, value: Iterable[ChatCompletionToolParam]) -> Self:
         """
         Set the default tools.  # noqa: DAR101.
@@ -1159,6 +1186,15 @@ class _Client(ABC):
         """
         return self.set_top_p(self._defaults["top_p"])
 
+    def reset_service_tier(self) -> Self:
+        """
+        Reset the service tier to its default value.
+
+        Returns:
+            This client, useful for chaining inplace calls.
+        """
+        return self.set_service_tier(self._defaults["service_tier"])
+
     def reset_tools(self) -> Self:
         """
         Reset the tools to their default value.
@@ -1186,6 +1222,15 @@ class _Client(ABC):
         """
         return self.set_parallel_tool_calls(self._defaults["parallel_tool_calls"])
 
+    def reset_reasoning_effort(self) -> Self:
+        """
+        Reset the reasoning effort to its default value.
+
+        Returns:
+            This client, useful for chaining inplace calls.
+        """
+        return self.set_reasoning_effort(self._defaults["reasoning_effort"])
+
     def reset_all(self) -> Self:
         """
         Reset base client properties to their default values.
@@ -1209,9 +1254,11 @@ class _Client(ABC):
         self.reset_stream_options()
         self.reset_temperature()
         self.reset_top_p()
+        self.reset_service_tier()
         self.reset_tools()
         self.reset_tool_choice()
         self.reset_parallel_tool_calls()
+        self.reset_reasoning_effort()
         return self
 
     # Credits #
@@ -1271,6 +1318,7 @@ class _Client(ABC):
                         stream_options=self._stream_options,
                         temperature=self._temperature,
                         top_p=self._top_p,
+                        service_tier=self._service_tier,
                         tools=self._tools,
                         tool_choice=self._tool_choice,
                         parallel_tool_calls=self._parallel_tool_calls,
@@ -1319,6 +1367,7 @@ class _Client(ABC):
                     stream_options=self._stream_options,
                     temperature=self._temperature,
                     top_p=self._top_p,
+                    service_tier=self._service_tier,
                     tools=self._tools,
                     tool_choice=self._tool_choice,
                     parallel_tool_calls=self._parallel_tool_calls,
@@ -1371,6 +1420,7 @@ class _Client(ABC):
         stream_options: Optional[ChatCompletionStreamOptionsParam],
         temperature: Optional[float],
         top_p: Optional[float],
+        service_tier: Optional[str],
         tools: Optional[Iterable[ChatCompletionToolParam]],
         tool_choice: Optional[ChatCompletionToolChoiceOptionParam],
         parallel_tool_calls: Optional[bool],

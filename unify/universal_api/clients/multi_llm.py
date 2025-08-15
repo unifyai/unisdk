@@ -52,6 +52,7 @@ class _MultiClient(_Client, abc.ABC):
         stop: Union[Optional[str], List[str]] = None,
         temperature: Optional[float] = 1.0,
         top_p: Optional[float] = None,
+        service_tier: Optional[str] = None,
         tools: Optional[Iterable[ChatCompletionToolParam]] = None,
         tool_choice: Optional[ChatCompletionToolChoiceOptionParam] = None,
         parallel_tool_calls: Optional[bool] = None,
@@ -236,6 +237,7 @@ class _MultiClient(_Client, abc.ABC):
             stream_options=None,
             temperature=temperature,
             top_p=top_p,
+            service_tier=service_tier,
             tools=tools,
             tool_choice=tool_choice,
             parallel_tool_calls=parallel_tool_calls,
@@ -291,6 +293,7 @@ class _MultiClient(_Client, abc.ABC):
                 stop=self.stop,
                 temperature=self.temperature,
                 top_p=self.top_p,
+                service_tier=self.service_tier,
                 tools=self.tools,
                 tool_choice=self.tool_choice,
                 parallel_tool_calls=self.parallel_tool_calls,
@@ -775,6 +778,7 @@ class MultiUnify(_MultiClient):
         # passthrough arguments
         extra_headers: Optional[Headers] = None,
         extra_query: Optional[Query] = None,
+        service_tier: Optional[str] = None,
         **kwargs,
     ) -> Union[Union[str, ChatCompletion], Dict[str, Union[str, ChatCompletion]]]:
         kw = dict(
@@ -804,6 +808,7 @@ class MultiUnify(_MultiClient):
             return_full_completion=return_full_completion,
             extra_headers=extra_headers,
             extra_query=extra_query,
+            service_tier=service_tier,
             **kwargs,
         )
         multi_message = isinstance(kw["messages"], dict)
@@ -933,6 +938,7 @@ class AsyncMultiUnify(_MultiClient):
         # passthrough arguments
         extra_headers: Optional[Headers] = None,
         extra_query: Optional[Query] = None,
+        service_tier: Optional[str] = None,
         **kwargs,
     ) -> Dict[str, str]:
         kw = dict(
@@ -963,6 +969,7 @@ class AsyncMultiUnify(_MultiClient):
             local_cache=local_cache,
             extra_headers=extra_headers,
             extra_query=extra_query,
+            service_tier=service_tier,
             **kwargs,
         )
         multi_message = isinstance(messages, dict)
