@@ -42,6 +42,10 @@ from unify.universal_api.clients.helpers import (
     _assert_is_valid_model,
     _assert_is_valid_provider,
 )
+from unify.universal_api.utils.httpx_logging import (
+    make_async_httpx_client_for_unify_logging,
+    make_httpx_client_for_unify_logging,
+)
 
 from ...utils._caching import _get_cache, _get_caching, _write_to_cache
 from ...utils.helpers import _default
@@ -953,10 +957,12 @@ class Unify(_UniClient):
 
     def _get_client(self):
         try:
+            http_client = make_httpx_client_for_unify_logging(BASE_URL)
             return openai.OpenAI(
                 base_url=f"{BASE_URL}",
                 api_key=self._api_key,
                 timeout=3600.0,  # one hour
+                http_client=http_client,
             )
         except openai.OpenAIError as e:
             raise Exception(f"Failed to initialize Unify client: {str(e)}")
@@ -1283,10 +1289,13 @@ class AsyncUnify(_UniClient):
 
     def _get_client(self):
         try:
+            # Async event hooks must use AsyncClient
+            http_client = make_async_httpx_client_for_unify_logging(BASE_URL)
             return openai.AsyncOpenAI(
                 base_url=f"{BASE_URL}",
                 api_key=self._api_key,
                 timeout=3600.0,  # one hour
+                http_client=http_client,
             )
         except openai.APIStatusError as e:
             raise Exception(f"Failed to initialize Unify client: {str(e)}")
