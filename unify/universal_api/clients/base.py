@@ -69,7 +69,7 @@ class _Client(ABC):
         return_full_completion: bool,
         traced: bool,
         cache: Union[bool, str],
-        local_cache: bool,
+        cache_backend: str,
         # passthrough arguments
         extra_headers: Optional[Headers],
         extra_query: Optional[Query],
@@ -109,7 +109,7 @@ class _Client(ABC):
         self._return_full_completion = None
         self._traced = None
         self._cache = None
-        self._local_cache = None
+        self._cache_backend = None
         self._extra_headers = None
         self._extra_query = None
         self._extra_body = None
@@ -148,7 +148,7 @@ class _Client(ABC):
         self.set_return_full_completion(return_full_completion)
         self.set_traced(traced)
         self.set_cache(cache)
-        self.set_local_cache(local_cache)
+        self.set_cache_backend(cache_backend)
         # passthrough arguments
         self.set_extra_headers(extra_headers)
         self.set_extra_query(extra_query)
@@ -987,17 +987,17 @@ class _Client(ABC):
         self._cache = value
         return self
 
-    def set_local_cache(self, value: bool) -> Self:
+    def set_cache_backend(self, value: str) -> Self:
         """
-        Set the default local cache bool.  # noqa: DAR101.
+        Set the default cache backend.  # noqa: DAR101.
 
         Args:
-            value: The default local cache bool.
+            value: The default cache backend.
 
         Returns:
             This client, useful for chaining inplace calls.
         """
-        self._local_cache = value
+        self._cache_backend = value
         return self
 
     def set_extra_headers(self, value: Headers) -> Self:

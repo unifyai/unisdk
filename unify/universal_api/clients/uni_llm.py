@@ -47,7 +47,7 @@ from unify.universal_api.utils.httpx_logging import (
     make_httpx_client_for_unify_logging,
 )
 
-from ...utils._caching import _get_cache, _get_caching, _write_to_cache
+from ...utils._caching import _get_cache, _write_to_cache, is_caching_enabled
 from ...utils.helpers import _default
 from ..clients.base import _Client
 from ..types import Prompt
@@ -94,7 +94,7 @@ class _UniClient(_Client, abc.ABC):
         return_full_completion: bool = False,
         traced: bool = False,
         cache: Optional[Union[bool, str]] = None,
-        local_cache: bool = True,
+        cache_backend: Optional[str] = None,
         # passthrough arguments
         extra_headers: Optional[Headers] = None,
         extra_query: Optional[Query] = None,
@@ -290,7 +290,7 @@ class _UniClient(_Client, abc.ABC):
             return_full_completion=return_full_completion,
             traced=traced,
             cache=cache,
-            local_cache=local_cache,
+            cache_backend=cache_backend,
             # passthrough arguments
             extra_headers=extra_headers,
             extra_query=extra_query,
@@ -708,7 +708,7 @@ class _UniClient(_Client, abc.ABC):
         stateful: Optional[bool] = None,
         return_full_completion: Optional[bool] = None,
         cache: Optional[Union[bool, str]] = None,
-        local_cache: Optional[bool] = None,
+        cache_backend: Optional[str] = None,
         # passthrough arguments
         extra_headers: Optional[Headers] = None,
         extra_query: Optional[Query] = None,
@@ -935,8 +935,8 @@ class _UniClient(_Client, abc.ABC):
             log_response_body=_default(log_response_body, self._log_response_body),
             # python client arguments
             return_full_completion=return_full_completion,
-            cache=_default(cache, _get_caching()),
-            local_cache=_default(local_cache, self._local_cache),
+            cache=_default(cache, is_caching_enabled()),
+            cache_backend=_default(cache_backend, self._cache_backend),
             # passthrough arguments
             extra_headers=_default(extra_headers, self._extra_headers),
             extra_query=_default(extra_query, self._extra_query),
@@ -1042,7 +1042,7 @@ class Unify(_UniClient):
         # python client arguments
         return_full_completion: bool,
         cache: Union[bool, str],
-        local_cache: bool,
+        cache_backend: str,
     ) -> Union[str, ChatCompletion]:
         kw = self._handle_kw(
             prompt=prompt,
@@ -1080,7 +1080,7 @@ class Unify(_UniClient):
                         raise_on_empty=cache == "read-only",
                         read_closest=read_closest,
                         delete_closest=read_closest,
-                        local=local_cache,
+                        backend=cache_backend,
                     )
 
                 chat_completion = unify.traced(
@@ -1099,7 +1099,7 @@ class Unify(_UniClient):
                     raise_on_empty=cache == "read-only",
                     read_closest=read_closest,
                     delete_closest=read_closest,
-                    local=local_cache,
+                    backend=cache_backend,
                 )
                 in_cache = True if chat_completion is not None else False
         if chat_completion is None:
@@ -1143,7 +1143,7 @@ class Unify(_UniClient):
                     fn_name="chat.completions.create",
                     kw=kw,
                     response=chat_completion,
-                    local=local_cache,
+                    backend=cache_backend,
                 )
         if return_full_completion:
             if endpoint == "user-input":
@@ -1210,7 +1210,7 @@ class Unify(_UniClient):
         # python client arguments
         return_full_completion: bool,
         cache: Union[bool, str],
-        local_cache: bool,
+        cache_backend: str,
         # passthrough arguments
         extra_headers: Optional[Headers],
         extra_query: Optional[Query],
@@ -1268,7 +1268,7 @@ class Unify(_UniClient):
             # python client arguments
             return_full_completion=return_full_completion,
             cache=cache,
-            local_cache=local_cache,
+            cache_backend=cache_backend,
         )
 
     def to_async_client(self):
@@ -1374,7 +1374,7 @@ class AsyncUnify(_UniClient):
         # python client arguments
         return_full_completion: bool,
         cache: Union[bool, str],
-        local_cache: bool,
+        cache_backend: str,
     ) -> Union[str, ChatCompletion]:
         kw = self._handle_kw(
             prompt=prompt,
@@ -1411,7 +1411,7 @@ class AsyncUnify(_UniClient):
                         raise_on_empty=cache == "read-only",
                         read_closest=read_closest,
                         delete_closest=read_closest,
-                        local=local_cache,
+                        backend=cache_backend,
                     )
 
                 chat_completion = unify.traced(
@@ -1430,7 +1430,7 @@ class AsyncUnify(_UniClient):
                     raise_on_empty=cache == "read-only",
                     read_closest=read_closest,
                     delete_closest=read_closest,
-                    local=local_cache,
+                    backend=cache_backend,
                 )
                 in_cache = True if chat_completion is not None else False
         if chat_completion is None:
@@ -1479,7 +1479,7 @@ class AsyncUnify(_UniClient):
                     fn_name="chat.completions.create",
                     kw=kw,
                     response=chat_completion,
-                    local=local_cache,
+                    backend=cache_backend,
                 )
         if return_full_completion:
             return chat_completion
@@ -1520,7 +1520,7 @@ class AsyncUnify(_UniClient):
         # python client arguments
         return_full_completion: bool,
         cache: Union[bool, str],
-        local_cache: bool,
+        cache_backend: str,
         # passthrough arguments
         extra_headers: Optional[Headers],
         extra_query: Optional[Query],
@@ -1579,7 +1579,7 @@ class AsyncUnify(_UniClient):
             # python client arguments
             return_full_completion=return_full_completion,
             cache=cache,
-            local_cache=local_cache,
+            cache_backend=cache_backend,
         )
 
     def to_sync_client(self):

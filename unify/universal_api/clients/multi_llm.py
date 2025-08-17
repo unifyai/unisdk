@@ -70,7 +70,7 @@ class _MultiClient(_Client, abc.ABC):
         return_full_completion: bool = False,
         traced: bool = False,
         cache: Union[bool, str] = None,
-        local_cache: bool = True,
+        cache_backend: Optional[str] = None,
         # passthrough arguments
         extra_headers: Optional[Headers] = None,
         extra_query: Optional[Query] = None,
@@ -255,7 +255,7 @@ class _MultiClient(_Client, abc.ABC):
             return_full_completion=return_full_completion,
             traced=traced,
             cache=cache,
-            local_cache=local_cache,
+            cache_backend=cache_backend,
             # passthrough arguments
             extra_headers=extra_headers,
             extra_query=extra_query,
@@ -774,7 +774,7 @@ class MultiUnify(_MultiClient):
         log_response_body: Optional[bool] = True,
         # python client arguments
         return_full_completion: bool = False,
-        local_cache: bool = True,
+        cache_backend: Optional[str] = None,
         # passthrough arguments
         extra_headers: Optional[Headers] = None,
         extra_query: Optional[Query] = None,
@@ -934,7 +934,7 @@ class AsyncMultiUnify(_MultiClient):
         log_response_body: Optional[bool] = True,
         # python client arguments
         return_full_completion: bool = False,
-        local_cache: bool = True,
+        cache_backend: Optional[str] = None,
         # passthrough arguments
         extra_headers: Optional[Headers] = None,
         extra_query: Optional[Query] = None,
@@ -966,7 +966,7 @@ class AsyncMultiUnify(_MultiClient):
             log_query_body=log_query_body,
             log_response_body=log_response_body,
             return_full_completion=return_full_completion,
-            local_cache=local_cache,
+            cache_backend=cache_backend,
             extra_headers=extra_headers,
             extra_query=extra_query,
             service_tier=service_tier,

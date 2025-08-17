@@ -60,7 +60,7 @@ from .logging.utils.tracing import install_tracing_hook, disable_tracing_hook
 from .utils import helpers, map, get_map_mode, set_map_mode, _caching
 from .utils._caching import (
     set_caching,
-    set_caching_fname,
+    set_cache_backend,
     cache_file_union,
     cache_file_intersection,
     subtract_cache_files,
