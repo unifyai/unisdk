@@ -83,7 +83,6 @@ def _minimal_char_diff(a: str, b: str, context: int = 5) -> str:
     return "".join(diff_parts)
 
 
-# noinspection PyTypeChecker,PyUnboundLocalVariable
 def _get_cache(
     fn_name: str,
     kw: Dict[str, Any],
@@ -94,24 +93,24 @@ def _get_cache(
     backend: Optional[str] = None,
 ) -> Optional[Any]:
     global CACHE_LOCK
-    # prevents circular import
+    # Prevents circular import
     from unify.logging.logs import Log
 
-    type_str_to_type = {
+    type_mapping = {
         "ChatCompletion": ChatCompletion,
         "Log": Log,
         "ParsedChatCompletion": ParsedChatCompletion,
     }
     CACHE_LOCK.acquire()
-    # noinspection PyBroadException
     try:
-        get_cache_backend(backend).initialize_cache(filename)
+        current_backend = get_cache_backend(backend)
+        current_backend.initialize_cache(filename)
         kw = {k: v for k, v in kw.items() if v is not None}
         kw_str = BaseCache.serialize_object(kw)
-        cache_str = fn_name + "_" + kw_str
-        if not get_cache_backend(backend).has_key(cache_str):
+        cache_str = f"{fn_name}_{kw_str}"
+        if not current_backend.has_key(cache_str):
             if raise_on_empty or read_closest:
-                keys_to_search = get_cache_backend(backend).list_keys()
+                keys_to_search = current_backend.list_keys()
                 if len(keys_to_search) == 0:
                     CACHE_LOCK.release()
                     raise Exception(
@@ -138,7 +137,7 @@ def _get_cache(
             else:
                 CACHE_LOCK.release()
                 return
-        ret, res_types = get_cache_backend(backend).retrieve_entry(cache_str)
+        ret, res_types = current_backend.retrieve_entry(cache_str)
         if res_types is None:
             CACHE_LOCK.release()
             return ret
@@ -147,20 +146,20 @@ def _get_cache(
             idx_list = json.loads(idx_str)
             if len(idx_list) == 0:
                 if read_closest and delete_closest:
-                    get_cache_backend(backend).remove_entry(cache_str)
+                    current_backend.remove_entry(cache_str)
                 CACHE_LOCK.release()
-                typ = type_str_to_type[type_str]
+                typ = type_mapping[type_str]
                 if issubclass(typ, BaseModel):
-                    return type_str_to_type[type_str](**ret)
+                    return typ(**ret)
                 elif issubclass(typ, Log):
-                    return type_str_to_type[type_str].from_json(ret)
+                    return typ.from_json(ret)
                 raise Exception(f"Cache indexing found for unsupported type: {typ}")
             item = ret
             for i, idx in enumerate(idx_list):
                 if i == len(idx_list) - 1:
-                    typ = type_str_to_type[type_str]
+                    typ = type_mapping[type_str]
                     if issubclass(typ, BaseModel) or issubclass(typ, Log):
-                        item[idx] = type_str_to_type[type_str].from_json(item[idx])
+                        item[idx] = typ.from_json(item[idx])
                     else:
                         raise Exception(
                             f"Cache indexing found for unsupported type: {typ}",
@@ -168,7 +167,7 @@ def _get_cache(
                     break
                 item = item[idx]
         if read_closest and delete_closest:
-            get_cache_backend(backend).remove_entry(cache_str)
+            current_backend.remove_entry(cache_str)
         CACHE_LOCK.release()
         return ret
     except Exception as e:
@@ -180,7 +179,6 @@ def _get_cache(
         ) from e
 
 
-# noinspection PyTypeChecker,PyUnresolvedReferences
 def _write_to_cache(
     fn_name: str,
     kw: Dict[str, Any],
@@ -192,16 +190,17 @@ def _write_to_cache(
     global CACHE_LOCK
     CACHE_LOCK.acquire()
     try:
-        get_cache_backend(backend).initialize_cache(filename)
+        current_backend = get_cache_backend(backend)
+        current_backend.initialize_cache(filename)
         kw = {k: v for k, v in kw.items() if v is not None}
         kw_str = BaseCache.serialize_object(kw)
-        cache_str = fn_name + "_" + kw_str
-        _res_types = {}
-        response_str = BaseCache.serialize_object(response, _res_types)
-        get_cache_backend(backend).store_entry(
+        cache_str = f"{fn_name}_{kw_str}"
+        res_types = {}
+        response_str = BaseCache.serialize_object(response, res_types)
+        current_backend.store_entry(
             key=cache_str,
             value=response_str,
-            res_types=_res_types,
+            res_types=res_types,
         )
         CACHE_LOCK.release()
     except Exception as e:
