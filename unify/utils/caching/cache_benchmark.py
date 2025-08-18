@@ -1,3 +1,4 @@
+import functools
 import os
 import warnings
 from dataclasses import dataclass
@@ -46,6 +47,7 @@ def record_get_cache(fn):
         return fn
     else:
 
+        @functools.wraps(fn)
         def wrapper(*args, **kwargs):
             benchmark = get_cache_stats()
             benchmark.reads += 1
@@ -64,6 +66,7 @@ def record_write_to_cache(fn):
         return fn
     else:
 
+        @functools.wraps(fn)
         def wrapper(*args, **kwargs):
             benchmark = get_cache_stats()
             benchmark.writes += 1
