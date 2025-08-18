@@ -66,6 +66,11 @@ from .utils._caching import (
     subtract_cache_files,
     cached,
 )
+from .utils.caching import (
+    get_cache_stats,
+    reset_cache_stats,
+    CacheStats,
+)
 
 from .universal_api import chatbot, clients, usage
 from .universal_api.clients import multi_llm

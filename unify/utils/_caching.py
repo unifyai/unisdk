@@ -14,6 +14,7 @@ from typing import Any, Dict, Optional, Type, Union
 from openai.types.chat import ChatCompletion, ParsedChatCompletion
 from pydantic import BaseModel
 from unify.utils.caching import BaseCache, LocalCache, LocalSeparateCache, RemoteCache
+from unify.utils.caching.cache_benchmark import record_get_cache, record_write_to_cache
 
 # Global state
 CACHE_LOCK = threading.Lock()
@@ -83,6 +84,7 @@ def _minimal_char_diff(a: str, b: str, context: int = 5) -> str:
     return "".join(diff_parts)
 
 
+@record_get_cache
 def _get_cache(
     fn_name: str,
     kw: Dict[str, Any],
@@ -179,6 +181,7 @@ def _get_cache(
         ) from e
 
 
+@record_write_to_cache
 def _write_to_cache(
     fn_name: str,
     kw: Dict[str, Any],
