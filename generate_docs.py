@@ -7,6 +7,7 @@ import os
 import re
 import shutil
 import subprocess
+import warnings
 
 replace = {
     "<uploaded_by>/<model_name>@<provider_name>": r"\<uploaded_by\>/\<model_name\>@\<provider_name\>",
@@ -228,7 +229,12 @@ def write_function_and_class_jsons(details, private_modules):
             functions[function_name] = {"lineno": lineno, "module_path": module_path}
 
             # get the signature of the function
-            source_code = inspect.getsource(function)
+            try:
+                source_code = inspect.getsource(function)
+            except OSError:
+                warnings.warn(f"Error getting source code for {function_name}")
+                continue
+
             signature = get_function_signature(source_code)
 
             # get the formatted docstring of the function
@@ -261,13 +267,20 @@ def write_function_and_class_jsons(details, private_modules):
                     members[member[0]] = {"obj": member[1], "module": module}
 
             # get the source code for all members
-            for member in members:
+            for member in members.copy():
                 obj = members[member]["obj"]
                 module = members[member]["module"]
-                if isinstance(obj, property):
-                    source_lines, lineno = inspect.getsourcelines(obj.fget)
-                else:
-                    source_lines, lineno = inspect.getsourcelines(obj)
+                try:
+                    if isinstance(obj, property):
+                        source_lines, lineno = inspect.getsourcelines(obj.fget)
+                    else:
+                        source_lines, lineno = inspect.getsourcelines(obj)
+                except OSError:
+                    warnings.warn(
+                        f"Error getting source code for {member} in {class_name}",
+                    )
+                    del members[member]
+                    continue
                 members[member] = {
                     "obj": obj,
                     "source_code": "".join(source_lines),
