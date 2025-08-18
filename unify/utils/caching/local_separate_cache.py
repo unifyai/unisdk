@@ -1,5 +1,6 @@
 import json
 import os
+import warnings
 from typing import Any, Dict, List, Optional
 
 from unify.utils.caching.base_cache import BaseCache
@@ -87,6 +88,9 @@ class LocalSeparateCache(BaseCache):
                             cls._cache_read = json.loads(content)
             except (json.JSONDecodeError, IOError):
                 # File contains invalid JSON or can't be read, keep empty cache
+                warnings.warn(
+                    f"Cache file {read_filepath} contains invalid JSON or can't be read, reinitializing.",
+                )
                 cls._cache_read = {}
 
     @classmethod

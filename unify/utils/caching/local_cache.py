@@ -7,6 +7,7 @@ This cache stores data in a local JSON file and provides fast in-memory access.
 import json
 import os
 import threading
+import warnings
 from typing import Any, Dict, List, Optional
 
 from unify.utils.caching.base_cache import BaseCache
@@ -90,6 +91,9 @@ class LocalCache(BaseCache):
                         cls._cache = json.loads(content)
             except (json.JSONDecodeError, IOError):
                 # File contains invalid JSON or can't be read, reinitialize
+                warnings.warn(
+                    f"Cache file {cache_filepath} contains invalid JSON or can't be read, reinitializing.",
+                )
                 cls._cache = {}
 
     @classmethod
