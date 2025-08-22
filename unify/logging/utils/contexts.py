@@ -20,6 +20,7 @@ def create_context(
     is_versioned: bool = True,
     allow_duplicates: bool = True,
     unique_keys: Optional[Dict[str, str]] = None,
+    auto_counting: Optional[Dict[str, Optional[str]]] = None,
     *,
     project: Optional[str] = None,
     api_key: Optional[str] = None,
@@ -36,8 +37,12 @@ def create_context(
 
         allow_duplicates: Whether to allow duplicates in the context.
 
-        unique_keys: Composite unique key definition. Keys are column names, values are types
-            ('counting' for auto-increment). Default is None.
+        unique_keys: Unique key definition. Keys are column names, values are types
+            ('str', 'int', 'float', 'bool', 'datetime', 'time', 'date', 'timedelta', 'dict', 'list').
+            Default is None.
+
+        auto_counting: Auto-counting configuration. Keys are column names to auto-increment,
+            values are parent counter names (None for independent counters). Default is None.
 
         project: Name of the project the context belongs to.
 
@@ -63,6 +68,7 @@ def create_context(
         "is_versioned": is_versioned,
         "allow_duplicates": allow_duplicates,
         "unique_keys": unique_keys,
+        "auto_counting": auto_counting,
     }
     response = _requests.post(
         BASE_URL + f"/project/{project}/contexts",

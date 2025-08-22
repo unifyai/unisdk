@@ -1327,7 +1327,11 @@ async def test_async_log_decorator():
 
 @_handle_project
 def test_create_log_unique_column():
-    unify.create_context("foo", unique_keys={"unique_id": "counting"})
+    unify.create_context(
+        "foo",
+        unique_keys={"unique_id": "int"},
+        auto_counting={"unique_id": None},
+    )
     ret = unify.log(context="foo")
 
     entries = ret.entries
@@ -1343,7 +1347,11 @@ def test_create_log_unique_column():
 
 @_handle_project
 def test_create_log_unique_column_batch():
-    unify.create_context("foo", unique_keys={"unique_id": "counting"})
+    unify.create_context(
+        "foo",
+        unique_keys={"unique_id": "int"},
+        auto_counting={"unique_id": None},
+    )
     ret = unify.create_logs(context="foo", entries=[{"x": 1}, {"x": 2}, {"x": 3}])
 
     for i, r in enumerate(ret):
@@ -1354,9 +1362,14 @@ def test_create_log_unique_column_batch():
 @_handle_project
 def test_create_logs_nested_ids():
     context_name = "foo_nested"
-    unique_keys = {"run_id": "counting", "step_id": "counting"}
+    unique_keys = {"run_id": "int", "step_id": "int"}
+    auto_counting = {"run_id": None, "step_id": "run_id"}
 
-    unify.create_context(context_name, unique_keys=unique_keys)
+    unify.create_context(
+        context_name,
+        unique_keys=unique_keys,
+        auto_counting=auto_counting,
+    )
     logs = unify.create_logs(context=context_name, entries=[{}])
     assert len(logs) == 1
     log = logs[0]
