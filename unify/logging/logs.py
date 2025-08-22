@@ -215,6 +215,7 @@ def set_context(
     mode: str = "both",
     overwrite: bool = False,
     relative: bool = True,
+    skip_create: bool = False,
 ):
     if mode == "both":
         if relative:
@@ -237,6 +238,12 @@ def set_context(
             CONTEXT_READ.set(context)
         else:
             CONTEXT_READ.set(context)
+
+    if skip_create:
+        assert (
+            skip_create and not overwrite
+        ), "Cannot skip create and overwrite at the same time"
+        return
 
     context_exists_remote = context in unify.get_contexts()
     if overwrite and context_exists_remote:
