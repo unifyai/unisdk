@@ -93,11 +93,6 @@ class BaseCache(ABC):
 
     @classmethod
     @abstractmethod
-    def write(cls, filename: str = None) -> None:
-        pass
-
-    @classmethod
-    @abstractmethod
     def initialize_cache(cls, name: str = None) -> None:
         """Initialize or load the cache from storage."""
 

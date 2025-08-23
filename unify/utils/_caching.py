@@ -203,7 +203,7 @@ def _write_to_cache(
         current_backend.store_entry(
             key=cache_str,
             value=response_str,
-            res_types=res_types,
+            res_types=res_types if len(res_types) > 0 else None,
         )
         CACHE_LOCK.release()
     except Exception as e:

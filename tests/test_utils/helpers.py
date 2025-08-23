@@ -4,7 +4,7 @@ from unify.utils.caching import LocalCache
 
 
 class _CacheHandler:
-    def __init__(self, fname=".test_cache.json"):
+    def __init__(self, fname=".test_cache.ndjson"):
         self._old_cache_fpath = LocalCache.get_cache_filepath(fname)
         self._fname = fname
         self.test_path = ""
