@@ -12,6 +12,64 @@ def test_create_context():
 
 
 @_handle_project
+def test_create_contexts_names_only():
+    assert len(unify.get_contexts()) == 0
+    unify.create_contexts(["foo", "bar"])
+    assert len(unify.get_contexts()) == 2
+    assert "foo" in unify.get_contexts()
+    assert "bar" in unify.get_contexts()
+
+
+@_handle_project
+def test_create_contexts_dicts():
+    assert len(unify.get_contexts()) == 0
+    unify.create_contexts(
+        [
+            {"name": "foo", "description": "bar"},
+            {"name": "bar", "description": "baz"},
+        ],
+    )
+    assert len(unify.get_contexts()) == 2
+    assert "foo" in unify.get_contexts()
+    assert "bar" in unify.get_contexts()
+
+    assert unify.get_context("foo")["description"] == "bar"
+    assert unify.get_context("bar")["description"] == "baz"
+
+
+@_handle_project
+def test_create_contexts_nested():
+    unify.create_contexts(
+        [
+            "foo",
+            "foo/bar",
+            "foo/bar/baz",
+        ],
+    )
+    assert len(unify.get_contexts()) == 3
+    assert "foo" in unify.get_contexts()
+    assert "foo/bar" in unify.get_contexts()
+    assert "foo/bar/baz" in unify.get_contexts()
+
+    unify.delete_context("foo")
+
+    assert len(unify.get_contexts()) == 0
+
+    # Reverse order should work as well
+    unify.create_contexts(
+        [
+            "foo/bar/baz",
+            "foo/bar",
+            "foo",
+        ],
+    )
+    assert len(unify.get_contexts()) == 3
+    assert "foo" in unify.get_contexts()
+    assert "foo/bar" in unify.get_contexts()
+    assert "foo/bar/baz" in unify.get_contexts()
+
+
+@_handle_project
 def test_get_contexts():
     assert len(unify.get_contexts()) == 0
     unify.log(x=0, context="a/b")

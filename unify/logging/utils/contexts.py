@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Union
 
 from unify import BASE_URL
 from unify.utils import _requests
@@ -74,6 +74,53 @@ def create_context(
         BASE_URL + f"/project/{project}/contexts",
         headers=headers,
         json=body,
+    )
+    _check_response(response)
+    return response.json()
+
+
+def create_contexts(
+    contexts: List[Union[Dict[str, str], str]],
+    *,
+    project: Optional[str] = None,
+    api_key: Optional[str] = None,
+) -> None:
+    """
+    Create multiple contexts.
+
+    Args:
+        contexts: List of contexts to create. Each context can be a list of context names or a dictionary with the following keys, only the name is required:
+            - name: Name of the context.
+            - description: Description of the context.
+            - is_versioned: Whether the context is tracked via version control.
+            - allow_duplicates: Whether to allow duplicates in the context.
+            - unique_keys: Unique key definition. Keys are column names, values are types
+                ('str', 'int', 'float', 'bool', 'datetime', 'time', 'date', 'timedelta', 'dict', 'list').
+            - auto_counting: Auto-counting configuration. Keys are column names to auto-increment,
+                values are parent counter names (None for independent counters).
+
+        project: Name of the project the contexts belong to.
+
+        api_key: If specified, unify API key to be used. Defaults to the value in the
+        `UNIFY_KEY` environment variable.
+
+    Returns:
+        A message indicating whether the contexts were successfully created.
+    """
+    api_key = _validate_api_key(api_key)
+    project = _get_and_maybe_create_project(
+        project,
+        api_key=api_key,
+        create_if_missing=False,
+    )
+    headers = {
+        "accept": "application/json",
+        "Authorization": f"Bearer {api_key}",
+    }
+    response = _requests.post(
+        BASE_URL + f"/project/{project}/contexts",
+        headers=headers,
+        json=contexts,
     )
     _check_response(response)
     return response.json()
