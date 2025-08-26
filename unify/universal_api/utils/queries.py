@@ -107,6 +107,7 @@ def log_query(
     tags: Optional[List[str]] = None,
     timestamp: Optional[Union[datetime.datetime, str]] = None,
     api_key: Optional[str] = None,
+    consume_credits: bool = False,
 ):
     """
     Log a query (and optionally response) for a locally deployed (non-Unify-registered)
@@ -139,6 +140,7 @@ def log_query(
         "response_body": response_body,
         "tags": tags,
         "timestamp": timestamp,
+        "consume_credits": consume_credits,
     }
 
     # Remove None values from params

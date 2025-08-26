@@ -89,6 +89,7 @@ class _UniClient(_Client, abc.ABC):
         log_query_body: Optional[bool] = True,
         log_response_body: Optional[bool] = True,
         api_key: Optional[str] = None,
+        openai_api_key: Optional[str] = None,
         # python client arguments
         stateful: bool = False,
         return_full_completion: bool = False,
@@ -285,6 +286,7 @@ class _UniClient(_Client, abc.ABC):
             log_query_body=log_query_body,
             log_response_body=log_response_body,
             api_key=api_key,
+            openai_api_key=openai_api_key,
             # python client arguments
             stateful=stateful,
             return_full_completion=return_full_completion,
@@ -365,6 +367,11 @@ class _UniClient(_Client, abc.ABC):
         Returns:
             This client, useful for chaining inplace calls.
         """
+        if self._DIRECT_OPENAI_MODE:
+            self._model = value.split("@")[0]
+            self._endpoint = self._model
+            self._provider = "openai"
+            return self
         _assert_is_valid_endpoint(value, api_key=self._api_key)
         self._endpoint = value
         if value == "user-input":
@@ -957,6 +964,11 @@ class Unify(_UniClient):
 
     def _get_client(self):
         try:
+            if self._DIRECT_OPENAI_MODE:
+                return openai.OpenAI(
+                    api_key=self._openai_api_key,
+                    timeout=3600.0,  # one hour
+                )
             http_client = make_httpx_client_for_unify_logging(BASE_URL)
             return openai.OpenAI(
                 base_url=f"{BASE_URL}",
@@ -995,6 +1007,8 @@ class Unify(_UniClient):
             log_query_body=log_query_body,
             log_response_body=log_response_body,
         )
+        if self._DIRECT_OPENAI_MODE:
+            kw.pop("extra_body")
         try:
             if endpoint in LOCAL_MODELS:
                 kw.pop("extra_body")
@@ -1056,6 +1070,8 @@ class Unify(_UniClient):
             log_query_body=log_query_body,
             log_response_body=log_response_body,
         )
+        if self._DIRECT_OPENAI_MODE:
+            kw.pop("extra_body")
         if isinstance(cache, str) and cache.endswith("-closest"):
             cache = cache.removesuffix("-closest")
             read_closest = True
@@ -1145,6 +1161,13 @@ class Unify(_UniClient):
                     response=chat_completion,
                     backend=cache_backend,
                 )
+        if self._DIRECT_OPENAI_MODE:
+            unify.log_query(
+                endpoint=f"{endpoint}@openai",
+                query_body=kw,
+                response_body=chat_completion.model_dump(),
+                consume_credits=True,
+            )
         if return_full_completion:
             if endpoint == "user-input":
                 input_msg = sum(len(msg) for msg in prompt.components["messages"])
@@ -1291,6 +1314,12 @@ class AsyncUnify(_UniClient):
         try:
             # Async event hooks must use AsyncClient
             http_client = make_async_httpx_client_for_unify_logging(BASE_URL)
+            if self._DIRECT_OPENAI_MODE:
+                return openai.AsyncOpenAI(
+                    api_key=self._openai_api_key,
+                    timeout=3600.0,  # one hour
+                    http_client=http_client,
+                )
             return openai.AsyncOpenAI(
                 base_url=f"{BASE_URL}",
                 api_key=self._api_key,
@@ -1328,6 +1357,8 @@ class AsyncUnify(_UniClient):
             log_query_body=log_query_body,
             log_response_body=log_response_body,
         )
+        if self._DIRECT_OPENAI_MODE:
+            kw.pop("extra_body")
         try:
             if endpoint in LOCAL_MODELS:
                 kw.pop("extra_body")
@@ -1388,6 +1419,8 @@ class AsyncUnify(_UniClient):
             log_query_body=log_query_body,
             log_response_body=log_response_body,
         )
+        if self._DIRECT_OPENAI_MODE:
+            kw.pop("extra_body")
         if isinstance(cache, str) and cache.endswith("-closest"):
             cache = cache.removesuffix("-closest")
             read_closest = True
@@ -1481,6 +1514,13 @@ class AsyncUnify(_UniClient):
                     response=chat_completion,
                     backend=cache_backend,
                 )
+        if self._DIRECT_OPENAI_MODE:
+            unify.log_query(
+                endpoint=f"{endpoint}@openai",
+                query_body=kw,
+                response_body=chat_completion.model_dump(),
+                consume_credits=True,
+            )
         if return_full_completion:
             return chat_completion
         content = chat_completion.choices[0].message.content

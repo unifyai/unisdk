@@ -23,7 +23,7 @@ from unify import BASE_URL
 from unify.utils import _requests
 
 # noinspection PyProtectedMember
-from unify.utils.helpers import _default, _validate_api_key
+from unify.utils.helpers import _default, _validate_api_key, _validate_openai_api_key
 
 from ..clients import AsyncUnify, _Client, _UniClient
 
@@ -65,6 +65,7 @@ class _MultiClient(_Client, abc.ABC):
         log_query_body: Optional[bool] = True,
         log_response_body: Optional[bool] = True,
         api_key: Optional[str] = None,
+        openai_api_key: Optional[str] = None,
         # python client arguments
         stateful: bool = False,
         return_full_completion: bool = False,
@@ -250,6 +251,7 @@ class _MultiClient(_Client, abc.ABC):
             log_query_body=log_query_body,
             log_response_body=log_response_body,
             api_key=api_key,
+            openai_api_key=openai_api_key,
             # python client arguments
             stateful=stateful,
             return_full_completion=return_full_completion,
@@ -271,6 +273,10 @@ class _MultiClient(_Client, abc.ABC):
         else:
             endpoints = list(endpoints)
         self._api_key = _validate_api_key(api_key)
+        self._openai_api_key = _validate_openai_api_key(
+            self._DIRECT_OPENAI_MODE,
+            openai_api_key,
+        )
         self._endpoints = endpoints
         self._client_class = AsyncUnify
         self._clients = self._create_clients(endpoints)
@@ -306,6 +312,7 @@ class _MultiClient(_Client, abc.ABC):
                 log_query_body=self.log_query_body,
                 log_response_body=self.log_response_body,
                 api_key=self._api_key,
+                openai_api_key=self._openai_api_key,
                 # python client arguments
                 stateful=self.stateful,
                 return_full_completion=self.return_full_completion,

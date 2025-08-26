@@ -41,6 +41,19 @@ def _validate_api_key(api_key: Optional[str]) -> str:
     return api_key
 
 
+def _validate_openai_api_key(direct_mode: bool, api_key: Optional[str]) -> str:
+    if not direct_mode:
+        return None
+    if api_key is None:
+        # Not to mistaknely use global openai api key
+        api_key = os.environ.get("UNIFY_OPENAI_KEY")
+    if api_key is None:
+        raise KeyError(
+            "UNIFY_OPENAI_KEY is missing. Please make sure it is set correctly!",
+        )
+    return api_key
+
+
 def _default(value: Any, default_value: Any) -> Any:
     return value if value is not None else default_value
 

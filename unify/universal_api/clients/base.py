@@ -21,11 +21,23 @@ from unify import BASE_URL
 from unify.utils import _requests
 
 # noinspection PyProtectedMember
-from unify.utils.helpers import _validate_api_key
+from unify.utils.helpers import _validate_api_key, _validate_openai_api_key
+
+
+def set_client_direct_mode(value: bool) -> None:
+    """
+    Set the direct mode for the client.
+
+    Args:
+        value: The value to set the direct mode to.
+    """
+    _Client._set_direct_mode(value)
 
 
 class _Client(ABC):
     """Base Abstract class for interacting with the Unify chat completions endpoint."""
+
+    _DIRECT_OPENAI_MODE = False
 
     def __init__(
         self,
@@ -64,6 +76,7 @@ class _Client(ABC):
         log_query_body: Optional[bool],
         log_response_body: Optional[bool],
         api_key: Optional[str],
+        openai_api_key: Optional[str],
         # python client arguments
         stateful: bool,
         return_full_completion: bool,
@@ -78,6 +91,10 @@ class _Client(ABC):
 
         # initial values
         self._api_key = _validate_api_key(api_key)
+        self._openai_api_key = _validate_openai_api_key(
+            _Client._DIRECT_OPENAI_MODE,
+            openai_api_key,
+        )
         self._system_message = None
         self._messages = None
         self._frequency_penalty = None
@@ -178,6 +195,10 @@ class _Client(ABC):
             "parallel_tool_calls": parallel_tool_calls,
             "reasoning_effort": reasoning_effort,
         }
+
+    @classmethod
+    def _set_direct_mode(cls, value: bool) -> None:
+        cls._DIRECT_OPENAI_MODE = value
 
     # Properties #
     # -----------#

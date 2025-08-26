@@ -75,6 +75,7 @@ from .utils.caching import (
 from .universal_api import chatbot, clients, usage
 from .universal_api.clients import multi_llm
 from .universal_api.chatbot import *
+from .universal_api.clients.base import set_client_direct_mode
 from unify.universal_api.clients.uni_llm import *
 from unify.universal_api.clients.multi_llm import *
 
