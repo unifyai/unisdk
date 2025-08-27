@@ -2,7 +2,7 @@ import unify
 
 
 def test_provider_fallback():
-    unify.Unify("claude-3-opus@anthropic->aws-bedrock").generate("Hello.")
+    unify.Unify("claude-4-opus@anthropic->aws-bedrock").generate("Hello.")
 
 
 def test_model_fallback():
