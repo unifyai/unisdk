@@ -200,6 +200,9 @@ class _Client(ABC):
     def _set_direct_mode(cls, value: bool) -> None:
         cls._DIRECT_OPENAI_MODE = value
 
+    def _is_direct_mode_available(self) -> bool:
+        return self._openai_api_key is not None and self._DIRECT_OPENAI_MODE
+
     # Properties #
     # -----------#
 
