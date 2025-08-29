@@ -260,7 +260,6 @@ def cached(
     def wrapped(*args, **kwargs):
         sig = inspect.signature(fn)
         bound = sig.bind_partial(*args, **kwargs)
-        bound.apply_defaults()
         args_kwargs = bound.arguments
         ret, read_closest, in_cache = _handle_reading_from_cache(
             fn.__name__,
@@ -287,7 +286,6 @@ def cached(
     async def async_wrapped(*args, **kwargs):
         sig = inspect.signature(fn)
         bound = sig.bind_partial(*args, **kwargs)
-        bound.apply_defaults()
         args_kwargs = bound.arguments
         ret, read_closest, in_cache = _handle_reading_from_cache(
             fn.__name__,
