@@ -162,9 +162,10 @@ class Log:
         return {
             "id": self._id,
             "ts": self._ts,
+            "project": self._project,
+            "context": self._context,
             "entries": self._entries,
             "params": self._params,
-            "api_key": self._api_key,
         }
 
     @staticmethod
