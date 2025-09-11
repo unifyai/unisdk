@@ -3,10 +3,16 @@ import logging
 import os
 
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3 import Retry
 
 _logger = logging.getLogger("unify_requests")
 _log_enabled = os.getenv("UNIFY_REQUESTS_DEBUG", "false").lower() in ("true", "1")
 _logger.setLevel(logging.DEBUG if _log_enabled else logging.WARNING)
+
+_session = requests.Session()
+_retries = Retry(total=5, backoff_factor=0.1, status_forcelist=[500, 502, 503, 504])
+_session.mount("https://", HTTPAdapter(max_retries=_retries))
 
 
 class ResponseDecodeError(Exception):
@@ -57,7 +63,7 @@ def _mask_auth_key(kwargs: dict):
 def request(method, url, **kwargs):
     _log(f"request:{method}", url, True, **kwargs)
     try:
-        res = requests.request(method, url, **kwargs)
+        res = _session.request(method, url, **kwargs)
         res.raise_for_status()
     except requests.exceptions.HTTPError as e:
         kwargs = _mask_auth_key(kwargs)
@@ -73,7 +79,7 @@ def request(method, url, **kwargs):
 def get(url, params=None, **kwargs):
     _log("GET", url, True, params=params, **kwargs)
     try:
-        res = requests.get(url, params=params, **kwargs)
+        res = _session.get(url, params=params, **kwargs)
         res.raise_for_status()
     except requests.exceptions.HTTPError as e:
         kwargs = _mask_auth_key(kwargs)
@@ -89,7 +95,7 @@ def get(url, params=None, **kwargs):
 def options(url, **kwargs):
     _log("OPTIONS", url, True, **kwargs)
     try:
-        res = requests.options(url, **kwargs)
+        res = _session.options(url, **kwargs)
         res.raise_for_status()
     except requests.exceptions.HTTPError as e:
         kwargs = _mask_auth_key(kwargs)
@@ -105,7 +111,7 @@ def options(url, **kwargs):
 def head(url, **kwargs):
     _log("HEAD", url, True, **kwargs)
     try:
-        res = requests.head(url, **kwargs)
+        res = _session.head(url, **kwargs)
     except requests.exceptions.HTTPError as e:
         kwargs = _mask_auth_key(kwargs)
         raise RequestError(url, "HEAD", e.response, **kwargs)
@@ -120,7 +126,7 @@ def head(url, **kwargs):
 def post(url, data=None, json=None, **kwargs):
     _log("POST", url, True, data=data, json=json, **kwargs)
     try:
-        res = requests.post(url, data=data, json=json, **kwargs)
+        res = _session.post(url, data=data, json=json, **kwargs)
         res.raise_for_status()
     except requests.exceptions.HTTPError as e:
         kwargs = _mask_auth_key(kwargs)
@@ -136,7 +142,7 @@ def post(url, data=None, json=None, **kwargs):
 def put(url, data=None, **kwargs):
     _log("PUT", url, True, data=data, **kwargs)
     try:
-        res = requests.put(url, data=data, **kwargs)
+        res = _session.put(url, data=data, **kwargs)
         res.raise_for_status()
     except requests.exceptions.HTTPError as e:
         kwargs = _mask_auth_key(kwargs)
@@ -152,7 +158,7 @@ def put(url, data=None, **kwargs):
 def patch(url, data=None, **kwargs):
     _log("PATCH", url, True, data=data, **kwargs)
     try:
-        res = requests.patch(url, data=data, **kwargs)
+        res = _session.patch(url, data=data, **kwargs)
         res.raise_for_status()
     except requests.exceptions.HTTPError as e:
         kwargs = _mask_auth_key(kwargs)
@@ -168,7 +174,7 @@ def patch(url, data=None, **kwargs):
 def delete(url, **kwargs):
     _log("DELETE", url, True, **kwargs)
     try:
-        res = requests.delete(url, **kwargs)
+        res = _session.delete(url, **kwargs)
         res.raise_for_status()
     except requests.exceptions.HTTPError as e:
         kwargs = _mask_auth_key(kwargs)
