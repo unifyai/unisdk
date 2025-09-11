@@ -1167,8 +1167,8 @@ class Unify(_UniClient):
                     backend=cache_backend,
                 )
         if self._should_use_direct_mode and not in_cache:
-            response_format = kw.pop("response_format")
-            if response_format:
+            response_format = kw.get("response_format")
+            if response_format is not None:
                 kw["response_format"] = response_format.model_json_schema()
             unify.log_query(
                 endpoint=f"{endpoint}@openai",
@@ -1523,8 +1523,8 @@ class AsyncUnify(_UniClient):
                     backend=cache_backend,
                 )
         if self._should_use_direct_mode and not in_cache:
-            response_format = kw.pop("response_format")
-            if response_format:
+            response_format = kw.get("response_format")
+            if response_format is not None:
                 kw["response_format"] = response_format.model_json_schema()
             asyncio.create_task(
                 asyncio.to_thread(
