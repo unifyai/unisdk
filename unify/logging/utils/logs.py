@@ -1720,6 +1720,49 @@ def update_derived_log(
     return response.json()
 
 
+def create_derived_logs(
+    *,
+    key: str,
+    equation: str,
+    referenced_logs,
+    derived: Optional[bool] = True,
+    project: Optional[str] = None,
+    context: Optional[str] = None,
+    api_key: Optional[str] = None,
+) -> Dict[str, Any]:
+    """
+    Creates one or more entries based on equation and referenced_logs.
+
+    Args:
+        key: The name of the entry.
+        equation: The equation for computing the value of each derived entry.
+        referenced_logs: The logs to use for each newly created derived entry,
+        either as a list of log ids or as a set of arguments for the get_logs endpoint.
+        derived: Whether to create derived logs (True) or static entries in base logs (False).
+
+    Returns:
+        A message indicating whether the derived logs were successfully created.
+    """
+    api_key = _validate_api_key(api_key)
+    headers = {
+        "accept": "application/json",
+        "Authorization": f"Bearer {api_key}",
+    }
+    project = _get_and_maybe_create_project(project, api_key=api_key)
+    context = context if context else CONTEXT_WRITE.get()
+    body = {
+        "project": project,
+        "context": context,
+        "key": key,
+        "equation": equation,
+        "referenced_logs": referenced_logs,
+        "derived": derived,
+    }
+    response = _requests.post(BASE_URL + "/logs/derived", headers=headers, json=body)
+    _check_response(response)
+    return response.json()
+
+
 def join_logs(
     *,
     pair_of_args: Tuple[Dict[str, Any], Dict[str, Any]],
