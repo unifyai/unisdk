@@ -1755,6 +1755,7 @@ def join_logs(
 def create_fields(
     fields: Union[Dict[str, Any], List[str]],
     *,
+    backfill_logs: Optional[bool] = None,
     project: Optional[str] = None,
     context: Optional[str] = None,
     api_key: Optional[str] = None,
@@ -1786,6 +1787,8 @@ def create_fields(
         "context": context,
         "fields": fields,
     }
+    if backfill_logs is not None:
+        body["backfill_logs"] = backfill_logs
     response = _requests.post(BASE_URL + "/logs/fields", headers=headers, json=body)
     _check_response(response)
     return response.json()
