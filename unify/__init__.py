@@ -89,6 +89,8 @@ from .universal_api.types import *
 from .logging.dataset import *
 from .logging.logs import *
 
+from .assistants.management import *
+
 
 # Project #
 # --------#
