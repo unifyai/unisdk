@@ -71,6 +71,7 @@ from .utils.caching import (
     reset_cache_stats,
     CacheStats,
 )
+from .utils._requests import RequestError, ResponseDecodeError
 
 from .universal_api import chatbot, clients, usage
 from .universal_api.clients import multi_llm
