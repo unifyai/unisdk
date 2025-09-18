@@ -16,7 +16,7 @@ import sys
 from concurrent.futures import ThreadPoolExecutor
 from contextvars import ContextVar
 from types import ModuleType
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import unify
 from tqdm import tqdm
@@ -1722,10 +1722,11 @@ def update_derived_log(
 
 def join_logs(
     *,
-    pair_of_args: List[Dict[str, Any]],
+    pair_of_args: Tuple[Dict[str, Any], Dict[str, Any]],
     join_expr: str,
     mode: str,
     new_context: str,
+    copy: Optional[bool] = True,
     columns: Optional[List[str]] = None,
     project: Optional[str] = None,
     api_key: Optional[str] = None,
@@ -1739,15 +1740,16 @@ def join_logs(
         "Authorization": f"Bearer {api_key}",
     }
     project = _get_and_maybe_create_project(project, api_key=api_key)
-    params = {
+    body = {
         "project": project,
         "pair_of_args": pair_of_args,
         "join_expr": join_expr,
         "mode": mode,
         "new_context": new_context,
         "columns": columns,
+        "copy": copy,
     }
-    response = _requests.post(BASE_URL + "/logs/join", headers=headers, params=params)
+    response = _requests.post(BASE_URL + "/logs/join", headers=headers, json=body)
     _check_response(response)
     return response.json()
 
