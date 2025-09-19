@@ -53,7 +53,7 @@ def create_assistant(
     payload = {k: v for k, v in payload.items() if v is not None}
 
     response = http.post(f"{BASE_URL}/assistant", headers=headers, json=payload)
-    return response.json()
+    return response.json()["info"]
 
 
 def list_assistants(
