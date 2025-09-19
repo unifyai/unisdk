@@ -1725,7 +1725,7 @@ def create_derived_logs(
     key: str,
     equation: str,
     referenced_logs,
-    derived: Optional[bool] = True,
+    derived: Optional[bool] = None,
     project: Optional[str] = None,
     context: Optional[str] = None,
     api_key: Optional[str] = None,
@@ -1756,8 +1756,9 @@ def create_derived_logs(
         "key": key,
         "equation": equation,
         "referenced_logs": referenced_logs,
-        "derived": derived,
     }
+    if derived is not None:
+        body["derived"] = derived
     response = _requests.post(BASE_URL + "/logs/derived", headers=headers, json=body)
     _check_response(response)
     return response.json()
