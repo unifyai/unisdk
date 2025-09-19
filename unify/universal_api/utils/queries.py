@@ -2,7 +2,7 @@ import datetime
 from typing import Any, Dict, List, Optional, Union
 
 from unify import BASE_URL
-from unify.utils import _requests
+from unify.utils import http
 
 from ...utils.helpers import _validate_api_key
 
@@ -27,7 +27,7 @@ def get_query_tags(
         "Authorization": f"Bearer {api_key}",
     }
     url = f"{BASE_URL}/tags"
-    response = _requests.get(url, headers=headers)
+    response = http.get(url, headers=headers)
     if response.status_code != 200:
         raise Exception(response.json())
 
@@ -92,7 +92,7 @@ def get_queries(
         params["failures"] = failures
 
     url = f"{BASE_URL}/queries"
-    response = _requests.get(url, headers=headers, params=params)
+    response = http.get(url, headers=headers, params=params)
     if response.status_code != 200:
         raise Exception(response.json())
 
@@ -148,7 +148,7 @@ def log_query(
 
     url = f"{BASE_URL}/queries"
 
-    response = _requests.post(url, headers=headers, json=data)
+    response = http.post(url, headers=headers, json=data)
     if response.status_code != 200:
         raise Exception(response.json())
 
@@ -200,7 +200,7 @@ def get_query_metrics(
 
     url = f"{BASE_URL}/metrics"
 
-    response = _requests.get(url, headers=headers, params=params)
+    response = http.get(url, headers=headers, params=params)
     if response.status_code != 200:
         raise Exception(response.json())
 

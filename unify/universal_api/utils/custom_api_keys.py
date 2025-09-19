@@ -1,7 +1,7 @@
 from typing import Any, Dict, List, Optional
 
 from unify import BASE_URL
-from unify.utils import _requests
+from unify.utils import http
 
 from ...utils.helpers import _validate_api_key
 
@@ -34,7 +34,7 @@ def create_custom_api_key(
 
     params = {"name": name, "value": value}
 
-    response = _requests.post(url, headers=headers, params=params)
+    response = http.post(url, headers=headers, params=params)
     if response.status_code != 200:
         raise Exception(response.json())
 
@@ -68,7 +68,7 @@ def get_custom_api_key(
     url = f"{BASE_URL}/custom_api_key"
     params = {"name": name}
 
-    response = _requests.get(url, headers=headers, params=params)
+    response = http.get(url, headers=headers, params=params)
     if response.status_code != 200:
         raise Exception(response.json())
 
@@ -104,7 +104,7 @@ def delete_custom_api_key(
 
     params = {"name": name}
 
-    response = _requests.delete(url, headers=headers, params=params)
+    response = http.delete(url, headers=headers, params=params)
 
     if response.status_code == 200:
         return response.json()
@@ -146,7 +146,7 @@ def rename_custom_api_key(
 
     params = {"name": name, "new_name": new_name}
 
-    response = _requests.post(url, headers=headers, params=params)
+    response = http.post(url, headers=headers, params=params)
     if response.status_code != 200:
         raise Exception(response.json())
 
@@ -176,7 +176,7 @@ def list_custom_api_keys(
     }
     url = f"{BASE_URL}/custom_api_key/list"
 
-    response = _requests.get(url, headers=headers)
+    response = http.get(url, headers=headers)
     if response.status_code != 200:
         raise Exception(response.json())
 

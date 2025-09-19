@@ -2,7 +2,7 @@ import functools
 from typing import List, Optional
 
 from unify import BASE_URL
-from unify.utils import _requests
+from unify.utils import http
 
 from ...utils.helpers import _res_to_list, _validate_api_key
 
@@ -38,7 +38,7 @@ def list_providers(
         kw = dict(headers=headers, params={"model": model})
     else:
         kw = dict(headers=headers)
-    response = _requests.get(url, **kw)
+    response = http.get(url, **kw)
     if response.status_code != 200:
         raise Exception(response.json())
     return _res_to_list(response)
@@ -74,7 +74,7 @@ def list_models(
         kw = dict(headers=headers, params={"provider": provider})
     else:
         kw = dict(headers=headers)
-    response = _requests.get(url, **kw)
+    response = http.get(url, **kw)
     if response.status_code != 200:
         raise Exception(response.json())
     return _res_to_list(response)
@@ -115,13 +115,13 @@ def list_endpoints(
     elif model:
         kw = dict(headers=headers, params={"model": model})
         return _res_to_list(
-            _requests.get(url, headers=headers, params={"model": model}),
+            http.get(url, headers=headers, params={"model": model}),
         )
     elif provider:
         kw = dict(headers=headers, params={"provider": provider})
     else:
         kw = dict(headers=headers)
-    response = _requests.get(url, **kw)
+    response = http.get(url, **kw)
     if response.status_code != 200:
         raise Exception(response.json())
     return _res_to_list(response)

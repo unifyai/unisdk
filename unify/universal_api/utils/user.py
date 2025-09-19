@@ -1,7 +1,7 @@
 from typing import Optional
 
 from unify import BASE_URL
-from unify.utils import _requests
+from unify.utils import http
 from unify.utils.helpers import _check_response, _validate_api_key
 
 
@@ -21,6 +21,6 @@ def get_user_basic_info(*, api_key: Optional[str] = None):
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    response = _requests.get(f"{BASE_URL}/user/basic-info", headers=headers)
+    response = http.get(f"{BASE_URL}/user/basic-info", headers=headers)
     _check_response(response)
     return response.json()

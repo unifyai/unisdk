@@ -1,7 +1,7 @@
 from typing import Any, Dict, List, Optional, Union
 
 from unify import BASE_URL
-from unify.utils import _requests
+from unify.utils import http
 from unify.utils.helpers import _check_response, _validate_api_key
 
 
@@ -56,7 +56,7 @@ def create_assistant(
     }
     payload = {k: v for k, v in payload.items() if v is not None}
 
-    response = _requests.post(f"{BASE_URL}/assistant", headers=headers, json=payload)
+    response = http.post(f"{BASE_URL}/assistant", headers=headers, json=payload)
     _check_response(response)
     return response.json()
 
@@ -81,7 +81,7 @@ def list_assistants(
     params = {"phone": phone, "email": email}
     params = {k: v for k, v in params.items() if v is not None}
 
-    response = _requests.get(f"{BASE_URL}/assistant", headers=headers, params=params)
+    response = http.get(f"{BASE_URL}/assistant", headers=headers, params=params)
     _check_response(response)
     return response.json()["info"]
 
@@ -138,7 +138,7 @@ def update_assistant(
     }
     payload = {k: v for k, v in payload.items() if v is not None}
 
-    response = _requests.patch(
+    response = http.patch(
         f"{BASE_URL}/assistant/{assistant_id}/config",
         headers=headers,
         json=payload,
@@ -161,7 +161,7 @@ def delete_assistant(
         "Authorization": f"Bearer {api_key}",
     }
 
-    response = _requests.delete(
+    response = http.delete(
         f"{BASE_URL}/assistant/{assistant_id}",
         headers=headers,
     )

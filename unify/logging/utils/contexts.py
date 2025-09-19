@@ -1,7 +1,7 @@
 from typing import Dict, List, Optional, Union
 
 from unify import BASE_URL
-from unify.utils import _requests
+from unify.utils import http
 
 from ...utils.helpers import (
     _check_response,
@@ -70,7 +70,7 @@ def create_context(
         "unique_keys": unique_keys,
         "auto_counting": auto_counting,
     }
-    response = _requests.post(
+    response = http.post(
         BASE_URL + f"/project/{project}/contexts",
         headers=headers,
         json=body,
@@ -117,7 +117,7 @@ def create_contexts(
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    response = _requests.post(
+    response = http.post(
         BASE_URL + f"/project/{project}/contexts",
         headers=headers,
         json=contexts,
@@ -156,7 +156,7 @@ def rename_context(
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    response = _requests.patch(
+    response = http.patch(
         BASE_URL + f"/project/{project}/contexts/{name}/rename",
         headers=headers,
         json={"name": new_name},
@@ -192,7 +192,7 @@ def get_context(
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    response = _requests.get(
+    response = http.get(
         BASE_URL + f"/project/{project}/contexts/{name}",
         headers=headers,
     )
@@ -233,7 +233,7 @@ def get_contexts(
         api_key=api_key,
         create_if_missing=False,
     )
-    response = _requests.get(
+    response = http.get(
         BASE_URL + f"/project/{project}/contexts",
         headers=headers,
     )
@@ -283,7 +283,7 @@ def delete_context(
     # ToDo: remove this hack once this task [https://app.clickup.com/t/86c3kuch6] is done
     all_contexts = get_contexts(project, prefix=name)
     for ctx in all_contexts:
-        response = _requests.delete(
+        response = http.delete(
             BASE_URL + f"/project/{project}/contexts/{ctx}",
             headers=headers,
         )
@@ -330,7 +330,7 @@ def add_logs_to_context(
         "context_name": context,
         "log_ids": log_ids,
     }
-    response = _requests.post(
+    response = http.post(
         BASE_URL + f"/project/{project}/contexts/add_logs",
         headers=headers,
         json=body,
@@ -370,7 +370,7 @@ def commit_context(
         "Authorization": f"Bearer {api_key}",
     }
     body = {"commit_message": commit_message}
-    response = _requests.post(
+    response = http.post(
         BASE_URL + f"/project/{project}/contexts/{name}/commit",
         headers=headers,
         json=body,
@@ -410,7 +410,7 @@ def rollback_context(
         "Authorization": f"Bearer {api_key}",
     }
     body = {"commit_hash": commit_hash}
-    response = _requests.post(
+    response = http.post(
         BASE_URL + f"/project/{project}/contexts/{name}/rollback",
         headers=headers,
         json=body,
@@ -447,7 +447,7 @@ def get_context_commits(
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    response = _requests.get(
+    response = http.get(
         BASE_URL + f"/project/{project}/contexts/{name}/commits",
         headers=headers,
     )

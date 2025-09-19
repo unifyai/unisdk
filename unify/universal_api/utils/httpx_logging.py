@@ -14,7 +14,7 @@ def make_httpx_client_for_unify_logging(base_url: str) -> Optional[httpx.Client]
     if not _unify_requests_debug_enabled():
         return None
 
-    from unify.utils import _requests as _unify_requests
+    from unify.utils import http as _unify_requests
 
     parsed = urlparse(base_url)
     base_host = parsed.hostname
@@ -36,7 +36,7 @@ def make_httpx_client_for_unify_logging(base_url: str) -> Optional[httpx.Client]
             url_str = str(request.url)
 
             headers = dict(request.headers)
-            # normalize Authorization header key for masking in _requests._log
+            # normalize Authorization header key for masking in http._log
             auth_val = headers.get("Authorization", headers.get("authorization"))
             if auth_val is not None:
                 headers["Authorization"] = auth_val
@@ -136,7 +136,7 @@ def make_async_httpx_client_for_unify_logging(
     if not _unify_requests_debug_enabled():
         return None
 
-    from unify.utils import _requests as _unify_requests
+    from unify.utils import http as _unify_requests
 
     parsed = urlparse(base_url)
     base_host = parsed.hostname

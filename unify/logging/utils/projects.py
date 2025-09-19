@@ -1,7 +1,7 @@
 from typing import Dict, List, Optional, Union
 
 from unify import BASE_URL
-from unify.utils import _requests
+from unify.utils import http
 
 from ...utils.helpers import _check_response, _validate_api_key
 
@@ -51,7 +51,7 @@ def create_project(
                 return delete_project_contexts(name=name, api_key=api_key)
             else:
                 delete_project(name=name, api_key=api_key)
-    response = _requests.post(BASE_URL + "/project", headers=headers, json=body)
+    response = http.post(BASE_URL + "/project", headers=headers, json=body)
     _check_response(response)
     return response.json()
 
@@ -82,7 +82,7 @@ def rename_project(
         "Authorization": f"Bearer {api_key}",
     }
     body = {"name": new_name}
-    response = _requests.patch(
+    response = http.patch(
         BASE_URL + f"/project/{name}",
         headers=headers,
         json=body,
@@ -113,7 +113,7 @@ def delete_project(
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    response = _requests.delete(BASE_URL + f"/project/{name}", headers=headers)
+    response = http.delete(BASE_URL + f"/project/{name}", headers=headers)
     _check_response(response)
     return response.json()
 
@@ -137,7 +137,7 @@ def delete_project_logs(
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    response = _requests.delete(BASE_URL + f"/project/{name}/logs", headers=headers)
+    response = http.delete(BASE_URL + f"/project/{name}/logs", headers=headers)
     _check_response(response)
     return response.json()
 
@@ -161,7 +161,7 @@ def delete_project_contexts(
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    response = _requests.delete(BASE_URL + f"/project/{name}/contexts", headers=headers)
+    response = http.delete(BASE_URL + f"/project/{name}/contexts", headers=headers)
     _check_response(response)
     return response.json()
 
@@ -185,7 +185,7 @@ def list_projects(
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    response = _requests.get(BASE_URL + "/projects", headers=headers)
+    response = http.get(BASE_URL + "/projects", headers=headers)
     _check_response(response)
     return response.json()
 
@@ -214,7 +214,7 @@ def commit_project(
         "Authorization": f"Bearer {api_key}",
     }
     body = {"commit_message": commit_message}
-    response = _requests.post(
+    response = http.post(
         BASE_URL + f"/project/{name}/commit",
         headers=headers,
         json=body,
@@ -247,7 +247,7 @@ def rollback_project(
         "Authorization": f"Bearer {api_key}",
     }
     body = {"commit_hash": commit_hash}
-    response = _requests.post(
+    response = http.post(
         BASE_URL + f"/project/{name}/rollback",
         headers=headers,
         json=body,
@@ -273,6 +273,6 @@ def get_project_commits(name: str, *, api_key: Optional[str] = None) -> List[Dic
         "accept": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
-    response = _requests.get(BASE_URL + f"/project/{name}/commits", headers=headers)
+    response = http.get(BASE_URL + f"/project/{name}/commits", headers=headers)
     _check_response(response)
     return response.json()
