@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Optional
 from unify import BASE_URL
 from unify.utils import http
 
-from ...utils.helpers import _validate_api_key
+from ...utils.helpers import _create_request_header
 
 
 def create_custom_api_key(
@@ -25,11 +25,7 @@ def create_custom_api_key(
         A dictionary containing the response information.
 
     """
-    api_key = _validate_api_key(api_key)
-    headers = {
-        "accept": "application/json",
-        "Authorization": f"Bearer {api_key}",
-    }
+    headers = _create_request_header(api_key)
     url = f"{BASE_URL}/custom_api_key"
 
     params = {"name": name, "value": value}
@@ -60,11 +56,7 @@ def get_custom_api_key(
     Raises:
         requests.HTTPError: If the request fails.
     """
-    api_key = _validate_api_key(api_key)
-    headers = {
-        "accept": "application/json",
-        "Authorization": f"Bearer {api_key}",
-    }
+    headers = _create_request_header(api_key)
     url = f"{BASE_URL}/custom_api_key"
     params = {"name": name}
 
@@ -95,11 +87,7 @@ def delete_custom_api_key(
         requests.HTTPError: If the API request fails.
         KeyError: If the API key is not found.
     """
-    api_key = _validate_api_key(api_key)
-    headers = {
-        "accept": "application/json",
-        "Authorization": f"Bearer {api_key}",
-    }
+    headers = _create_request_header(api_key)
     url = f"{BASE_URL}/custom_api_key"
 
     params = {"name": name}
@@ -137,11 +125,7 @@ def rename_custom_api_key(
         requests.HTTPError: If the API request fails.
         KeyError: If the API key is not provided or found in environment variables.
     """
-    api_key = _validate_api_key(api_key)
-    headers = {
-        "accept": "application/json",
-        "Authorization": f"Bearer {api_key}",
-    }
+    headers = _create_request_header(api_key)
     url = f"{BASE_URL}/custom_api_key/rename"
 
     params = {"name": name, "new_name": new_name}
@@ -169,11 +153,7 @@ def list_custom_api_keys(
         Each dictionary has 'name' and 'value' keys.
 
     """
-    api_key = _validate_api_key(api_key)
-    headers = {
-        "accept": "application/json",
-        "Authorization": f"Bearer {api_key}",
-    }
+    headers = _create_request_header(api_key)
     url = f"{BASE_URL}/custom_api_key/list"
 
     response = http.get(url, headers=headers)

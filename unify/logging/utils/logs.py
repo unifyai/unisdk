@@ -26,7 +26,7 @@ from unify.utils.helpers import flexible_deepcopy
 
 from ...utils._caching import _get_cache, _write_to_cache, is_caching_enabled
 from ...utils.helpers import (
-    _check_response,
+    _create_request_header,
     _get_and_maybe_create_project,
     _validate_api_key,
 )
@@ -118,10 +118,7 @@ class _AsyncTraceLogger:
         atexit.register(self.shutdown, flush=True)
         signal.signal(signal.SIGINT, self._on_sigint)
 
-        headers = {
-            "accept": "application/json",
-            "Authorization": f"Bearer {self._api_key}",
-        }
+        headers = _create_request_header(self._api_key)
 
         self._loop = asyncio.new_event_loop()
         self._loop.set_default_executor(
@@ -775,10 +772,7 @@ def _sync_log(
 
     This is a helper function used when async logging is disabled or unavailable.
     """
-    headers = {
-        "accept": "application/json",
-        "Authorization": f"Bearer {api_key}",
-    }
+    headers = _create_request_header(api_key)
 
     body = {
         "project": project,
@@ -787,7 +781,6 @@ def _sync_log(
         "entries": entries,
     }
     response = http.post(BASE_URL + "/logs", headers=headers, json=body)
-    _check_response(response)
     resp_json = response.json()
 
     # Apply row_ids to entries using the centralized helper
@@ -924,10 +917,7 @@ def create_logs(
     api_key = _validate_api_key(api_key)
     project = _get_and_maybe_create_project(project, api_key=api_key)
     context = _handle_context(context)
-    headers = {
-        "accept": "application/json",
-        "Authorization": f"Bearer {api_key}",
-    }
+    headers = _create_request_header(api_key)
     # ToDo: add support for all of the context variables, as is done for `unify.log` above
     params = _handle_mutability(mutable, params)
     entries = _handle_mutability(mutable, entries)
@@ -953,7 +943,6 @@ def create_logs(
                 headers=headers,
                 data=_json_chunker(body),
             )
-        _check_response(response)
         resp_json = response.json()
 
         # Apply row_ids to entries using the centralized helper
@@ -1045,10 +1034,7 @@ def _add_to_log(
     else:
         # Fallback to synchronous update if async logging isn’t enabled.
         log_ids = _to_log_ids(logs)
-        headers = {
-            "accept": "application/json",
-            "Authorization": f"Bearer {api_key}",
-        }
+        headers = _create_request_header(api_key)
         all_kwargs = []
         if nest_level.get() > 0:
             for log_id in log_ids:
@@ -1067,7 +1053,6 @@ def _add_to_log(
             data = all_kwargs[0]
         body = {"logs": log_ids, mode: data, "overwrite": overwrite, "context": context}
         response = http.put(BASE_URL + "/logs", headers=headers, json=body)
-        _check_response(response)
         if nest_level.get() > 0:
             logged = LOGGED.get()
             new_logged = {}
@@ -1181,11 +1166,7 @@ def update_logs(
     """
     if not logs and not params and not entries:
         return {"detail": "No logs to update."}
-    api_key = _validate_api_key(api_key)
-    headers = {
-        "accept": "application/json",
-        "Authorization": f"Bearer {api_key}",
-    }
+    headers = _create_request_header(api_key)
     log_ids = _to_log_ids(logs)
     body = {
         "logs": log_ids,
@@ -1197,7 +1178,6 @@ def update_logs(
     if params is not None:
         body["params"] = params
     response = http.put(BASE_URL + "/logs", headers=headers, json=body)
-    _check_response(response)
     return response.json()
 
 
@@ -1238,11 +1218,7 @@ def delete_logs(
     project = _get_and_maybe_create_project(project, api_key=api_key)
     context = context if context else CONTEXT_READ.get()
     log_ids = _to_log_ids(logs)
-    api_key = _validate_api_key(api_key)
-    headers = {
-        "accept": "application/json",
-        "Authorization": f"Bearer {api_key}",
-    }
+    headers = _create_request_header(api_key)
     body = {
         "project": project,
         "context": context,
@@ -1256,7 +1232,6 @@ def delete_logs(
         params=params,
         json=body,
     )
-    _check_response(response)
     if USR_LOGGING:
         logger.info(f"Deleted Logs({', '.join([str(i) for i in log_ids])})")
     return response.json()
@@ -1290,10 +1265,7 @@ def delete_log_fields(
     """
     log_ids = _to_log_ids(logs)
     api_key = _validate_api_key(api_key)
-    headers = {
-        "accept": "application/json",
-        "Authorization": f"Bearer {api_key}",
-    }
+    headers = _create_request_header(api_key)
     project = _get_and_maybe_create_project(project, api_key=api_key)
     context = context if context else CONTEXT_READ.get()
     body = {
@@ -1306,7 +1278,6 @@ def delete_log_fields(
         headers=headers,
         json=body,
     )
-    _check_response(response)
     if USR_LOGGING:
         logger.info(
             f"Deleted Field `{field}` from Logs({', '.join([str(i) for i in log_ids])})",
@@ -1401,10 +1372,7 @@ def get_logs(
     """
     # ToDo: add support for all context handlers
     api_key = _validate_api_key(api_key)
-    headers = {
-        "accept": "application/json",
-        "Authorization": f"Bearer {api_key}",
-    }
+    headers = _create_request_header(api_key)
     project = _get_and_maybe_create_project(
         project,
         api_key=api_key,
@@ -1448,7 +1416,6 @@ def get_logs(
     }
 
     response = http.get(BASE_URL + "/logs", headers=headers, params=params)
-    _check_response(response)
 
     if not group_by:
         if return_ids_only:
@@ -1486,17 +1453,13 @@ def get_log_by_id(
         The full set of log data.
     """
     api_key = _validate_api_key(api_key)
-    headers = {
-        "accept": "application/json",
-        "Authorization": f"Bearer {api_key}",
-    }
+    headers = _create_request_header(api_key)
     project = _get_and_maybe_create_project(project, api_key=api_key)
     response = http.get(
         BASE_URL + "/logs",
         params={"project": project, "from_ids": [id]},
         headers=headers,
     )
-    _check_response(response)
     params, lgs, count = response.json().values()
     if len(lgs) == 0:
         raise Exception(f"Log with id {id} does not exist")
@@ -1552,10 +1515,7 @@ def get_logs_metric(
         the optional filtering.
     """
     api_key = _validate_api_key(api_key)
-    headers = {
-        "accept": "application/json",
-        "Authorization": f"Bearer {api_key}",
-    }
+    headers = _create_request_header(api_key)
     project = _get_and_maybe_create_project(project, api_key=api_key)
     params = {
         "project": project,
@@ -1570,7 +1530,6 @@ def get_logs_metric(
         headers=headers,
         params=params,
     )
-    _check_response(response)
     return response.json()
 
 
@@ -1607,10 +1566,7 @@ def get_groups(
         version of the log key with equal values, and the value being the equal value.
     """
     api_key = _validate_api_key(api_key)
-    headers = {
-        "accept": "application/json",
-        "Authorization": f"Bearer {api_key}",
-    }
+    headers = _create_request_header(api_key)
     project = _get_and_maybe_create_project(project, api_key=api_key)
     params = {
         "project": project,
@@ -1620,7 +1576,6 @@ def get_groups(
         "exclude_ids": exclude_ids,
     }
     response = http.get(BASE_URL + "/logs/groups", headers=headers, params=params)
-    _check_response(response)
     return response.json()
 
 
@@ -1641,10 +1596,7 @@ def get_logs_latest_timestamp(
     Returns the update timestamp of the most recently updated log within the specified page and filter bounds.
     """
     api_key = _validate_api_key(api_key)
-    headers = {
-        "accept": "application/json",
-        "Authorization": f"Bearer {api_key}",
-    }
+    headers = _create_request_header(api_key)
     project = _get_and_maybe_create_project(project, api_key=api_key)
     context = context if context else CONTEXT_READ.get()
     column_context = column_context if column_context else COLUMN_CONTEXT_READ.get()
@@ -1664,7 +1616,6 @@ def get_logs_latest_timestamp(
         headers=headers,
         params=params,
     )
-    _check_response(response)
     return response.json()
 
 
@@ -1701,10 +1652,7 @@ def update_derived_log(
         A message indicating whether the derived logs were successfully updated.
     """
     api_key = _validate_api_key(api_key)
-    headers = {
-        "accept": "application/json",
-        "Authorization": f"Bearer {api_key}",
-    }
+    headers = _create_request_header(api_key)
     project = _get_and_maybe_create_project(project, api_key=api_key)
     context = context if context else CONTEXT_WRITE.get()
     body = {
@@ -1716,7 +1664,6 @@ def update_derived_log(
         "referenced_logs": referenced_logs,
     }
     response = http.put(BASE_URL + "/logs/derived", headers=headers, json=body)
-    _check_response(response)
     return response.json()
 
 
@@ -1744,10 +1691,7 @@ def create_derived_logs(
         A message indicating whether the derived logs were successfully created.
     """
     api_key = _validate_api_key(api_key)
-    headers = {
-        "accept": "application/json",
-        "Authorization": f"Bearer {api_key}",
-    }
+    headers = _create_request_header(api_key)
     project = _get_and_maybe_create_project(project, api_key=api_key)
     context = context if context else CONTEXT_WRITE.get()
     body = {
@@ -1760,7 +1704,6 @@ def create_derived_logs(
     if derived is not None:
         body["derived"] = derived
     response = http.post(BASE_URL + "/logs/derived", headers=headers, json=body)
-    _check_response(response)
     return response.json()
 
 
@@ -1779,10 +1722,7 @@ def join_logs(
     Join two sets of logs based on specified criteria and creates new logs with the joined data.
     """
     api_key = _validate_api_key(api_key)
-    headers = {
-        "accept": "application/json",
-        "Authorization": f"Bearer {api_key}",
-    }
+    headers = _create_request_header(api_key)
     project = _get_and_maybe_create_project(project, api_key=api_key)
     body = {
         "project": project,
@@ -1794,7 +1734,6 @@ def join_logs(
         "copy": copy,
     }
     response = http.post(BASE_URL + "/logs/join", headers=headers, json=body)
-    _check_response(response)
     return response.json()
 
 
@@ -1820,10 +1759,7 @@ def create_fields(
         `UNIFY_KEY` environment variable.
     """
     api_key = _validate_api_key(api_key)
-    headers = {
-        "accept": "application/json",
-        "Authorization": f"Bearer {api_key}",
-    }
+    headers = _create_request_header(api_key)
     project = _get_and_maybe_create_project(project, api_key=api_key)
     context = context if context else CONTEXT_WRITE.get()
     if isinstance(fields, list):
@@ -1836,7 +1772,6 @@ def create_fields(
     if backfill_logs is not None:
         body["backfill_logs"] = backfill_logs
     response = http.post(BASE_URL + "/logs/fields", headers=headers, json=body)
-    _check_response(response)
     return response.json()
 
 
@@ -1864,10 +1799,7 @@ def rename_field(
         `UNIFY_KEY` environment variable.
     """
     api_key = _validate_api_key(api_key)
-    headers = {
-        "accept": "application/json",
-        "Authorization": f"Bearer {api_key}",
-    }
+    headers = _create_request_header(api_key)
     project = _get_and_maybe_create_project(project, api_key=api_key)
     context = context if context else CONTEXT_WRITE.get()
     body = {
@@ -1881,7 +1813,6 @@ def rename_field(
         headers=headers,
         json=body,
     )
-    _check_response(response)
     return response.json()
 
 
@@ -1906,10 +1837,7 @@ def get_fields(
         A dictionary of fields names and their types
     """
     api_key = _validate_api_key(api_key)
-    headers = {
-        "accept": "application/json",
-        "Authorization": f"Bearer {api_key}",
-    }
+    headers = _create_request_header(api_key)
     project = _get_and_maybe_create_project(project, api_key=api_key)
     context = context if context else CONTEXT_READ.get()
     params = {
@@ -1917,7 +1845,6 @@ def get_fields(
         "context": context,
     }
     response = http.get(BASE_URL + "/logs/fields", headers=headers, params=params)
-    _check_response(response)
     return response.json()
 
 
@@ -1942,10 +1869,7 @@ def delete_fields(
         `UNIFY_KEY` environment variable.
     """
     api_key = _validate_api_key(api_key)
-    headers = {
-        "accept": "application/json",
-        "Authorization": f"Bearer {api_key}",
-    }
+    headers = _create_request_header(api_key)
     project = _get_and_maybe_create_project(project, api_key=api_key)
     context = context if context else CONTEXT_WRITE.get()
     body = {
@@ -1958,7 +1882,6 @@ def delete_fields(
         headers=headers,
         json=body,
     )
-    _check_response(response)
     return response.json()
 
 

@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import json
 
-from ...utils.helpers import _validate_api_key
 from .logs import *
 
 # Parameters #
@@ -28,7 +27,6 @@ def get_param_by_version(
     Returns:
         The parameter by version.
     """
-    api_key = _validate_api_key(api_key)
     version = str(version)
     filter_exp = f"version({field}) == {version}"
     return get_logs(filter=filter_exp, limit=1, api_key=api_key)[0].params[field][1]
@@ -53,7 +51,6 @@ def get_param_by_value(
     Returns:
         The parameter by version.
     """
-    api_key = _validate_api_key(api_key)
     filter_exp = f"{field} == {json.dumps(value)}"
     return get_logs(filter=filter_exp, limit=1, api_key=api_key)[0].params[field][0]
 

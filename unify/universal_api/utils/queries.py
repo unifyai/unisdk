@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Optional, Union
 from unify import BASE_URL
 from unify.utils import http
 
-from ...utils.helpers import _validate_api_key
+from ...utils.helpers import _create_request_header
 
 
 def get_query_tags(
@@ -21,11 +21,7 @@ def get_query_tags(
     Returns:
         A list of available query tags if successful, otherwise an empty list.
     """
-    api_key = _validate_api_key(api_key)
-    headers = {
-        "accept": "application/json",
-        "Authorization": f"Bearer {api_key}",
-    }
+    headers = _create_request_header(api_key)
     url = f"{BASE_URL}/tags"
     response = http.get(url, headers=headers)
     if response.status_code != 200:
@@ -71,11 +67,7 @@ def get_queries(
     Returns:
         A dictionary containing the query history data.
     """
-    api_key = _validate_api_key(api_key)
-    headers = {
-        "accept": "application/json",
-        "Authorization": f"Bearer {api_key}",
-    }
+    headers = _create_request_header(api_key)
 
     params = {}
     if tags:
@@ -128,11 +120,7 @@ def log_query(
     Raises:
         requests.HTTPError: If the API request fails.
     """
-    api_key = _validate_api_key(api_key)
-    headers = {
-        "accept": "application/json",
-        "Authorization": f"Bearer {api_key}",
-    }
+    headers = _create_request_header(api_key)
 
     data = {
         "endpoint": endpoint,
@@ -180,11 +168,7 @@ def get_query_metrics(
     Returns:
         A dictionary containing the query metrics.
     """
-    api_key = _validate_api_key(api_key)
-    headers = {
-        "accept": "application/json",
-        "Authorization": f"Bearer {api_key}",
-    }
+    headers = _create_request_header(api_key)
 
     params = {
         "start_time": start_time,

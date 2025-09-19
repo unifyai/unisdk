@@ -3,7 +3,10 @@ from typing import Any, Dict, List, Optional
 from unify import BASE_URL
 from unify.utils import http
 
-from ...utils.helpers import _validate_api_key
+from ...utils.helpers import _create_request_header
+
+# Custom Endpoints #
+# ----------------#
 
 
 def create_custom_endpoint(
@@ -34,11 +37,7 @@ def create_custom_endpoint(
         requests.HTTPError: If the API request fails.
         KeyError: If the UNIFY_KEY is not set and no api_key is provided.
     """
-    api_key = _validate_api_key(api_key)
-    headers = {
-        "accept": "application/json",
-        "Authorization": f"Bearer {api_key}",
-    }
+    headers = _create_request_header(api_key)
 
     params = {
         "name": name,
@@ -81,11 +80,7 @@ def delete_custom_endpoint(
     Raises:
         requests.HTTPError: If the API request fails.
     """
-    api_key = _validate_api_key(api_key)
-    headers = {
-        "accept": "application/json",
-        "Authorization": f"Bearer {api_key}",
-    }
+    headers = _create_request_header(api_key)
     url = f"{BASE_URL}/custom_endpoint"
 
     params = {"name": name}
@@ -118,11 +113,7 @@ def rename_custom_endpoint(
     Raises:
         requests.HTTPError: If the API request fails.
     """
-    api_key = _validate_api_key(api_key)
-    headers = {
-        "accept": "application/json",
-        "Authorization": f"Bearer {api_key}",
-    }
+    headers = _create_request_header(api_key)
     url = f"{BASE_URL}/custom_endpoint/rename"
 
     params = {"name": name, "new_name": new_name}
@@ -152,11 +143,7 @@ def list_custom_endpoints(
     Raises:
         requests.exceptions.RequestException: If the API request fails.
     """
-    api_key = _validate_api_key(api_key)
-    headers = {
-        "accept": "application/json",
-        "Authorization": f"Bearer {api_key}",
-    }
+    headers = _create_request_header(api_key)
     url = f"{BASE_URL}/custom_endpoint/list"
 
     response = http.get(url, headers=headers)

@@ -21,7 +21,11 @@ from unify import BASE_URL
 from unify.utils import http
 
 # noinspection PyProtectedMember
-from unify.utils.helpers import _validate_api_key, _validate_openai_api_key
+from unify.utils.helpers import (
+    _create_request_header,
+    _validate_api_key,
+    _validate_openai_api_key,
+)
 
 
 def set_client_direct_mode(value: bool) -> None:
@@ -1300,10 +1304,7 @@ class _Client(ABC):
             ValueError: If there was an error parsing the JSON response.
         """
         url = f"{BASE_URL}/credits"
-        headers = {
-            "accept": "application/json",
-            "Authorization": f"Bearer {self._api_key}",
-        }
+        headers = _create_request_header(self._api_key)
         try:
             response = http.get(url, headers=headers, timeout=10)
             if response.status_code != 200:

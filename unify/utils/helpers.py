@@ -12,22 +12,6 @@ from pydantic import BaseModel, ValidationError
 PROJECT_LOCK = threading.Lock()
 
 
-class RequestError(Exception):
-    def __init__(self, response: requests.Response):
-        req = response.request
-        message = (
-            f"{req.method} {req.url} failed with status code {response.status_code}. "
-            f"Request body: {req.body}, Response: {response.text}"
-        )
-        super().__init__(message)
-        self.response = response
-
-
-def _check_response(response: requests.Response):
-    if not response.ok:
-        raise RequestError(response)
-
-
 def _res_to_list(response: requests.Response) -> Union[List, Dict]:
     return json.loads(response.text)
 
@@ -40,6 +24,14 @@ def _validate_api_key(api_key: Optional[str]) -> str:
             "UNIFY_KEY is missing. Please make sure it is set correctly!",
         )
     return api_key
+
+
+def _create_request_header(api_key: Optional[str]) -> Dict[str, str]:
+    return {
+        "Authorization": f"Bearer {_validate_api_key(api_key)}",
+        "accept": "application/json",
+        "Content-Type": "application/json",
+    }
 
 
 def _validate_openai_api_key(direct_mode: bool, api_key: Optional[str]) -> str:

@@ -3,7 +3,7 @@ from typing import Optional
 from unify import BASE_URL
 from unify.utils import http
 
-from ...utils.helpers import _res_to_list, _validate_api_key
+from ...utils.helpers import _create_request_header, _res_to_list
 
 
 def get_credits(*, api_key: Optional[str] = None) -> float:
@@ -19,12 +19,7 @@ def get_credits(*, api_key: Optional[str] = None) -> float:
     Raises:
         ValueError: If there was an HTTP error.
     """
-    api_key = _validate_api_key(api_key)
-    headers = {
-        "accept": "application/json",
-        "Authorization": f"Bearer {api_key}",
-    }
-    # Send GET request to the /get_credits endpoint
+    headers = _create_request_header(api_key)
     response = http.get(BASE_URL + "/credits", headers=headers)
     if response.status_code != 200:
         raise Exception(response.json())

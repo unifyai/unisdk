@@ -8,6 +8,7 @@ from typing import List
 
 import aiohttp
 from unify import BASE_URL
+from unify.utils.helpers import _create_request_header
 
 # Configure logging based on environment variable
 ASYNC_LOGGER_DEBUG = os.getenv("UNIFY_ASYNC_LOGGER_DEBUG", "false").lower() in (
@@ -42,11 +43,7 @@ class AsyncLoggerManager:
         # Register shutdown handler
         atexit.register(self.stop_sync, immediate=False)
 
-        headers = {
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json",
-            "accept": "application/json",
-        }
+        headers = _create_request_header(api_key)
         url = base_url + "/"
         connector = aiohttp.TCPConnector(limit=num_consumers // 2, loop=self.loop)
         self.session = aiohttp.ClientSession(

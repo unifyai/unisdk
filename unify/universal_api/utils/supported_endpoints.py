@@ -4,7 +4,7 @@ from typing import List, Optional
 from unify import BASE_URL
 from unify.utils import http
 
-from ...utils.helpers import _res_to_list, _validate_api_key
+from ...utils.helpers import _create_request_header, _res_to_list
 
 
 @functools.lru_cache(maxsize=32)
@@ -28,11 +28,7 @@ def list_providers(
         BadRequestError: If there was an HTTP error.
         ValueError: If there was an error parsing the JSON response.
     """
-    api_key = _validate_api_key(api_key)
-    headers = {
-        "accept": "application/json",
-        "Authorization": f"Bearer {api_key}",
-    }
+    headers = _create_request_header(api_key)
     url = f"{BASE_URL}/providers"
     if model:
         kw = dict(headers=headers, params={"model": model})
@@ -64,11 +60,7 @@ def list_models(
         BadRequestError: If there was an HTTP error.
         ValueError: If there was an error parsing the JSON response.
     """
-    api_key = _validate_api_key(api_key)
-    headers = {
-        "accept": "application/json",
-        "Authorization": f"Bearer {api_key}",
-    }
+    headers = _create_request_header(api_key)
     url = f"{BASE_URL}/models"
     if provider:
         kw = dict(headers=headers, params={"provider": provider})
@@ -104,11 +96,7 @@ def list_endpoints(
         BadRequestError: If there was an HTTP error.
         ValueError: If there was an error parsing the JSON response.
     """
-    api_key = _validate_api_key(api_key)
-    headers = {
-        "accept": "application/json",
-        "Authorization": f"Bearer {api_key}",
-    }
+    headers = _create_request_header(api_key)
     url = f"{BASE_URL}/endpoints"
     if model and provider:
         raise ValueError("Please specify either model OR provider, not both.")

@@ -23,7 +23,12 @@ from unify import BASE_URL
 from unify.utils import http
 
 # noinspection PyProtectedMember
-from unify.utils.helpers import _default, _validate_api_key, _validate_openai_api_key
+from unify.utils.helpers import (
+    _create_request_header,
+    _default,
+    _validate_api_key,
+    _validate_openai_api_key,
+)
 
 from ..clients import AsyncUnify, _Client, _UniClient
 
@@ -414,10 +419,7 @@ class _MultiClient(_Client, abc.ABC):
             ValueError: If there was an error parsing the JSON response.
         """
         url = f"{BASE_URL}/credits"
-        headers = {
-            "accept": "application/json",
-            "Authorization": f"Bearer {self._api_key}",
-        }
+        headers = _create_request_header(self._api_key)
         try:
             response = http.get(url, headers=headers, timeout=10)
             if response.status_code != 200:

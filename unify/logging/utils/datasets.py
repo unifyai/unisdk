@@ -29,7 +29,6 @@ def list_datasets(
     Returns:
         A list of datasets.
     """
-    api_key = _validate_api_key(api_key)
     contexts = get_contexts(
         prefix=f"Datasets/{prefix}",
         project=project,
