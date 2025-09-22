@@ -24,6 +24,14 @@ class CacheStats:
     def __repr__(self) -> str:
         return f"CacheStats(hits={self.hits} ({self.get_percentage_of_cache_hits():.1f}%), misses={self.misses} ({self.get_percentage_of_cache_misses():.1f}%), reads={self.reads}, writes={self.writes})"
 
+    def __add__(self, other: "CacheStats") -> "CacheStats":
+        return CacheStats(
+            hits=self.hits + other.hits,
+            misses=self.misses + other.misses,
+            reads=self.reads + other.reads,
+            writes=self.writes + other.writes,
+        )
+
 
 CURRENT_CACHE_STATS = CacheStats()
 
