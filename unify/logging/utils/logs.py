@@ -1537,6 +1537,7 @@ def get_groups(
     *,
     key: str,
     project: Optional[str] = None,
+    context: Optional[str] = None,
     filter: Optional[Dict[str, Any]] = None,
     from_ids: Optional[List[int]] = None,
     exclude_ids: Optional[List[int]] = None,
@@ -1550,6 +1551,8 @@ def get_groups(
         key: Name of the log entry to do equality matching for.
 
         project: Name of the project to get logs from.
+
+        context: The context to get groups from.
 
         filter: Boolean string to filter logs, for example:
         "(temperature > 0.5 and (len(system_msg) < 100 or 'no' in usr_response))"
@@ -1568,8 +1571,10 @@ def get_groups(
     api_key = _validate_api_key(api_key)
     headers = _create_request_header(api_key)
     project = _get_and_maybe_create_project(project, api_key=api_key)
+    context = context if context else CONTEXT_READ.get()
     params = {
         "project": project,
+        "context": context,
         "key": key,
         "filter_expr": filter,
         "from_ids": from_ids,
