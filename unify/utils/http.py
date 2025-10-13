@@ -76,10 +76,11 @@ def _log_request_if_enabled(fn: Callable) -> Callable:
 
 
 @_log_request_if_enabled
-def request(method, url, **kwargs) -> requests.Response:
+def request(method, url, raise_for_status=True, **kwargs) -> requests.Response:
     try:
         res = _SESSION.request(method, url, **kwargs)
-        res.raise_for_status()
+        if raise_for_status:
+            res.raise_for_status()
         return res
     except requests.exceptions.HTTPError as e:
         kwargs = _mask_auth_key(kwargs)
