@@ -436,47 +436,68 @@ def mark_spans_as_done(
         )
 
 
-def _apply_row_ids(
+def _apply_row_ids_and_non_unique_auto_count_vals(
     row_ids_data: Optional[Dict[str, Any]],
+    auto_counting_data: Optional[Dict[str, List[Any]]],
     entries: List[Dict[str, Any]],
 ) -> None:
     """
-    Apply row_ids data from server response to entry dictionaries.
+    Apply unique row_ids and non-unique auto_counting values from server response to entries.
 
-    Handles the new standardized format {'names': List[str], 'ids': List[List[int]]}
-    while maintaining backward compatibility with the old format during transition.
+    Behavior:
+    - Apply row_ids (unique auto-incrementing keys) first, using the standardized format
+      {'names': List[str], 'ids': List[List[int]]}.
+    - Then, apply auto_counting key/value pairs ONLY for keys not already included in
+      row_ids.names. This ensures unique keys come from row_ids while additional
+      non-unique counters (e.g., independent counters) are also populated.
 
     Args:
-        row_ids_data: The row_ids data from server response
-        entries: List of entry dictionaries to update with row_ids
+        row_ids_data: The row_ids data from server response.
+        auto_counting_data: The auto_counting data from server response, mapping key -> List[Any].
+        entries: List of entry dictionaries to update.
     """
-    if not row_ids_data:
-        return
+    # 1) Apply row_ids (unique keys)
+    row_id_names: List[str] = []
+    if row_ids_data:
+        names = row_ids_data.get("names")
+        ids = row_ids_data.get("ids")
 
-    names = row_ids_data.get("names")
-    ids = row_ids_data.get("ids")
+        if names and ids:
+            # Ensure names is always a list for consistent processing
+            if not isinstance(names, list):
+                names = [names]
+            row_id_names = names
 
-    if not names or not ids:
-        return
+            # Apply IDs to entries
+            for entry, id_values in zip(entries, ids):
+                if id_values is not None:
+                    # Handle both nested ID format (list of lists) and flat format (list of values)
+                    if isinstance(id_values, list) and len(names) > 1:
+                        # Nested format: zip names with id_values
+                        id_dict = dict(zip(names, id_values))
+                        entry.update(id_dict)
+                    else:
+                        # Single ID format: use first name with the id_value
+                        if isinstance(id_values, list) and len(id_values) == 1:
+                            entry[names[0]] = id_values[0]
+                        else:
+                            entry[names[0]] = id_values
 
-    # Ensure names is always treated as a list for consistent processing
-    if not isinstance(names, list):
-        names = [names]
-
-    # Apply IDs to entries
-    for entry, id_values in zip(entries, ids):
-        if id_values is not None:
-            # Handle both nested ID format (list of lists) and flat format (list of values)
-            if isinstance(id_values, list) and len(names) > 1:
-                # Nested format: zip names with id_values
-                id_dict = dict(zip(names, id_values))
-                entry.update(id_dict)
-            else:
-                # Single ID format: use first name with the id_value
-                if isinstance(id_values, list) and len(id_values) == 1:
-                    entry[names[0]] = id_values[0]
-                else:
-                    entry[names[0]] = id_values
+    # 2) Apply auto_counting (non-unique and any additional counters)
+    if auto_counting_data:
+        # Treat row_id_names as a set for fast membership checks
+        row_id_names_set = set(row_id_names)
+        # For each auto_counting key, if not a row_id key, propagate values into entries
+        for key, values in auto_counting_data.items():
+            if key in row_id_names_set:
+                # Skip keys already applied via row_ids
+                continue
+            if not isinstance(values, list):
+                # Defensive: backend guarantees list, but guard just in case
+                continue
+            for idx, entry in enumerate(entries):
+                if idx < len(values):
+                    entry[key] = values[idx]
 
 
 def _handle_cache(fn: Callable) -> Callable:
@@ -783,8 +804,12 @@ def _sync_log(
     response = http.post(BASE_URL + "/logs", headers=headers, json=body)
     resp_json = response.json()
 
-    # Apply row_ids to entries using the centralized helper
-    _apply_row_ids(resp_json.get("row_ids"), [entries])
+    # Apply row_ids and non-unique auto_counting values to entries
+    _apply_row_ids_and_non_unique_auto_count_vals(
+        resp_json.get("row_ids"),
+        resp_json.get("auto_counting"),
+        [entries],
+    )
 
     return unify.Log(
         id=resp_json["log_event_ids"][0],
@@ -945,8 +970,12 @@ def create_logs(
             )
         resp_json = response.json()
 
-        # Apply row_ids to entries using the centralized helper
-        _apply_row_ids(resp_json.get("row_ids"), entries)
+        # Apply row_ids and non-unique auto_counting values to entries
+        _apply_row_ids_and_non_unique_auto_count_vals(
+            resp_json.get("row_ids"),
+            resp_json.get("auto_counting"),
+            entries,
+        )
 
         return [
             unify.Log(

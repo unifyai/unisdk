@@ -1389,5 +1389,82 @@ def test_create_logs_nested_ids():
         assert child_log.entries["step_id"] == i + 1
 
 
+@_handle_project
+def test_log_auto_counting_independent_included_and_explicit_preserved():
+    context_name = "independent_auto_count"
+    unify.create_context(
+        context_name,
+        unique_keys={"run_id": "int"},
+        auto_counting={
+            "run_id": None,
+            "ticket_id": None,
+            "session_id": None,
+        },
+    )
+
+    # First log: all counters auto-generate and initialize to 0
+    lg1 = unify.log(context=context_name, action="init")
+    e1 = lg1.entries
+    assert e1["run_id"] == 0
+    assert e1["ticket_id"] == 0
+    assert e1["session_id"] == 0
+
+    # Second log: explicit independent counters should be preserved
+    lg2 = unify.log(
+        context=context_name,
+        ticket_id=999,
+        session_id=888,
+        action="explicit_independent_values",
+    )
+    e2 = lg2.entries
+    assert e2["run_id"] == 1
+    assert e2["ticket_id"] == 999
+    assert e2["session_id"] == 888
+
+
+@_handle_project
+def test_create_logs_includes_independent_auto_counting_keys():
+    ctx = "independent_auto_count_batch"
+    unify.create_context(
+        ctx,
+        unique_keys={"dept": "int", "team": "int", "emp": "int"},
+        auto_counting={
+            "dept": None,
+            "team": "dept",
+            "emp": "team",
+            "ticket_id": None,
+            "session_id": None,
+        },
+    )
+
+    # Initialize counters
+    logs1 = unify.create_logs(context=ctx, entries=[{"action": "init_batch"}])
+    assert len(logs1) == 1
+    e1 = logs1[0].entries
+    assert e1["dept"] == 0
+    assert e1["team"] == 0
+    assert e1["emp"] == 0
+    assert e1["ticket_id"] == 0
+    assert e1["session_id"] == 0
+
+    # Next batch within same team should increment emp and independent counters
+    logs2 = unify.create_logs(
+        context=ctx,
+        entries=[
+            {"dept": 0, "team": 0, "action": "add_emp_1"},
+            {"dept": 0, "team": 0, "action": "add_emp_2"},
+        ],
+    )
+    assert len(logs2) == 2
+    e2a = logs2[0].entries
+    e2b = logs2[1].entries
+    assert e2a["dept"] == 0 and e2a["team"] == 0
+    assert e2b["dept"] == 0 and e2b["team"] == 0
+    assert e2a["emp"] == 1
+    assert e2b["emp"] == 2
+    assert e2a["ticket_id"] == 1 and e2b["ticket_id"] == 2
+    assert e2a["session_id"] == 1 and e2b["session_id"] == 2
+
+
 if __name__ == "__main__":
     pass
