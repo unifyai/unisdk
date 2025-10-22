@@ -1466,5 +1466,68 @@ def test_create_logs_includes_independent_auto_counting_keys():
     assert e2a["session_id"] == 1 and e2b["session_id"] == 2
 
 
+@_handle_project
+def test_create_logs_with_explicit_fields_and_payload_explicit_types():
+    ctx = "explicit_fields_payload"
+
+    # Ensure context exists
+    unify.create_context(ctx)
+
+    # Create explicit typed fields first
+    fields = {
+        "image_id": {"type": "int", "mutable": True},
+        "timestamp": {"type": "datetime", "mutable": True},
+        "caption": {"type": "str", "mutable": True},
+        "data": {"type": "str", "mutable": True},
+    }
+    resp = unify.create_fields(fields=fields, context=ctx)
+    assert isinstance(resp, dict)
+
+    resp = unify.get_fields(context=ctx)
+    assert resp["image_id"]["data_type"] == "int"
+    assert resp["timestamp"]["data_type"] == "datetime"
+    assert resp["caption"]["data_type"] == "str"
+    assert resp["data"]["data_type"] == "str"
+
+    # Provided payload with explicit types for 'data'
+    payload = [
+        {
+            "timestamp": "2025-10-21T18:51:31.080494Z",
+            "caption": "A small red square",
+            "data": "iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAIAAABLbSncAAAAEUlEQVR42mP4z8CAFTEMLQkAKP8/wc53yE8AAAAASUVORK5CYII=",
+            "explicit_types": {"data": {"type": "str"}},
+        },
+        {
+            "timestamp": "2025-10-21T18:51:31.080500Z",
+            "caption": "A tiny blue pixel",
+            "data": "iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAIAAABLbSncAAAAEElEQVR42mNgYPiPAw0pCQCpcD/B/MtF/AAAAABJRU5ErkJggg==",
+            "explicit_types": {"data": {"type": "str"}},
+        },
+    ]
+
+    # Confirms the explicit type worked because the backend would otherwise infer the type of `data` as image
+    created = unify.create_logs(context=ctx, entries=payload)
+    assert len(created) == 2
+
+    # Validate created entries and that explicit_types is not present in returned entries
+    e0 = created[0].entries
+    e1 = created[1].entries
+
+    assert "explicit_types" not in e0
+    assert "explicit_types" not in e1
+
+    assert e0["caption"] == "A small red square"
+    assert e1["caption"] == "A tiny blue pixel"
+
+    assert (
+        e0["data"]
+        == "iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAIAAABLbSncAAAAEUlEQVR42mP4z8CAFTEMLQkAKP8/wc53yE8AAAAASUVORK5CYII="
+    )
+    assert (
+        e1["data"]
+        == "iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAIAAABLbSncAAAAEElEQVR42mNgYPiPAw0pCQCpcD/B/MtF/AAAAABJRU5ErkJggg=="
+    )
+
+
 if __name__ == "__main__":
     pass

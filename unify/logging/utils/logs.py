@@ -615,15 +615,30 @@ def _handle_mutability(
         single_item = True
         new_data = [flexible_deepcopy(data, on_fail="shallow")]
     if isinstance(mutable, dict):
-        for field, mut in mutable.items():
-            for item in new_data:
+        for item in new_data:
+            et = item.get("explicit_types")
+            if not isinstance(et, dict):
+                et = {}
+                item["explicit_types"] = et
+            for field, mut in mutable.items():
                 if field in item:
-                    item.setdefault("explicit_types", {})[field] = {"mutable": mut}
+                    existing = (
+                        et.get(field, {}) if isinstance(et.get(field, {}), dict) else {}
+                    )
+                    existing = {**existing, "mutable": mut}
+                    et[field] = existing
     elif isinstance(mutable, bool):
         for item in new_data:
+            et = item.get("explicit_types")
+            if not isinstance(et, dict):
+                et = {}
+                item["explicit_types"] = et
             for k in list(item.keys()):
-                if k != "explicit_types":
-                    item.setdefault("explicit_types", {})[k] = {"mutable": mutable}
+                if k == "explicit_types":
+                    continue
+                existing = et.get(k, {}) if isinstance(et.get(k, {}), dict) else {}
+                existing = {**existing, "mutable": mutable}
+                et[k] = existing
     if single_item:
         return new_data[0]
     return new_data
