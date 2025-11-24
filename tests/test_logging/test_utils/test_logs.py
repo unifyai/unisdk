@@ -130,6 +130,210 @@ def test_atomic_functions():
 
 
 @_handle_project
+def test_get_logs_metric_multiple_keys():
+    """Test get_logs_metric with multiple keys (no grouping)."""
+    log1 = {"score": 0.2, "length": 10}
+    log2 = {"score": 0.3, "length": 20}
+    log3 = {"score": 0.8, "length": 30}
+    unify.log(**log1)
+    unify.log(**log2)
+    unify.log(**log3)
+
+    # Test multiple keys - should return a dict
+    result = unify.get_logs_metric(
+        metric="mean",
+        key=["score", "length"],
+    )
+    assert isinstance(result, dict), "Multiple keys should return a dict"
+    assert "score" in result
+    assert "length" in result
+    assert abs(result["score"] - 0.433333) < 0.01  # (0.2 + 0.3 + 0.8) / 3
+    assert result["length"] == 20.0  # (10 + 20 + 30) / 3
+
+
+@_handle_project
+def test_get_logs_metric_with_grouping():
+    """Test get_logs_metric with single-level grouping."""
+    # Create logs with different categories
+    unify.log(score=0.2, category="A")
+    unify.log(score=0.3, category="A")
+    unify.log(score=0.8, category="B")
+    unify.log(score=0.9, category="B")
+
+    # Test single-level grouping
+    result = unify.get_logs_metric(
+        metric="mean",
+        key="score",
+        group_by="category",
+    )
+    assert isinstance(result, dict), "Grouped result should be a dict"
+    assert "A" in result
+    assert "B" in result
+    # Mean for category A: (0.2 + 0.3) / 2 = 0.25
+    assert abs(result["A"].get("mean", result["A"].get("shared_value")) - 0.25) < 0.01
+    # Mean for category B: (0.8 + 0.9) / 2 = 0.85
+    assert abs(result["B"].get("mean", result["B"].get("shared_value")) - 0.85) < 0.01
+
+
+@_handle_project
+def test_get_logs_metric_with_nested_grouping():
+    """Test get_logs_metric with nested grouping."""
+    # Create logs with different categories and subcategories
+    unify.log(score=0.2, category="A", subcategory="X")
+    unify.log(score=0.3, category="A", subcategory="Y")
+    unify.log(score=0.8, category="B", subcategory="X")
+    unify.log(score=0.9, category="B", subcategory="Y")
+
+    # Test nested grouping
+    result = unify.get_logs_metric(
+        metric="mean",
+        key="score",
+        group_by=["category", "subcategory"],
+    )
+    assert isinstance(result, dict), "Nested grouped result should be a dict"
+    assert "A" in result
+    assert "B" in result
+    assert isinstance(result["A"], dict), "First level should be a dict"
+    assert isinstance(result["B"], dict), "First level should be a dict"
+    assert "X" in result["A"]
+    assert "Y" in result["A"]
+    assert "X" in result["B"]
+    assert "Y" in result["B"]
+
+
+@_handle_project
+def test_get_logs_metric_multiple_keys_with_grouping():
+    """Test get_logs_metric with multiple keys and grouping."""
+    unify.log(score=0.2, length=10, category="A")
+    unify.log(score=0.3, length=20, category="A")
+    unify.log(score=0.8, length=30, category="B")
+    unify.log(score=0.9, length=40, category="B")
+
+    # Test multiple keys with grouping
+    result = unify.get_logs_metric(
+        metric="mean",
+        key=["score", "length"],
+        group_by="category",
+    )
+    assert isinstance(result, dict), "Result should be a dict"
+    assert "score" in result
+    assert "length" in result
+    assert isinstance(result["score"], dict), "Score results should be grouped"
+    assert isinstance(result["length"], dict), "Length results should be grouped"
+    assert "A" in result["score"]
+    assert "B" in result["score"]
+    assert "A" in result["length"]
+    assert "B" in result["length"]
+
+
+@_handle_project
+def test_get_logs_metric_key_specific_filters():
+    """Test get_logs_metric with key-specific filter expressions."""
+    unify.log(score=0.2, length=10)
+    unify.log(score=0.3, length=20)
+    unify.log(score=0.8, length=30)
+
+    # Test key-specific filters
+    result = unify.get_logs_metric(
+        metric="mean",
+        key=["score", "length"],
+        filter={"score": "score > 0.25", "length": "length > 15"},
+    )
+    assert isinstance(result, dict), "Result should be a dict"
+    assert "score" in result
+    assert "length" in result
+    # Score filter: only logs with score > 0.25 (0.3 and 0.8), mean = 0.55
+    assert abs(result["score"] - 0.55) < 0.01
+    # Length filter: only logs with length > 15 (20 and 30), mean = 25.0
+    assert result["length"] == 25.0
+
+
+@_handle_project
+def test_get_logs_metric_key_specific_from_ids():
+    """Test get_logs_metric with key-specific from_ids."""
+    log1 = unify.log(score=0.2, length=10)
+    log2 = unify.log(score=0.3, length=20)
+    log3 = unify.log(score=0.8, length=30)
+
+    # Test key-specific from_ids
+    result = unify.get_logs_metric(
+        metric="mean",
+        key=["score", "length"],
+        from_ids={"score": f"{log1.id}&{log2.id}", "length": f"{log2.id}&{log3.id}"},
+    )
+    assert isinstance(result, dict), "Result should be a dict"
+    assert "score" in result
+    assert "length" in result
+    # Score from_ids: logs 1 and 2, mean = (0.2 + 0.3) / 2 = 0.25
+    assert abs(result["score"] - 0.25) < 0.01
+    # Length from_ids: logs 2 and 3, mean = (20 + 30) / 2 = 25.0
+    assert result["length"] == 25.0
+
+
+@_handle_project
+def test_get_logs_metric_key_specific_exclude_ids():
+    """Test get_logs_metric with key-specific exclude_ids."""
+    log1 = unify.log(score=0.2, length=10)
+    log2 = unify.log(score=0.3, length=20)
+    log3 = unify.log(score=0.8, length=30)
+
+    # Test key-specific exclude_ids
+    result = unify.get_logs_metric(
+        metric="mean",
+        key=["score", "length"],
+        exclude_ids={"score": f"{log3.id}", "length": f"{log1.id}"},
+    )
+    assert isinstance(result, dict), "Result should be a dict"
+    assert "score" in result
+    assert "length" in result
+    # Score exclude_ids: exclude log3, mean of logs 1 and 2 = (0.2 + 0.3) / 2 = 0.25
+    assert abs(result["score"] - 0.25) < 0.01
+    # Length exclude_ids: exclude log1, mean of logs 2 and 3 = (20 + 30) / 2 = 25.0
+    assert result["length"] == 25.0
+
+
+@_handle_project
+def test_get_logs_metric_backward_compatibility():
+    """Test that the existing single-key API still works (backward compatibility)."""
+    unify.log(score=0.2)
+    unify.log(score=0.3)
+    unify.log(score=0.8)
+
+    # Test legacy single-key format - should return scalar
+    result = unify.get_logs_metric(
+        metric="mean",
+        key="score",
+    )
+    assert isinstance(result, (int, float)), "Single key should return scalar"
+    assert abs(result - 0.433333) < 0.01  # (0.2 + 0.3 + 0.8) / 3
+
+    # Test legacy filter format
+    result = unify.get_logs_metric(
+        metric="mean",
+        key="score",
+        filter="score > 0.25",
+    )
+    assert isinstance(
+        result,
+        (int, float),
+    ), "Single key with filter should return scalar"
+    assert abs(result - 0.55) < 0.01  # (0.3 + 0.8) / 2
+
+    # Test legacy from_ids format
+    logs = [unify.log(score=i * 0.1) for i in range(5)]
+    result = unify.get_logs_metric(
+        metric="mean",
+        key="score",
+        from_ids=[logs[0].id, logs[1].id, logs[2].id],
+    )
+    assert isinstance(
+        result,
+        (int, float),
+    ), "Single key with from_ids should return scalar"
+    assert abs(result - 0.1) < 0.01  # (0.0 + 0.1 + 0.2) / 3
+
+
+@_handle_project
 def test_log_ordering():
     for i in range(25):
         unify.log(

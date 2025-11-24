@@ -1522,53 +1522,131 @@ def get_log_by_id(
 def get_logs_metric(
     *,
     metric: str,
-    key: str,
-    filter: Optional[str] = None,
+    key: Union[str, List[str]],
+    filter: Optional[Union[str, Dict[str, str]]] = None,
     project: Optional[str] = None,
     context: Optional[str] = None,
-    from_ids: Optional[List[int]] = None,
-    exclude_ids: Optional[List[int]] = None,
+    from_ids: Optional[Union[List[int], Dict[str, str]]] = None,
+    exclude_ids: Optional[Union[List[int], Dict[str, str]]] = None,
+    group_by: Optional[Union[str, List[str]]] = None,
     api_key: Optional[str] = None,
-) -> Union[float, int, bool]:
+) -> Union[float, int, bool, str, Dict[str, Any]]:
     """
     Retrieve a set of log metrics across a project, after applying the filtering.
 
+    This endpoint supports three modes of operation:
+
+    1. Single key, no grouping: Returns a single metric value
+       Example:
+       get_logs_metric(metric="mean", key="score")
+       Response: 4.56
+
+    2. Multiple keys, no grouping: Returns a dict mapping keys to metric values
+       Example:
+       get_logs_metric(metric="mean", key=["score", "length"])
+       Response: {"score": 4.56, "length": 120}
+
+    3. With grouping: Returns metrics grouped by one or more fields
+       Example:
+       get_logs_metric(metric="mean", key="score", group_by="model")
+       Response: {"gpt-4": 4.56, "gpt-3.5": 3.78}
+
+       For nested grouping, provide a list of fields:
+       Example:
+       get_logs_metric(metric="mean", key="score", group_by=["model", "temperature"])
+       Response: {"gpt-4": {"0.7": 4.56, "0.9": 4.23}, "gpt-3.5": {"0.7": 3.78, "0.9": 3.45}}
+
     Args:
-        metric: The reduction metric to compute for the specified key. Supported are:
-        sum, mean, var, std, min, max, median, mode.
+        metric: The reduction metric to compute for the specified key(s). Supported are:
+            sum, mean, var, std, min, max, median, mode.
 
-        key: The key to compute the reduction statistic for.
+        key: The key(s) to compute the reduction statistic for. Can be a single string
+            for one key, or a list of strings for multiple keys.
 
-        filter: The filtering to apply to the various log values, expressed as a string,
-        for example:
-        "(temperature > 0.5 and (len(system_msg) < 100 or 'no' in usr_response))"
+        filter: The filtering to apply to the log values. Can be:
+            - A single string expression for all keys, e.g.:
+              "(temperature > 0.5 and (len(system_msg) < 100 or 'no' in usr_response))"
+            - A dict mapping keys to filter expressions for key-specific filtering, e.g.:
+              {"score": "score > 0", "length": "length < 100"}
 
         project: The id of the project to retrieve the logs for.
 
         context: The context of the logs to retrieve the metrics for.
 
-        from_ids: A list of log IDs to include in the results.
+        from_ids: Log IDs to include in the results. Can be:
+            - A list of integers for all keys, e.g.: [1, 2, 3]
+            - A dict mapping keys to ID strings for key-specific filtering, e.g.:
+              {"score": "1&2", "length": "3&4"}
 
-        exclude_ids: A list of log IDs to exclude from the results.
+        exclude_ids: Log IDs to exclude from the results. Can be:
+            - A list of integers for all keys, e.g.: [1, 2, 3]
+            - A dict mapping keys to ID strings for key-specific filtering, e.g.:
+              {"score": "1&2", "length": "3&4"}
+
+        group_by: Field(s) to group the metrics by. Can be:
+            - A single string for single-level grouping, e.g.: "model"
+            - A list of strings for nested grouping, e.g.: ["model", "temperature"]
+            Each field can be prefixed with "params/" to indicate it's a parameter,
+            or "entries/" or "derived_entries/" for entry fields.
 
         api_key: If specified, unify API key to be used. Defaults to the value in the
-        `UNIFY_KEY` environment variable.
+            `UNIFY_KEY` environment variable.
 
     Returns:
-        The full set of reduced log metrics for the project, after optionally applying
-        the optional filtering.
+        The metric value(s) for the project, after optionally applying filtering and grouping.
+        Return type depends on the mode:
+        - Single key, no grouping: scalar (float, int, bool, or str)
+        - Multiple keys, no grouping: dict mapping keys to scalar values
+        - With grouping: dict with nested structure based on grouping levels
     """
     api_key = _validate_api_key(api_key)
     headers = _create_request_header(api_key)
     project = _get_and_maybe_create_project(project, api_key=api_key)
+
+    # Build params dict
     params = {
         "project": project,
-        "filter_expr": filter,
-        "key": key,
-        "from_ids": "&".join(map(str, from_ids)) if from_ids else None,
-        "exclude_ids": "&".join(map(str, exclude_ids)) if exclude_ids else None,
         "context": context if context else CONTEXT_READ.get(),
     }
+
+    # Handle key parameter - JSON encode if it's a list
+    if isinstance(key, list):
+        params["key"] = json.dumps(key)
+    else:
+        params["key"] = key
+
+    # Handle filter_expr parameter - JSON encode if it's a dict
+    if filter is not None:
+        if isinstance(filter, dict):
+            params["filter_expr"] = json.dumps(filter)
+        else:
+            params["filter_expr"] = filter
+
+    # Handle from_ids parameter
+    if from_ids is not None:
+        if isinstance(from_ids, dict):
+            # Key-specific from_ids - JSON encode the dict
+            params["from_ids"] = json.dumps(from_ids)
+        else:
+            # Legacy format - join list with &
+            params["from_ids"] = "&".join(map(str, from_ids))
+
+    # Handle exclude_ids parameter
+    if exclude_ids is not None:
+        if isinstance(exclude_ids, dict):
+            # Key-specific exclude_ids - JSON encode the dict
+            params["exclude_ids"] = json.dumps(exclude_ids)
+        else:
+            # Legacy format - join list with &
+            params["exclude_ids"] = "&".join(map(str, exclude_ids))
+
+    # Handle group_by parameter - JSON encode if it's a list
+    if group_by is not None:
+        if isinstance(group_by, list):
+            params["group_by"] = json.dumps(group_by)
+        else:
+            params["group_by"] = group_by
+
     response = http.get(
         BASE_URL + f"/logs/metric/{metric}",
         headers=headers,
