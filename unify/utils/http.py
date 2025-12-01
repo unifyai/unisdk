@@ -14,8 +14,9 @@ _LOGGER.setLevel(logging.DEBUG if _LOG_ENABLED else logging.WARNING)
 
 _SESSION = requests.Session()
 _RETRIES = Retry(total=5, backoff_factor=0.1, status_forcelist=[500, 502, 503, 504])
-_SESSION.mount("http://", HTTPAdapter(max_retries=_RETRIES))
-_SESSION.mount("https://", HTTPAdapter(max_retries=_RETRIES))
+_ADAPTER = HTTPAdapter(max_retries=_RETRIES, pool_connections=20, pool_maxsize=20)
+_SESSION.mount("http://", _ADAPTER)
+_SESSION.mount("https://", _ADAPTER)
 
 
 class RequestError(Exception):
