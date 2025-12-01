@@ -47,6 +47,9 @@ from unify.universal_api.utils.httpx_logging import (
     make_async_httpx_client_for_unify_logging,
     make_httpx_client_for_unify_logging,
 )
+from unify.universal_api.utils.provider_preprocessing import (
+    apply_provider_preprocessing,
+)
 
 from ...utils._caching import _get_cache, _write_to_cache, is_caching_enabled
 from ...utils.helpers import _default
@@ -1012,6 +1015,8 @@ class Unify(_UniClient):
             log_query_body=log_query_body,
             log_response_body=log_response_body,
         )
+        # Apply provider-specific preprocessing (before cache, on a copy of messages)
+        apply_provider_preprocessing(kw, self._provider)
         if self._should_use_direct_mode:
             kw.pop("extra_body")
         try:
@@ -1075,6 +1080,8 @@ class Unify(_UniClient):
             log_query_body=log_query_body,
             log_response_body=log_response_body,
         )
+        # Apply provider-specific preprocessing (before cache, on a copy of messages)
+        apply_provider_preprocessing(kw, self._provider)
         if self._should_use_direct_mode:
             kw.pop("extra_body")
         if isinstance(cache, str) and cache.endswith("-closest"):
@@ -1365,6 +1372,8 @@ class AsyncUnify(_UniClient):
             log_query_body=log_query_body,
             log_response_body=log_response_body,
         )
+        # Apply provider-specific preprocessing (before cache, on a copy of messages)
+        apply_provider_preprocessing(kw, self._provider)
         if self._should_use_direct_mode:
             kw.pop("extra_body")
         try:
@@ -1427,6 +1436,8 @@ class AsyncUnify(_UniClient):
             log_query_body=log_query_body,
             log_response_body=log_response_body,
         )
+        # Apply provider-specific preprocessing (before cache, on a copy of messages)
+        apply_provider_preprocessing(kw, self._provider)
         if self._should_use_direct_mode:
             kw.pop("extra_body")
         if isinstance(cache, str) and cache.endswith("-closest"):
