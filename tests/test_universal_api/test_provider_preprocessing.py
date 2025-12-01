@@ -1,43 +1,13 @@
-"""
-Tests for provider-specific preprocessing of messages.
-"""
+"""Tests for provider-specific preprocessing of messages."""
 
 import json
 
 from unify.universal_api.utils.provider_preprocessing import (
     CONCURRENT_USER_MESSAGES_EXPLANATION,
     _combine_adjacent_user_messages,
-    _insert_concurrent_messages_explanation,
-    _is_anthropic_provider,
     _move_system_messages_to_front,
     apply_provider_preprocessing,
-    preprocess_messages_for_anthropic,
-    preprocess_messages_for_provider,
 )
-
-
-class TestIsAnthropicProvider:
-    """Tests for _is_anthropic_provider function."""
-
-    def test_anthropic_provider(self):
-        assert _is_anthropic_provider("anthropic") is True
-
-    def test_non_anthropic_provider(self):
-        assert _is_anthropic_provider("openai") is False
-
-    def test_anthropic_fallback_chain_first(self):
-        """Anthropic as first provider in fallback chain."""
-        assert _is_anthropic_provider("anthropic->openai") is True
-
-    def test_anthropic_fallback_chain_not_first(self):
-        """Anthropic not as first provider in fallback chain."""
-        assert _is_anthropic_provider("openai->anthropic") is False
-
-    def test_none_provider(self):
-        assert _is_anthropic_provider(None) is False
-
-    def test_empty_string(self):
-        assert _is_anthropic_provider("") is False
 
 
 class TestMoveSystemMessagesToFront:
@@ -74,7 +44,6 @@ class TestMoveSystemMessagesToFront:
         assert result == expected
 
     def test_multiple_system_messages_scattered(self):
-        """sys1 -> user1 -> sys2 -> user2 becomes sys1 -> sys2 -> user1 -> user2"""
         messages = [
             {"role": "system", "content": "sys1"},
             {"role": "user", "content": "user1"},
@@ -90,8 +59,7 @@ class TestMoveSystemMessagesToFront:
         ]
         assert result == expected
 
-    def test_preserves_system_order(self):
-        """System messages should maintain their relative order."""
+    def test_preserves_relative_order(self):
         messages = [
             {"role": "user", "content": "user1"},
             {"role": "system", "content": "sys1"},
@@ -101,18 +69,15 @@ class TestMoveSystemMessagesToFront:
             {"role": "system", "content": "sys3"},
         ]
         result = _move_system_messages_to_front(messages)
-        # System messages should be in order: sys1, sys2, sys3
         assert result[0] == {"role": "system", "content": "sys1"}
         assert result[1] == {"role": "system", "content": "sys2"}
         assert result[2] == {"role": "system", "content": "sys3"}
-        # Non-system messages should preserve order
         assert result[3] == {"role": "user", "content": "user1"}
         assert result[4] == {"role": "assistant", "content": "assistant1"}
         assert result[5] == {"role": "user", "content": "user2"}
 
     def test_empty_list(self):
-        result = _move_system_messages_to_front([])
-        assert result == []
+        assert _move_system_messages_to_front([]) == []
 
 
 class TestCombineAdjacentUserMessages:
@@ -128,56 +93,21 @@ class TestCombineAdjacentUserMessages:
         assert result == messages
         assert combined_any is False
 
-    def test_two_adjacent_users(self):
+    def test_adjacent_users_combined(self):
         messages = [
             {"role": "user", "content": "A"},
             {"role": "user", "content": "B"},
         ]
         result, combined_any = _combine_adjacent_user_messages(messages)
         assert len(result) == 1
-        assert result[0]["role"] == "user"
         assert combined_any is True
-        # Parse the JSON content
-        content_dict = json.loads(result[0]["content"])
-        assert content_dict["role"] == "user"
-        assert content_dict["content"] == [
+        content = json.loads(result[0]["content"])
+        assert content["content"] == [
             {"type": "text", "text": "A"},
             {"type": "text", "text": "B"},
         ]
 
-    def test_three_adjacent_users(self):
-        messages = [
-            {"role": "user", "content": "A"},
-            {"role": "user", "content": "B"},
-            {"role": "user", "content": "C"},
-        ]
-        result, combined_any = _combine_adjacent_user_messages(messages)
-        assert len(result) == 1
-        assert combined_any is True
-        content_dict = json.loads(result[0]["content"])
-        assert content_dict["content"] == [
-            {"type": "text", "text": "A"},
-            {"type": "text", "text": "B"},
-            {"type": "text", "text": "C"},
-        ]
-
-    def test_adjacent_users_after_assistant(self):
-        messages = [
-            {"role": "assistant", "content": "Hello"},
-            {"role": "user", "content": "A"},
-            {"role": "user", "content": "B"},
-        ]
-        result, combined_any = _combine_adjacent_user_messages(messages)
-        assert len(result) == 2
-        assert combined_any is True
-        assert result[0] == {"role": "assistant", "content": "Hello"}
-        content_dict = json.loads(result[1]["content"])
-        assert content_dict["content"] == [
-            {"type": "text", "text": "A"},
-            {"type": "text", "text": "B"},
-        ]
-
-    def test_multiple_groups_of_adjacent_users(self):
+    def test_multiple_groups_combined(self):
         messages = [
             {"role": "user", "content": "A"},
             {"role": "user", "content": "B"},
@@ -188,349 +118,162 @@ class TestCombineAdjacentUserMessages:
         result, combined_any = _combine_adjacent_user_messages(messages)
         assert len(result) == 3
         assert combined_any is True
-        # First combined group
-        content1 = json.loads(result[0]["content"])
-        assert content1["content"] == [
+        assert json.loads(result[0]["content"])["content"] == [
             {"type": "text", "text": "A"},
             {"type": "text", "text": "B"},
         ]
-        # Assistant message
         assert result[1] == {"role": "assistant", "content": "response"}
-        # Second combined group
-        content2 = json.loads(result[2]["content"])
-        assert content2["content"] == [
+        assert json.loads(result[2]["content"])["content"] == [
             {"type": "text", "text": "C"},
             {"type": "text", "text": "D"},
         ]
+
+    def test_single_user_not_combined(self):
+        messages = [{"role": "user", "content": "alone"}]
+        result, combined_any = _combine_adjacent_user_messages(messages)
+        assert result == messages
+        assert combined_any is False
 
     def test_empty_list(self):
         result, combined_any = _combine_adjacent_user_messages([])
         assert result == []
         assert combined_any is False
 
-    def test_single_user_not_combined(self):
-        messages = [
-            {"role": "user", "content": "alone"},
-        ]
-        result, combined_any = _combine_adjacent_user_messages(messages)
-        assert result == messages
-        assert combined_any is False
-
-    def test_json_format_is_indented(self):
-        """Verify the JSON output uses indent=4."""
-        messages = [
-            {"role": "user", "content": "A"},
-            {"role": "user", "content": "B"},
-        ]
-        result, _ = _combine_adjacent_user_messages(messages)
-        content_str = result[0]["content"]
-        # Check that it's indented (contains newlines and spaces)
-        assert "\n" in content_str
-        assert "    " in content_str  # 4-space indent
-
-
-class TestInsertConcurrentMessagesExplanation:
-    """Tests for _insert_concurrent_messages_explanation function."""
-
-    def test_insert_after_system_messages(self):
-        messages = [
-            {"role": "system", "content": "sys1"},
-            {"role": "system", "content": "sys2"},
-            {"role": "user", "content": "Hello"},
-        ]
-        result = _insert_concurrent_messages_explanation(messages)
-        assert len(result) == 4
-        assert result[0] == {"role": "system", "content": "sys1"}
-        assert result[1] == {"role": "system", "content": "sys2"}
-        assert result[2]["role"] == "system"
-        assert result[2]["content"] == CONCURRENT_USER_MESSAGES_EXPLANATION
-        assert result[3] == {"role": "user", "content": "Hello"}
-
-    def test_insert_at_beginning_when_no_system(self):
-        messages = [
-            {"role": "user", "content": "Hello"},
-            {"role": "assistant", "content": "Hi"},
-        ]
-        result = _insert_concurrent_messages_explanation(messages)
-        assert len(result) == 3
-        assert result[0]["role"] == "system"
-        assert result[0]["content"] == CONCURRENT_USER_MESSAGES_EXPLANATION
-        assert result[1] == {"role": "user", "content": "Hello"}
-        assert result[2] == {"role": "assistant", "content": "Hi"}
-
-    def test_insert_after_single_system(self):
-        messages = [
-            {"role": "system", "content": "Only one"},
-            {"role": "user", "content": "Hello"},
-        ]
-        result = _insert_concurrent_messages_explanation(messages)
-        assert len(result) == 3
-        assert result[0] == {"role": "system", "content": "Only one"}
-        assert result[1]["content"] == CONCURRENT_USER_MESSAGES_EXPLANATION
-        assert result[2] == {"role": "user", "content": "Hello"}
-
-    def test_empty_list(self):
-        result = _insert_concurrent_messages_explanation([])
-        assert len(result) == 1
-        assert result[0]["content"] == CONCURRENT_USER_MESSAGES_EXPLANATION
-
-
-class TestPreprocessMessagesForAnthropic:
-    """Tests for the combined Anthropic preprocessing."""
-
-    def test_system_move_then_user_combine_with_explanation(self):
-        """Test that system messages move first, then adjacent users are combined, then explanation added."""
-        messages = [
-            {"role": "system", "content": "sys1"},
-            {"role": "user", "content": "A"},
-            {"role": "system", "content": "sys2"},
-            {"role": "user", "content": "B"},
-        ]
-        result = preprocess_messages_for_anthropic(messages)
-
-        # After system move: sys1 -> sys2 -> A -> B
-        # After user combine: sys1 -> sys2 -> combined(A,B)
-        # After explanation: sys1 -> sys2 -> explanation -> combined(A,B)
-        assert len(result) == 4
-        assert result[0] == {"role": "system", "content": "sys1"}
-        assert result[1] == {"role": "system", "content": "sys2"}
-        assert result[2]["role"] == "system"
-        assert result[2]["content"] == CONCURRENT_USER_MESSAGES_EXPLANATION
-
-        content_dict = json.loads(result[3]["content"])
-        assert content_dict["content"] == [
-            {"type": "text", "text": "A"},
-            {"type": "text", "text": "B"},
-        ]
-
-    def test_no_explanation_when_no_combining(self):
-        """When no adjacent user messages exist, no explanation should be added."""
-        messages = [
-            {"role": "system", "content": "sys"},
-            {"role": "user", "content": "Hello"},
-            {"role": "assistant", "content": "Hi"},
-        ]
-        result = preprocess_messages_for_anthropic(messages)
-        assert len(result) == 3
-        assert result[0] == {"role": "system", "content": "sys"}
-        assert result[1] == {"role": "user", "content": "Hello"}
-        assert result[2] == {"role": "assistant", "content": "Hi"}
-        # No explanation message added
-        for msg in result:
-            assert msg["content"] != CONCURRENT_USER_MESSAGES_EXPLANATION
-
-    def test_does_not_modify_original(self):
-        """Preprocessing should return a new list, not modify the original."""
-        messages = [
-            {"role": "user", "content": "A"},
-            {"role": "system", "content": "sys"},
-            {"role": "user", "content": "B"},
-        ]
-        original_messages = [msg.copy() for msg in messages]
-
-        result = preprocess_messages_for_anthropic(messages)
-
-        # Original should be unchanged
-        assert messages == original_messages
-        # Result should be different
-        assert result != messages
-
-    def test_complex_conversation(self):
-        """Test a more realistic conversation flow."""
-        messages = [
-            {"role": "system", "content": "You are a helpful assistant."},
-            {"role": "user", "content": "Hello"},
-            {"role": "assistant", "content": "Hi there!"},
-            {"role": "system", "content": "Be concise."},
-            {"role": "user", "content": "What is 1+1?"},
-            {"role": "user", "content": "Also, what is 2+2?"},
-        ]
-        result = preprocess_messages_for_anthropic(messages)
-
-        # Expected order after preprocessing:
-        # sys("You are...") -> sys("Be concise") -> explanation ->
-        # user("Hello") -> assistant("Hi there!") -> combined_user(1+1, 2+2)
-        assert len(result) == 6
-        assert result[0]["role"] == "system"
-        assert result[0]["content"] == "You are a helpful assistant."
-        assert result[1]["role"] == "system"
-        assert result[1]["content"] == "Be concise."
-        assert result[2]["role"] == "system"
-        assert result[2]["content"] == CONCURRENT_USER_MESSAGES_EXPLANATION
-        assert result[3]["role"] == "user"
-        assert result[3]["content"] == "Hello"
-        assert result[4]["role"] == "assistant"
-        assert result[5]["role"] == "user"
-
-        content_dict = json.loads(result[5]["content"])
-        assert len(content_dict["content"]) == 2
-
-
-class TestPreprocessMessagesForProvider:
-    """Tests for the provider dispatch function."""
-
-    def test_anthropic_preprocessing_applied(self):
-        messages = [
-            {"role": "user", "content": "A"},
-            {"role": "system", "content": "sys"},
-            {"role": "user", "content": "B"},
-        ]
-        result = preprocess_messages_for_provider(messages, "anthropic")
-
-        # System should be moved to front
-        assert result[0]["role"] == "system"
-        assert result[0]["content"] == "sys"
-        # Explanation should be next
-        assert result[1]["role"] == "system"
-        assert result[1]["content"] == CONCURRENT_USER_MESSAGES_EXPLANATION
-        # Users should be combined
-        content = json.loads(result[2]["content"])
-        assert len(content["content"]) == 2
-
-    def test_non_anthropic_no_preprocessing(self):
-        messages = [
-            {"role": "user", "content": "A"},
-            {"role": "system", "content": "sys"},
-            {"role": "user", "content": "B"},
-        ]
-        result = preprocess_messages_for_provider(messages, "openai")
-
-        # Should return a copy but unchanged order
-        assert result == messages
-        assert result is not messages  # Should be a copy
-
-    def test_none_provider_no_preprocessing(self):
-        messages = [
-            {"role": "user", "content": "A"},
-            {"role": "system", "content": "sys"},
-        ]
-        result = preprocess_messages_for_provider(messages, None)
-        assert result == messages
-
 
 class TestApplyProviderPreprocessing:
-    """Tests for apply_provider_preprocessing on kw dict."""
+    """Tests for the main entry point."""
 
-    def test_modifies_messages_in_kw(self):
+    def test_anthropic_full_preprocessing(self):
         kw = {
-            "model": "claude@anthropic",
             "messages": [
                 {"role": "user", "content": "A"},
                 {"role": "system", "content": "sys"},
                 {"role": "user", "content": "B"},
             ],
         }
-        result = apply_provider_preprocessing(kw, "anthropic")
+        apply_provider_preprocessing(kw, "anthropic")
 
-        # Should be same dict reference
-        assert result is kw
-        # Messages should be preprocessed - system moved to front
-        assert kw["messages"][0]["role"] == "system"
-        assert kw["messages"][0]["content"] == "sys"
-        # Explanation should be added
-        assert kw["messages"][1]["role"] == "system"
+        # System moved to front, explanation added, users combined
+        assert len(kw["messages"]) == 3
+        assert kw["messages"][0] == {"role": "system", "content": "sys"}
         assert kw["messages"][1]["content"] == CONCURRENT_USER_MESSAGES_EXPLANATION
+        assert json.loads(kw["messages"][2]["content"])["content"] == [
+            {"type": "text", "text": "A"},
+            {"type": "text", "text": "B"},
+        ]
 
-    def test_handles_empty_messages(self):
-        kw = {"model": "claude@anthropic", "messages": []}
-        result = apply_provider_preprocessing(kw, "anthropic")
-        assert result["messages"] == []
-
-    def test_handles_missing_messages(self):
-        kw = {"model": "claude@anthropic"}
-        result = apply_provider_preprocessing(kw, "anthropic")
-        assert "messages" not in result
-
-    def test_handles_none_messages(self):
-        kw = {"model": "claude@anthropic", "messages": None}
-        result = apply_provider_preprocessing(kw, "anthropic")
-        assert result["messages"] is None
-
-    def test_non_anthropic_preserves_order(self):
+    def test_no_explanation_when_no_combining(self):
         kw = {
-            "model": "gpt-4@openai",
+            "messages": [
+                {"role": "system", "content": "sys"},
+                {"role": "user", "content": "Hello"},
+            ],
+        }
+        apply_provider_preprocessing(kw, "anthropic")
+
+        assert len(kw["messages"]) == 2
+        assert kw["messages"][0] == {"role": "system", "content": "sys"}
+        assert kw["messages"][1] == {"role": "user", "content": "Hello"}
+
+    def test_does_not_modify_original_messages(self):
+        original = [
+            {"role": "user", "content": "A"},
+            {"role": "system", "content": "sys"},
+        ]
+        kw = {"messages": original}
+        apply_provider_preprocessing(kw, "anthropic")
+
+        # Original list reference unchanged, kw has new list
+        assert original[0] == {"role": "user", "content": "A"}
+        assert kw["messages"] is not original
+
+    def test_non_anthropic_unchanged(self):
+        kw = {
             "messages": [
                 {"role": "user", "content": "A"},
                 {"role": "system", "content": "sys"},
             ],
         }
-        original_messages = [msg.copy() for msg in kw["messages"]]
+        original_messages = kw["messages"]
         apply_provider_preprocessing(kw, "openai")
 
-        assert kw["messages"] == original_messages
+        assert kw["messages"] is original_messages
+
+    def test_anthropic_fallback_chain(self):
+        kw = {
+            "messages": [
+                {"role": "user", "content": "A"},
+                {"role": "system", "content": "sys"},
+            ],
+        }
+        apply_provider_preprocessing(kw, "anthropic->openai")
+        assert kw["messages"][0] == {"role": "system", "content": "sys"}
+
+    def test_non_anthropic_first_in_fallback(self):
+        kw = {
+            "messages": [
+                {"role": "user", "content": "A"},
+                {"role": "system", "content": "sys"},
+            ],
+        }
+        original_messages = kw["messages"]
+        apply_provider_preprocessing(kw, "openai->anthropic")
+        assert kw["messages"] is original_messages
+
+    def test_empty_messages(self):
+        kw = {"messages": []}
+        apply_provider_preprocessing(kw, "anthropic")
+        assert kw["messages"] == []
+
+    def test_missing_messages(self):
+        kw = {"model": "test"}
+        apply_provider_preprocessing(kw, "anthropic")
+        assert "messages" not in kw
+
+    def test_none_provider(self):
+        kw = {"messages": [{"role": "user", "content": "A"}]}
+        original = kw["messages"]
+        apply_provider_preprocessing(kw, None)
+        assert kw["messages"] is original
 
 
 class TestEdgeCases:
-    """Test edge cases and special scenarios."""
+    """Edge cases for the full preprocessing pipeline."""
 
     def test_all_system_messages(self):
-        """No user combining, so no explanation added."""
-        messages = [
-            {"role": "system", "content": "sys1"},
-            {"role": "system", "content": "sys2"},
-            {"role": "system", "content": "sys3"},
-        ]
-        result = preprocess_messages_for_anthropic(messages)
-        assert result == messages
+        kw = {
+            "messages": [
+                {"role": "system", "content": "sys1"},
+                {"role": "system", "content": "sys2"},
+            ],
+        }
+        apply_provider_preprocessing(kw, "anthropic")
+        # No combining, no explanation
+        assert len(kw["messages"]) == 2
 
-    def test_all_user_messages(self):
-        """All users combined, explanation added at the front."""
-        messages = [
-            {"role": "user", "content": "A"},
-            {"role": "user", "content": "B"},
-            {"role": "user", "content": "C"},
-        ]
-        result = preprocess_messages_for_anthropic(messages)
-        # Explanation + combined user message
-        assert len(result) == 2
-        assert result[0]["role"] == "system"
-        assert result[0]["content"] == CONCURRENT_USER_MESSAGES_EXPLANATION
-        content = json.loads(result[1]["content"])
+    def test_all_user_messages_combined(self):
+        kw = {
+            "messages": [
+                {"role": "user", "content": "A"},
+                {"role": "user", "content": "B"},
+                {"role": "user", "content": "C"},
+            ],
+        }
+        apply_provider_preprocessing(kw, "anthropic")
+        # Explanation + combined user
+        assert len(kw["messages"]) == 2
+        assert kw["messages"][0]["content"] == CONCURRENT_USER_MESSAGES_EXPLANATION
+        content = json.loads(kw["messages"][1]["content"])
         assert len(content["content"]) == 3
 
-    def test_alternating_user_assistant(self):
+    def test_alternating_user_assistant_unchanged(self):
         messages = [
             {"role": "user", "content": "Q1"},
             {"role": "assistant", "content": "A1"},
             {"role": "user", "content": "Q2"},
             {"role": "assistant", "content": "A2"},
         ]
-        result = preprocess_messages_for_anthropic(messages)
-        # No adjacent users, no system to move - should be unchanged
-        assert result == messages
-
-    def test_empty_content_handling(self):
-        messages = [
-            {"role": "user", "content": ""},
-            {"role": "user", "content": "B"},
-        ]
-        result = preprocess_messages_for_anthropic(messages)
-        # Explanation + combined user
-        assert len(result) == 2
-        assert result[0]["content"] == CONCURRENT_USER_MESSAGES_EXPLANATION
-        content = json.loads(result[1]["content"])
-        assert content["content"][0]["text"] == ""
-        assert content["content"][1]["text"] == "B"
-
-    def test_fallback_chain_anthropic_first(self):
-        """Test with Anthropic as first in fallback chain."""
-        messages = [
-            {"role": "user", "content": "A"},
-            {"role": "system", "content": "sys"},
-        ]
-        result = preprocess_messages_for_provider(messages, "anthropic->openai")
-        # Should apply Anthropic preprocessing (system moved to front)
-        assert result[0]["role"] == "system"
-        assert result[0]["content"] == "sys"
-        # No adjacent users, so no explanation added
-        assert len(result) == 2
-
-    def test_fallback_chain_anthropic_not_first(self):
-        """Test with Anthropic not first in fallback chain."""
-        messages = [
-            {"role": "user", "content": "A"},
-            {"role": "system", "content": "sys"},
-        ]
-        result = preprocess_messages_for_provider(messages, "openai->anthropic")
-        # Should NOT apply Anthropic preprocessing (uses first provider)
-        assert result[0]["role"] == "user"
+        kw = {"messages": messages}
+        apply_provider_preprocessing(kw, "anthropic")
+        # No adjacent users, no changes (except deep copy)
+        assert kw["messages"] == messages
