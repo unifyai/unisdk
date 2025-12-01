@@ -10,7 +10,15 @@ sending requests to specific providers. The preprocessing happens:
 
 import copy
 import json
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
+
+CONCURRENT_USER_MESSAGES_EXPLANATION = (
+    "For all user messages which are represented in JSON format, please treat each "
+    "item in the list as a separate message. The user message is shown in JSON format "
+    "because this API does not natively support concurrent user messages (which is "
+    "what actually occurred), and concurrent user messages are being represented this "
+    "way instead."
+)
 
 
 def _is_anthropic_provider(provider: Optional[str]) -> bool:
@@ -62,7 +70,7 @@ def _move_system_messages_to_front(
 
 def _combine_adjacent_user_messages(
     messages: List[Dict[str, Any]],
-) -> List[Dict[str, Any]]:
+) -> Tuple[List[Dict[str, Any]], bool]:
     """
     Combine adjacent user messages into a single message with content array format.
 
@@ -81,12 +89,13 @@ def _combine_adjacent_user_messages(
         messages: List of message dictionaries.
 
     Returns:
-        New list with adjacent user messages combined.
+        Tuple of (new list with adjacent user messages combined, whether any combining occurred).
     """
     if not messages:
-        return []
+        return [], False
 
     result = []
+    combined_any = False
     i = 0
 
     while i < len(messages):
@@ -109,6 +118,7 @@ def _combine_adjacent_user_messages(
             result.append(current_msg)
         else:
             # Multiple adjacent user messages - combine them
+            combined_any = True
             content_array = [
                 {"type": "text", "text": content} for content in adjacent_user_contents
             ]
@@ -126,6 +136,36 @@ def _combine_adjacent_user_messages(
                 },
             )
 
+    return result, combined_any
+
+
+def _insert_concurrent_messages_explanation(
+    messages: List[Dict[str, Any]],
+) -> List[Dict[str, Any]]:
+    """
+    Insert the concurrent user messages explanation system message after all existing
+    system messages.
+
+    Args:
+        messages: List of message dictionaries (assumed to have system messages at front).
+
+    Returns:
+        New list with the explanation system message inserted.
+    """
+    explanation_msg = {
+        "role": "system",
+        "content": CONCURRENT_USER_MESSAGES_EXPLANATION,
+    }
+
+    # Find the position after the last system message
+    insert_pos = 0
+    for i, msg in enumerate(messages):
+        if msg.get("role") == "system":
+            insert_pos = i + 1
+        else:
+            break
+
+    result = messages[:insert_pos] + [explanation_msg] + messages[insert_pos:]
     return result
 
 
@@ -135,9 +175,10 @@ def preprocess_messages_for_anthropic(
     """
     Apply Anthropic-specific preprocessing to messages.
 
-    This performs two transformations:
+    This performs the following transformations:
     1. Move all system messages to the beginning of the list
     2. Combine adjacent user messages into content array format
+    3. If any user messages were combined, append an explanation system message
 
     Args:
         messages: List of message dictionaries.
@@ -152,7 +193,11 @@ def preprocess_messages_for_anthropic(
     messages = _move_system_messages_to_front(messages)
 
     # Step 2: Combine adjacent user messages
-    messages = _combine_adjacent_user_messages(messages)
+    messages, combined_any = _combine_adjacent_user_messages(messages)
+
+    # Step 3: If combining occurred, add explanation system message
+    if combined_any:
+        messages = _insert_concurrent_messages_explanation(messages)
 
     return messages
 
