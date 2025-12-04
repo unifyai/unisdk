@@ -8,7 +8,7 @@ authors = ["Unify <hello@unify.com>"]
 repository = "https://github.com/unifyai/unify"
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = "^3.10"
 requests = "^2.31.0"
 requests-toolbelt = "^1.0.0"
 openai = "^2.8.1"
@@ -19,6 +19,8 @@ pytest-timeout = "^2.3.1"
 pytest-asyncio = ">=0.24.0"
 termcolor ="2.5.0"
 aiohttp = "^3.11.12"
+litellm = "^1.80.7"
+google-genai = "^1.52.0"
 
 [tool.poetry.group.dev.dependencies]
 types-requests = "*"

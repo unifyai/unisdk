@@ -21,11 +21,7 @@ from unify import BASE_URL
 from unify.utils import http
 
 # noinspection PyProtectedMember
-from unify.utils.helpers import (
-    _create_request_header,
-    _validate_api_key,
-    _validate_openai_api_key,
-)
+from unify.utils.helpers import _create_request_header, _validate_api_key
 
 
 def set_client_direct_mode(value: bool) -> None:
@@ -35,13 +31,13 @@ def set_client_direct_mode(value: bool) -> None:
     Args:
         value: The value to set the direct mode to.
     """
-    _Client._set_direct_mode(value)
+    _Client._set_default_direct_mode(value)
 
 
 class _Client(ABC):
     """Base Abstract class for interacting with the Unify chat completions endpoint."""
 
-    _DIRECT_OPENAI_MODE = False
+    _DEFAULT_DIRECT_MODE = False
 
     def __init__(
         self,
@@ -80,11 +76,11 @@ class _Client(ABC):
         log_query_body: Optional[bool],
         log_response_body: Optional[bool],
         api_key: Optional[str],
-        openai_api_key: Optional[str],
         # python client arguments
         stateful: bool,
         return_full_completion: bool,
         traced: bool,
+        direct_mode: bool,
         cache: Union[bool, str],
         cache_backend: str,
         # passthrough arguments
@@ -95,10 +91,6 @@ class _Client(ABC):
 
         # initial values
         self._api_key = _validate_api_key(api_key)
-        self._openai_api_key = _validate_openai_api_key(
-            _Client._DIRECT_OPENAI_MODE,
-            openai_api_key,
-        )
         self._system_message = None
         self._messages = None
         self._frequency_penalty = None
@@ -129,6 +121,7 @@ class _Client(ABC):
         self._stateful = None
         self._return_full_completion = None
         self._traced = None
+        self._direct_mode = None
         self._cache = None
         self._cache_backend = None
         self._extra_headers = None
@@ -168,6 +161,7 @@ class _Client(ABC):
         self.set_stateful(stateful)
         self.set_return_full_completion(return_full_completion)
         self.set_traced(traced)
+        self.set_direct_mode(direct_mode)
         self.set_cache(cache)
         self.set_cache_backend(cache_backend)
         # passthrough arguments
@@ -201,11 +195,8 @@ class _Client(ABC):
         }
 
     @classmethod
-    def _set_direct_mode(cls, value: bool) -> None:
-        cls._DIRECT_OPENAI_MODE = value
-
-    def _is_direct_mode_available(self) -> bool:
-        return self._openai_api_key is not None and self._DIRECT_OPENAI_MODE
+    def _set_default_direct_mode(cls, value: bool) -> None:
+        cls._DEFAULT_DIRECT_MODE = value
 
     # Properties #
     # -----------#
@@ -1000,6 +991,19 @@ class _Client(ABC):
             This client, useful for chaining inplace calls.
         """
         self._traced = value
+        return self
+
+    def set_direct_mode(self, value: bool) -> Self:
+        """
+        Set the default direct mode bool.  # noqa: DAR101.
+
+        Args:
+            value: The default direct mode bool.
+
+        Returns:
+            This client, useful for chaining inplace calls.
+        """
+        self._direct_mode = value
         return self
 
     def set_cache(self, value: bool) -> Self:

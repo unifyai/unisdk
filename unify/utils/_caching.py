@@ -11,6 +11,7 @@ import json
 import threading
 from typing import Any, Dict, Optional, Type, Union
 
+from litellm.types.utils import ModelResponse
 from openai.types.chat import ChatCompletion, ParsedChatCompletion
 from pydantic import BaseModel
 from unify.utils.caching import BaseCache, LocalCache, LocalSeparateCache, RemoteCache
@@ -100,6 +101,7 @@ def _get_cache(
 
     type_mapping = {
         "ChatCompletion": ChatCompletion,
+        "ModelResponse": ModelResponse,
         "Log": Log,
         "ParsedChatCompletion": ParsedChatCompletion,
     }

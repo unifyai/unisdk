@@ -20,6 +20,7 @@ from typing import (
     Union,
 )
 
+import litellm
 import openai
 
 # local
@@ -37,7 +38,7 @@ from openai.types.chat import (
 from openai.types.chat.chat_completion import Choice
 from pydantic import BaseModel
 from typing_extensions import Self
-from unify import BASE_URL, LOCAL_MODELS, list_models
+from unify import BASE_URL, LOCAL_MODELS
 from unify.universal_api.clients.helpers import (
     _assert_is_valid_endpoint,
     _assert_is_valid_model,
@@ -54,7 +55,10 @@ from unify.universal_api.utils.provider_preprocessing import (
 from ...utils._caching import _get_cache, _write_to_cache, is_caching_enabled
 from ...utils.helpers import _default
 from ..clients.base import _Client
+from ..endpoints.utils import get_model_alias
 from ..types import Prompt
+
+litellm.drop_params = True
 
 
 class _UniClient(_Client, abc.ABC):
@@ -93,11 +97,11 @@ class _UniClient(_Client, abc.ABC):
         log_query_body: Optional[bool] = True,
         log_response_body: Optional[bool] = True,
         api_key: Optional[str] = None,
-        openai_api_key: Optional[str] = None,
         # python client arguments
         stateful: bool = False,
         return_full_completion: bool = False,
         traced: bool = False,
+        direct_mode: Optional[bool] = None,
         cache: Optional[Union[bool, str]] = None,
         cache_backend: Optional[str] = None,
         # passthrough arguments
@@ -290,11 +294,11 @@ class _UniClient(_Client, abc.ABC):
             log_query_body=log_query_body,
             log_response_body=log_response_body,
             api_key=api_key,
-            openai_api_key=openai_api_key,
             # python client arguments
             stateful=stateful,
             return_full_completion=return_full_completion,
             traced=traced,
+            direct_mode=direct_mode or _Client._DEFAULT_DIRECT_MODE,
             cache=cache,
             cache_backend=cache_backend,
             # passthrough arguments
@@ -323,14 +327,6 @@ class _UniClient(_Client, abc.ABC):
             self.set_provider(provider)
         if model:
             self.set_model(model)
-
-        self._should_use_direct_mode = False
-        if self._is_direct_mode_available() and self.model in list_models(
-            provider="openai",
-        ):
-            self._should_use_direct_mode = True
-            self._endpoint = self.model
-            self._provider = "openai"
 
         self._client = self._get_client()
 
@@ -972,11 +968,6 @@ class Unify(_UniClient):
 
     def _get_client(self):
         try:
-            if self._should_use_direct_mode:
-                return openai.OpenAI(
-                    api_key=self._openai_api_key,
-                    timeout=3600.0,  # one hour
-                )
             http_client = make_httpx_client_for_unify_logging(BASE_URL)
             return openai.OpenAI(
                 base_url=f"{BASE_URL}",
@@ -1017,7 +1008,7 @@ class Unify(_UniClient):
         )
         # Apply provider-specific preprocessing (before cache, on a copy of messages)
         apply_provider_preprocessing(kw, self._provider)
-        if self._should_use_direct_mode:
+        if self._direct_mode:
             kw.pop("extra_body")
         try:
             if endpoint in LOCAL_MODELS:
@@ -1082,20 +1073,23 @@ class Unify(_UniClient):
         )
         # Apply provider-specific preprocessing (before cache, on a copy of messages)
         apply_provider_preprocessing(kw, self._provider)
-        if self._should_use_direct_mode:
-            kw.pop("extra_body")
         if isinstance(cache, str) and cache.endswith("-closest"):
             cache = cache.removesuffix("-closest")
             read_closest = True
         else:
             read_closest = False
-        if "response_format" in kw:
-            chat_method = self._client.beta.chat.completions.parse
-            del kw["stream"]
-        elif endpoint == "user-input":
-            chat_method = lambda *a, **kw: input("write your agent response:\n")
+        if self._direct_mode:
+            chat_method = litellm.completion
+            kw["model"] = get_model_alias(endpoint)
+            kw.pop("extra_body")
         else:
-            chat_method = self._client.chat.completions.create
+            if "response_format" in kw:
+                chat_method = self._client.beta.chat.completions.parse
+                del kw["stream"]
+            elif endpoint == "user-input":
+                chat_method = lambda *a, **kw: input("write your agent response:\n")
+            else:
+                chat_method = self._client.chat.completions.create
         chat_completion = None
         in_cache = False
         if cache in [True, "both", "read", "read-only"]:
@@ -1173,12 +1167,15 @@ class Unify(_UniClient):
                     response=chat_completion,
                     backend=cache_backend,
                 )
-        if self._should_use_direct_mode and not in_cache:
+        if self._direct_mode and not in_cache:
             response_format = kw.get("response_format")
             if response_format is not None:
-                kw["response_format"] = response_format.model_json_schema()
+                try:
+                    kw["response_format"] = response_format.model_json_schema()
+                except:
+                    pass
             unify.log_query(
-                endpoint=f"{endpoint}@openai",
+                endpoint=f"{endpoint}",
                 query_body=kw,
                 response_body=chat_completion.model_dump(),
                 consume_credits=True,
@@ -1329,12 +1326,6 @@ class AsyncUnify(_UniClient):
         try:
             # Async event hooks must use AsyncClient
             http_client = make_async_httpx_client_for_unify_logging(BASE_URL)
-            if self._should_use_direct_mode:
-                return openai.AsyncOpenAI(
-                    api_key=self._openai_api_key,
-                    timeout=3600.0,  # one hour
-                    http_client=http_client,
-                )
             return openai.AsyncOpenAI(
                 base_url=f"{BASE_URL}",
                 api_key=self._api_key,
@@ -1374,7 +1365,7 @@ class AsyncUnify(_UniClient):
         )
         # Apply provider-specific preprocessing (before cache, on a copy of messages)
         apply_provider_preprocessing(kw, self._provider)
-        if self._should_use_direct_mode:
+        if self._direct_mode:
             kw.pop("extra_body")
         try:
             if endpoint in LOCAL_MODELS:
@@ -1438,19 +1429,23 @@ class AsyncUnify(_UniClient):
         )
         # Apply provider-specific preprocessing (before cache, on a copy of messages)
         apply_provider_preprocessing(kw, self._provider)
-        if self._should_use_direct_mode:
+        if self._direct_mode:
             kw.pop("extra_body")
         if isinstance(cache, str) and cache.endswith("-closest"):
             cache = cache.removesuffix("-closest")
             read_closest = True
         else:
             read_closest = False
-        if "response_format" in kw and kw["response_format"]:
-            chat_method = self._client.beta.chat.completions.parse
-            if "stream" in kw:
-                del kw["stream"]  # .parse() does not accept the stream argument
+        if self._direct_mode:
+            chat_method = litellm.acompletion
+            kw["model"] = get_model_alias(endpoint)
         else:
-            chat_method = self._client.chat.completions.create
+            if "response_format" in kw and kw["response_format"]:
+                chat_method = self._client.beta.chat.completions.parse
+                if "stream" in kw:
+                    del kw["stream"]  # .parse() does not accept the stream argument
+            else:
+                chat_method = self._client.chat.completions.create
         chat_completion = None
         in_cache = False
         if cache in [True, "both", "read", "read-only"]:
@@ -1533,14 +1528,17 @@ class AsyncUnify(_UniClient):
                     response=chat_completion,
                     backend=cache_backend,
                 )
-        if self._should_use_direct_mode and not in_cache:
+        if self._direct_mode and not in_cache:
             response_format = kw.get("response_format")
             if response_format is not None:
-                kw["response_format"] = response_format.model_json_schema()
+                try:
+                    kw["response_format"] = response_format.model_json_schema()
+                except:
+                    pass
             asyncio.create_task(
                 asyncio.to_thread(
                     unify.log_query,
-                    endpoint=f"{endpoint}@openai",
+                    endpoint=f"{endpoint}",
                     query_body=kw,
                     response_body=chat_completion.model_dump(),
                     consume_credits=True,

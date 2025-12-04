@@ -45,6 +45,7 @@ from .universal_api.utils.custom_endpoints import *
 from .universal_api.utils.queries import *
 from .universal_api.utils.supported_endpoints import *
 from .universal_api.utils.user import *
+from .universal_api import endpoints as _endpoints
 
 from .logging.utils import compositions
 from .logging.utils import contexts
