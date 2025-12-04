@@ -229,7 +229,7 @@ def test_create_context_with_foreign_keys():
                 "references": "Departments.id",
                 "on_delete": "CASCADE",
                 "on_update": "CASCADE",
-            }
+            },
         ],
     )
 
@@ -318,10 +318,10 @@ def test_create_contexts_batch_with_foreign_keys():
                         "references": "Departments.id",
                         "on_delete": "CASCADE",
                         "on_update": "CASCADE",
-                    }
+                    },
                 ],
             },
-        ]
+        ],
     )
 
     # Verify both contexts were created
@@ -369,7 +369,7 @@ def test_foreign_key_cascade_action():
                 "references": "Departments.dept_id",
                 "on_delete": "CASCADE",
                 "on_update": "CASCADE",
-            }
+            },
         ],
     )
 
@@ -410,7 +410,7 @@ def test_foreign_key_set_null_action():
                 "references": "Departments.id",
                 "on_delete": "SET NULL",
                 "on_update": "SET NULL",
-            }
+            },
         ],
     )
 
@@ -439,7 +439,7 @@ def test_nested_contexts_with_foreign_keys():
                 "references": "org/departments.id",
                 "on_delete": "CASCADE",
                 "on_update": "CASCADE",
-            }
+            },
         ],
     )
 
@@ -468,7 +468,7 @@ def test_flat_array_foreign_key():
                 "references": "Tags.tag_id",
                 "on_delete": "CASCADE",
                 "on_update": "CASCADE",
-            }
+            },
         ],
     )
 
@@ -513,7 +513,7 @@ def test_nested_array_foreign_key():
                 "references": "Images.image_id",
                 "on_delete": "CASCADE",
                 "on_update": "CASCADE",
-            }
+            },
         ],
     )
 
@@ -558,7 +558,7 @@ def test_nested_object_foreign_key():
                 "references": "Users.user_id",
                 "on_delete": "SET NULL",
                 "on_update": "CASCADE",
-            }
+            },
         ],
     )
 
@@ -604,7 +604,7 @@ def test_mixed_nesting_foreign_key():
                 "references": "Users.user_id",
                 "on_delete": "CASCADE",
                 "on_update": "CASCADE",
-            }
+            },
         ],
     )
 
@@ -659,7 +659,7 @@ def test_flat_array_fk_with_actual_data():
                 "references": "Tags.tag_id",
                 "on_delete": "CASCADE",
                 "on_update": "CASCADE",
-            }
+            },
         ],
     )
 
@@ -707,7 +707,7 @@ def test_nested_array_fk_with_actual_data():
                 "references": "Images.image_id",
                 "on_delete": "CASCADE",
                 "on_update": "CASCADE",
-            }
+            },
         ],
     )
 
@@ -735,6 +735,72 @@ def test_nested_array_fk_with_actual_data():
     assert len(transcripts) == 1
     assert transcripts[0]._entries.get("transcript_id") == "t_001"
     assert len(transcripts[0]._entries.get("images")) == 2
+
+
+@_handle_project
+def test_delete_context_prefix_collision():
+    """Test that delete_context uses path-based matching, not simple string prefix.
+
+    This verifies that deleting "test_call" does NOT delete "test_call_to_sms"
+    (a sibling with shared string prefix), but DOES delete "test_call/Events"
+    (an actual path child).
+    """
+    # Create contexts that share a string prefix but are siblings (not parent/child)
+    unify.create_contexts(
+        [
+            "test_call",
+            "test_call_to_sms",
+            "test_call_to_email",
+        ],
+    )
+
+    # Create actual path children of test_call
+    unify.create_contexts(
+        [
+            "test_call/Events",
+            "test_call/Logs",
+        ],
+    )
+
+    assert len(unify.get_contexts()) == 5
+
+    # Delete with delete_children=True should delete test_call and its path children,
+    # but NOT the siblings that share a string prefix
+    unify.delete_context("test_call", delete_children=True)
+
+    contexts = unify.get_contexts()
+    assert len(contexts) == 2
+    # Siblings should still exist
+    assert "test_call_to_sms" in contexts
+    assert "test_call_to_email" in contexts
+    # Parent and path children should be deleted
+    assert "test_call" not in contexts
+    assert "test_call/Events" not in contexts
+    assert "test_call/Logs" not in contexts
+
+
+@_handle_project
+def test_delete_context_without_children():
+    """Test that delete_children=False only deletes the exact context."""
+    unify.create_contexts(
+        [
+            "parent",
+            "parent/child1",
+            "parent/child2",
+        ],
+    )
+
+    assert len(unify.get_contexts()) == 3
+
+    # Delete with delete_children=False should only delete the exact context
+    unify.delete_context("parent", delete_children=False)
+
+    contexts = unify.get_contexts()
+    assert len(contexts) == 2
+    assert "parent" not in contexts
+    # Children should still exist
+    assert "parent/child1" in contexts
+    assert "parent/child2" in contexts
 
 
 if __name__ == "__main__":
