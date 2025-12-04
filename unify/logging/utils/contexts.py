@@ -431,14 +431,19 @@ def delete_context(
     )
     headers = _create_request_header(api_key)
 
-    # ToDo: remove this hack once this task [https://app.clickup.com/t/86c3kuch6] is done
-    all_contexts = get_contexts(project, prefix=name)
-    for ctx in all_contexts:
+    contexts_to_delete = [name]
+
+    if delete_children:
+        children = get_contexts(project, prefix=name + "/", api_key=api_key)
+        contexts_to_delete.extend(children.keys())
+
+    response = None
+    for ctx in contexts_to_delete:
         response = http.delete(
             BASE_URL + f"/project/{project}/contexts/{ctx}",
             headers=headers,
         )
-    if all_contexts:
+    if response is not None:
         return response.json()
 
 
