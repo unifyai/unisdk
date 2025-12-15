@@ -2012,6 +2012,76 @@ def delete_fields(
     return response.json()
 
 
+# Debug Mode Control #
+# -------------------#
+
+
+def set_jsonb_mode(enabled: bool, api_key: Optional[str] = None) -> Dict[str, Any]:
+    """
+    Toggle JSONB/EAV query mode at runtime.
+
+    This is a debug function for switching between JSONB and EAV query modes
+    in the Orchestra backend. JSONB mode is the default and offers significantly
+    better query performance.
+
+    Args:
+        enabled: If True, enables JSONB mode. If False, reverts to EAV mode.
+
+        api_key: If specified, unify API key to be used. Defaults to the value in the
+        `UNIFY_KEY` environment variable.
+
+    Returns:
+        A dictionary containing the updated mode status:
+        {"jsonb_mode": bool, "message": str}
+
+    Example:
+        >>> import unify
+        >>> # Switch to EAV mode for debugging
+        >>> unify.set_jsonb_mode(False)
+        {'jsonb_mode': False, 'message': 'JSONB mode disabled'}
+        >>> # Switch back to JSONB mode
+        >>> unify.set_jsonb_mode(True)
+        {'jsonb_mode': True, 'message': 'JSONB mode enabled'}
+    """
+    api_key = _validate_api_key(api_key)
+    headers = _create_request_header(api_key)
+    response = http.post(
+        BASE_URL + "/_debug/jsonb_mode",
+        headers=headers,
+        params={"enabled": str(enabled).lower()},
+    )
+    return response.json()
+
+
+def get_jsonb_mode(api_key: Optional[str] = None) -> Dict[str, Any]:
+    """
+    Get the current JSONB/EAV query mode status.
+
+    This is a debug function for checking whether the Orchestra backend
+    is currently using JSONB or EAV query mode.
+
+    Args:
+        api_key: If specified, unify API key to be used. Defaults to the value in the
+        `UNIFY_KEY` environment variable.
+
+    Returns:
+        A dictionary containing the current mode status:
+        {"jsonb_mode": bool}
+
+    Example:
+        >>> import unify
+        >>> unify.get_jsonb_mode()
+        {'jsonb_mode': True}
+    """
+    api_key = _validate_api_key(api_key)
+    headers = _create_request_header(api_key)
+    response = http.get(
+        BASE_URL + "/_debug/jsonb_mode",
+        headers=headers,
+    )
+    return response.json()
+
+
 # User Logging #
 # -------------#
 
