@@ -1,4 +1,8 @@
+import concurrent.futures
+
+import pytest
 import unify
+from unify.utils.http import RequestError
 
 from ..helpers import _handle_project
 
@@ -50,6 +54,73 @@ def test_delete_project_contexts():
 
     assert len(unify.get_contexts()) == 0
     assert "test_delete_project_contexts" in unify.list_projects()
+
+
+def test_create_project_exist_ok_true():
+    """Test that exist_ok=True (default) silently succeeds when project already exists."""
+    name = "test_exist_ok_true_project"
+    if name in unify.list_projects():
+        unify.delete_project(name)
+
+    try:
+        unify.create_project(name)
+        assert name in unify.list_projects()
+
+        # Second call should succeed without error
+        result = unify.create_project(name)
+        assert result is None
+
+        # Project should still exist
+        assert name in unify.list_projects()
+    finally:
+        if name in unify.list_projects():
+            unify.delete_project(name)
+
+
+def test_create_project_exist_ok_false():
+    """Test that exist_ok=False raises an error when project already exists."""
+    name = "test_exist_ok_false_project"
+    if name in unify.list_projects():
+        unify.delete_project(name)
+
+    try:
+        unify.create_project(name)
+        assert name in unify.list_projects()
+
+        # Second call should raise an error
+        with pytest.raises(RequestError) as exc_info:
+            unify.create_project(name, exist_ok=False)
+
+        assert "already exists" in str(exc_info.value)
+    finally:
+        if name in unify.list_projects():
+            unify.delete_project(name)
+
+
+def test_create_project_concurrent_with_exist_ok():
+    """Test that concurrent creation with exist_ok=True handles race conditions."""
+    name = "test_concurrent_exist_ok_project"
+    if name in unify.list_projects():
+        unify.delete_project(name)
+
+    try:
+        num_workers = 10
+
+        def create_project_task():
+            return unify.create_project(name)
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=num_workers) as executor:
+            futures = [executor.submit(create_project_task) for _ in range(num_workers)]
+            results = [f.result() for f in concurrent.futures.as_completed(futures)]
+
+        # All calls should complete without raising an exception
+        assert len(results) == num_workers
+
+        # Project should exist
+        assert name in unify.list_projects()
+    finally:
+        if name in unify.list_projects():
+            unify.delete_project(name)
 
 
 if __name__ == "__main__":
