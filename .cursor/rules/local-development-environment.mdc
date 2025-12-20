@@ -1,0 +1,73 @@
+---
+description: Instructions for local development, test execution, and environment management
+globs: ["**/*"]
+alwaysApply: true
+---
+
+# Local Development Environment
+
+## Package Manager
+
+This project uses **Poetry** for dependency management. Do not use pip, uv, or other package managers.
+
+## Python Interpreter
+
+- Use `poetry run` to execute commands within the virtual environment.
+- Poetry stores the virtualenv in `~/Library/Caches/pypoetry/virtualenvs/` (not a local `.venv`).
+- To check the environment: `poetry env info`
+
+## Environment Bootstrap
+
+If the environment is not set up, install dependencies with:
+
+```bash
+poetry install
+```
+
+## Running Tests
+
+### Basic Command
+
+```bash
+poetry run pytest tests/path/to/test.py -v
+```
+
+### CI Environment Variable
+
+The `conftest.py` runs cleanup code when the `CI` environment variable is set. If you encounter errors like `Project _ not found` during test startup, unset `CI`:
+
+```bash
+CI= poetry run pytest tests/path/to/test.py -v
+```
+
+### Examples
+
+```bash
+# Single test file
+poetry run pytest tests/test_logging/test_utils/test_contexts.py -v
+
+# Specific test function
+poetry run pytest tests/test_logging/test_utils/test_contexts.py::test_create_context -v
+
+# Multiple specific tests
+poetry run pytest tests/test_logging/test_utils/test_contexts.py::test_create_context tests/test_logging/test_utils/test_contexts.py::test_get_context -v
+
+# Entire directory
+poetry run pytest tests/test_logging/ -v
+```
+
+## Pre-commit Hooks
+
+Pre-commit hooks run automatically on `git commit`. They include:
+- Black (formatting)
+- isort (import sorting)
+- autoflake (unused import removal)
+- trailing whitespace removal
+
+If a commit fails due to auto-formatting, simply re-run the commit command - the hooks will have fixed the files.
+
+## Dependencies
+
+- Config file: `pyproject.toml`
+- Lock file: `poetry.lock`
+- Do not edit `poetry.lock` manually. Use `poetry add`, `poetry remove`, or `poetry update`.
