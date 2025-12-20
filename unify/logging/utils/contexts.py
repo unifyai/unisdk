@@ -202,6 +202,7 @@ def create_context(
 
 def create_contexts(
     contexts: List[Union[Dict[str, Any], str]],
+    exist_ok: bool = True,
     *,
     project: Optional[str] = None,
     api_key: Optional[str] = None,
@@ -222,6 +223,9 @@ def create_contexts(
             - foreign_keys: Foreign key definitions for referential integrity. List of dictionaries,
                 each with keys: name (supports nested paths like "tag_ids[*]", "images[*].image_id", or "metadata.user.id"),
                 references, on_delete, on_update. Supported actions: "CASCADE", "SET NULL".
+
+        exist_ok: If True (default), silently succeeds when any context already exists.
+            If False, raises an error when any context already exists.
 
         project: Name of the project the contexts belong to.
 
@@ -265,7 +269,15 @@ def create_contexts(
         headers=headers,
         json=contexts,
     )
-    return response.json()
+    result = response.json()
+    if not exist_ok and result.get("errors"):
+        already_exists_errors = [
+            e for e in result["errors"] if "already exists" in e.get("error", "")
+        ]
+        if already_exists_errors:
+            names = [e["name"] for e in already_exists_errors]
+            raise ValueError(f"Contexts already exist: {names}")
+    return result
 
 
 def rename_context(
