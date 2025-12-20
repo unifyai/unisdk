@@ -2,6 +2,7 @@ from typing import Dict, List, Optional, Union
 
 from unify import BASE_URL
 from unify.utils import http
+from unify.utils.http import RequestError
 
 from ...utils.helpers import _create_request_header, _validate_api_key
 
@@ -11,6 +12,7 @@ from ...utils.helpers import _create_request_header, _validate_api_key
 
 def create_project(
     name: str,
+    exist_ok: bool = True,
     *,
     overwrite: Union[bool, str] = False,
     api_key: Optional[str] = None,
@@ -23,8 +25,11 @@ def create_project(
     Args:
         name: A unique, user-defined name used when referencing the project.
 
+        exist_ok: If True (default), silently succeeds when the project already exists.
+            If False, raises an error when the project already exists.
+
         overwrite: Controls how to handle existing projects with the same name.
-            If False (default), raises an error if project exists.
+            If False (default), raises an error if project exists (unless exist_ok=True).
             If True, deletes the entire existing project before creating new one.
             If "logs", only deletes the project's logs before creating.
             If "contexts", only deletes the project's contexts before creating.
@@ -48,8 +53,17 @@ def create_project(
                 return delete_project_contexts(name=name, api_key=api_key)
             else:
                 delete_project(name=name, api_key=api_key)
-    response = http.post(BASE_URL + "/project", headers=headers, json=body)
-    return response.json()
+    try:
+        response = http.post(BASE_URL + "/project", headers=headers, json=body)
+        return response.json()
+    except RequestError as e:
+        if (
+            exist_ok
+            and e.response.status_code == 400
+            and "already exists" in e.response.text
+        ):
+            return None
+        raise
 
 
 def rename_project(
