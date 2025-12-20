@@ -113,6 +113,20 @@ Unify takes inspiration from:
 
 Whether you're technical or non-technical, we hope Unify can help you to rapidly build top-notch LLM apps, and to remain fully focused on your *product* (not the *LLM*).
 
+## Contributing
+
+This project uses [Poetry](https://python-poetry.org/) for dependency management. To set up a development environment:
+
+```bash
+poetry install
+```
+
+To run tests:
+
+```bash
+poetry run pytest tests/path/to/test.py -v
+```
+
 ## Learn More
 
 Check out our [docs](https://docs.unify.ai/), and if you have any questions feel free to reach out to us on [discord](https://discord.com/invite/sXyFF8tDtm) 👾
