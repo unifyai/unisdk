@@ -1,4 +1,8 @@
+import concurrent.futures
+
+import pytest
 import unify
+from unify.utils.http import RequestError
 
 from ..helpers import _handle_project
 
@@ -801,6 +805,55 @@ def test_delete_context_without_children():
     # Children should still exist
     assert "parent/child1" in contexts
     assert "parent/child2" in contexts
+
+
+@_handle_project
+def test_create_context_exist_ok_true():
+    """Test that exist_ok=True (default) silently succeeds when context already exists."""
+    unify.create_context("my_context")
+    assert "my_context" in unify.get_contexts()
+
+    # Second call should succeed without error
+    result = unify.create_context("my_context")
+    assert result is None
+
+    # Context should still exist
+    assert "my_context" in unify.get_contexts()
+    assert len(unify.get_contexts()) == 1
+
+
+@_handle_project
+def test_create_context_exist_ok_false():
+    """Test that exist_ok=False raises an error when context already exists."""
+    unify.create_context("my_context")
+    assert "my_context" in unify.get_contexts()
+
+    # Second call should raise an error
+    with pytest.raises(RequestError) as exc_info:
+        unify.create_context("my_context", exist_ok=False)
+
+    assert "already exists" in str(exc_info.value)
+
+
+@_handle_project
+def test_create_context_concurrent_with_exist_ok():
+    """Test that concurrent creation with exist_ok=True handles race conditions."""
+    num_workers = 10
+
+    def create_context_task():
+        return unify.create_context("concurrent_context")
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=num_workers) as executor:
+        futures = [executor.submit(create_context_task) for _ in range(num_workers)]
+        results = [f.result() for f in concurrent.futures.as_completed(futures)]
+
+    # All calls should complete without raising an exception
+    # One will return the creation response, others will return None
+    assert len(results) == num_workers
+
+    # Context should exist exactly once
+    assert "concurrent_context" in unify.get_contexts()
+    assert len(unify.get_contexts()) == 1
 
 
 if __name__ == "__main__":
