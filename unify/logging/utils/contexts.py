@@ -2,6 +2,7 @@ from typing import Any, Dict, List, Optional, Union
 
 from unify import BASE_URL
 from unify.utils import http
+from unify.utils.http import RequestError
 
 from ...utils.helpers import _create_request_header, _get_and_maybe_create_project
 from .logs import CONTEXT_WRITE
@@ -18,6 +19,7 @@ def create_context(
     unique_keys: Optional[Dict[str, str]] = None,
     auto_counting: Optional[Dict[str, Optional[str]]] = None,
     foreign_keys: Optional[List[Dict[str, Any]]] = None,
+    exist_ok: bool = True,
     *,
     project: Optional[str] = None,
     api_key: Optional[str] = None,
@@ -59,6 +61,9 @@ def create_context(
             Example: [{"name": "department_id", "references": "Departments.id",
                       "on_delete": "CASCADE", "on_update": "CASCADE"}]
             Default is None.
+
+        exist_ok: If True (default), silently succeeds when the context already exists.
+            If False, raises an error when the context already exists.
 
         project: Name of the project the context belongs to.
 
@@ -178,12 +183,21 @@ def create_context(
         "auto_counting": auto_counting,
         "foreign_keys": foreign_keys,
     }
-    response = http.post(
-        BASE_URL + f"/project/{project}/contexts",
-        headers=headers,
-        json=body,
-    )
-    return response.json()
+    try:
+        response = http.post(
+            BASE_URL + f"/project/{project}/contexts",
+            headers=headers,
+            json=body,
+        )
+        return response.json()
+    except RequestError as e:
+        if (
+            exist_ok
+            and e.response.status_code == 400
+            and "already exists" in e.response.text
+        ):
+            return None
+        raise
 
 
 def create_contexts(
