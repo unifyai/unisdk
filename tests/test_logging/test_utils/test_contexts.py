@@ -856,5 +856,62 @@ def test_create_context_concurrent_with_exist_ok():
     assert len(unify.get_contexts()) == 1
 
 
+@_handle_project
+def test_create_contexts_exist_ok_true():
+    """Test that exist_ok=True (default) silently succeeds when contexts already exist."""
+    unify.create_contexts(["ctx_a", "ctx_b"])
+    assert len(unify.get_contexts()) == 2
+
+    # Second call with overlapping contexts should succeed without error
+    result = unify.create_contexts(["ctx_b", "ctx_c"])
+
+    # Returns partial success info
+    assert "created" in result
+    assert "ctx_c" in result["created"]
+
+    # All contexts should exist
+    contexts = unify.get_contexts()
+    assert "ctx_a" in contexts
+    assert "ctx_b" in contexts
+    assert "ctx_c" in contexts
+
+
+@_handle_project
+def test_create_contexts_exist_ok_false():
+    """Test that exist_ok=False raises an error when any context already exists."""
+    unify.create_contexts(["ctx_a", "ctx_b"])
+    assert len(unify.get_contexts()) == 2
+
+    # Second call with overlapping context should raise an error
+    with pytest.raises(ValueError) as exc_info:
+        unify.create_contexts(["ctx_b", "ctx_c"], exist_ok=False)
+
+    assert "ctx_b" in str(exc_info.value)
+
+
+@_handle_project
+def test_create_contexts_concurrent_with_exist_ok():
+    """Test that concurrent creation with exist_ok=True handles race conditions."""
+    num_workers = 10
+    contexts_to_create = ["concurrent_ctx_a", "concurrent_ctx_b", "concurrent_ctx_c"]
+
+    def create_contexts_task():
+        return unify.create_contexts(contexts_to_create)
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=num_workers) as executor:
+        futures = [executor.submit(create_contexts_task) for _ in range(num_workers)]
+        results = [f.result() for f in concurrent.futures.as_completed(futures)]
+
+    # All calls should complete without raising an exception
+    assert len(results) == num_workers
+
+    # All contexts should exist exactly once
+    contexts = unify.get_contexts()
+    assert len(contexts) == 3
+    assert "concurrent_ctx_a" in contexts
+    assert "concurrent_ctx_b" in contexts
+    assert "concurrent_ctx_c" in contexts
+
+
 if __name__ == "__main__":
     pass
