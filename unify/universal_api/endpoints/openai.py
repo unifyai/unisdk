@@ -23,6 +23,7 @@ models = {
     "gpt-5-chat-latest": "gpt-5-chat-latest",
     "gpt-5.1": "gpt-5.1",
     "gpt-5.1-chat-latest": "gpt-5.1-chat-latest",
+    "gpt-5.2": "gpt-5.2",
 }
 
 register_model_alias_map("openai", models)
