@@ -100,6 +100,7 @@ def rename_project(
 def delete_project(
     name: str,
     *,
+    missing_ok: bool = True,
     api_key: Optional[str] = None,
 ) -> str:
     """
@@ -107,6 +108,9 @@ def delete_project(
 
     Args:
         name: Name of the project to delete.
+
+        missing_ok: If True (default), silently succeeds when the project does not exist.
+            If False, raises an error when the project does not exist.
 
         api_key: If specified, unify API key to be used. Defaults to the value in the
         `UNIFY_KEY` environment variable.
@@ -116,8 +120,17 @@ def delete_project(
     """
     api_key = _validate_api_key(api_key)
     headers = _create_request_header(api_key)
-    response = http.delete(BASE_URL + f"/project/{name}", headers=headers)
-    return response.json()
+    try:
+        response = http.delete(BASE_URL + f"/project/{name}", headers=headers)
+        return response.json()
+    except RequestError as e:
+        if (
+            missing_ok
+            and e.response.status_code == 404
+            and "not found" in e.response.text.lower()
+        ):
+            return None
+        raise
 
 
 def delete_project_logs(
