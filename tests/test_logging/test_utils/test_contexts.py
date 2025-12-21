@@ -808,6 +808,54 @@ def test_delete_context_without_children():
 
 
 @_handle_project
+def test_delete_context_missing_ok_true():
+    """Test that missing_ok=True (default) silently succeeds when context does not exist."""
+    assert len(unify.get_contexts()) == 0
+
+    # Delete non-existent context should succeed without error
+    result = unify.delete_context("nonexistent_context")
+    assert result is None
+
+    # Still no contexts
+    assert len(unify.get_contexts()) == 0
+
+
+@_handle_project
+def test_delete_context_missing_ok_false():
+    """Test that missing_ok=False raises an error when context does not exist."""
+    assert len(unify.get_contexts()) == 0
+
+    # Delete non-existent context should raise an error
+    with pytest.raises(RequestError) as exc_info:
+        unify.delete_context("nonexistent_context", missing_ok=False)
+
+    assert "not found" in str(exc_info.value).lower()
+
+
+@_handle_project
+def test_delete_context_concurrent_with_missing_ok():
+    """Test that concurrent deletion with missing_ok=True handles race conditions."""
+    unify.create_context("concurrent_delete_context")
+    assert "concurrent_delete_context" in unify.get_contexts()
+
+    num_workers = 10
+
+    def delete_context_task():
+        return unify.delete_context("concurrent_delete_context")
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=num_workers) as executor:
+        futures = [executor.submit(delete_context_task) for _ in range(num_workers)]
+        results = [f.result() for f in concurrent.futures.as_completed(futures)]
+
+    # All calls should complete without raising an exception
+    assert len(results) == num_workers
+
+    # Context should no longer exist
+    assert "concurrent_delete_context" not in unify.get_contexts()
+    assert len(unify.get_contexts()) == 0
+
+
+@_handle_project
 def test_create_context_exist_ok_true():
     """Test that exist_ok=True (default) silently succeeds when context already exists."""
     unify.create_context("my_context")
