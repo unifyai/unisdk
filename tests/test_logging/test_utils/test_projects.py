@@ -123,5 +123,61 @@ def test_create_project_concurrent_with_exist_ok():
             unify.delete_project(name)
 
 
+def test_delete_project_missing_ok_true():
+    """Test that missing_ok=True (default) silently succeeds when project does not exist."""
+    name = "test_missing_ok_true_project"
+    if name in unify.list_projects():
+        unify.delete_project(name)
+
+    assert name not in unify.list_projects()
+
+    # Delete non-existent project should succeed without error
+    result = unify.delete_project(name)
+    assert result is None
+
+    # Still no project
+    assert name not in unify.list_projects()
+
+
+def test_delete_project_missing_ok_false():
+    """Test that missing_ok=False raises an error when project does not exist."""
+    name = "test_missing_ok_false_project"
+    if name in unify.list_projects():
+        unify.delete_project(name)
+
+    assert name not in unify.list_projects()
+
+    # Delete non-existent project should raise an error
+    with pytest.raises(RequestError) as exc_info:
+        unify.delete_project(name, missing_ok=False)
+
+    assert "not found" in str(exc_info.value).lower()
+
+
+def test_delete_project_concurrent_with_missing_ok():
+    """Test that concurrent deletion with missing_ok=True handles race conditions."""
+    name = "test_concurrent_missing_ok_project"
+    if name in unify.list_projects():
+        unify.delete_project(name)
+
+    unify.create_project(name)
+    assert name in unify.list_projects()
+
+    num_workers = 10
+
+    def delete_project_task():
+        return unify.delete_project(name)
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=num_workers) as executor:
+        futures = [executor.submit(delete_project_task) for _ in range(num_workers)]
+        results = [f.result() for f in concurrent.futures.as_completed(futures)]
+
+    # All calls should complete without raising an exception
+    assert len(results) == num_workers
+
+    # Project should no longer exist
+    assert name not in unify.list_projects()
+
+
 if __name__ == "__main__":
     pass
