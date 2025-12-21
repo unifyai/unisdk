@@ -434,6 +434,7 @@ def delete_context(
     name: str,
     *,
     delete_children: bool = True,
+    missing_ok: bool = True,
     project: Optional[str] = None,
     api_key: Optional[str] = None,
 ) -> None:
@@ -444,6 +445,9 @@ def delete_context(
         name: Name of the context to delete.
 
         delete_children: Whether to delete child contexts (which share the same "/" separated prefix).
+
+        missing_ok: If True (default), silently succeeds when the context does not exist.
+            If False, raises an error when the context does not exist.
 
         project: Name of the project the context belongs to.
 
@@ -465,10 +469,19 @@ def delete_context(
 
     response = None
     for ctx in contexts_to_delete:
-        response = http.delete(
-            BASE_URL + f"/project/{project}/contexts/{ctx}",
-            headers=headers,
-        )
+        try:
+            response = http.delete(
+                BASE_URL + f"/project/{project}/contexts/{ctx}",
+                headers=headers,
+            )
+        except RequestError as e:
+            if (
+                missing_ok
+                and e.response.status_code == 404
+                and "not found" in e.response.text.lower()
+            ):
+                continue
+            raise
     if response is not None:
         return response.json()
 
