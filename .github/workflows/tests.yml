@@ -36,4 +36,4 @@ jobs:
     - name: Run unit tests
       run: poetry run pytest --timeout=120 -p no:warnings -vv .
       env:
-        UNIFY_KEY: ${{ secrets.USER_API_KEY }}
+        UNIFY_KEY: ${{ secrets.UNIFY_API_KEY }}
