@@ -58,9 +58,28 @@ url:{url}
 
 
 def _mask_auth_key(kwargs: dict):
-    if "headers" in kwargs:
-        kwargs["headers"]["Authorization"] = "***"
-    return kwargs
+    """
+    Return a sanitized copy of request kwargs suitable for error messages/logging.
+
+    IMPORTANT: This must NOT mutate caller-owned objects (e.g. the headers dict),
+    because higher-level callers may reuse those objects across multiple HTTP
+    calls (e.g. in loops). Mutating in-place can accidentally replace a real
+    Authorization header with "***" and cause subsequent requests to fail.
+    """
+    if "headers" not in kwargs:
+        return kwargs
+
+    headers = kwargs.get("headers")
+    if not isinstance(headers, dict):
+        return kwargs
+
+    # Shallow copy kwargs and headers so we don't mutate the originals.
+    safe_kwargs = dict(kwargs)
+    safe_headers = dict(headers)
+    if "Authorization" in safe_headers:
+        safe_headers["Authorization"] = "***"
+    safe_kwargs["headers"] = safe_headers
+    return safe_kwargs
 
 
 def _log_request_if_enabled(fn: Callable) -> Callable:
