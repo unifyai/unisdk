@@ -13,7 +13,14 @@ _LOG_ENABLED = os.getenv("UNIFY_REQUESTS_DEBUG", "false").lower() in ("true", "1
 _LOGGER.setLevel(logging.DEBUG if _LOG_ENABLED else logging.WARNING)
 
 _SESSION = requests.Session()
-_RETRIES = Retry(total=5, backoff_factor=0.1, status_forcelist=[500, 502, 503, 504])
+_RETRIES = Retry(
+    total=5,
+    connect=3,
+    read=2,
+    backoff_factor=0.1,
+    status_forcelist=[500, 502, 503, 504],
+    allowed_methods=None,  # Retry all methods including POST
+)
 _ADAPTER = HTTPAdapter(max_retries=_RETRIES, pool_connections=20, pool_maxsize=20)
 _SESSION.mount("http://", _ADAPTER)
 _SESSION.mount("https://", _ADAPTER)
