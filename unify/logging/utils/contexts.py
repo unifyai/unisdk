@@ -461,29 +461,21 @@ def delete_context(
     )
     headers = _create_request_header(api_key)
 
-    contexts_to_delete = [name]
-
-    if delete_children:
-        children = get_contexts(project, prefix=name + "/", api_key=api_key)
-        contexts_to_delete.extend(children.keys())
-
-    response = None
-    for ctx in contexts_to_delete:
-        try:
-            response = http.delete(
-                BASE_URL + f"/project/{project}/contexts/{ctx}",
-                headers=headers,
-            )
-        except RequestError as e:
-            if (
-                missing_ok
-                and e.response.status_code == 404
-                and "not found" in e.response.text.lower()
-            ):
-                continue
-            raise
-    if response is not None:
+    try:
+        response = http.delete(
+            BASE_URL + f"/project/{project}/contexts/{name}",
+            headers=headers,
+            params={"include_children": delete_children},
+        )
         return response.json()
+    except RequestError as e:
+        if (
+            missing_ok
+            and e.response.status_code == 404
+            and "not found" in e.response.text.lower()
+        ):
+            return None
+        raise
 
 
 def add_logs_to_context(
