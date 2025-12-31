@@ -60,7 +60,7 @@ from .logging.utils.logs import *
 from .logging.utils.projects import *
 from .logging.utils.tracing import install_tracing_hook, disable_tracing_hook
 
-from .utils import helpers, map, get_map_mode, set_map_mode, _caching
+from .utils import helpers, map, get_map_mode, set_map_mode, _caching, storage
 from .utils._caching import (
     set_caching,
     set_cache_backend,
@@ -69,6 +69,7 @@ from .utils._caching import (
     subtract_cache_files,
     cached,
 )
+from .utils.storage import get_signed_url, download_object, get_object_info
 from .utils.caching import (
     get_cache_stats,
     reset_cache_stats,
