@@ -622,14 +622,17 @@ class _Traced:
             if ACTIVE_TRACE_LOG.get()
             else ACTIVE_TRACE_LOG.set([unify.log(context=get_trace_context())])
         )
-        self.new_span, self.exec_start_time, self.local_token, self.global_token = (
-            _create_span(
-                self.fn,
-                self.args,
-                self.kwargs,
-                self.span_type,
-                self.name,
-            )
+        (
+            self.new_span,
+            self.exec_start_time,
+            self.local_token,
+            self.global_token,
+        ) = _create_span(
+            self.fn,
+            self.args,
+            self.kwargs,
+            self.span_type,
+            self.name,
         )
         return self
 

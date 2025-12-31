@@ -432,7 +432,6 @@ def test_upstream_cache_closest_match_on_exception():
 
 
 def test_cached_decorator_both_mode():
-
     @unify.cached(mode="both")
     def add_two_numbers(x, y):
         time.sleep(1)

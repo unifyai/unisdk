@@ -47,9 +47,9 @@ def test_traced():
 
     assert entries["trace"]["inputs"] == {"st": 0.5}
     assert entries["trace"]["span_name"] == "some_func"
-    assert (
-        entries["trace"]["code"].replace(" ", "").replace("\n", "")
-        == """```python
+    assert entries["trace"]["code"].replace(" ", "").replace(
+        "\n", ""
+    ) == """```python
             @unify.traced
                 def some_func(st):
                     time.sleep(st)
@@ -57,12 +57,11 @@ def test_traced():
                     inner_fn()
                     return 1
             ```""".replace(
-            " ",
-            "",
-        ).replace(
-            "\n",
-            "",
-        )
+        " ",
+        "",
+    ).replace(
+        "\n",
+        "",
     )
     assert len(entries["trace"]["child_spans"]) == 2
     assert entries["trace"]["child_spans"][0]["span_name"] == "inner_fn"
@@ -74,7 +73,6 @@ def test_traced():
 
 @_handle_project
 def test_traced_w_arg_naming():
-
     @unify.traced(name="some_func_{arg}")
     def some_func(arg):
         return arg + 1
@@ -115,21 +113,20 @@ def test_traced_w_exception():
 
     assert trace["inputs"] == {"inp": 1}
     assert trace["span_name"] == "some_func"
-    assert (
-        trace["code"].replace(" ", "").replace("\n", "")
-        == """```python
+    assert trace["code"].replace(" ", "").replace(
+        "\n", ""
+    ) == """```python
             @unify.traced
                 def some_func(inp):
                     inner_fn(inp)
                     inner_fn(inp+1)
                     return 1
             ```""".replace(
-            " ",
-            "",
-        ).replace(
-            "\n",
-            "",
-        )
+        " ",
+        "",
+    ).replace(
+        "\n",
+        "",
     )
     assert len(trace["child_spans"]) == 2
     assert trace["child_spans"][0]["span_name"] == "inner_fn"
@@ -300,19 +297,18 @@ def test_traced_none_handling():
     entries = logs[0].entries
     assert entries["trace"]["inputs"] == {"a": 1, "b": 2, "c": None, "d": 4}
     assert entries["trace"]["span_name"] == "some_func"
-    assert (
-        entries["trace"]["code"].replace(" ", "").replace("\n", "")
-        == """```python
+    assert entries["trace"]["code"].replace(" ", "").replace(
+        "\n", ""
+    ) == """```python
             @unify.traced(prune_empty=False)
             def some_func(a, b, c, d):
                 return [a, b, c, d]
             ```""".replace(
-            " ",
-            "",
-        ).replace(
-            "\n",
-            "",
-        )
+        " ",
+        "",
+    ).replace(
+        "\n",
+        "",
     )
     assert len(entries["trace"]["child_spans"]) == 0
 
@@ -327,19 +323,18 @@ def test_traced_none_handling():
     entries = logs[0].entries
     assert entries["trace"]["inputs"] == {"a": 1, "b": 2, "d": 4}
     assert entries["trace"]["span_name"] == "some_func"
-    assert (
-        entries["trace"]["code"].replace(" ", "").replace("\n", "")
-        == """```python
+    assert entries["trace"]["code"].replace(" ", "").replace(
+        "\n", ""
+    ) == """```python
             @unify.traced(prune_empty=True)
             def some_func(a, b, c, d):
                 return [a, b, c, d]
             ```""".replace(
-            " ",
-            "",
-        ).replace(
-            "\n",
-            "",
-        )
+        " ",
+        "",
+    ).replace(
+        "\n",
+        "",
     )
     assert "child_spans" not in entries["trace"]
 
