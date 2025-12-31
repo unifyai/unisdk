@@ -157,4 +157,5 @@ new_module.py
 test.py
 implementations.py
 .test_cache.json
+.test_cache.ndjson
 *.cache.json
