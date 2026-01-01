@@ -2,7 +2,6 @@
 import abc
 import asyncio
 import inspect
-import threading
 
 # noinspection PyProtectedMember
 import time
@@ -1017,8 +1016,6 @@ class Unify(_UniClient):
                 kw.pop("max_completion_tokens")
                 chat_completion = LOCAL_MODELS[endpoint](**kw)
             else:
-                if unify.CLIENT_LOGGING:
-                    print(f"calling {kw['model']}... (thread {threading.get_ident()})")
                 if self.traced:
                     chat_completion = unify.traced(
                         self._client.chat.completions.create,
@@ -1031,8 +1028,6 @@ class Unify(_UniClient):
                     )(**kw)
                 else:
                     chat_completion = self._client.chat.completions.create(**kw)
-                if unify.CLIENT_LOGGING:
-                    print(f"done (thread {threading.get_ident()})")
             for chunk in chat_completion:
                 if return_full_completion:
                     content = chunk
@@ -1132,10 +1127,6 @@ class Unify(_UniClient):
                     kw.pop("max_completion_tokens")
                     chat_completion = LOCAL_MODELS[endpoint](**kw)
                 else:
-                    if unify.CLIENT_LOGGING:
-                        print(
-                            f"calling {kw['model']}... (thread {threading.get_ident()})",
-                        )
                     if self._traced:
                         chat_completion = unify.traced(
                             chat_method,
@@ -1151,8 +1142,6 @@ class Unify(_UniClient):
                         )(**kw)
                     else:
                         chat_completion = chat_method(**kw)
-                    if unify.CLIENT_LOGGING:
-                        print(f"done (thread {threading.get_ident()})")
             except openai.APIStatusError as e:
                 raise Exception(e.message)
         if (chat_completion is not None or read_closest) and cache in [
@@ -1374,8 +1363,6 @@ class AsyncUnify(_UniClient):
                 kw.pop("max_completion_tokens")
                 async_stream = await LOCAL_MODELS[endpoint](**kw)
             else:
-                if unify.CLIENT_LOGGING:
-                    print(f"calling {kw['model']}... (thread {threading.get_ident()})")
                 if self._traced:
                     # ToDo: test if this works, it probably won't
                     async_stream = await unify.traced(
@@ -1389,8 +1376,6 @@ class AsyncUnify(_UniClient):
                     )(**kw)
                 else:
                     async_stream = await self._client.chat.completions.create(**kw)
-                if unify.CLIENT_LOGGING:
-                    print(f"done (thread {threading.get_ident()})")
             async for chunk in async_stream:  # type: ignore[union-attr]
                 if return_full_completion:
                     yield chunk
@@ -1488,10 +1473,6 @@ class AsyncUnify(_UniClient):
                     kw.pop("max_completion_tokens")
                     chat_completion = await LOCAL_MODELS[endpoint](**kw)
                 else:
-                    if unify.CLIENT_LOGGING:
-                        print(
-                            f"calling {kw['model']}... (thread {threading.get_ident()})",
-                        )
                     if self.traced:
                         chat_completion = await unify.traced(
                             chat_method,
@@ -1509,10 +1490,6 @@ class AsyncUnify(_UniClient):
                     else:
                         chat_completion = await chat_method(
                             **kw,
-                        )
-                    if unify.CLIENT_LOGGING:
-                        print(
-                            f"done (thread {threading.get_ident()})",
                         )
             except openai.APIStatusError as e:
                 raise Exception(e.message)

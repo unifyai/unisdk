@@ -9,7 +9,7 @@ from requests.adapters import HTTPAdapter
 from urllib3 import Retry
 
 _LOGGER = logging.getLogger("unify_requests")
-_LOG_ENABLED = os.getenv("UNIFY_REQUESTS_DEBUG", "false").lower() in ("true", "1")
+_LOG_ENABLED = os.getenv("UNIFY_HTTP_LOG", "true").lower() in ("true", "1")
 _LOGGER.setLevel(logging.DEBUG if _LOG_ENABLED else logging.WARNING)
 
 _SESSION = requests.Session()

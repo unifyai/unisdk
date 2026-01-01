@@ -36,14 +36,14 @@ class CacheStats:
 CURRENT_CACHE_STATS = CacheStats()
 
 
-def _is_cache_benchmark_enabled() -> bool:
-    return os.environ.get("UNIFY_CACHE_BENCHMARK", "false") == "true"
+def _is_cache_stats_enabled() -> bool:
+    return os.environ.get("UNIFY_CACHE_STATS", "true").lower() in ("true", "1")
 
 
 def get_cache_stats() -> CacheStats:
-    if not _is_cache_benchmark_enabled():
+    if not _is_cache_stats_enabled():
         warnings.warn(
-            "Cache benchmark is not enabled, set UNIFY_CACHE_BENCHMARK=true to enable it, must be set before importing unify.",
+            "Cache stats is not enabled, set UNIFY_CACHE_STATS=true to enable it, must be set before importing unify.",
         )
     return CURRENT_CACHE_STATS
 
@@ -54,7 +54,7 @@ def reset_cache_stats() -> None:
 
 
 def record_get_cache(fn):
-    if not _is_cache_benchmark_enabled():
+    if not _is_cache_stats_enabled():
         return fn
     else:
 
@@ -73,7 +73,7 @@ def record_get_cache(fn):
 
 
 def record_write_to_cache(fn):
-    if not _is_cache_benchmark_enabled():
+    if not _is_cache_stats_enabled():
         return fn
     else:
 

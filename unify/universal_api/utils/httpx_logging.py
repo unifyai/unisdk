@@ -6,12 +6,12 @@ from urllib.parse import urlparse
 import httpx
 
 
-def _unify_requests_debug_enabled() -> bool:
-    return os.getenv("UNIFY_REQUESTS_DEBUG", "false").lower() in ("true", "1")
+def _unify_http_log_enabled() -> bool:
+    return os.getenv("UNIFY_HTTP_LOG", "true").lower() in ("true", "1")
 
 
 def make_httpx_client_for_unify_logging(base_url: str) -> Optional[httpx.Client]:
-    if not _unify_requests_debug_enabled():
+    if not _unify_http_log_enabled():
         return None
 
     from unify.utils import http as _unify_requests
@@ -133,7 +133,7 @@ def make_httpx_client_for_unify_logging(base_url: str) -> Optional[httpx.Client]
 def make_async_httpx_client_for_unify_logging(
     base_url: str,
 ) -> Optional[httpx.AsyncClient]:
-    if not _unify_requests_debug_enabled():
+    if not _unify_http_log_enabled():
         return None
 
     from unify.utils import http as _unify_requests
