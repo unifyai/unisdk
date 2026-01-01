@@ -12,6 +12,13 @@ When UNIFY_LOG_DIR is set, structured JSON files are written:
 - After response: {timestamp}_{method}_{route}_{duration}ms_{status}_{trace_id}.json
 
 The trace_id suffix enables correlation with pytest logs and Orchestra traces.
+
+OpenTelemetry tracing is controlled by:
+- UNIFY_OTEL: Enable/disable OTel tracing (default: false)
+- UNIFY_OTEL_ENDPOINT: OTLP endpoint for trace export (optional)
+
+When UNIFY_OTEL is enabled, HTTP requests create OTel spans that can be
+correlated with parent spans (from Unity) and child spans (in Orchestra).
 """
 
 import json
@@ -36,6 +43,94 @@ from urllib3 import Retry
 _LOGGER = logging.getLogger("unify")
 _LOG_ENABLED = os.getenv("UNIFY_LOG", "true").lower() in ("true", "1")
 _LOGGER.setLevel(logging.DEBUG if _LOG_ENABLED else logging.WARNING)
+
+# ---------------------------------------------------------------------------
+# OpenTelemetry setup
+# ---------------------------------------------------------------------------
+
+_OTEL_ENABLED = os.getenv("UNIFY_OTEL", "false").lower() in ("true", "1")
+_OTEL_ENDPOINT = os.getenv("UNIFY_OTEL_ENDPOINT", "").strip()
+_OTEL_INITIALIZED = False
+_TRACER = None
+
+
+def _setup_otel() -> None:
+    """Initialize OpenTelemetry if enabled and not already configured."""
+    global _OTEL_INITIALIZED, _TRACER
+
+    if _OTEL_INITIALIZED or not _OTEL_ENABLED:
+        return
+
+    _OTEL_INITIALIZED = True
+
+    try:
+        from opentelemetry import trace
+        from opentelemetry.sdk.resources import SERVICE_NAME, Resource
+        from opentelemetry.sdk.trace import TracerProvider
+
+        # Check if a TracerProvider already exists (parent set it up)
+        existing = trace.get_tracer_provider()
+        if existing and not isinstance(existing, trace.NoOpTracerProvider):
+            # Parent (e.g., Unity) already configured OTel - use theirs
+            _TRACER = trace.get_tracer("unify")
+            _LOGGER.debug("Using existing OTel TracerProvider from parent")
+            return
+
+        # We're the outermost layer - set up our own provider
+        resource = Resource.create({SERVICE_NAME: "unify"})
+        provider = TracerProvider(resource=resource)
+
+        # Add OTLP exporter if endpoint configured
+        if _OTEL_ENDPOINT:
+            try:
+                from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import (
+                    OTLPSpanExporter,
+                )
+                from opentelemetry.sdk.trace.export import BatchSpanProcessor
+
+                exporter = OTLPSpanExporter(endpoint=_OTEL_ENDPOINT, insecure=True)
+                provider.add_span_processor(BatchSpanProcessor(exporter))
+                _LOGGER.debug(f"Configured OTLP exporter at {_OTEL_ENDPOINT}")
+            except ImportError:
+                _LOGGER.warning(
+                    "OTLP exporter not available - install opentelemetry-exporter-otlp",
+                )
+            except Exception as e:
+                _LOGGER.warning(f"Failed to configure OTLP exporter: {e}")
+
+        # Add file exporter if UNIFY_LOG_DIR is set
+        log_dir = os.getenv("UNIFY_LOG_DIR", "").strip()
+        if log_dir:
+            try:
+                pass
+
+                # Use console exporter for now - file exporter would need custom impl
+                # The file-based logging already handles this via _write_pending_trace
+            except Exception as e:
+                _LOGGER.debug(f"OTel file export not configured: {e}")
+
+        trace.set_tracer_provider(provider)
+        _TRACER = trace.get_tracer("unify")
+        _LOGGER.debug("Initialized OTel TracerProvider for unify")
+
+    except ImportError:
+        _LOGGER.debug("OpenTelemetry not available - tracing disabled")
+    except Exception as e:
+        _LOGGER.warning(f"Failed to initialize OpenTelemetry: {e}")
+
+
+def get_tracer():
+    """Get the OpenTelemetry tracer, initializing if needed."""
+    global _TRACER
+    if _TRACER is None and _OTEL_ENABLED:
+        _setup_otel()
+    return _TRACER
+
+
+def is_otel_enabled() -> bool:
+    """Check if OpenTelemetry tracing is enabled."""
+    return _OTEL_ENABLED
+
 
 # ---------------------------------------------------------------------------
 # File-based trace logging
@@ -371,46 +466,101 @@ def _mask_auth_key(kwargs: dict) -> dict:
 
 
 def _log_request_if_enabled(fn: Callable) -> Callable:
-    """Decorator that adds console and file-based logging to requests."""
-    if not _LOG_ENABLED:
+    """Decorator that adds console logging, file-based logging, and OTel tracing."""
+    if not _LOG_ENABLED and not _OTEL_ENABLED:
         return fn
 
     @wraps(fn)
     def inner(method: str, url: str, **kwargs) -> requests.Response:
-        # Console log: request
-        _log_to_console(f"{method}", url, True, **kwargs)
+        # Console log: request (if logging enabled)
+        if _LOG_ENABLED:
+            _log_to_console(f"{method}", url, True, **kwargs)
 
-        # File trace: pending
-        pending_path = _write_pending_trace(method, url, kwargs)
+        # File trace: pending (if logging enabled)
+        pending_path = (
+            _write_pending_trace(method, url, kwargs) if _LOG_ENABLED else None
+        )
+
+        # Get tracer for OTel spans
+        tracer = get_tracer()
+        route = _extract_route(url)
+        span_name = f"{method} {route}"
+
+        # Create OTel span context manager (or dummy if not enabled)
+        if tracer is not None:
+            from opentelemetry.trace import SpanKind, Status, StatusCode
+
+            span_cm = tracer.start_as_current_span(
+                span_name,
+                kind=SpanKind.CLIENT,
+            )
+        else:
+            from contextlib import nullcontext
+
+            span_cm = nullcontext()
 
         start_time = time.monotonic()
-        try:
-            res: requests.Response = fn(method, url, **kwargs)
-            duration_ms = int((time.monotonic() - start_time) * 1000)
-
-            # Console log: response
+        with span_cm as span:
             try:
-                _log_to_console(
-                    f"{method} response:{res.status_code}",
-                    url,
-                    response=res.json(),
-                )
-            except requests.exceptions.JSONDecodeError:
-                _log_to_console(
-                    f"{method} response:{res.status_code}",
-                    url,
-                    response=res.text[:500] if res.text else "(empty)",
-                )
+                # Set span attributes before request
+                if span is not None:
+                    span.set_attribute("http.method", method)
+                    span.set_attribute("http.url", url)
+                    span.set_attribute("http.route", route)
+                    if kwargs.get("params"):
+                        span.set_attribute(
+                            "http.request.params",
+                            json.dumps(kwargs["params"]),
+                        )
 
-            # File trace: finalize
-            _finalize_trace(pending_path, res, duration_ms)
+                res: requests.Response = fn(method, url, **kwargs)
+                duration_ms = int((time.monotonic() - start_time) * 1000)
 
-            return res
+                # Set span attributes after response
+                if span is not None:
+                    span.set_attribute("http.status_code", res.status_code)
+                    span.set_attribute("http.duration_ms", duration_ms)
+                    if res.status_code >= 400:
+                        span.set_status(Status(StatusCode.ERROR))
+                    else:
+                        span.set_status(Status(StatusCode.OK))
 
-        except Exception as e:
-            duration_ms = int((time.monotonic() - start_time) * 1000)
-            _mark_trace_failed(pending_path, e, duration_ms)
-            raise
+                # Console log: response (if logging enabled)
+                if _LOG_ENABLED:
+                    try:
+                        _log_to_console(
+                            f"{method} response:{res.status_code}",
+                            url,
+                            response=res.json(),
+                        )
+                    except requests.exceptions.JSONDecodeError:
+                        _log_to_console(
+                            f"{method} response:{res.status_code}",
+                            url,
+                            response=res.text[:500] if res.text else "(empty)",
+                        )
+
+                # File trace: finalize (if logging enabled)
+                if _LOG_ENABLED:
+                    _finalize_trace(pending_path, res, duration_ms)
+
+                return res
+
+            except Exception as e:
+                duration_ms = int((time.monotonic() - start_time) * 1000)
+
+                # Set span error status
+                if span is not None:
+                    span.set_status(Status(StatusCode.ERROR, str(e)))
+                    span.set_attribute("error.type", type(e).__name__)
+                    span.set_attribute("error.message", str(e))
+                    span.set_attribute("http.duration_ms", duration_ms)
+
+                # File trace: mark failed (if logging enabled)
+                if _LOG_ENABLED:
+                    _mark_trace_failed(pending_path, e, duration_ms)
+
+                raise
 
     return inner
 
