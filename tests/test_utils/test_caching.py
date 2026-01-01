@@ -184,12 +184,10 @@ async def test_cache_read_only_async() -> None:
         await client.close()
 
 
-@pytest.mark.parametrize("traced", [True, False])
-def test_cache_closest_match_on_exception(traced):
+def test_cache_closest_match_on_exception():
     with _CacheHandler() as cache_handler:
         client = Unify(
             endpoint="gpt-4o@openai",
-            traced=traced,
         )
         r0 = client.generate(user_message="hello", cache="write")
         assert os.path.exists(cache_handler.test_path)

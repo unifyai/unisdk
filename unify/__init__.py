@@ -57,7 +57,6 @@ from .logging.utils.contexts import *
 from .logging.utils.datasets import *
 from .logging.utils.logs import *
 from .logging.utils.projects import *
-from .logging.utils.tracing import install_tracing_hook, disable_tracing_hook
 
 from .utils import helpers, map, get_map_mode, set_map_mode, _caching, storage
 from .utils._caching import (

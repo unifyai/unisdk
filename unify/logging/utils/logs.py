@@ -1,21 +1,11 @@
 from __future__ import annotations
 
-import asyncio
-import atexit
 import inspect
 import json
 import logging
-import signal
-import threading
-
-import aiohttp
-
-logger = logging.getLogger(__name__)
 import os
 import sys
-from concurrent.futures import ThreadPoolExecutor
 from contextvars import ContextVar
-from types import ModuleType
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import unify
@@ -32,6 +22,8 @@ from ...utils.helpers import (
 )
 from .async_logger import AsyncLoggerManager
 
+logger = logging.getLogger(__name__)
+
 # logging configuration
 USR_LOGGING = True
 ASYNC_LOGGING = False  # Flag to enable/disable async logging
@@ -39,12 +31,7 @@ ASYNC_BATCH_SIZE = 100  # Default batch size for async logging
 ASYNC_FLUSH_INTERVAL = 5.0  # Default flush interval in secondss
 ASYNC_MAX_QUEUE_SIZE = 10000  # Default maximum queue size
 
-# Tracing
-ACTIVE_TRACE_LOG = ContextVar("active_trace_log", default=[])
-ACTIVE_TRACE_PARAMETERS = ContextVar("active_trace_parameters", default=None)
-TRACING_LOG_CONTEXT = None
 _async_logger: Optional[AsyncLoggerManager] = None
-_trace_logger: Optional[_AsyncTraceLogger] = None
 
 # log
 ACTIVE_LOG = ContextVar("active_log", default=[])
@@ -90,189 +77,8 @@ ACTIVE_PARAMS_READ = ContextVar(
 ACTIVE_PARAMS_MODE = ContextVar("active_params_mode", default="both")
 PARAMS_NEST_LEVEL = ContextVar("params_nest_level", default=0)
 
-# span
-GLOBAL_SPAN = ContextVar("global_span", default={})
-SPAN = ContextVar("span", default={})
-RUNNING_TIME = ContextVar("running_time", default=0.0)
-
 # chunking
 CHUNK_LIMIT = 5000000
-
-
-class _TraceLogState:
-    __slots__ = ("lock", "processing", "pending_value")
-
-    def __init__(self) -> None:
-        self.lock = asyncio.Lock()
-        self.processing = False
-        self.pending_value: Dict[str, Any] | None = None
-
-
-class _AsyncTraceLogger:
-    def __init__(self) -> None:
-        self._states: dict[str, _TraceLogState] = {}
-        self.stopped = False
-        self._api_key = _validate_api_key(None)
-        self._pending_submit_requests = 0
-
-        atexit.register(self.shutdown, flush=True)
-        signal.signal(signal.SIGINT, self._on_sigint)
-
-        headers = _create_request_header(self._api_key)
-
-        self._loop = asyncio.new_event_loop()
-        self._loop.set_default_executor(
-            ThreadPoolExecutor(thread_name_prefix="UnifyTraceLogger"),
-        )
-        self._client = aiohttp.ClientSession(loop=self._loop, headers=headers)
-        self._thread = threading.Thread(
-            name="UnifyTraceLogger",
-            target=self._loop.run_forever,
-            daemon=True,
-        )
-        self._thread.start()
-
-    def update_trace(self, log: unify.Log, trace: dict):
-        metadata = {
-            "id": log.id,
-            "project": unify.active_project(),
-            "context": log.context,
-        }
-        fut = asyncio.run_coroutine_threadsafe(
-            self._update_log(metadata, trace),
-            self._loop,
-        )
-        self._pending_submit_requests += 1
-        fut.add_done_callback(self._update_log_callback)
-
-    def is_processing(self) -> bool:
-        return self._pending_submit_requests > 0 or len(self._states) > 0
-
-    def _update_log_callback(self, fut):
-        self._pending_submit_requests -= 1
-
-    def shutdown(self, flush: bool = True) -> None:
-        if self.stopped:
-            return
-        self.stopped = True
-
-        if flush:
-            drain_future = asyncio.run_coroutine_threadsafe(
-                self._drain(),
-                self._loop,
-            )
-            from concurrent.futures import TimeoutError
-
-            while True:
-                try:
-                    drain_future.result(
-                        timeout=0.1,
-                    )  # blocks until all requests are done
-                except (asyncio.TimeoutError, TimeoutError):
-                    continue
-                else:
-                    break
-        else:
-            asyncio.run_coroutine_threadsafe(
-                self._shutdown_tasks(),
-                self._loop,
-            )
-
-        close_future = asyncio.run_coroutine_threadsafe(
-            self._close_client(),
-            self._loop,
-        )
-        close_future.result()
-
-        self._loop.call_soon_threadsafe(self._loop.stop)
-        self._thread.join()
-        self._loop.close()
-
-    async def _update_log(self, log_metadata, trace) -> None:
-        state = self._states.setdefault(log_metadata["id"], _TraceLogState())
-        async with state.lock:
-            state.pending_value = {
-                "trace": trace,
-                "project": log_metadata["project"],
-                "context": log_metadata["context"],
-            }
-            if not state.processing:
-                state.processing = True
-                asyncio.create_task(self._process_log(log_metadata["id"], state))
-
-    async def _process_log(self, log_id: int, state: _TraceLogState):
-        try:
-            while True:
-                async with state.lock:
-                    value = state.pending_value
-                    state.pending_value = None
-
-                if value is None:
-                    async with state.lock:
-                        state.processing = False
-                    return
-
-                try:
-                    await self._send_request(log_id, value)
-                except Exception as e:
-                    logger.error(f"error updating trace {log_id!r}: {e}")
-
-                if value["trace"].get("completed") == True:
-                    async with state.lock:
-                        state.processing = False
-                    self._states.pop(log_id, None)
-                    return
-        except asyncio.CancelledError:
-            pass
-
-    async def _send_request(self, log_id: str, value: Dict[str, Any]):
-        entries = {"trace": value["trace"]}
-        entries = _apply_col_context(**entries)
-        entries = {**entries, **ACTIVE_ENTRIES_WRITE.get()}
-        entries = _handle_special_types(entries)
-        entries = _handle_mutability(True, entries)
-
-        body = {
-            "logs": [log_id],
-            "project": value["project"],
-            "context": value["context"],
-            "entries": entries,
-            "overwrite": True,
-        }
-
-        async with self._client.put(
-            f"{BASE_URL}/logs",
-            json=body,
-        ) as resp:
-            resp.raise_for_status()
-
-    async def _drain(self):
-        while any(state.processing for state in self._states.values()):
-            await asyncio.sleep(0.05)
-
-    async def _shutdown_tasks(self):
-        for task in self.tasks:
-            await task.cancel()
-
-    async def _close_client(self):
-        await self._client.close()
-        await asyncio.sleep(1)
-
-    def _on_sigint(self, signum, frame):
-        self.shutdown(flush=False)
-        exit(0)
-
-
-def _removes_unique_trace_values(kw: Dict[str, Any]) -> Dict[str, Any]:
-    del kw["id"]
-    del kw["exec_time"]
-    if "parent_span_id" in kw:
-        del kw["parent_span_id"]
-    if "child_spans" in kw:
-        kw["child_spans"] = [
-            _removes_unique_trace_values(cs) for cs in kw["child_spans"]
-        ]
-    return kw
 
 
 def initialize_async_logger(
@@ -312,128 +118,6 @@ def shutdown_async_logger(immediate=False) -> None:
         _async_logger.stop_sync(immediate=immediate)
         _async_logger = None
         ASYNC_LOGGING = False
-
-
-def initialize_trace_logger():
-    """
-    Initialize the trace logger. Must be called from the main thread.
-    """
-    global _trace_logger
-    if _trace_logger is None:
-        _trace_logger = _AsyncTraceLogger()
-
-
-def _get_trace_logger():
-    return _trace_logger
-
-
-def _set_active_trace_parameters(
-    prune_empty: bool = True,
-    span_type: str = "function",
-    name: Optional[str] = None,
-    filter: Optional[Callable[[callable], bool]] = None,
-    fn_type: Optional[str] = None,
-    recursive: bool = False,  # Only valid for Functions.
-    depth: Optional[int] = None,
-    skip_modules: Optional[List[ModuleType]] = None,
-    skip_functions: Optional[List[Callable]] = None,
-):
-    token = ACTIVE_TRACE_PARAMETERS.set(
-        {
-            "prune_empty": prune_empty,
-            "span_type": span_type,
-            "name": name,
-            "filter": filter,
-            "fn_type": fn_type,
-            "recursive": recursive,
-            "depth": depth,
-            "skip_modules": skip_modules,
-            "skip_functions": skip_functions,
-        },
-    )
-    return token
-
-
-def _reset_active_trace_parameters(token):
-    ACTIVE_TRACE_PARAMETERS.reset(token)
-
-
-def set_trace_context(context: str):
-    global TRACING_LOG_CONTEXT
-    ctx_wrt = CONTEXT_WRITE.get()
-    if ctx_wrt:
-        if context:
-            context = f"{ctx_wrt}/{context}"
-        else:
-            context = ctx_wrt
-    TRACING_LOG_CONTEXT = context
-    if context is None:
-        return
-    names = [name for name, _ in unify.get_contexts().items()]
-    if context not in names:
-        unify.create_context(name=context)
-
-
-def get_trace_context():
-    global TRACING_LOG_CONTEXT
-    return TRACING_LOG_CONTEXT
-
-
-def mark_spans_as_done(
-    log_ids: Optional[Union[int, List[int]]] = None,
-    span_ids: Optional[Union[str, List[str]]] = None,
-    *,
-    project: Optional[str] = None,
-    contexts: Optional[Union[str, List[str]]] = None,
-):
-    """
-    Marks all of the listed span ids for the listed logs in the listed contexts as completed.
-    In all cases of this specification hierarchy, if none are provided then all associated spans are marked as complete.
-    """
-    if log_ids is not None:
-        log_ids = [log_ids] if isinstance(log_ids, int) else log_ids
-
-    if span_ids is not None:
-        span_ids = [span_ids] if isinstance(span_ids, str) else span_ids
-
-    def _traverse_trace_and_mark_done(trace: dict):
-        if span_ids is None:
-            trace["completed"] = True
-        elif trace["id"] in span_ids:
-            trace["completed"] = True
-
-        for span in trace["child_spans"]:
-            _traverse_trace_and_mark_done(span)
-
-    if log_ids:
-        logs = unify.get_logs(project=project, context=contexts, from_ids=log_ids)
-    else:
-        if isinstance(contexts, list):
-            logs = []
-            for context in contexts:
-                logs.extend(
-                    unify.get_logs(
-                        project=project,
-                        context=context,
-                        from_fields=["trace"],
-                        filter=f"trace != None",
-                    ),
-                )
-        else:
-            logs = unify.get_logs(
-                project=project,
-                context=contexts,
-                from_fields=["trace"],
-                filter=f"trace != None",
-            )
-
-    for log in logs:
-        _traverse_trace_and_mark_done(log.entries["trace"])
-        unify.update_logs(
-            logs=log.id,
-            entries={"trace": log.entries["trace"]},
-            overwrite=True,
-        )
 
 
 def _apply_row_ids_and_non_unique_auto_count_vals(
@@ -505,8 +189,6 @@ def _handle_cache(fn: Callable) -> Callable:
         if not is_caching_enabled():
             return fn(*args, **kwargs)
         kw_for_key = flexible_deepcopy(kwargs)
-        if fn.__name__ == "add_log_entries" and "trace" in kwargs:
-            kw_for_key["trace"] = _removes_unique_trace_values(kw_for_key["trace"])
         combined_kw = {**{f"arg{i}": a for i, a in enumerate(args)}, **kw_for_key}
         ret = _get_cache(
             fn_name=fn.__name__,

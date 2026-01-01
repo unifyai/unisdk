@@ -68,7 +68,6 @@ class _MultiClient(_Client, abc.ABC):
         # python client arguments
         stateful: bool = False,
         return_full_completion: bool = False,
-        traced: bool = False,
         direct_mode: bool = False,
         cache: Union[bool, str] = None,
         cache_backend: Optional[str] = None,
@@ -195,8 +194,6 @@ class _MultiClient(_Client, abc.ABC):
             return. Otherwise, the full response chat_completion is returned.
             Defaults to False.
 
-            traced: Whether to trace the generate method.
-
             cache: If True, then the arguments will be stored in a local cache file, and
             any future calls with identical arguments will read from the cache instead
             of running the LLM query. If "write" then the cache will only be written
@@ -254,7 +251,6 @@ class _MultiClient(_Client, abc.ABC):
             # python client arguments
             stateful=stateful,
             return_full_completion=return_full_completion,
-            traced=traced,
             direct_mode=direct_mode or _Client._DEFAULT_DIRECT_MODE,
             cache=cache,
             cache_backend=cache_backend,

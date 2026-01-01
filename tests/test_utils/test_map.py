@@ -88,7 +88,6 @@ def test_map_mode() -> None:
 def test_map_w_cache() -> None:
     with _CacheHandler():
 
-        @unify.traced(name="gen{x}")
         def gen(x, cache):
             ret = None
             if cache in [True, "read", "read-only"]:
@@ -107,7 +106,6 @@ def test_map_w_cache() -> None:
                 )
             return ret
 
-        @unify.traced
         def fn(cache):
             x = gen(0, cache)
             time.sleep(random.uniform(0, 0.1))
@@ -115,11 +113,9 @@ def test_map_w_cache() -> None:
             time.sleep(random.uniform(0, 0.1))
             z = gen(y, cache)
 
-        @unify.traced
         def cache_is_true():
             unify.map(fn, [True] * 10)
 
-        @unify.traced
         def cache_is_read_only():
             unify.map(fn, ["read-only"] * 10)
 

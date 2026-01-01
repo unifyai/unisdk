@@ -99,7 +99,6 @@ class _UniClient(_Client, abc.ABC):
         # python client arguments
         stateful: bool = False,
         return_full_completion: bool = False,
-        traced: bool = False,
         direct_mode: Optional[bool] = None,
         cache: Optional[Union[bool, str]] = None,
         cache_backend: Optional[str] = None,
@@ -237,8 +236,6 @@ class _UniClient(_Client, abc.ABC):
             return. Otherwise, the full response chat_completion is returned.
             Defaults to False.
 
-            traced: Whether to trace the generate method.
-
             cache: If True, then the arguments will be stored in a local cache file, and
             any future calls with identical arguments will read from the cache instead
             of running the LLM query. If "write" then the cache will only be written
@@ -296,7 +293,6 @@ class _UniClient(_Client, abc.ABC):
             # python client arguments
             stateful=stateful,
             return_full_completion=return_full_completion,
-            traced=traced,
             direct_mode=direct_mode or _Client._DEFAULT_DIRECT_MODE,
             cache=cache,
             cache_backend=cache_backend,
@@ -1016,18 +1012,7 @@ class Unify(_UniClient):
                 kw.pop("max_completion_tokens")
                 chat_completion = LOCAL_MODELS[endpoint](**kw)
             else:
-                if self.traced:
-                    chat_completion = unify.traced(
-                        self._client.chat.completions.create,
-                        span_type="llm-stream",
-                        name=(
-                            endpoint
-                            if tags is None
-                            else endpoint + "[" + ",".join([str(t) for t in tags]) + "]"
-                        ),
-                    )(**kw)
-                else:
-                    chat_completion = self._client.chat.completions.create(**kw)
+                chat_completion = self._client.chat.completions.create(**kw)
             for chunk in chat_completion:
                 if return_full_completion:
                     content = chunk
@@ -1088,37 +1073,15 @@ class Unify(_UniClient):
         chat_completion = None
         in_cache = False
         if cache in [True, "both", "read", "read-only"]:
-            if self._traced:
-
-                def _get_cache_traced(**kw):
-                    return _get_cache(
-                        fn_name="chat.completions.create",
-                        kw=kw,
-                        raise_on_empty=cache == "read-only",
-                        read_closest=read_closest,
-                        delete_closest=read_closest,
-                        backend=cache_backend,
-                    )
-
-                chat_completion = unify.traced(
-                    _get_cache_traced,
-                    span_type="llm-cached",
-                    name=(
-                        endpoint
-                        if tags is None
-                        else endpoint + "[" + ",".join([str(t) for t in tags]) + "]"
-                    ),
-                )(**kw)
-            else:
-                chat_completion = _get_cache(
-                    fn_name="chat.completions.create",
-                    kw=kw,
-                    raise_on_empty=cache == "read-only",
-                    read_closest=read_closest,
-                    delete_closest=read_closest,
-                    backend=cache_backend,
-                )
-                in_cache = True if chat_completion is not None else False
+            chat_completion = _get_cache(
+                fn_name="chat.completions.create",
+                kw=kw,
+                raise_on_empty=cache == "read-only",
+                read_closest=read_closest,
+                delete_closest=read_closest,
+                backend=cache_backend,
+            )
+            in_cache = True if chat_completion is not None else False
         if chat_completion is None:
             try:
                 if endpoint in LOCAL_MODELS:
@@ -1127,21 +1090,7 @@ class Unify(_UniClient):
                     kw.pop("max_completion_tokens")
                     chat_completion = LOCAL_MODELS[endpoint](**kw)
                 else:
-                    if self._traced:
-                        chat_completion = unify.traced(
-                            chat_method,
-                            span_type="llm",
-                            name=(
-                                endpoint
-                                if tags is None
-                                else endpoint
-                                + "["
-                                + ",".join([str(t) for t in tags])
-                                + "]"
-                            ),
-                        )(**kw)
-                    else:
-                        chat_completion = chat_method(**kw)
+                    chat_completion = chat_method(**kw)
             except openai.APIStatusError as e:
                 raise Exception(e.message)
         if (chat_completion is not None or read_closest) and cache in [
@@ -1363,19 +1312,7 @@ class AsyncUnify(_UniClient):
                 kw.pop("max_completion_tokens")
                 async_stream = await LOCAL_MODELS[endpoint](**kw)
             else:
-                if self._traced:
-                    # ToDo: test if this works, it probably won't
-                    async_stream = await unify.traced(
-                        self._client.chat.completions.create,
-                        span_type="llm-stream",
-                        name=(
-                            endpoint
-                            if tags is None
-                            else endpoint + "[" + ",".join([str(t) for t in tags]) + "]"
-                        ),
-                    )(**kw)
-                else:
-                    async_stream = await self._client.chat.completions.create(**kw)
+                async_stream = await self._client.chat.completions.create(**kw)
             async for chunk in async_stream:  # type: ignore[union-attr]
                 if return_full_completion:
                     yield chunk
@@ -1434,37 +1371,15 @@ class AsyncUnify(_UniClient):
         chat_completion = None
         in_cache = False
         if cache in [True, "both", "read", "read-only"]:
-            if self._traced:
-
-                def _get_cache_traced(**kw):
-                    return _get_cache(
-                        fn_name="chat.completions.create",
-                        kw=kw,
-                        raise_on_empty=cache == "read-only",
-                        read_closest=read_closest,
-                        delete_closest=read_closest,
-                        backend=cache_backend,
-                    )
-
-                chat_completion = unify.traced(
-                    _get_cache_traced,
-                    span_type="llm-cached",
-                    name=(
-                        endpoint
-                        if tags is None
-                        else endpoint + "[" + ",".join([str(t) for t in tags]) + "]"
-                    ),
-                )(**kw)
-            else:
-                chat_completion = _get_cache(
-                    fn_name="chat.completions.create",
-                    kw=kw,
-                    raise_on_empty=cache == "read-only",
-                    read_closest=read_closest,
-                    delete_closest=read_closest,
-                    backend=cache_backend,
-                )
-                in_cache = True if chat_completion is not None else False
+            chat_completion = _get_cache(
+                fn_name="chat.completions.create",
+                kw=kw,
+                raise_on_empty=cache == "read-only",
+                read_closest=read_closest,
+                delete_closest=read_closest,
+                backend=cache_backend,
+            )
+            in_cache = True if chat_completion is not None else False
         if chat_completion is None:
             try:
                 if endpoint in LOCAL_MODELS:
@@ -1473,24 +1388,7 @@ class AsyncUnify(_UniClient):
                     kw.pop("max_completion_tokens")
                     chat_completion = await LOCAL_MODELS[endpoint](**kw)
                 else:
-                    if self.traced:
-                        chat_completion = await unify.traced(
-                            chat_method,
-                            span_type="llm",
-                            name=(
-                                endpoint
-                                if tags is None
-                                else endpoint
-                                + "["
-                                + ",".join([str(t) for t in tags])
-                                + "]"
-                            ),
-                            fn_type="async",
-                        )(**kw)
-                    else:
-                        chat_completion = await chat_method(
-                            **kw,
-                        )
+                    chat_completion = await chat_method(**kw)
             except openai.APIStatusError as e:
                 raise Exception(e.message)
         if (chat_completion is not None or read_closest) and cache in [

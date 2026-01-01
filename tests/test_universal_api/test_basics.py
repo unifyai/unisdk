@@ -31,10 +31,9 @@ class TestUnifyBasics:
         result = client.generate(user_message="hello", stream=False)
         assert isinstance(result, str)
 
-    def test_traced_and_cached(self) -> None:
+    def test_cached(self) -> None:
         client = Unify(
             endpoint="gpt-4o@openai",
-            traced=True,
             cache=True,
         )
         client.generate("hello")

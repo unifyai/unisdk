@@ -18,7 +18,7 @@
     </a>
 </div>
 
-**Fully hackable** LLMOps. Build *custom* interfaces for: logging, evals, guardrails, labelling, tracing, agents, human-in-the-loop, hyperparam sweeps, and anything else you can think of ✨
+**Fully hackable** LLMOps. Build *custom* interfaces for: logging, evals, guardrails, labelling, agents, human-in-the-loop, hyperparam sweeps, and anything else you can think of ✨
 
 Just `unify.log` your data, and add an interface using the four building blocks:
 
@@ -43,7 +43,7 @@ from random import randint, choice
 unify.activate("Maths Assistant")
 
 # build agent
-client = unify.Unify("o3-mini@openai", traced=True)
+client = unify.Unify("o3-mini@openai")
 client.set_system_message(
     "You are a helpful maths assistant, "
     "tasked with adding and subtracting integers."
@@ -56,7 +56,6 @@ qs = [
 ]
 
 # define evaluator
-@unify.traced
 def evaluate_response(question: str, response: str) -> float:
     correct_answer = eval(question)
     try:
@@ -73,7 +72,6 @@ def evaluate_response(question: str, response: str) -> float:
         return 0.
 
 # define evaluation
-@unify.traced
 def evaluate(q: str):
     response = client.copy().generate(q)
     score = evaluate_response(q, response)

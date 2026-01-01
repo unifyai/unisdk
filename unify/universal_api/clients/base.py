@@ -79,7 +79,6 @@ class _Client(ABC):
         # python client arguments
         stateful: bool,
         return_full_completion: bool,
-        traced: bool,
         direct_mode: bool,
         cache: Union[bool, str],
         cache_backend: str,
@@ -120,7 +119,6 @@ class _Client(ABC):
         self._log_response_body = None
         self._stateful = None
         self._return_full_completion = None
-        self._traced = None
         self._direct_mode = None
         self._cache = None
         self._cache_backend = None
@@ -160,7 +158,6 @@ class _Client(ABC):
         # python client arguments
         self.set_stateful(stateful)
         self.set_return_full_completion(return_full_completion)
-        self.set_traced(traced)
         self.set_direct_mode(direct_mode)
         self.set_cache(cache)
         self.set_cache_backend(cache_backend)
@@ -497,16 +494,6 @@ class _Client(ABC):
             The default return full completion bool.
         """
         return self._return_full_completion
-
-    @property
-    def traced(self) -> bool:
-        """
-        Get the default traced bool.
-
-        Returns:
-            The default traced bool.
-        """
-        return self._traced
 
     @property
     def cache(self) -> bool:
@@ -979,20 +966,6 @@ class _Client(ABC):
         self._return_full_completion = value
         return self
 
-    # noinspection PyAttributeOutsideInit
-    def set_traced(self, value: bool) -> Self:
-        """
-        Set the default traced bool.  # noqa: DAR101.
-
-        Args:
-            value: The default traced bool.
-
-        Returns:
-            This client, useful for chaining inplace calls.
-        """
-        self._traced = value
-        return self
-
     def set_direct_mode(self, value: bool) -> Self:
         """
         Set the default direct mode bool.  # noqa: DAR101.
@@ -1362,7 +1335,6 @@ class _Client(ABC):
                         # python client arguments
                         stateful=self._stateful,
                         return_full_completion=self._return_full_completion,
-                        traced=self._traced,
                         cache=self._cache,
                         # passthrough arguments
                         extra_headers=self._extra_headers,
@@ -1411,7 +1383,6 @@ class _Client(ABC):
                     # python client arguments
                     stateful=self._stateful,
                     return_full_completion=self._return_full_completion,
-                    traced=self._traced,
                     cache=self._cache,
                     # passthrough arguments
                     extra_headers=self._extra_headers,
