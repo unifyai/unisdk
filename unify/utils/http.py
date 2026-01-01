@@ -164,7 +164,10 @@ def _setup_otel() -> None:
 
         # Check if a TracerProvider already exists (parent set it up)
         existing = trace.get_tracer_provider()
-        if existing and not isinstance(existing, trace.NoOpTracerProvider):
+        if existing and not isinstance(
+            existing,
+            (trace.NoOpTracerProvider, trace.ProxyTracerProvider),
+        ):
             # Parent (e.g., Unity) already configured OTel - use theirs
             _TRACER = trace.get_tracer("unify")
             _LOGGER.debug("Using existing OTel TracerProvider from parent")
