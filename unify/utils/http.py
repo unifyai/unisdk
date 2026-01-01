@@ -5,9 +5,9 @@ Provides a requests session with retry logic and optional trace-aware logging.
 
 Logging is controlled by two environment variables:
 - UNIFY_HTTP_LOG: Enable/disable HTTP logging (default: true)
-- UNIFY_HTTP_LOG_DIR: Directory for trace log files (default: console only)
+- UNIFY_LOG_DIR: Directory for log files (default: console only)
 
-When UNIFY_HTTP_LOG_DIR is set, structured JSON files are written:
+When UNIFY_LOG_DIR is set, structured JSON files are written:
 - Before request: {timestamp}_{method}_{route}_PENDING_{trace_id}.json
 - After response: {timestamp}_{method}_{route}_{duration}ms_{status}_{trace_id}.json
 
@@ -46,14 +46,14 @@ _LOG_DIR_CHECKED = False
 
 
 def configure_log_dir(log_dir: Optional[str] = None) -> Optional[Path]:
-    """Configure or reconfigure the HTTP trace log directory.
+    """Configure or reconfigure the log directory for file-based logging.
 
-    Call this after setting UNIFY_HTTP_LOG_DIR if the env var was set
+    Call this after setting UNIFY_LOG_DIR if the env var was set
     after this module was imported.
 
     Args:
         log_dir: Explicit log directory path. If None, reads from
-                 UNIFY_HTTP_LOG_DIR env var.
+                 UNIFY_LOG_DIR env var.
 
     Returns:
         The configured log directory Path, or None if disabled.
@@ -64,13 +64,13 @@ def configure_log_dir(log_dir: Optional[str] = None) -> Optional[Path]:
     _LOG_DIR = None
 
     if log_dir is not None:
-        os.environ["UNIFY_HTTP_LOG_DIR"] = log_dir
+        os.environ["UNIFY_LOG_DIR"] = log_dir
 
     return _get_log_dir()
 
 
 def _get_log_dir() -> Optional[Path]:
-    """Get the trace log directory from UNIFY_HTTP_LOG_DIR env var.
+    """Get the log directory from UNIFY_LOG_DIR env var.
 
     Returns None if not set or directory creation fails.
     The directory is created on first access.
@@ -81,7 +81,7 @@ def _get_log_dir() -> Optional[Path]:
         return _LOG_DIR
 
     _LOG_DIR_CHECKED = True
-    log_dir_str = os.getenv("UNIFY_HTTP_LOG_DIR", "").strip()
+    log_dir_str = os.getenv("UNIFY_LOG_DIR", "").strip()
     if not log_dir_str:
         return None
 
