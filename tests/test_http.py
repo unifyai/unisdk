@@ -16,6 +16,35 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 import requests
+from opentelemetry import trace
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import SimpleSpanProcessor
+from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
+
+
+@pytest.fixture
+def reset_otel():
+    """Reset OTel state before and after test.
+
+    OTel uses global state (singleton TracerProvider). This fixture ensures
+    proper isolation between tests by resetting to a fresh provider.
+    """
+    # Create a fresh provider with in-memory exporter for test inspection
+    exporter = InMemorySpanExporter()
+    provider = TracerProvider()
+    provider.add_span_processor(SimpleSpanProcessor(exporter))
+
+    # OTel doesn't allow overriding, but we can manipulate the internal state
+    # pylint: disable=protected-access
+    trace._TRACER_PROVIDER_SET_ONCE._done = False
+    trace._TRACER_PROVIDER = None
+
+    trace.set_tracer_provider(provider)
+
+    yield {"provider": provider, "exporter": exporter}
+
+    # Cleanup
+    exporter.clear()
 
 
 class TestLogEnabled:
@@ -294,31 +323,23 @@ class TestGetCurrentTraceId:
         """Returns None when no active OTel span."""
         from unify.utils.http import _get_current_trace_id
 
-        # Without any OTel context, should return None
+        # Without an active span, should return None
         result = _get_current_trace_id()
-        # May return None or a trace_id depending on OTel state
+        # May return None or empty depending on provider state
         assert result is None or isinstance(result, str)
 
-    def test_returns_trace_id_when_span_active(self):
+    def test_returns_trace_id_when_span_active(self, reset_otel):
         """Returns trace_id when OTel span is active."""
-        try:
-            from opentelemetry import trace
-            from opentelemetry.sdk.trace import TracerProvider
+        tracer = trace.get_tracer("test")
 
-            # Set up a tracer provider
-            provider = TracerProvider()
-            trace.set_tracer_provider(provider)
-            tracer = trace.get_tracer("test")
+        from unify.utils.http import _get_current_trace_id
 
-            from unify.utils.http import _get_current_trace_id
-
-            with tracer.start_as_current_span("test-span"):
-                result = _get_current_trace_id()
-                assert result is not None
-                assert len(result) == 32  # 32-char hex string
-
-        except ImportError:
-            pytest.skip("OpenTelemetry not installed")
+        with tracer.start_as_current_span("test-span"):
+            result = _get_current_trace_id()
+            assert result is not None
+            assert len(result) == 32  # 32-char hex string
+            # Verify it's a valid hex string
+            int(result, 16)
 
 
 class TestConfigureLogDir:
@@ -387,31 +408,143 @@ class TestOtelTracing:
             importlib.reload(http)
             assert http.is_otel_enabled() is False
 
-    def test_otel_setup_uses_existing_provider(self):
+    def test_otel_setup_uses_existing_provider(self, reset_otel):
         """OTel setup uses existing TracerProvider if available."""
-        try:
-            from opentelemetry import trace
-            from opentelemetry.sdk.trace import TracerProvider
+        existing_provider = reset_otel["provider"]
 
-            # Set up an existing provider
-            existing_provider = TracerProvider()
-            trace.set_tracer_provider(existing_provider)
+        with patch.dict(os.environ, {"UNIFY_OTEL": "true"}):
+            import importlib
 
-            with patch.dict(os.environ, {"UNIFY_OTEL": "true"}):
-                from unify.utils import http
+            from unify.utils import http
 
-                # Reset initialization state
-                http._OTEL_INITIALIZED = False
-                http._TRACER = None
+            # Reset initialization state and reload with OTel enabled
+            http._OTEL_INITIALIZED = False
+            http._TRACER = None
+            importlib.reload(http)
 
-                tracer = http.get_tracer()
-                assert tracer is not None
+            tracer = http.get_tracer()
+            assert tracer is not None
 
-                # Should use existing provider, not create new one
-                assert trace.get_tracer_provider() is existing_provider
+            # Should use existing provider, not create new one
+            assert trace.get_tracer_provider() is existing_provider
 
-        except ImportError:
-            pytest.skip("OpenTelemetry not installed")
+    def test_get_tracer_returns_tracer_when_enabled(self, reset_otel):
+        """get_tracer returns a tracer when UNIFY_OTEL is true."""
+        with patch.dict(os.environ, {"UNIFY_OTEL": "true"}):
+            import importlib
+
+            from unify.utils import http
+
+            http._OTEL_INITIALIZED = False
+            http._TRACER = None
+
+            importlib.reload(http)
+            tracer = http.get_tracer()
+
+            # Should have a tracer now
+            assert tracer is not None
+
+    def test_spans_created_during_request(self, reset_otel):
+        """HTTP requests create OTel spans when UNIFY_OTEL is enabled."""
+        exporter = reset_otel["exporter"]
+
+        with patch.dict(os.environ, {"UNIFY_OTEL": "true", "UNIFY_LOG": "false"}):
+            import importlib
+
+            from unify.utils import http
+
+            # Reset initialization state and reload with OTel enabled
+            http._OTEL_INITIALIZED = False
+            http._TRACER = None
+            importlib.reload(http)
+
+            # Mock the actual HTTP call
+            mock_response = MagicMock(spec=requests.Response)
+            mock_response.status_code = 200
+            mock_response.headers = {}
+            mock_response.json.return_value = {}
+
+            with patch.object(http._SESSION, "request", return_value=mock_response):
+                http.get("https://api.unify.ai/v0/projects")
+
+            # Check spans were created
+            spans = exporter.get_finished_spans()
+            assert len(spans) >= 1
+
+            # Verify span attributes
+            span = spans[-1]
+            assert span.name == "GET projects"
+            assert span.attributes.get("http.method") == "GET"
+            assert "api.unify.ai" in span.attributes.get("http.url", "")
+            assert span.attributes.get("http.status_code") == 200
+
+    def test_span_records_error_on_exception(self, reset_otel):
+        """HTTP request spans record errors when exceptions occur."""
+        exporter = reset_otel["exporter"]
+
+        with patch.dict(os.environ, {"UNIFY_OTEL": "true", "UNIFY_LOG": "false"}):
+            import importlib
+
+            from unify.utils import http
+
+            http._OTEL_INITIALIZED = False
+            http._TRACER = None
+            importlib.reload(http)
+
+            # Mock HTTP call to raise exception
+            with patch.object(
+                http._SESSION,
+                "request",
+                side_effect=ConnectionError("Network error"),
+            ):
+                with pytest.raises(ConnectionError):
+                    http.get("https://api.unify.ai/v0/projects")
+
+            # Check span recorded error
+            spans = exporter.get_finished_spans()
+            assert len(spans) >= 1
+
+            span = spans[-1]
+            assert span.attributes.get("error.type") == "ConnectionError"
+            assert "Network error" in span.attributes.get("error.message", "")
+
+    def test_span_records_http_error_status(self, reset_otel):
+        """HTTP request spans record error status for 4xx/5xx responses."""
+        exporter = reset_otel["exporter"]
+
+        with patch.dict(os.environ, {"UNIFY_OTEL": "true", "UNIFY_LOG": "false"}):
+            import importlib
+
+            from unify.utils import http
+
+            http._OTEL_INITIALIZED = False
+            http._TRACER = None
+            importlib.reload(http)
+
+            # Mock 404 response (but don't raise - set raise_for_status=False)
+            mock_response = MagicMock(spec=requests.Response)
+            mock_response.status_code = 404
+            mock_response.headers = {}
+            mock_response.text = "Not found"
+            mock_response.json.side_effect = requests.exceptions.JSONDecodeError(
+                "err",
+                "doc",
+                0,
+            )
+            mock_response.raise_for_status.return_value = None
+
+            with patch.object(http._SESSION, "request", return_value=mock_response):
+                http.get(
+                    "https://api.unify.ai/v0/projects",
+                    raise_for_status=False,
+                )
+
+            # Check span has error status
+            spans = exporter.get_finished_spans()
+            assert len(spans) >= 1
+
+            span = spans[-1]
+            assert span.attributes.get("http.status_code") == 404
 
 
 class TestRequestError:
