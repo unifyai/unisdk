@@ -600,3 +600,180 @@ class TestMaskAuthKey:
         kwargs = {"params": {"x": 1}}
         result = _mask_auth_key(kwargs)
         assert result is kwargs
+
+
+class TestTraceContextPropagation:
+    """Tests for W3C Trace Context header injection (traceparent)."""
+
+    def test_inject_trace_context_adds_traceparent(self, reset_otel, monkeypatch):
+        """_inject_trace_context adds traceparent header when span is active."""
+        from unify.utils import http
+
+        monkeypatch.setattr(http, "_OTEL_ENABLED", True)
+
+        tracer = trace.get_tracer("test")
+        with tracer.start_as_current_span("parent-span") as span:
+            ctx = span.get_span_context()
+            trace_id = f"{ctx.trace_id:032x}"
+            span_id = f"{ctx.span_id:016x}"
+
+            result = http._inject_trace_context({"existing": "header"})
+
+            # Should have traceparent
+            assert "traceparent" in result
+            traceparent = result["traceparent"]
+
+            # Format: {version}-{trace-id}-{parent-id}-{flags}
+            parts = traceparent.split("-")
+            assert len(parts) == 4
+            assert parts[0] == "00"  # version
+            assert parts[1] == trace_id  # trace-id matches
+            assert parts[2] == span_id  # parent-id is current span
+            assert parts[3] == "01"  # sampled
+
+            # Existing headers preserved
+            assert result["existing"] == "header"
+
+    def test_inject_trace_context_no_span(self, monkeypatch):
+        """_inject_trace_context returns unchanged headers when no span."""
+        from unify.utils import http
+
+        monkeypatch.setattr(http, "_OTEL_ENABLED", True)
+
+        # Reset to NoOp so no active span
+        trace._TRACER_PROVIDER_SET_ONCE._done = False
+        trace._TRACER_PROVIDER = None
+        trace.set_tracer_provider(trace.NoOpTracerProvider())
+
+        result = http._inject_trace_context({"existing": "header"})
+
+        # No traceparent added
+        assert "traceparent" not in result
+        assert result["existing"] == "header"
+
+    def test_inject_trace_context_otel_disabled(self, monkeypatch):
+        """_inject_trace_context does nothing when OTel disabled."""
+        from unify.utils import http
+
+        monkeypatch.setattr(http, "_OTEL_ENABLED", False)
+
+        result = http._inject_trace_context({"existing": "header"})
+
+        assert "traceparent" not in result
+        assert result["existing"] == "header"
+
+    def test_inject_trace_context_none_headers(self, reset_otel, monkeypatch):
+        """_inject_trace_context handles None headers."""
+        from unify.utils import http
+
+        monkeypatch.setattr(http, "_OTEL_ENABLED", True)
+
+        tracer = trace.get_tracer("test")
+        with tracer.start_as_current_span("test-span"):
+            result = http._inject_trace_context(None)
+
+            assert "traceparent" in result
+            assert isinstance(result, dict)
+
+    def test_get_traceparent_returns_header_value(self, reset_otel, monkeypatch):
+        """get_traceparent returns the traceparent header value."""
+        from unify.utils import http
+
+        monkeypatch.setattr(http, "_OTEL_ENABLED", True)
+
+        tracer = trace.get_tracer("test")
+        with tracer.start_as_current_span("test-span") as span:
+            ctx = span.get_span_context()
+            trace_id = f"{ctx.trace_id:032x}"
+
+            traceparent = http.get_traceparent()
+
+            assert traceparent is not None
+            assert trace_id in traceparent
+
+    def test_get_traceparent_none_when_disabled(self, monkeypatch):
+        """get_traceparent returns None when OTel disabled."""
+        from unify.utils import http
+
+        monkeypatch.setattr(http, "_OTEL_ENABLED", False)
+
+        result = http.get_traceparent()
+        assert result is None
+
+    def test_request_injects_traceparent(self, reset_otel):
+        """HTTP requests inject traceparent header when OTel enabled."""
+        exporter = reset_otel["exporter"]
+
+        with patch.dict(os.environ, {"UNIFY_OTEL": "true", "UNIFY_LOG": "false"}):
+            import importlib
+
+            from unify.utils import http
+
+            http._OTEL_INITIALIZED = False
+            http._TRACER = None
+            importlib.reload(http)
+
+            captured_headers = {}
+
+            def capture_request(method, url, **kwargs):
+                captured_headers.update(kwargs.get("headers", {}))
+                mock_response = MagicMock(spec=requests.Response)
+                mock_response.status_code = 200
+                mock_response.headers = {}
+                mock_response.json.return_value = {}
+                return mock_response
+
+            with patch.object(http._SESSION, "request", side_effect=capture_request):
+                http.get("https://api.unify.ai/v0/projects")
+
+            # Verify traceparent was injected
+            assert "traceparent" in captured_headers
+
+            # Verify format
+            traceparent = captured_headers["traceparent"]
+            parts = traceparent.split("-")
+            assert len(parts) == 4
+            assert parts[0] == "00"  # version
+
+    def test_traceparent_enables_distributed_tracing(self, reset_otel):
+        """Traceparent allows downstream service to continue the trace."""
+        exporter = reset_otel["exporter"]
+
+        with patch.dict(os.environ, {"UNIFY_OTEL": "true", "UNIFY_LOG": "false"}):
+            import importlib
+
+            from unify.utils import http
+
+            http._OTEL_INITIALIZED = False
+            http._TRACER = None
+            importlib.reload(http)
+
+            captured_traceparent = [None]
+
+            def capture_request(method, url, **kwargs):
+                captured_traceparent[0] = kwargs.get("headers", {}).get("traceparent")
+                mock_response = MagicMock(spec=requests.Response)
+                mock_response.status_code = 200
+                mock_response.headers = {}
+                mock_response.json.return_value = {}
+                return mock_response
+
+            with patch.object(http._SESSION, "request", side_effect=capture_request):
+                http.get("https://api.unify.ai/v0/projects")
+
+            # Get the span that was created
+            spans = exporter.get_finished_spans()
+            assert len(spans) == 1
+            span = spans[0]
+
+            # Parse the traceparent
+            traceparent = captured_traceparent[0]
+            assert traceparent is not None
+            _, trace_id, parent_id, _ = traceparent.split("-")
+
+            # The trace_id in traceparent should match the span's trace_id
+            assert trace_id == f"{span.context.trace_id:032x}"
+
+            # The parent_id in traceparent should be the current span's span_id
+            # (so downstream service creates a child of this span)
+            assert parent_id == f"{span.context.span_id:016x}"

@@ -211,6 +211,85 @@ def _get_current_trace_id() -> Optional[str]:
     return None
 
 
+def _inject_trace_context(headers: Optional[dict]) -> dict:
+    """Inject W3C Trace Context headers into outgoing request headers.
+
+    This enables distributed tracing across service boundaries (e.g., to Orchestra).
+    The traceparent header format is: {version}-{trace-id}-{parent-id}-{trace-flags}
+
+    Args:
+        headers: Existing headers dict (may be None)
+
+    Returns:
+        Headers dict with traceparent injected (if OTel span is active)
+    """
+    result = dict(headers) if headers else {}
+
+    if not _OTEL_ENABLED:
+        return result
+
+    try:
+        from opentelemetry import trace
+        from opentelemetry.trace.propagation.tracecontext import (
+            TraceContextTextMapPropagator,
+        )
+
+        span = trace.get_current_span()
+        if span is None:
+            return result
+
+        ctx = span.get_span_context()
+        if ctx is None or not ctx.is_valid:
+            return result
+
+        # Use the standard W3C propagator to inject headers
+        propagator = TraceContextTextMapPropagator()
+        propagator.inject(result)
+
+        _LOGGER.debug(f"Injected traceparent: {result.get('traceparent', 'N/A')}")
+
+    except ImportError:
+        pass
+    except Exception as e:
+        _LOGGER.debug(f"Failed to inject trace context: {e}")
+
+    return result
+
+
+def get_traceparent() -> Optional[str]:
+    """Get the current traceparent header value, if an OTel span is active.
+
+    Returns:
+        The traceparent header string, or None if no active span.
+    """
+    if not _OTEL_ENABLED:
+        return None
+
+    try:
+        from opentelemetry import trace
+        from opentelemetry.trace.propagation.tracecontext import (
+            TraceContextTextMapPropagator,
+        )
+
+        span = trace.get_current_span()
+        if span is None:
+            return None
+
+        ctx = span.get_span_context()
+        if ctx is None or not ctx.is_valid:
+            return None
+
+        # Inject into a temp dict to get the header value
+        carrier: dict = {}
+        propagator = TraceContextTextMapPropagator()
+        propagator.inject(carrier)
+
+        return carrier.get("traceparent")
+
+    except Exception:
+        return None
+
+
 def _extract_route(url: str) -> str:
     """Extract a safe route identifier from a URL for use in filenames.
 
@@ -512,6 +591,11 @@ def _log_request_if_enabled(fn: Callable) -> Callable:
                             "http.request.params",
                             json.dumps(kwargs["params"]),
                         )
+
+                # Inject trace context headers for distributed tracing
+                if _OTEL_ENABLED:
+                    kwargs = dict(kwargs)  # Don't mutate caller's kwargs
+                    kwargs["headers"] = _inject_trace_context(kwargs.get("headers"))
 
                 res: requests.Response = fn(method, url, **kwargs)
                 duration_ms = int((time.monotonic() - start_time) * 1000)
