@@ -4,7 +4,7 @@ HTTP utilities for the Unify SDK.
 Provides a requests session with retry logic and optional trace-aware logging.
 
 Logging is controlled by two environment variables:
-- UNIFY_HTTP_LOG: Enable/disable HTTP logging (default: true)
+- UNIFY_LOG: Enable/disable logging (default: true)
 - UNIFY_LOG_DIR: Directory for log files (default: console only)
 
 When UNIFY_LOG_DIR is set, structured JSON files are written:
@@ -33,8 +33,8 @@ from urllib3 import Retry
 # Console logging setup
 # ---------------------------------------------------------------------------
 
-_LOGGER = logging.getLogger("unify_http")
-_LOG_ENABLED = os.getenv("UNIFY_HTTP_LOG", "true").lower() in ("true", "1")
+_LOGGER = logging.getLogger("unify")
+_LOG_ENABLED = os.getenv("UNIFY_LOG", "true").lower() in ("true", "1")
 _LOGGER.setLevel(logging.DEBUG if _LOG_ENABLED else logging.WARNING)
 
 # ---------------------------------------------------------------------------
