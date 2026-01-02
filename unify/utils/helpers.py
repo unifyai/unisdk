@@ -31,9 +31,6 @@ def _get_and_maybe_create_project(
     api_key: Optional[str] = None,
     create_if_missing: bool = False,
 ) -> Optional[str]:
-    # noinspection PyUnresolvedReferences
-    from unify.logging.utils.logs import ASYNC_LOGGING
-
     api_key = _validate_api_key(api_key)
     if project is None:
         project = unify.active_project()
@@ -43,10 +40,6 @@ def _get_and_maybe_create_project(
             else:
                 return None
     if not create_if_missing:
-        return project
-    if ASYNC_LOGGING:
-        # acquiring the project lock here will block the async logger
-        # so we skip the lock if we are in async mode
         return project
     with PROJECT_LOCK:
         if project not in unify.list_projects(api_key=api_key):

@@ -20,18 +20,11 @@ from ...utils.helpers import (
     _get_and_maybe_create_project,
     _validate_api_key,
 )
-from .async_logger import AsyncLoggerManager
 
 logger = logging.getLogger(__name__)
 
 # logging configuration
 USR_LOGGING = True
-ASYNC_LOGGING = False  # Flag to enable/disable async logging
-ASYNC_BATCH_SIZE = 100  # Default batch size for async logging
-ASYNC_FLUSH_INTERVAL = 5.0  # Default flush interval in secondss
-ASYNC_MAX_QUEUE_SIZE = 10000  # Default maximum queue size
-
-_async_logger: Optional[AsyncLoggerManager] = None
 
 # log
 ACTIVE_LOG = ContextVar("active_log", default=[])
@@ -67,45 +60,6 @@ ENTRIES_NEST_LEVEL = ContextVar("entries_nest_level", default=0)
 
 # chunking
 CHUNK_LIMIT = 5000000
-
-
-def initialize_async_logger(
-    queue_size: Optional[int] = 10000,
-    api_key: Optional[str] = None,
-) -> None:
-    """
-    Initialize the async logger with the specified configuration.
-
-    Args:
-        queue_size: Maximum number of log events to store in the queue, defaults to 10000.
-        if maximum queue size is exceeded, calls to unify.log will block until space is available.
-
-        api_key: API key for authentication
-    """
-    global _async_logger, ASYNC_LOGGING
-
-    if _async_logger is not None:
-        return
-    api_key = _validate_api_key(api_key)
-    _async_logger = AsyncLoggerManager(
-        name="default",
-        base_url=BASE_URL,
-        api_key=api_key,
-        max_queue_size=queue_size,
-    )
-    ASYNC_LOGGING = True
-
-
-def shutdown_async_logger(immediate=False) -> None:
-    """
-    Gracefully shutdown the async logger, ensuring all pending logs are flushed.
-    """
-    global _async_logger, ASYNC_LOGGING
-
-    if _async_logger is not None:
-        _async_logger.stop_sync(immediate=immediate)
-        _async_logger = None
-        ASYNC_LOGGING = False
 
 
 def _apply_row_ids_and_non_unique_auto_count_vals(
@@ -361,7 +315,6 @@ def log(
     Returns:
         The unique id of newly created log.
     """
-    global ASYNC_LOGGING
     api_key = _validate_api_key(api_key)
     context = _handle_context(context)
     if not new and ACTIVE_LOG.get():
@@ -382,29 +335,12 @@ def log(
     entries = _handle_special_types(entries)
     entries = _handle_mutability(mutable, entries)
     project = _get_and_maybe_create_project(project, api_key=api_key)
-    if ASYNC_LOGGING and _async_logger is not None:
-        # Use async logging: enqueue a create event and capture the Future.
-        log_future = _async_logger.log_create(
-            project=project,
-            context=context,
-            entries=entries,
-        )
-        created_log = unify.Log(
-            id=None,  # Placeholder; will be updated when the Future resolves.
-            _future=log_future,
-            api_key=api_key,
-            **entries,
-            context=context,
-        )
-    else:
-        # Use synchronous logging
-        created_log = _sync_log(
-            project=project,
-            context=context,
-            entries=entries,
-            api_key=api_key,
-        )
-
+    created_log = _sync_log(
+        project=project,
+        context=context,
+        entries=entries,
+        api_key=api_key,
+    )
     created_log.entries.pop("explicit_types", None)
 
     if ENTRIES_NEST_LEVEL.get() > 0:
@@ -607,26 +543,18 @@ def create_logs(
         ]
 
     # Fallback for non-batched (iterative) logging
-    pbar = tqdm(total=len(entries), unit="logs", desc="Creating Logs")
-    try:
-        unify.initialize_async_logger()
-        _async_logger.register_callback(lambda: pbar.update(1))
-        ret = []
-
-        for e in entries:
-            ret.append(
-                log(
-                    project=project,
-                    context=context,
-                    new=True,
-                    mutable=mutable,
-                    api_key=api_key,
-                    **e,
-                ),
-            )
-    finally:
-        unify.shutdown_async_logger()
-        pbar.close()
+    ret = []
+    for e in tqdm(entries, unit="logs", desc="Creating Logs"):
+        ret.append(
+            log(
+                project=project,
+                context=context,
+                new=True,
+                mutable=mutable,
+                api_key=api_key,
+                **e,
+            ),
+        )
     return ret
 
 
@@ -644,71 +572,41 @@ def _add_to_log(
     context = _handle_context(context)
     data = _handle_special_types(data)
     data = _handle_mutability(mutable, data)
-    if ASYNC_LOGGING and _async_logger is not None:
-        # For simplicity, assume logs is a single unify.Log.
-        if logs is None:
-            log_obj = ACTIVE_LOG.get()[-1]
-        elif isinstance(logs, unify.Log):
-            log_obj = logs
-        elif isinstance(logs, list) and logs and isinstance(logs[0], unify.Log):
-            log_obj = logs[0]
-        else:
-            # If not a Log, resolve synchronously.
-            log_id = _to_log_ids(logs)[0]
-            lf = _async_logger._loop.create_future()
-            lf.set_result(log_id)
-            log_obj = unify.Log(id=log_id, _future=lf, api_key=api_key)
-        # Prepare the future to pass (if the log is still pending, use its _future)
-        if hasattr(log_obj, "_future") and log_obj._future is not None:
-            lf = log_obj._future
-        else:
-            lf = _async_logger._loop.create_future()
-            lf.set_result(log_obj.id)
-        _async_logger.log_update(
-            project=_get_and_maybe_create_project(None, api_key=api_key),
-            context=context,
-            future=lf,
-            overwrite=overwrite,
-            data=data,
-        )
-        return {"detail": "Update queued asynchronously"}
-    else:
-        # Fallback to synchronous update if async logging isn’t enabled.
-        log_ids = _to_log_ids(logs)
-        headers = _create_request_header(api_key)
-        all_kwargs = []
-        if ENTRIES_NEST_LEVEL.get() > 0:
-            for log_id in log_ids:
-                combined_kwargs = {
-                    **data,
-                    **{
-                        k: v
-                        for k, v in ACTIVE_ENTRIES_WRITE.get().items()
-                        if k not in LOGGED.get().get(log_id, {})
-                    },
-                }
-                all_kwargs.append(combined_kwargs)
-            assert all(
-                kw == all_kwargs[0] for kw in all_kwargs
-            ), "All logs must share the same context if they're all being updated at the same time."
-            data = all_kwargs[0]
-        body = {
-            "logs": log_ids,
-            "entries": data,
-            "overwrite": overwrite,
-            "context": context,
-        }
-        response = http.put(BASE_URL + "/logs", headers=headers, json=body)
-        if ENTRIES_NEST_LEVEL.get() > 0:
-            logged = LOGGED.get()
-            new_logged = {}
-            for log_id in log_ids:
-                if log_id in logged:
-                    new_logged[log_id] = logged[log_id] + list(data.keys())
-                else:
-                    new_logged[log_id] = list(data.keys())
-            LOGGED.set({**logged, **new_logged})
-        return response.json()
+    log_ids = _to_log_ids(logs)
+    headers = _create_request_header(api_key)
+    all_kwargs = []
+    if ENTRIES_NEST_LEVEL.get() > 0:
+        for log_id in log_ids:
+            combined_kwargs = {
+                **data,
+                **{
+                    k: v
+                    for k, v in ACTIVE_ENTRIES_WRITE.get().items()
+                    if k not in LOGGED.get().get(log_id, {})
+                },
+            }
+            all_kwargs.append(combined_kwargs)
+        assert all(
+            kw == all_kwargs[0] for kw in all_kwargs
+        ), "All logs must share the same context if they're all being updated at the same time."
+        data = all_kwargs[0]
+    body = {
+        "logs": log_ids,
+        "entries": data,
+        "overwrite": overwrite,
+        "context": context,
+    }
+    response = http.put(BASE_URL + "/logs", headers=headers, json=body)
+    if ENTRIES_NEST_LEVEL.get() > 0:
+        logged = LOGGED.get()
+        new_logged = {}
+        for log_id in log_ids:
+            if log_id in logged:
+                new_logged[log_id] = logged[log_id] + list(data.keys())
+            else:
+                new_logged[log_id] = list(data.keys())
+        LOGGED.set({**logged, **new_logged})
+    return response.json()
 
 
 def update_logs(
