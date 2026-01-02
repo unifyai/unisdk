@@ -3,7 +3,7 @@ from __future__ import annotations
 import ast
 import inspect
 import textwrap
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Union
 
 from ..utils.helpers import _validate_api_key
 from .utils.compositions import *
@@ -40,7 +40,6 @@ class Log:
         project: Optional[str] = None,
         context: Optional[str] = None,
         api_key: Optional[str] = None,
-        params: Dict[str, Tuple[str, Any]] = None,
         **entries,
     ):
         self._id = id
@@ -49,7 +48,6 @@ class Log:
         self._project = project
         self._context = context
         self._entries = entries
-        self._params = params
         self._api_key = _validate_api_key(api_key)
 
     # Setters
@@ -77,10 +75,6 @@ class Log:
     def entries(self) -> Dict[str, Any]:
         return self._entries
 
-    @property
-    def params(self) -> Dict[str, Tuple[str, Any]]:
-        return self._params
-
     # Dunders
 
     def __eq__(self, other: Union[dict, Log]) -> bool:
@@ -91,7 +85,7 @@ class Log:
         return self.to_json() == other.to_json()
 
     def __len__(self):
-        return len(self._entries) + len(self._params)
+        return len(self._entries)
 
     def __repr__(self) -> str:
         return f"Log(id={self._id})"
@@ -103,7 +97,6 @@ class Log:
         if self._id is None and self._future is not None:
             self._id = self._future.result(timeout=5)
         log = get_log_by_id(id=self._id, api_key=self._api_key)
-        self._params = log._params
         self._entries = log._entries
 
     def add_entries(self, **entries) -> None:
@@ -143,7 +136,6 @@ class Log:
             "project": self._project,
             "context": self._context,
             "entries": self._entries,
-            "params": self._params,
         }
 
     @staticmethod
@@ -383,50 +375,6 @@ class Entries:
         ACTIVE_ENTRIES_MODE.reset(self._mode_token)
 
 
-class Params:
-    def __init__(self, mode: str = "both", overwrite: bool = False, **params):
-        self._params = _handle_special_types(params)
-        _validate_mode(mode)
-        self._mode = mode
-        self._overwrite = overwrite
-
-    def __enter__(self):
-        _validate_mode_nesting(ACTIVE_PARAMS_MODE.get(), self._mode)
-        self._mode_token = ACTIVE_PARAMS_MODE.set(self._mode)
-        if self._mode in ("both", "write"):
-            self._params_token = ACTIVE_PARAMS_WRITE.set(
-                {**ACTIVE_PARAMS_WRITE.get(), **self._params},
-            )
-            self._nest_token = PARAMS_NEST_LEVEL.set(
-                PARAMS_NEST_LEVEL.get() + 1,
-            )
-
-        if self._mode in ("both", "read"):
-            self._params_read_token = ACTIVE_PARAMS_READ.set(
-                {**ACTIVE_PARAMS_READ.get(), **self._params},
-            )
-
-        if self._overwrite:
-            if self._mode == "read":
-                raise Exception(f"Cannot overwrite logs in read mode.")
-
-            logs = unify.get_logs(return_ids_only=True)
-            if len(logs) > 0:
-                unify.delete_logs(logs=logs)
-
-    def __exit__(self, *args, **kwargs):
-        ACTIVE_PARAMS_MODE.reset(self._mode_token)
-
-        if self._mode in ("both", "write"):
-            ACTIVE_PARAMS_WRITE.reset(self._params_token)
-            PARAMS_NEST_LEVEL.reset(self._nest_token)
-            if PARAMS_NEST_LEVEL.get() == 0:
-                LOGGED.set({})
-
-        if self._mode in ("both", "read"):
-            ACTIVE_PARAMS_READ.reset(self._params_read_token)
-
-
 class Experiment:
     def __init__(
         self,
@@ -451,19 +399,19 @@ class Experiment:
         self._overwrite = overwrite
 
     def __enter__(self):
-        _validate_mode_nesting(ACTIVE_PARAMS_MODE.get(), self._mode)
-        self._mode_token = ACTIVE_PARAMS_MODE.set(self._mode)
+        _validate_mode_nesting(ACTIVE_ENTRIES_MODE.get(), self._mode)
+        self._mode_token = ACTIVE_ENTRIES_MODE.set(self._mode)
 
         if self._mode in ("both", "write"):
-            self._params_token_write = ACTIVE_PARAMS_WRITE.set(
-                {**ACTIVE_PARAMS_WRITE.get(), **{"experiment": self._name}},
+            self._entries_token_write = ACTIVE_ENTRIES_WRITE.set(
+                {**ACTIVE_ENTRIES_WRITE.get(), **{"experiment": self._name}},
             )
-            self._nest_token = PARAMS_NEST_LEVEL.set(
-                PARAMS_NEST_LEVEL.get() + 1,
+            self._nest_token = ENTRIES_NEST_LEVEL.set(
+                ENTRIES_NEST_LEVEL.get() + 1,
             )
         if self._mode in ("both", "read"):
-            self._params_read_token = ACTIVE_PARAMS_READ.set(
-                {**ACTIVE_PARAMS_READ.get(), **{"experiment": self._name}},
+            self._entries_read_token = ACTIVE_ENTRIES_READ.set(
+                {**ACTIVE_ENTRIES_READ.get(), **{"experiment": self._name}},
             )
 
         if self._overwrite:
@@ -475,14 +423,14 @@ class Experiment:
                 unify.delete_logs(logs=logs)
 
     def __exit__(self, *args, **kwargs):
-        ACTIVE_PARAMS_MODE.reset(self._mode_token)
+        ACTIVE_ENTRIES_MODE.reset(self._mode_token)
         if self._mode in ("both", "write"):
-            ACTIVE_PARAMS_WRITE.reset(self._params_token_write)
-            PARAMS_NEST_LEVEL.reset(self._nest_token)
-            if PARAMS_NEST_LEVEL.get() == 0:
+            ACTIVE_ENTRIES_WRITE.reset(self._entries_token_write)
+            ENTRIES_NEST_LEVEL.reset(self._nest_token)
+            if ENTRIES_NEST_LEVEL.get() == 0:
                 LOGGED.set({})
         if self._mode in ("both", "read"):
-            ACTIVE_PARAMS_READ.reset(self._params_read_token)
+            ACTIVE_ENTRIES_READ.reset(self._entries_read_token)
 
 
 class LogTransformer(ast.NodeTransformer):
@@ -494,7 +442,7 @@ class LogTransformer(ast.NodeTransformer):
 
     def visit_FunctionDef(self, node: ast.FunctionDef):
         self._in_function = True
-        # Collect non-underscore params
+        # Collect non-underscore function arguments
         self.param_names = [
             arg.arg for arg in node.args.args if not arg.arg.startswith("_")
         ]
@@ -543,13 +491,13 @@ class LogTransformer(ast.NodeTransformer):
             return node
 
         log_keywords = []
-        # Add regular parameters (that weren't reassigned)
+        # Add regular function arguments (that weren't reassigned)
         for p in self.param_names:
             log_keywords.append(
                 ast.keyword(arg=p, value=ast.Name(id=p, ctx=ast.Load())),
             )
 
-        # Add assigned variables (including reassigned parameters)
+        # Add assigned variables (including reassigned function arguments)
         for var_name in sorted(self.assigned_names):
             log_keywords.append(
                 ast.keyword(arg=var_name, value=ast.Name(id=var_name, ctx=ast.Load())),
@@ -615,7 +563,7 @@ class LogTransformer(ast.NodeTransformer):
 def log_decorator(func):
     """
     Decorator that rewrites the function's AST so that it logs non-underscore
-    parameters, and assigned variables.
+    function arguments, and assigned variables.
     """
     # 1) Parse the source to an AST
     source = textwrap.dedent(inspect.getsource(func))

@@ -65,18 +65,6 @@ ACTIVE_ENTRIES_READ = ContextVar(
 ACTIVE_ENTRIES_MODE = ContextVar("active_entries_mode", default="both")
 ENTRIES_NEST_LEVEL = ContextVar("entries_nest_level", default=0)
 
-# params
-ACTIVE_PARAMS_WRITE = ContextVar(
-    "active_params_write",
-    default={},
-)
-ACTIVE_PARAMS_READ = ContextVar(
-    "active_params_read",
-    default={},
-)
-ACTIVE_PARAMS_MODE = ContextVar("active_params_mode", default="both")
-PARAMS_NEST_LEVEL = ContextVar("params_nest_level", default=0)
-
 # chunking
 CHUNK_LIMIT = 5000000
 
@@ -342,7 +330,6 @@ def log(
     *,
     project: Optional[str] = None,
     context: Optional[str] = None,
-    params: Dict[str, Any] = None,
     new: bool = False,
     overwrite: bool = False,
     mutable: Optional[Union[bool, Dict[str, bool]]] = True,
@@ -364,9 +351,6 @@ def log(
         project: Name of the project the stored logs will be associated to.
 
         context: Context for the logs.
-
-        params: Dictionary containing one or more key:value pairs that will be
-        logged into the platform as params.
 
         new: Whether to create a new log if there is a currently active global log.
         Defaults to False, in which case log will add to the existing log.
@@ -407,29 +391,16 @@ def log(
     if not new and ACTIVE_LOG.get():
         _add_to_log(
             context=context,
-            mode="entries",
             overwrite=overwrite,
             mutable=mutable,
             api_key=api_key,
             **entries,
         )
-        _add_to_log(
-            context=context,
-            mode="params",
-            overwrite=overwrite,
-            mutable=mutable,
-            api_key=api_key,
-            **(params if params is not None else {}),
-        )
         log = ACTIVE_LOG.get()[-1]
         if USR_LOGGING:
             logger.info(f"Updated Log({log.id})")
         return log
-    # Process parameters and entries
-    params = _apply_col_context(**(params if params else {}))
-    params = {**params, **ACTIVE_PARAMS_WRITE.get()}
-    params = _handle_special_types(params)
-    params = _handle_mutability(mutable, params)
+    # Process entries
     entries = _apply_col_context(**entries)
     entries = {**entries, **ACTIVE_ENTRIES_WRITE.get()}
     entries = _handle_special_types(entries)
@@ -440,7 +411,6 @@ def log(
         log_future = _async_logger.log_create(
             project=project,
             context=context,
-            params=params,
             entries=entries,
         )
         created_log = unify.Log(
@@ -448,7 +418,6 @@ def log(
             _future=log_future,
             api_key=api_key,
             **entries,
-            params=params,
             context=context,
         )
     else:
@@ -456,18 +425,17 @@ def log(
         created_log = _sync_log(
             project=project,
             context=context,
-            params=params,
             entries=entries,
             api_key=api_key,
         )
 
     created_log.entries.pop("explicit_types", None)
 
-    if PARAMS_NEST_LEVEL.get() > 0 or ENTRIES_NEST_LEVEL.get() > 0:
+    if ENTRIES_NEST_LEVEL.get() > 0:
         LOGGED.set(
             {
                 **LOGGED.get(),
-                created_log.id: list(params.keys()) + list(entries.keys()),
+                created_log.id: list(entries.keys()),
             },
         )
     if USR_LOGGING:
@@ -478,7 +446,6 @@ def log(
 def _sync_log(
     project: str,
     context: Optional[str],
-    params: Dict[str, Any],
     entries: Dict[str, Any],
     api_key: str,
 ) -> unify.Log:
@@ -492,7 +459,6 @@ def _sync_log(
     body = {
         "project": project,
         "context": context,
-        "params": params,
         "entries": entries,
     }
     response = http.post(BASE_URL + "/logs", headers=headers, json=body)
@@ -509,12 +475,11 @@ def _sync_log(
         id=resp_json["log_event_ids"][0],
         api_key=api_key,
         **entries,
-        params=params,
         context=context,
     )
 
 
-def _create_log(dct, params, context, api_key, context_entries=None):
+def _create_log(dct, context, api_key, context_entries=None):
     if context_entries is None:
         context_entries = {}
     return unify.Log(
@@ -523,17 +488,12 @@ def _create_log(dct, params, context, api_key, context_entries=None):
         **dct["entries"],
         **dct["derived_entries"],
         **context_entries,
-        params={
-            param_name: (param_ver, params[param_name][param_ver])
-            for param_name, param_ver in dct["params"].items()
-        },
         context=context,
         api_key=api_key,
     )
 
 
 def _create_log_groups_nested(
-    params,
     context,
     api_key,
     node,
@@ -543,7 +503,6 @@ def _create_log_groups_nested(
     if isinstance(node, dict) and "group" not in node:
         ret = unify.LogGroup(list(node.keys())[0])
         ret.value = _create_log_groups_nested(
-            params,
             context,
             api_key,
             node[ret.field],
@@ -559,7 +518,6 @@ def _create_log_groups_nested(
                 ret[n["key"]] = [
                     _create_log(
                         item,
-                        item["params"],
                         context,
                         api_key,
                         context_entries,
@@ -572,7 +530,6 @@ def _create_log_groups_nested(
             for n in node["group"]:
                 context_entries[prev_key] = n["key"]
                 ret[n["key"]] = _create_log_groups_nested(
-                    params,
                     context,
                     api_key,
                     n["value"],
@@ -582,10 +539,10 @@ def _create_log_groups_nested(
             return ret
 
 
-def _create_log_groups_not_nested(logs, groups, params, context, api_key):
+def _create_log_groups_not_nested(logs, groups, context, api_key):
     logs_mapping = {}
     for dct in logs:
-        logs_mapping[dct["id"]] = _create_log(dct, params, context, api_key)
+        logs_mapping[dct["id"]] = _create_log(dct, context, api_key)
 
     ret = []
     for group_key, group_value in groups.items():
@@ -602,7 +559,6 @@ def create_logs(
     *,
     project: Optional[str] = None,
     context: Optional[str] = None,
-    params: Optional[Union[List[Dict[str, Any]], Dict[str, Any]]] = None,
     entries: Optional[Union[List[Dict[str, Any]], Dict[str, Any]]] = None,
     mutable: Optional[Union[bool, Dict[str, bool]]] = True,
     batched: Optional[bool] = None,
@@ -623,8 +579,6 @@ def create_logs(
         `step_id` for that particular run. The leftmost N-1 unique columns can be
         supplied as normal entry keys, and the rightmost column is always auto-incremented.
 
-        params: List of dictionaries with the params to be logged.
-
         mutable: Either a boolean to apply uniform mutability for all fields, or a dictionary mapping field names to booleans for per-field control. Defaults to True.
 
         api_key: If specified, unify API key to be used. Defaults to the value in the
@@ -637,17 +591,12 @@ def create_logs(
     project = _get_and_maybe_create_project(project, api_key=api_key)
     context = _handle_context(context)
     headers = _create_request_header(api_key)
-    # ToDo: add support for all of the context variables, as is done for `unify.log` above
-    params = _handle_mutability(mutable, params)
     entries = _handle_mutability(mutable, entries)
-    # ToDo remove the params/entries logic above once this [https://app.clickup.com/t/86c25g263] is done
-    params = [{}] * len(entries) if params in [None, []] else params
-    entries = [{}] * len(params) if entries in [None, []] else entries
-    # end ToDo
+    if entries is None:
+        entries = []
     body = {
         "project": project,
         "context": context,
-        "params": params,
         "entries": entries,
     }
     body_size = sys.getsizeof(json.dumps(body))
@@ -676,25 +625,23 @@ def create_logs(
                 project=project,
                 context=context["name"] if isinstance(context, dict) else context,
                 **{k: v for k, v in e.items() if k != "explicit_types"},
-                **p,
                 id=i,
             )
-            for e, p, i in zip(entries, params, resp_json["log_event_ids"])
+            for e, i in zip(entries, resp_json["log_event_ids"])
         ]
 
     # Fallback for non-batched (iterative) logging
-    pbar = tqdm(total=len(params), unit="logs", desc="Creating Logs")
+    pbar = tqdm(total=len(entries), unit="logs", desc="Creating Logs")
     try:
         unify.initialize_async_logger()
         _async_logger.register_callback(lambda: pbar.update(1))
         ret = []
 
-        for p, e in zip(params, entries):
+        for e in entries:
             ret.append(
                 log(
                     project=project,
                     context=context,
-                    params=p,
                     new=True,
                     mutable=mutable,
                     api_key=api_key,
@@ -711,16 +658,12 @@ def _add_to_log(
     *,
     context: Optional[str] = None,
     logs: Optional[Union[int, unify.Log, List[Union[int, unify.Log]]]] = None,
-    mode: str = None,
     overwrite: bool = False,
     mutable: Optional[Union[bool, Dict[str, bool]]] = True,
     api_key: Optional[str] = None,
     **data,
 ) -> Dict[str, str]:
-    assert mode in ("params", "entries"), "mode must be one of 'params', 'entries'"
     data = _apply_col_context(**data)
-    nest_level = {"params": PARAMS_NEST_LEVEL, "entries": ENTRIES_NEST_LEVEL}[mode]
-    active = {"params": ACTIVE_PARAMS_WRITE, "entries": ACTIVE_ENTRIES_WRITE}[mode]
     api_key = _validate_api_key(api_key)
     context = _handle_context(context)
     data = _handle_special_types(data)
@@ -749,7 +692,6 @@ def _add_to_log(
             project=_get_and_maybe_create_project(None, api_key=api_key),
             context=context,
             future=lf,
-            mode=mode,
             overwrite=overwrite,
             data=data,
         )
@@ -759,13 +701,13 @@ def _add_to_log(
         log_ids = _to_log_ids(logs)
         headers = _create_request_header(api_key)
         all_kwargs = []
-        if nest_level.get() > 0:
+        if ENTRIES_NEST_LEVEL.get() > 0:
             for log_id in log_ids:
                 combined_kwargs = {
                     **data,
                     **{
                         k: v
-                        for k, v in active.get().items()
+                        for k, v in ACTIVE_ENTRIES_WRITE.get().items()
                         if k not in LOGGED.get().get(log_id, {})
                     },
                 }
@@ -774,9 +716,14 @@ def _add_to_log(
                 kw == all_kwargs[0] for kw in all_kwargs
             ), "All logs must share the same context if they're all being updated at the same time."
             data = all_kwargs[0]
-        body = {"logs": log_ids, mode: data, "overwrite": overwrite, "context": context}
+        body = {
+            "logs": log_ids,
+            "entries": data,
+            "overwrite": overwrite,
+            "context": context,
+        }
         response = http.put(BASE_URL + "/logs", headers=headers, json=body)
-        if nest_level.get() > 0:
+        if ENTRIES_NEST_LEVEL.get() > 0:
             logged = LOGGED.get()
             new_logged = {}
             for log_id in log_ids:
@@ -786,46 +733,6 @@ def _add_to_log(
                     new_logged[log_id] = list(data.keys())
             LOGGED.set({**logged, **new_logged})
         return response.json()
-
-
-def add_log_params(
-    *,
-    logs: Optional[Union[int, unify.Log, List[Union[int, unify.Log]]]] = None,
-    mutable: Optional[Union[bool, Dict[str, bool]]] = True,
-    api_key: Optional[str] = None,
-    **params,
-) -> Dict[str, str]:
-    """
-    Add extra params into an existing log.
-
-    Args:
-        logs: The log(s) to update with extra params. Looks for the current active log if
-        no id is provided.
-
-        mutable: Either a boolean to apply uniform mutability for all parameters, or a dictionary mapping parameter names to booleans for per-field control.
-        Defaults to True.
-        api_key: If specified, unify API key to be used. Defaults to the value in the
-        `UNIFY_KEY` environment variable.
-
-        params: Dictionary containing one or more key:value pairs that will be
-        logged into the platform as params.
-
-    Returns:
-        A message indicating whether the logs were successfully updated.
-    """
-    ret = _add_to_log(
-        logs=logs,
-        mode="params",
-        mutable=mutable,
-        api_key=api_key,
-        **params,
-    )
-    if USR_LOGGING:
-        logger.info(
-            f"Added Params {', '.join(list(params.keys()))} "
-            f"to [Logs({', '.join([str(i) for i in _to_log_ids(logs)])})]",
-        )
-    return ret
 
 
 def add_log_entries(
@@ -860,7 +767,6 @@ def add_log_entries(
     """
     ret = _add_to_log(
         logs=logs,
-        mode="entries",
         overwrite=overwrite,
         mutable=mutable,
         api_key=api_key,
@@ -879,7 +785,6 @@ def update_logs(
     *,
     logs: Optional[Union[int, unify.Log, List[Union[int, unify.Log]]]] = None,
     context: Optional[Union[str, List[str]]] = None,
-    params: Optional[Union[Dict[str, Any], List[Dict[str, Any]]]] = None,
     entries: Optional[Union[Dict[str, Any], List[Dict[str, Any]]]] = None,
     overwrite: bool = False,
     api_key: Optional[str] = None,
@@ -887,7 +792,7 @@ def update_logs(
     """
     Updates existing logs.
     """
-    if not logs and not params and not entries:
+    if not logs and not entries:
         return {"detail": "No logs to update."}
     headers = _create_request_header(api_key)
     log_ids = _to_log_ids(logs)
@@ -898,8 +803,6 @@ def update_logs(
     }
     if entries is not None:
         body["entries"] = entries
-    if params is not None:
-        body["params"] = params
     response = http.put(BASE_URL + "/logs", headers=headers, json=body)
     return response.json()
 
@@ -1103,7 +1006,7 @@ def get_logs(
     )
     context = context if context else CONTEXT_READ.get()
     column_context = column_context if column_context else COLUMN_CONTEXT_READ.get()
-    merged_filters = ACTIVE_PARAMS_READ.get() | ACTIVE_ENTRIES_READ.get()
+    merged_filters = ACTIVE_ENTRIES_READ.get()
     if merged_filters:
         _filter = " and ".join(f"{k}=={repr(v)}" for k, v in merged_filters.items())
         if filter:
@@ -1143,15 +1046,18 @@ def get_logs(
     if not group_by:
         if return_ids_only:
             return response.json()
-        params, logs, _ = response.json().values()
-        return [_create_log(dct, params, context, api_key) for dct in logs]
+        resp_data = response.json()
+        logs_data = resp_data.get("logs", [])
+        return [_create_log(dct, context, api_key) for dct in logs_data]
 
+    resp_data = response.json()
     if nested_groups:
-        params, logs, _ = response.json().values()
-        return _create_log_groups_nested(params, context, api_key, logs, {})
+        logs_data = resp_data.get("logs", [])
+        return _create_log_groups_nested(context, api_key, logs_data, {})
     else:
-        params, groups, logs, _ = response.json().values()
-        return _create_log_groups_not_nested(logs, groups, params, context, api_key)
+        groups = resp_data.get("groups", {})
+        logs_data = resp_data.get("logs", [])
+        return _create_log_groups_not_nested(logs_data, groups, context, api_key)
 
 
 # noinspection PyShadowingBuiltins
@@ -1183,7 +1089,8 @@ def get_log_by_id(
         params={"project": project, "from_ids": [id]},
         headers=headers,
     )
-    params, lgs, count = response.json().values()
+    resp_data = response.json()
+    lgs = resp_data.get("logs", [])
     if len(lgs) == 0:
         raise Exception(f"Log with id {id} does not exist")
     lg = lgs[0]
@@ -1192,7 +1099,6 @@ def get_log_by_id(
         ts=lg["ts"],
         **lg["entries"],
         **lg["derived_entries"],
-        params={k: (v, params[k][v]) for k, v in lg["params"].items()},
         api_key=api_key,
     )
 
@@ -1265,8 +1171,7 @@ def get_logs_metric(
         group_by: Field(s) to group the metrics by. Can be:
             - A single string for single-level grouping, e.g.: "model"
             - A list of strings for nested grouping, e.g.: ["model", "temperature"]
-            Each field can be prefixed with "params/" to indicate it's a parameter,
-            or "entries/" or "derived_entries/" for entry fields.
+            Each field can be prefixed with "entries/" or "derived_entries/" for entry fields.
 
         api_key: If specified, unify API key to be used. Defaults to the value in the
             `UNIFY_KEY` environment variable.

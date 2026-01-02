@@ -1,58 +1,6 @@
 from __future__ import annotations
 
-import json
-
 from .logs import *
-
-# Parameters #
-# -----------#
-
-
-def get_param_by_version(
-    field: str,
-    version: Union[str, int],
-    api_key: Optional[str] = None,
-) -> Any:
-    """
-    Gets the parameter by version.
-
-    Args:
-        field: The field of the parameter to get.
-
-        version: The version of the parameter to get.
-
-        api_key: If specified, unify API key to be used. Defaults to the value in the
-        `UNIFY_KEY` environment variable.
-
-    Returns:
-        The parameter by version.
-    """
-    version = str(version)
-    filter_exp = f"version({field}) == {version}"
-    return get_logs(filter=filter_exp, limit=1, api_key=api_key)[0].params[field][1]
-
-
-def get_param_by_value(
-    field: str,
-    value: Any,
-    api_key: Optional[str] = None,
-) -> Any:
-    """
-    Gets the parameter by value.
-
-    Args:
-        field: The field of the parameter to get.
-
-        value: The value of the parameter to get.
-
-        api_key: If specified, unify API key to be used. Defaults to the value in the
-        `UNIFY_KEY` environment variable.
-
-    Returns:
-        The parameter by version.
-    """
-    filter_exp = f"{field} == {json.dumps(value)}"
-    return get_logs(filter=filter_exp, limit=1, api_key=api_key)[0].params[field][0]
 
 
 def get_source() -> str:

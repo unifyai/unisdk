@@ -171,7 +171,6 @@ class AsyncLoggerManager:
         self,
         project: str,
         context: str,
-        params: dict,
         entries: dict,
     ) -> asyncio.Future:
         if self.shutting_down:
@@ -182,7 +181,6 @@ class AsyncLoggerManager:
             "_data": {
                 "project": project,
                 "context": context,
-                "params": params,
                 "entries": entries,
             },
             "type": "create",
@@ -196,7 +194,6 @@ class AsyncLoggerManager:
         project: str,
         context: str,
         future: asyncio.Future,
-        mode: str,
         overwrite: bool,
         data: dict,
     ) -> None:
@@ -205,7 +202,7 @@ class AsyncLoggerManager:
             return
         event = {
             "_data": {
-                mode: data,
+                "entries": data,
                 "project": project,
                 "context": context,
                 "overwrite": overwrite,

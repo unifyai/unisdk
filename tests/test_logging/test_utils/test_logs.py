@@ -38,16 +38,11 @@ def test_create_logs():
         {"a": 1, "b": 2, "c": 3},
         {"a": 2, "b": 3, "c": 4},
     ]
-    params = [
-        {"x": -1, "y": -2, "z": -3},
-        {"x": -4, "y": -5, "z": -6},
-        {"x": -7, "y": -8, "z": -9},
-    ]
-    unify.create_logs(entries=entries, params=params, batched=False)
+    unify.create_logs(entries=entries, batched=False)
     logs_unbatched = unify.get_logs()
     assert len(logs_unbatched) == 3
     unify.delete_logs()
-    unify.create_logs(entries=entries, params=params, batched=True)
+    unify.create_logs(entries=entries, batched=True)
     logs_batched = unify.get_logs()
     assert len(logs_batched) == 3
 
