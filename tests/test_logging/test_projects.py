@@ -27,7 +27,11 @@ def test_project_env_var():
     assert unify.active_project() is None
     os.environ["UNIFY_PROJECT"] = "test_project_env_var"
     assert unify.active_project() == "test_project_env_var"
-    unify.delete_logs(project="test_project_env_var")
+    try:
+        unify.delete_project("test_project_env_var")
+    except unify.utils.http.RequestError:
+        pass
+    unify.create_project("test_project_env_var")
     unify.log(x=0, y=1, z=2)
     del os.environ["UNIFY_PROJECT"]
     assert unify.active_project() is None
