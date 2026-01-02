@@ -80,8 +80,9 @@ jobs:
 
     - name: Start local orchestra
       run: |
-        # Start local orchestra with test user seeding
+        # Start local orchestra with test user seeding and enough workers for parallel tests
         ORCHESTRA_SEED_USER=1 \
+        ORCHESTRA_WORKERS=8 \
         UNIFY_KEY="${{ secrets.UNIFY_API_KEY }}" \
         "$ORCHESTRA_REPO_PATH/scripts/local.sh" start
 
