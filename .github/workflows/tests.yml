@@ -20,7 +20,7 @@ jobs:
       run: poetry run black --check .
 
   pytest:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest-8-cores
     environment: unify-testing
     timeout-minutes: 120
     steps:
@@ -35,6 +35,6 @@ jobs:
         pip install poetry
         poetry install --with dev
     - name: Run unit tests
-      run: poetry run pytest --timeout=120 -p no:warnings -vv .
+      run: poetry run pytest --timeout=120 -p no:warnings -vv -n 8 .
       env:
         UNIFY_KEY: ${{ secrets.UNIFY_API_KEY }}
