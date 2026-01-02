@@ -303,7 +303,7 @@ def test_create_logs_large_body():
     assert len(unify.get_logs()) == 100
 
 
-@_handle_project
+@_handle_project_isolated
 def test_update_logs():
     log0 = unify.log(a=0, b=1)
     unify.update_logs(logs=log0, entries={"a": 1}, overwrite=True)
