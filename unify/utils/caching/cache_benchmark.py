@@ -48,11 +48,6 @@ def get_cache_stats() -> CacheStats:
     return CURRENT_CACHE_STATS
 
 
-def reset_cache_stats() -> None:
-    global CURRENT_CACHE_STATS
-    CURRENT_CACHE_STATS = CacheStats()
-
-
 def record_get_cache(fn):
     if not _is_cache_stats_enabled():
         return fn

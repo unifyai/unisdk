@@ -28,20 +28,9 @@ from .logging.utils.projects import *
 
 # Utils
 from .utils import helpers, map, get_map_mode, set_map_mode, _caching, storage
-from .utils._caching import (
-    set_caching,
-    set_cache_backend,
-    cache_file_union,
-    cache_file_intersection,
-    subtract_cache_files,
-    cached,
-)
-from .utils.storage import get_signed_url, download_object, get_object_info
-from .utils.caching import (
-    get_cache_stats,
-    reset_cache_stats,
-    CacheStats,
-)
+from .utils._caching import set_cache_backend
+from .utils.storage import get_signed_url, download_object
+from .utils.caching import get_cache_stats
 from .utils import http
 from .utils.http import RequestError
 
