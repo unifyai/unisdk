@@ -31,7 +31,6 @@ def create_project(
         overwrite: Controls how to handle existing projects with the same name.
             If False (default), raises an error if project exists (unless exist_ok=True).
             If True, deletes the entire existing project before creating new one.
-            If "logs", only deletes the project's logs before creating.
             If "contexts", only deletes the project's contexts before creating.
 
         api_key: If specified, unify API key to be used. Defaults to the value in the
@@ -47,9 +46,7 @@ def create_project(
     body = {"name": name, "is_versioned": is_versioned}
     if overwrite:
         if name in list_projects(api_key=api_key):
-            if overwrite == "logs":
-                return delete_project_logs(name=name, api_key=api_key)
-            elif overwrite == "contexts":
+            if overwrite == "contexts":
                 return delete_project_contexts(name=name, api_key=api_key)
             else:
                 delete_project(name=name, api_key=api_key)
@@ -64,37 +61,6 @@ def create_project(
         ):
             return None
         raise
-
-
-def rename_project(
-    name: str,
-    new_name: str,
-    *,
-    api_key: Optional[str] = None,
-) -> Dict[str, str]:
-    """
-    Renames a project from `name` to `new_name` in your account.
-
-    Args:
-        name: Name of the project to rename.
-
-        new_name: A unique, user-defined name used when referencing the project.
-
-        api_key: If specified, unify API key to be used. Defaults to the value in the
-        `UNIFY_KEY` environment variable.
-
-    Returns:
-        A message indicating whether the project was successfully renamed.
-    """
-    api_key = _validate_api_key(api_key)
-    headers = _create_request_header(api_key)
-    body = {"name": new_name}
-    response = http.patch(
-        BASE_URL + f"/project/{name}",
-        headers=headers,
-        json=body,
-    )
-    return response.json()
 
 
 def delete_project(
@@ -131,26 +97,6 @@ def delete_project(
         ):
             return None
         raise
-
-
-def delete_project_logs(
-    name: str,
-    *,
-    api_key: Optional[str] = None,
-) -> None:
-    """
-    Deletes all logs from a project.
-
-    Args:
-        name: Name of the project to delete logs from.
-
-        api_key: If specified, unify API key to be used. Defaults to the value in the
-        `UNIFY_KEY` environment variable.
-    """
-    api_key = _validate_api_key(api_key)
-    headers = _create_request_header(api_key)
-    response = http.delete(BASE_URL + f"/project/{name}/logs", headers=headers)
-    return response.json()
 
 
 def delete_project_contexts(

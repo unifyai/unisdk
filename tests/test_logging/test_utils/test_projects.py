@@ -14,11 +14,8 @@ def test_project():
     assert name not in unify.list_projects()
     unify.create_project(name)
     assert name in unify.list_projects()
-    new_name = "my_project1"
-    unify.rename_project(name, new_name)
-    assert new_name in unify.list_projects()
-    unify.delete_project(new_name)
-    assert new_name not in unify.list_projects()
+    unify.delete_project(name)
+    assert name not in unify.list_projects()
 
 
 def test_project_thread_lock():
@@ -33,15 +30,6 @@ def test_project_thread_lock():
         from_args=True,
     )
     unify.delete_project("test_project")
-
-
-@_handle_project
-def test_delete_project_logs():
-    [unify.log(x=i) for i in range(10)]
-    assert len(unify.get_logs()) == 10
-    unify.delete_project_logs("test_delete_project_logs")
-    assert len(unify.get_logs()) == 0
-    assert "test_delete_project_logs" in unify.list_projects()
 
 
 @_handle_project

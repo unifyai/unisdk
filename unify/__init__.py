@@ -27,7 +27,7 @@ from .logging.utils.logs import *
 from .logging.utils.projects import *
 
 # Utils
-from .utils import helpers, map, get_map_mode, set_map_mode, _caching, storage
+from .utils import helpers, map, _caching, storage
 from .utils._caching import set_cache_backend
 from .utils.storage import get_signed_url, download_object
 from .utils.caching import get_cache_stats
@@ -60,11 +60,6 @@ def activate(
         create_project(project, api_key=api_key, overwrite=overwrite)
     global PROJECT
     PROJECT = project
-
-
-def deactivate() -> None:
-    global PROJECT
-    PROJECT = None
 
 
 def active_project() -> str:
