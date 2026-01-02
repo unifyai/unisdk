@@ -1,94 +1,10 @@
 import datetime
-from typing import Any, Dict, List, Optional, Union
+from typing import Dict, List, Optional, Union
 
 from unify import BASE_URL
 from unify.utils import http
 
 from ..utils.helpers import _create_request_header
-
-
-def get_query_tags(
-    *,
-    api_key: Optional[str] = None,
-) -> List[str]:
-    """
-    Get a list of available query tags.
-
-    Args:
-        api_key: If specified, unify API key to be used. Defaults
-        to the value in the `UNIFY_KEY` environment variable.
-
-    Returns:
-        A list of available query tags if successful, otherwise an empty list.
-    """
-    headers = _create_request_header(api_key)
-    url = f"{BASE_URL}/tags"
-    response = http.get(url, headers=headers)
-    if response.status_code != 200:
-        raise Exception(response.json())
-
-    return response.json()
-
-
-def get_queries(
-    *,
-    tags: Optional[Union[str, List[str]]] = None,
-    endpoints: Optional[Union[str, List[str]]] = None,
-    start_time: Optional[Union[datetime.datetime, str]] = None,
-    end_time: Optional[Union[datetime.datetime, str]] = None,
-    page_number: Optional[int] = None,
-    failures: Optional[Union[bool, str]] = None,
-    api_key: Optional[str] = None,
-) -> Dict[str, Any]:
-    """
-    Get query history based on specified filters.
-
-    Args:
-        tags: Tags to filter for queries that are marked with these tags.
-
-        endpoints: Optionally specify an endpoint, or a list of endpoints to filter for.
-
-        start_time: Timestamp of the earliest query to aggregate.
-        Format is `YYYY-MM-DD hh:mm:ss`.
-
-        end_time: Timestamp of the latest query to aggregate.
-        Format is `YYYY-MM-DD hh:mm:ss`.
-
-        page_number: The query history is returned in pages, with up to 100 prompts per
-        page. Increase the page number to see older prompts. Default is 1.
-
-        failures: indicates whether to includes failures in the return
-        (when set as True), or whether to return failures exclusively
-        (when set as 'only'). Default is False.
-
-        api_key: If specified, unify API key to be used.
-        Defaults to the value in the `UNIFY_KEY` environment variable.
-
-    Returns:
-        A dictionary containing the query history data.
-    """
-    headers = _create_request_header(api_key)
-
-    params = {}
-    if tags:
-        params["tags"] = tags
-    if endpoints:
-        params["endpoints"] = endpoints
-    if start_time:
-        params["start_time"] = start_time
-    if end_time:
-        params["end_time"] = end_time
-    if page_number:
-        params["page_number"] = page_number
-    if failures:
-        params["failures"] = failures
-
-    url = f"{BASE_URL}/queries"
-    response = http.get(url, headers=headers, params=params)
-    if response.status_code != 200:
-        raise Exception(response.json())
-
-    return response.json()
 
 
 def log_query(
@@ -137,54 +53,6 @@ def log_query(
     url = f"{BASE_URL}/queries"
 
     response = http.post(url, headers=headers, json=data)
-    if response.status_code != 200:
-        raise Exception(response.json())
-
-    return response.json()
-
-
-def get_query_metrics(
-    *,
-    start_time: Optional[Union[datetime.datetime, str]] = None,
-    end_time: Optional[Union[datetime.datetime, str]] = None,
-    models: Optional[str] = None,
-    providers: Optional[str] = None,
-    interval: int = 300,
-    secondary_user_id: Optional[str] = None,
-    api_key: Optional[str] = None,
-) -> Dict[str, Any]:
-    """
-    Get query metrics for specified parameters.
-
-    Args:
-        start_time: Timestamp of the earliest query to aggregate. Format is `YYYY-MM-DD hh:mm:ss`.
-        end_time: Timestamp of the latest query to aggregate. Format is `YYYY-MM-DD hh:mm:ss`.
-        models: Models to fetch metrics from. Comma-separated string of model names.
-        providers: Providers to fetch metrics from. Comma-separated string of provider names.
-        interval: Number of seconds in the aggregation interval. Default is 300.
-        secondary_user_id: Secondary user id to match the `user` attribute from `/chat/completions`.
-        api_key: If specified, unify API key to be used. Defaults to the value in the `UNIFY_KEY` environment variable.
-
-    Returns:
-        A dictionary containing the query metrics.
-    """
-    headers = _create_request_header(api_key)
-
-    params = {
-        "start_time": start_time,
-        "end_time": end_time,
-        "models": models,
-        "providers": providers,
-        "interval": interval,
-        "secondary_user_id": secondary_user_id,
-    }
-
-    # Remove None values from params
-    params = {k: v for k, v in params.items() if v is not None}
-
-    url = f"{BASE_URL}/metrics"
-
-    response = http.get(url, headers=headers, params=params)
     if response.status_code != 200:
         raise Exception(response.json())
 

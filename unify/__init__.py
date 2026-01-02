@@ -1,7 +1,7 @@
 """Unify python module."""
 
 import os
-from typing import Callable, Optional, Union
+from typing import Optional, Union
 
 
 if "UNIFY_BASE_URL" in os.environ.keys():
@@ -14,22 +14,8 @@ UNIFY_DIR = os.path.dirname(__file__)
 
 
 # Platform API utilities
-from .platform import (
-    credits,
-    custom_api_keys,
-    custom_endpoints,
-    queries,
-    supported_endpoints,
-    user,
-    usage,
-)
-from .platform.credits import *
-from .platform.custom_api_keys import *
-from .platform.custom_endpoints import *
-from .platform.queries import *
-from .platform.supported_endpoints import *
-from .platform.user import *
-from .platform.usage import *
+from .platform.queries import log_query
+from .platform.user import get_user_basic_info
 
 # Logging utilities
 from .logging.utils import compositions
