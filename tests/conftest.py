@@ -1,8 +1,6 @@
-import os
-
-import unify
+import pytest
 
 
-def pytest_sessionstart(session):
-    if os.environ.get("CI"):
-        unify.delete_logs()
+@pytest.fixture(scope="session")
+def anyio_backend():
+    return "asyncio"
