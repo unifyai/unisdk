@@ -147,40 +147,6 @@ class TestDownloadObject:
             assert "Authorization" in call_args[1]["headers"]
 
 
-class TestGetObjectInfo:
-    """Tests for unify.get_object_info function."""
-
-    def test_returns_metadata(self):
-        """Test that get_object_info returns content_type and size_bytes."""
-        mock_response = MagicMock()
-        mock_response.json.return_value = {
-            "content_base64": base64.b64encode(b"data").decode(),
-            "content_type": "application/json",
-            "size_bytes": 1024,
-        }
-
-        with patch.object(storage.http, "post", return_value=mock_response):
-            result = unify.get_object_info("gs://bucket/data.json")
-
-            assert result["content_type"] == "application/json"
-            assert result["size_bytes"] == 1024
-
-    def test_handles_none_content_type(self):
-        """Test that None content_type is handled correctly."""
-        mock_response = MagicMock()
-        mock_response.json.return_value = {
-            "content_base64": base64.b64encode(b"data").decode(),
-            "content_type": None,
-            "size_bytes": 4,
-        }
-
-        with patch.object(storage.http, "post", return_value=mock_response):
-            result = unify.get_object_info("gs://bucket/unknown")
-
-            assert result["content_type"] is None
-            assert result["size_bytes"] == 4
-
-
 class TestModuleExports:
     """Test that functions are properly exported from the unify module."""
 
@@ -193,8 +159,3 @@ class TestModuleExports:
         """Test that download_object is accessible from unify module."""
         assert hasattr(unify, "download_object")
         assert callable(unify.download_object)
-
-    def test_get_object_info_exported(self):
-        """Test that get_object_info is accessible from unify module."""
-        assert hasattr(unify, "get_object_info")
-        assert callable(unify.get_object_info)
