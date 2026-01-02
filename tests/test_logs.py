@@ -1,14 +1,16 @@
+import uuid
 from datetime import datetime
 
 import unify
 
-from .helpers import TEST_PROJECT, _handle_project
+from .helpers import TEST_PROJECT, _handle_project, _handle_project_isolated
 
 
 def _unique_context(base: str) -> str:
     """Generate unique context name for tests that manipulate context directly."""
     timestamp = datetime.now().strftime("%Y-%m-%dT%H-%M-%S-%f")[:-3]
-    return f"tests/test_logs/{base}/{timestamp}"
+    random_suffix = uuid.uuid4().hex[:4]
+    return f"tests/test_logs/{base}/{timestamp}_{random_suffix}"
 
 
 # =============================================================================
@@ -69,7 +71,7 @@ def test_set_context():
         unify.unset_context()
 
 
-@_handle_project
+@_handle_project_isolated
 def test_create_log_unique_column():
     unify.create_context(
         "foo",
@@ -89,7 +91,7 @@ def test_create_log_unique_column():
     assert len(entries) == 0
 
 
-@_handle_project
+@_handle_project_isolated
 def test_create_log_unique_column_batch():
     unify.create_context(
         "foo",
@@ -103,7 +105,7 @@ def test_create_log_unique_column_batch():
         assert r.entries["unique_id"] == i
 
 
-@_handle_project
+@_handle_project_isolated
 def test_create_logs_nested_ids():
     context_name = "foo_nested"
     unique_keys = {"run_id": "int", "step_id": "int"}
@@ -133,7 +135,7 @@ def test_create_logs_nested_ids():
         assert child_log.entries["step_id"] == i + 1
 
 
-@_handle_project
+@_handle_project_isolated
 def test_log_auto_counting_independent_included_and_explicit_preserved():
     context_name = "independent_auto_count"
     unify.create_context(
@@ -166,7 +168,7 @@ def test_log_auto_counting_independent_included_and_explicit_preserved():
     assert e2["session_id"] == 888
 
 
-@_handle_project
+@_handle_project_isolated
 def test_create_logs_includes_independent_auto_counting_keys():
     ctx = "independent_auto_count_batch"
     unify.create_context(
@@ -210,7 +212,7 @@ def test_create_logs_includes_independent_auto_counting_keys():
     assert e2a["session_id"] == 1 and e2b["session_id"] == 2
 
 
-@_handle_project
+@_handle_project_isolated
 def test_create_logs_with_explicit_fields_and_payload_explicit_types():
     ctx = "explicit_fields_payload"
 

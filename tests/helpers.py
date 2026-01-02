@@ -3,6 +3,8 @@ import functools
 import os
 import sys
 import traceback
+import uuid
+from contextvars import ContextVar
 from datetime import datetime
 from os import sep
 from typing import Optional
@@ -13,8 +15,10 @@ from unify.utils.caching import LocalCache
 # Single shared project for all tests (analogous to UnityTests in unity repo)
 TEST_PROJECT = "UnifyTests"
 
-# Stack of test contexts for nested test support
-_TEST_CTX_STACK: list[str] = []
+# Thread/async-safe context variable for test context tracking
+# Using ContextVar instead of a module-level list ensures isolation
+# when tests run concurrently in the same process (threading/asyncio)
+_TEST_CTX: ContextVar[Optional[str]] = ContextVar("test_ctx", default=None)
 
 
 def get_test_context() -> Optional[str]:
@@ -23,7 +27,7 @@ def get_test_context() -> Optional[str]:
     Returns the context path set by @_handle_project, or None if not in a test.
     Tests can use this to create child contexts and filter get_contexts() results.
     """
-    return _TEST_CTX_STACK[-1] if _TEST_CTX_STACK else None
+    return _TEST_CTX.get()
 
 
 def _context_path(fn) -> str:
@@ -42,15 +46,25 @@ def _context_path(fn) -> str:
     return fn_name
 
 
-def _unique_context(fn) -> str:
-    """Generate a unique context name with datetime suffix.
+def _unique_suffix() -> str:
+    """Generate a unique suffix combining datetime and random component.
 
-    Returns names like 'tests/test_logs/test_foo/2026-01-02T15-30-45-123'
+    Uses millisecond timestamp plus 4 random hex chars to prevent collisions
+    even when the same test starts multiple times within the same millisecond.
+    """
+    timestamp = datetime.now().strftime("%Y-%m-%dT%H-%M-%S-%f")[:-3]
+    random_suffix = uuid.uuid4().hex[:4]
+    return f"{timestamp}_{random_suffix}"
+
+
+def _unique_context(fn) -> str:
+    """Generate a unique context name with datetime and random suffix.
+
+    Returns names like 'tests/test_logs/test_foo/2026-01-02T15-30-45-123_a1b2'
     to prevent collisions between concurrent CI runs.
     """
     base_path = _context_path(fn)
-    timestamp = datetime.now().strftime("%Y-%m-%dT%H-%M-%S-%f")[:-3]  # milliseconds
-    return f"{base_path}/{timestamp}"
+    return f"{base_path}/{_unique_suffix()}"
 
 
 def _ensure_test_project():
@@ -72,7 +86,7 @@ def _handle_project(test_fn):
     def wrapper(*args, **kwargs):
         _ensure_test_project()
         ctx = _unique_context(test_fn)
-        _TEST_CTX_STACK.append(ctx)
+        token = _TEST_CTX.set(ctx)
         unify.set_context(ctx, relative=False)
         try:
             test_fn(*args, **kwargs)
@@ -81,7 +95,7 @@ def _handle_project(test_fn):
             tb_string = "".join(traceback.format_exception(exc_type, exc_value, exc_tb))
             raise Exception(f"{tb_string}")
         finally:
-            _TEST_CTX_STACK.pop()
+            _TEST_CTX.reset(token)
             unify.delete_context(ctx, delete_children=True)
             unify.unset_context()
 
@@ -89,7 +103,7 @@ def _handle_project(test_fn):
     async def async_wrapper(*args, **kwargs):
         _ensure_test_project()
         ctx = _unique_context(test_fn)
-        _TEST_CTX_STACK.append(ctx)
+        token = _TEST_CTX.set(ctx)
         unify.set_context(ctx, relative=False)
         try:
             await test_fn(*args, **kwargs)
@@ -98,7 +112,7 @@ def _handle_project(test_fn):
             tb_string = "".join(traceback.format_exception(exc_type, exc_value, exc_tb))
             raise Exception(f"{tb_string}")
         finally:
-            _TEST_CTX_STACK.pop()
+            _TEST_CTX.reset(token)
             unify.delete_context(ctx, delete_children=True)
             unify.unset_context()
 
@@ -106,11 +120,10 @@ def _handle_project(test_fn):
 
 
 def _unique_project(fn) -> str:
-    """Generate a unique project name with datetime suffix."""
+    """Generate a unique project name with datetime and random suffix."""
     base_path = _context_path(fn)
-    timestamp = datetime.now().strftime("%Y-%m-%dT%H-%M-%S-%f")[:-3]
     # Replace / with _ for valid project name
-    return f"{base_path}/{timestamp}".replace("/", "_")
+    return f"{base_path}/{_unique_suffix()}".replace("/", "_")
 
 
 def _handle_project_isolated(test_fn):

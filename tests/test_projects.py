@@ -1,5 +1,5 @@
 import concurrent.futures
-import os
+import uuid
 from datetime import datetime
 
 import pytest
@@ -8,9 +8,10 @@ from unify.utils.http import RequestError
 
 
 def _unique_project_name(base: str) -> str:
-    """Generate a unique project name with datetime suffix for concurrency safety."""
+    """Generate a unique project name with datetime and random suffix for concurrency safety."""
     timestamp = datetime.now().strftime("%Y-%m-%dT%H-%M-%S-%f")[:-3]
-    return f"{base}_{timestamp}"
+    random_suffix = uuid.uuid4().hex[:4]
+    return f"{base}_{timestamp}_{random_suffix}"
 
 
 # =============================================================================
@@ -18,56 +19,52 @@ def _unique_project_name(base: str) -> str:
 # =============================================================================
 
 
-def test_set_project():
+def test_set_project(monkeypatch):
+    """Test setting the active project via unify.activate()."""
     name = _unique_project_name("test_set_project")
-    old_project = unify.PROJECT
+    # Use monkeypatch to isolate unify.PROJECT mutations
+    monkeypatch.setattr(unify, "PROJECT", None)
     try:
-        unify.PROJECT = None
         assert unify.active_project() is None
         unify.activate(name)
         assert unify.active_project() == name
     finally:
-        unify.PROJECT = old_project
         unify.delete_project(name)
 
 
-def test_set_project_then_log():
+def test_set_project_then_log(monkeypatch):
+    """Test setting project and logging to it."""
     name = _unique_project_name("test_set_project_then_log")
-    old_project = unify.PROJECT
+    # Use monkeypatch to isolate unify.PROJECT mutations
+    monkeypatch.setattr(unify, "PROJECT", None)
     try:
-        unify.PROJECT = None
         assert unify.active_project() is None
         unify.activate(name)
         assert unify.active_project() == name
         unify.log(key=1.0)
     finally:
-        unify.PROJECT = old_project
         unify.delete_project(name)
 
 
-def test_project_env_var():
+def test_project_env_var(monkeypatch):
+    """Test that UNIFY_PROJECT environment variable sets the active project."""
     name = _unique_project_name("test_project_env_var")
-    old_project = unify.PROJECT
-    old_env = os.environ.get("UNIFY_PROJECT")
+    # Use monkeypatch to isolate both unify.PROJECT and env var mutations
+    monkeypatch.setattr(unify, "PROJECT", None)
+    monkeypatch.delenv("UNIFY_PROJECT", raising=False)
     try:
-        unify.PROJECT = None
         assert unify.active_project() is None
-        os.environ["UNIFY_PROJECT"] = name
+        monkeypatch.setenv("UNIFY_PROJECT", name)
         assert unify.active_project() == name
         unify.delete_project(name)
         unify.create_project(name)
         unify.log(x=0, y=1, z=2)
-        del os.environ["UNIFY_PROJECT"]
+        monkeypatch.delenv("UNIFY_PROJECT")
         assert unify.active_project() is None
         logs = unify.get_logs(project=name)
         assert len(logs) == 1
         assert logs[0].entries == {"x": 0, "y": 1, "z": 2}
     finally:
-        unify.PROJECT = old_project
-        if old_env is not None:
-            os.environ["UNIFY_PROJECT"] = old_env
-        elif "UNIFY_PROJECT" in os.environ:
-            del os.environ["UNIFY_PROJECT"]
         unify.delete_project(name)
 
 
