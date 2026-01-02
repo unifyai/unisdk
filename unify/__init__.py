@@ -20,13 +20,11 @@ from .platform.user import get_user_basic_info
 # Logging utilities
 from .logging.utils import compositions
 from .logging.utils import contexts
-from .logging.utils import datasets
 from .logging.utils import logs
 from .logging.utils import projects
 
 from .logging.utils.compositions import *
 from .logging.utils.contexts import *
-from .logging.utils.datasets import *
 from .logging.utils.logs import *
 from .logging.utils.projects import *
 
@@ -50,8 +48,7 @@ from .utils import http
 from .utils.http import RequestError
 
 # Logging
-from .logging import dataset, logs
-from .logging.dataset import *
+from .logging import logs
 from .logging.logs import *
 
 # Assistants

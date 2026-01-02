@@ -212,10 +212,7 @@ def _handle_special_types(
 ) -> Dict[str, Any]:
     new_kwargs = dict()
     for k, v in kwargs.items():
-        if isinstance(v, unify.Dataset):
-            v.upload()
-            new_kwargs[k] = v.name
-        elif callable(v):
+        if callable(v):
             new_kwargs[k] = inspect.getsource(v)
         else:
             new_kwargs[k] = v
