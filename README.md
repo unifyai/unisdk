@@ -37,14 +37,13 @@ We've tried to make Unify as **(a) simple**, **(b) modular** and **(c) hackable*
 
 ```python
 import unify
+import litellm
 from random import randint, choice
 
 # initialize project
 unify.activate("Maths Assistant")
 
-# build agent
-client = unify.Unify("o3-mini@openai")
-client.set_system_message(
+SYSTEM_MESSAGE = (
     "You are a helpful maths assistant, "
     "tasked with adding and subtracting integers."
 )
@@ -73,11 +72,18 @@ def evaluate_response(question: str, response: str) -> float:
 
 # define evaluation
 def evaluate(q: str):
-    response = client.copy().generate(q)
-    score = evaluate_response(q, response)
+    response = litellm.completion(
+        model="gpt-4o",
+        messages=[
+            {"role": "system", "content": SYSTEM_MESSAGE},
+            {"role": "user", "content": q},
+        ],
+    )
+    response_text = response.choices[0].message.content
+    score = evaluate_response(q, response_text)
     unify.log(
         question=q,
-        response=response,
+        response=response_text,
         score=score
     )
 

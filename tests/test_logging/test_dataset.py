@@ -4,7 +4,6 @@ import string
 
 import pytest
 import unify
-from unify.universal_api.types import Prompt
 
 from .helpers import _handle_project
 
@@ -33,31 +32,6 @@ class TestDatasetConstruction:
         assert data[0] == "a"
 
     @_handle_project
-    def test_create_dataset_from_prompt(self) -> None:
-        dataset = unify.Dataset(Prompt(messages=[{"role": "user", "content": "a"}]))
-        assert isinstance(dataset[0], unify.Log)
-        data = dataset.data
-        assert isinstance(data, list)
-        assert len(data) == 1
-        assert isinstance(data[0], Prompt)
-        assert data[0].components["messages"][0] == {"role": "user", "content": "a"}
-
-    @_handle_project
-    def test_create_dataset_from_list_of_prompts(self) -> None:
-        dataset = unify.Dataset(
-            [
-                Prompt(messages=[{"role": "user", "content": usr_msg}])
-                for usr_msg in ["a", "b", "c"]
-            ],
-        )
-        assert isinstance(dataset[0], unify.Log)
-        data = dataset.data
-        assert isinstance(data, list)
-        assert len(data) == 3
-        assert isinstance(data[0], Prompt)
-        assert data[0].components["messages"][0] == {"role": "user", "content": "a"}
-
-    @_handle_project
     def test_create_dataset_from_dict(self) -> None:
         dataset = unify.Dataset(dict(messages=[{"role": "user", "content": "a"}]))
         assert isinstance(dataset[0], unify.Log)
@@ -81,39 +55,6 @@ class TestDatasetConstruction:
         assert len(data) == 3
         assert isinstance(data[0], dict)
         assert data[0]["messages"][0] == {"role": "user", "content": "a"}
-
-    @_handle_project
-    def test_create_dataset_from_dict_w_prompt(self) -> None:
-        dataset = unify.Dataset(
-            dict(prompt=Prompt(messages=[{"role": "user", "content": "a"}])),
-        )
-        assert isinstance(dataset[0], unify.Log)
-        data = dataset.data
-        assert isinstance(data, list)
-        assert len(data) == 1
-        assert isinstance(data[0], dict)
-        assert data[0]["prompt"].components["messages"][0] == {
-            "role": "user",
-            "content": "a",
-        }
-
-    @_handle_project
-    def test_create_dataset_from_list_of_prompt_dicts(self) -> None:
-        dataset = unify.Dataset(
-            [
-                dict(prompt=Prompt(messages=[{"role": "user", "content": usr_msg}]))
-                for usr_msg in ["a", "b", "c"]
-            ],
-        )
-        assert isinstance(dataset[0], unify.Log)
-        data = dataset.data
-        assert isinstance(data, list)
-        assert len(data) == 3
-        assert isinstance(data[0], dict)
-        assert data[0]["prompt"].components["messages"][0] == {
-            "role": "user",
-            "content": "a",
-        }
 
     @_handle_project
     def test_create_dataset_from_upstream(self) -> None:

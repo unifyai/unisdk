@@ -1,7 +1,7 @@
 """Unify python module."""
 
 import os
-from typing import Callable, Optional
+from typing import Callable, Optional, Union
 
 
 if "UNIFY_BASE_URL" in os.environ.keys():
@@ -10,42 +10,28 @@ else:
     BASE_URL = "https://api.unify.ai/v0"
 
 
-LOCAL_MODELS = dict()
-SEED = None
 UNIFY_DIR = os.path.dirname(__file__)
 
 
-def set_seed(seed: int) -> None:
-    global SEED
-    SEED = seed
-
-
-def get_seed() -> Optional[int]:
-    return SEED
-
-
-def register_local_model(model_name: str, fn: Callable):
-    if "@local" not in model_name:
-        model_name += "@local"
-    LOCAL_MODELS[model_name] = fn
-
-
-from .universal_api.utils import (
+# Platform API utilities
+from .platform import (
     credits,
     custom_api_keys,
     custom_endpoints,
     queries,
     supported_endpoints,
     user,
+    usage,
 )
-from .universal_api.utils.credits import *
-from .universal_api.utils.custom_api_keys import *
-from .universal_api.utils.custom_endpoints import *
-from .universal_api.utils.queries import *
-from .universal_api.utils.supported_endpoints import *
-from .universal_api.utils.user import *
-from .universal_api import endpoints as _endpoints
+from .platform.credits import *
+from .platform.custom_api_keys import *
+from .platform.custom_endpoints import *
+from .platform.queries import *
+from .platform.supported_endpoints import *
+from .platform.user import *
+from .platform.usage import *
 
+# Logging utilities
 from .logging.utils import compositions
 from .logging.utils import contexts
 from .logging.utils import datasets
@@ -58,6 +44,7 @@ from .logging.utils.datasets import *
 from .logging.utils.logs import *
 from .logging.utils.projects import *
 
+# Utils
 from .utils import helpers, map, get_map_mode, set_map_mode, _caching, storage
 from .utils._caching import (
     set_caching,
@@ -76,23 +63,12 @@ from .utils.caching import (
 from .utils import http
 from .utils.http import RequestError
 
-from .universal_api import chatbot, clients, usage
-from .universal_api.clients import multi_llm
-from .universal_api.chatbot import *
-from .universal_api.clients.base import set_client_direct_mode
-from unify.universal_api.clients.uni_llm import *
-from unify.universal_api.clients.multi_llm import *
-
-from .universal_api import casting, types
+# Logging
 from .logging import dataset, logs
-
-from .universal_api.casting import *
-from .universal_api.usage import *
-from .universal_api.types import *
-
 from .logging.dataset import *
 from .logging.logs import *
 
+# Assistants
 from .assistants.management import *
 
 

@@ -3,7 +3,7 @@ from typing import Optional
 from unify import BASE_URL
 from unify.utils import http
 
-from ...utils.helpers import _create_request_header, _res_to_list
+from ..utils.helpers import _create_request_header, _res_to_list
 
 
 def get_credits(*, api_key: Optional[str] = None) -> float:

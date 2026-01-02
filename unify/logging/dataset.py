@@ -7,8 +7,6 @@ from typing import Any, Dict, List, Optional, Union
 import unify
 from typing_extensions import Self
 
-from ..universal_api.types import Prompt
-
 # noinspection PyProtectedMember
 from ..utils.helpers import _validate_api_key
 
@@ -269,9 +267,8 @@ class Dataset(Sequence):
             Dataset,
             str,
             Dict,
-            Prompt,
             int,
-            List[Union[str, Dict, Prompt]],
+            List[Union[str, Dict]],
         ],
     ) -> Self:
         """
@@ -292,7 +289,7 @@ class Dataset(Sequence):
 
     def sub(
         self,
-        other: Union[Dataset, str, Dict, Prompt, List[Union[str, Dict, Prompt]]],
+        other: Union[Dataset, str, Dict, List[Union[str, Dict]]],
     ) -> Self:
         """
         Subtracts another dataset from this one, return a new Dataset instance, with
@@ -318,9 +315,8 @@ class Dataset(Sequence):
             Dataset,
             str,
             Dict,
-            Prompt,
             int,
-            List[Union[str, Dict, Prompt]],
+            List[Union[str, Dict]],
         ],
     ) -> Self:
         """
@@ -341,7 +337,7 @@ class Dataset(Sequence):
 
     def inplace_sub(
         self,
-        other: Union[Dataset, str, Dict, Prompt, List[Union[str, Dict, Prompt]]],
+        other: Union[Dataset, str, Dict, List[Union[str, Dict]]],
     ) -> Self:
         """
         Subtracts another dataset from this one, with this dataset losing all queries
@@ -363,7 +359,7 @@ class Dataset(Sequence):
 
     def __add__(
         self,
-        other: Union[Dataset, str, Dict, Prompt, List[Union[str, Dict, Prompt]]],
+        other: Union[Dataset, str, Dict, List[Union[str, Dict]]],
     ) -> Self:
         """
         Adds another dataset to this one via the + operator, return a new Dataset
@@ -384,9 +380,8 @@ class Dataset(Sequence):
             Dataset,
             str,
             Dict,
-            Prompt,
             int,
-            List[Union[str, Dict, Prompt]],
+            List[Union[str, Dict]],
         ],
     ) -> Self:
         """
@@ -407,7 +402,7 @@ class Dataset(Sequence):
 
     def __iadd__(
         self,
-        other: Union[Dataset, str, Dict, Prompt, List[Union[str, Dict, Prompt]]],
+        other: Union[Dataset, str, Dict, List[Union[str, Dict]]],
     ) -> Self:
         """
         Adds another dataset to this one, with this dataset receiving all unique queries
@@ -423,7 +418,7 @@ class Dataset(Sequence):
 
     def __sub__(
         self,
-        other: Union[Dataset, str, Dict, Prompt, List[Union[str, Dict, Prompt]]],
+        other: Union[Dataset, str, Dict, List[Union[str, Dict]]],
     ) -> Self:
         """
         Subtracts another dataset from this one via the - operator, return a new Dataset
@@ -440,7 +435,7 @@ class Dataset(Sequence):
 
     def __rsub__(
         self,
-        other: Union[Dataset, str, Dict, Prompt, List[Union[str, Dict, Prompt]]],
+        other: Union[Dataset, str, Dict, List[Union[str, Dict]]],
     ) -> Self:
         """
         Subtracts another dataset from this one via the - operator, this is used if the
@@ -458,7 +453,7 @@ class Dataset(Sequence):
 
     def __isub__(
         self,
-        other: Union[Dataset, str, Dict, Prompt, List[Union[str, Dict, Prompt]]],
+        other: Union[Dataset, str, Dict, List[Union[str, Dict]]],
     ) -> Self:
         """
         Subtracts another dataset from this one, with this dataset losing all queries
@@ -484,7 +479,7 @@ class Dataset(Sequence):
 
     def __contains__(
         self,
-        item: Union[Dataset, str, Dict, Prompt, List[Union[str, Dict, Prompt]]],
+        item: Union[Dataset, str, Dict, List[Union[str, Dict]]],
     ) -> bool:
         """
         Determine whether the item is contained within the dataset. The item is cast to

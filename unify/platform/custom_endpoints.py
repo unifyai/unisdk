@@ -3,10 +3,7 @@ from typing import Any, Dict, List, Optional
 from unify import BASE_URL
 from unify.utils import http
 
-from ...utils.helpers import _create_request_header
-
-# Custom Endpoints #
-# ----------------#
+from ..utils.helpers import _create_request_header
 
 
 def create_custom_endpoint(

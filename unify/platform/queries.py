@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Optional, Union
 from unify import BASE_URL
 from unify.utils import http
 
-from ...utils.helpers import _create_request_header
+from ..utils.helpers import _create_request_header
 
 
 def get_query_tags(
@@ -59,7 +59,7 @@ def get_queries(
 
         failures: indicates whether to includes failures in the return
         (when set as True), or whether to return failures exclusively
-        (when set as ‘only’). Default is False.
+        (when set as 'only'). Default is False.
 
         api_key: If specified, unify API key to be used.
         Defaults to the value in the `UNIFY_KEY` environment variable.
