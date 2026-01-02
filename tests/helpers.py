@@ -138,7 +138,7 @@ def _handle_project_isolated(test_fn):
     @functools.wraps(test_fn)
     def wrapper(*args, **kwargs):
         project = _unique_project(test_fn)
-        unify.delete_project(project)
+        # Project name is unique (timestamp + random), so it won't exist yet
         unify.activate(project)
         unify.unset_context()
         try:
@@ -153,7 +153,7 @@ def _handle_project_isolated(test_fn):
     @functools.wraps(test_fn)
     async def async_wrapper(*args, **kwargs):
         project = _unique_project(test_fn)
-        unify.delete_project(project)
+        # Project name is unique (timestamp + random), so it won't exist yet
         unify.activate(project)
         unify.unset_context()
         try:
