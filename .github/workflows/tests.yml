@@ -27,6 +27,8 @@ jobs:
       # Local orchestra configuration
       ORCHESTRA_REPO_PATH: ${{ github.workspace }}/orchestra
       ORCHESTRA_PREFIX: unify
+      # Logging directories (matches unity repo structure)
+      LOGS_DIR: ${{ github.workspace }}/logs
     steps:
     - uses: actions/checkout@v4
 
@@ -78,11 +80,24 @@ jobs:
         cd "$ORCHESTRA_REPO_PATH"
         poetry install --no-interaction
 
+    - name: Setup logging directories
+      run: |
+        # Create log directories matching unity repo structure
+        mkdir -p "$LOGS_DIR/unify"
+        mkdir -p "$LOGS_DIR/orchestra"
+        mkdir -p "$LOGS_DIR/all"
+        echo "Created logging directories:"
+        echo "  - $LOGS_DIR/unify/     (unify client logs)"
+        echo "  - $LOGS_DIR/orchestra/ (orchestra request logs)"
+        echo "  - $LOGS_DIR/all/       (OpenTelemetry traces)"
+
     - name: Start local orchestra
       run: |
-        # Start local orchestra with test user seeding and enough workers for parallel tests
+        # Start local orchestra with test user seeding, logging, and enough workers for parallel tests
         ORCHESTRA_SEED_USER=1 \
         ORCHESTRA_WORKERS=8 \
+        ORCHESTRA_LOG_DIR="$LOGS_DIR/orchestra" \
+        ORCHESTRA_OTEL_LOG_DIR="$LOGS_DIR/all" \
         UNIFY_KEY="${{ secrets.UNIFY_API_KEY }}" \
         "$ORCHESTRA_REPO_PATH/scripts/local.sh" start
 
@@ -93,6 +108,9 @@ jobs:
       run: poetry run pytest --timeout=120 -p no:warnings -vv -n 8 tests/
       env:
         UNIFY_KEY: ${{ secrets.UNIFY_API_KEY }}
+        # Enable OpenTelemetry tracing for unify client
+        UNIFY_OTEL: "true"
+        UNIFY_OTEL_LOG_DIR: ${{ env.LOGS_DIR }}/all
 
     - name: Dump orchestra logs on failure
       if: failure()
@@ -100,9 +118,71 @@ jobs:
         echo "=== Orchestra Server Logs ==="
         if [ -f /tmp/unify-local-server.log ]; then
           cat /tmp/unify-local-server.log
+          # Copy server log to logs/orchestra/ for artifact upload
+          cp /tmp/unify-local-server.log "$LOGS_DIR/orchestra/server.log"
         else
           echo "No orchestra log file found"
         fi
+
+    - name: Prepare logs for upload
+      if: always()
+      run: |
+        echo "=== Preparing logs for upload ==="
+
+        # Copy orchestra server log (always, not just on failure)
+        if [ -f /tmp/unify-local-server.log ]; then
+          cp /tmp/unify-local-server.log "$LOGS_DIR/orchestra/server.log"
+          echo "✓ Copied orchestra server log"
+        fi
+
+        # --- unify logs ---
+        if [ -d "$LOGS_DIR/unify" ]; then
+          file_count=$(find "$LOGS_DIR/unify" -type f 2>/dev/null | wc -l | tr -d ' ')
+          echo "✓ unify logs: $file_count files"
+        else
+          echo "○ unify logs: directory not found"
+        fi
+
+        # --- orchestra logs (requires filename sanitization for Windows compatibility) ---
+        if [ -d "$LOGS_DIR/orchestra" ]; then
+          # Orchestra trace filenames may contain colons from route paths.
+          # Colons are invalid in Windows NTFS, so GitHub Actions rejects them.
+          sanitized=0
+          while IFS= read -r -d '' file; do
+            newname=$(echo "$file" | tr ':' '_')
+            if mv "$file" "$newname" 2>/dev/null; then
+              ((sanitized++)) || true
+            fi
+          done < <(find "$LOGS_DIR/orchestra" -type f -name '*:*' -print0 2>/dev/null || true)
+
+          file_count=$(find "$LOGS_DIR/orchestra" -type f 2>/dev/null | wc -l | tr -d ' ')
+          if [ "$sanitized" -gt 0 ]; then
+            echo "✓ orchestra logs: $file_count files ($sanitized filenames sanitized)"
+          else
+            echo "✓ orchestra logs: $file_count files"
+          fi
+        else
+          echo "○ orchestra logs: directory not found"
+        fi
+
+        # --- OpenTelemetry traces ---
+        if [ -d "$LOGS_DIR/all" ]; then
+          file_count=$(find "$LOGS_DIR/all" -type f 2>/dev/null | wc -l | tr -d ' ')
+          echo "✓ OpenTelemetry traces: $file_count files"
+        else
+          echo "○ OpenTelemetry traces: directory not found"
+        fi
+
+        echo "=== Log preparation complete ==="
+
+    - name: Upload logs
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: logs-${{ github.run_id }}
+        path: logs/
+        if-no-files-found: ignore
+        retention-days: 90
 
     - name: Stop local orchestra
       if: always()
