@@ -430,10 +430,33 @@ def _create_log_groups_nested(context, api_key, node):
             return ret
 
 
-def _create_log_groups_not_nested(logs, groups, context, api_key):
+def _create_log_groups_not_nested(logs, groups, project, context, api_key):
+    # Build mapping from log data if provided
     logs_mapping = {}
     for dct in logs:
         logs_mapping[dct["id"]] = _create_log(dct, context, api_key)
+
+    # Collect all log IDs from groups that aren't in the mapping
+    missing_ids = set()
+    for group_key, group_value in groups.items():
+        if isinstance(group_value, dict):
+            for k, v in group_value.items():
+                if isinstance(v, list):
+                    for log_id in v:
+                        if log_id not in logs_mapping:
+                            missing_ids.add(log_id)
+
+    # Fetch missing logs if needed
+    if missing_ids:
+        headers = _create_request_header(api_key)
+        params = {
+            "project": project,
+            "from_ids": "&".join(map(str, missing_ids)),
+            "context": context,
+        }
+        response = http.get(BASE_URL + "/logs", headers=headers, params=params)
+        for dct in response.json().get("logs", []):
+            logs_mapping[dct["id"]] = _create_log(dct, context, api_key)
 
     ret = []
     for group_key, group_value in groups.items():
@@ -816,7 +839,13 @@ def get_logs(
     else:
         groups = resp_data.get("groups", {})
         logs_data = resp_data.get("logs", [])
-        return _create_log_groups_not_nested(logs_data, groups, context, api_key)
+        return _create_log_groups_not_nested(
+            logs_data,
+            groups,
+            project,
+            context,
+            api_key,
+        )
 
 
 # noinspection PyShadowingBuiltins
