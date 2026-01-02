@@ -6,7 +6,6 @@ import textwrap
 from typing import Any, Dict, List, Optional, Union
 
 from ..utils.helpers import _validate_api_key
-from .utils.compositions import *
 from .utils.logs import _handle_special_types
 from .utils.logs import log as unify_log
 
@@ -373,64 +372,6 @@ class Entries:
             ACTIVE_ENTRIES_READ.reset(self._entries_read_token)
 
         ACTIVE_ENTRIES_MODE.reset(self._mode_token)
-
-
-class Experiment:
-    def __init__(
-        self,
-        name: Optional[Union[str, int]] = None,
-        overwrite: bool = False,
-        mode: str = "both",
-    ):
-        _validate_mode(mode)
-        self._mode = mode
-
-        latest_exp_name = get_experiment_name(-1)
-        if latest_exp_name is None:
-            self._name = name if name is not None else "exp0"
-            self._overwrite = overwrite
-            return
-        if isinstance(name, int):
-            self._name = f"exp{get_experiment_name(name)}"
-        elif name is None:
-            self._name = f"exp{int(get_experiment_version(latest_exp_name)) + 1}"
-        else:
-            self._name = str(name)
-        self._overwrite = overwrite
-
-    def __enter__(self):
-        _validate_mode_nesting(ACTIVE_ENTRIES_MODE.get(), self._mode)
-        self._mode_token = ACTIVE_ENTRIES_MODE.set(self._mode)
-
-        if self._mode in ("both", "write"):
-            self._entries_token_write = ACTIVE_ENTRIES_WRITE.set(
-                {**ACTIVE_ENTRIES_WRITE.get(), **{"experiment": self._name}},
-            )
-            self._nest_token = ENTRIES_NEST_LEVEL.set(
-                ENTRIES_NEST_LEVEL.get() + 1,
-            )
-        if self._mode in ("both", "read"):
-            self._entries_read_token = ACTIVE_ENTRIES_READ.set(
-                {**ACTIVE_ENTRIES_READ.get(), **{"experiment": self._name}},
-            )
-
-        if self._overwrite:
-            if self._mode == "read":
-                raise Exception(f"Cannot overwrite logs in read mode.")
-
-            logs = unify.get_logs(return_ids_only=True)
-            if len(logs) > 0:
-                unify.delete_logs(logs=logs)
-
-    def __exit__(self, *args, **kwargs):
-        ACTIVE_ENTRIES_MODE.reset(self._mode_token)
-        if self._mode in ("both", "write"):
-            ACTIVE_ENTRIES_WRITE.reset(self._entries_token_write)
-            ENTRIES_NEST_LEVEL.reset(self._nest_token)
-            if ENTRIES_NEST_LEVEL.get() == 0:
-                LOGGED.set({})
-        if self._mode in ("both", "read"):
-            ACTIVE_ENTRIES_READ.reset(self._entries_read_token)
 
 
 class LogTransformer(ast.NodeTransformer):

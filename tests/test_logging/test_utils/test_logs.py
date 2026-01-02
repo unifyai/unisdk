@@ -561,12 +561,6 @@ def test_get_logs_group_by_not_nested():
 
 
 @_handle_project
-def test_get_source():
-    source = unify.get_source()
-    assert "source = unify.get_source()" in source
-
-
-@_handle_project
 def test_delete_logs_by_ids():
     logs = [unify.log(x=i) for i in range(3)]
     assert len(unify.get_logs()) == 3

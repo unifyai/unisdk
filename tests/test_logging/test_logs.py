@@ -6,33 +6,6 @@ import unify
 
 from .helpers import _handle_project
 
-# Functional Compositions #
-# ------------------------#
-
-
-@_handle_project
-def test_get_experiment_name():
-    unify.log(experiment="first_try", x=0)
-    unify.log(experiment="second_try", x=1)
-    unify.log(experiment="third_try", x=2)
-    assert unify.get_experiment_name(-1) == "third_try"
-    assert unify.get_experiment_name(-2) == "second_try"
-    assert unify.get_experiment_name(-3) == "first_try"
-    assert unify.get_experiment_name(0) == "first_try"
-    assert unify.get_experiment_name(1) == "second_try"
-    assert unify.get_experiment_name(2) == "third_try"
-
-
-@_handle_project
-def test_get_experiment_version():
-    unify.log(experiment="first_try", x=0)
-    unify.log(experiment="second_try", x=1)
-    unify.log(experiment="third_try", x=2)
-    assert unify.get_experiment_version("third_try") == 2
-    assert unify.get_experiment_version("second_try") == 1
-    assert unify.get_experiment_version("first_try") == 0
-
-
 # Context Handlers #
 # -----------------#
 
@@ -737,92 +710,6 @@ def test_with_entries_overwrite():
         pass
 
     assert len(unify.get_logs()) == 0
-
-
-# Experiment
-
-
-@_handle_project
-def test_with_experiment():
-
-    with unify.Experiment():
-        unify.log(sys_msg="you are a helpful assistant", x=0)
-        unify.log(sys_msg="you are a helpful assistant", x=1)
-    assert unify.get_experiment_name(0) == "exp0"
-
-    logs = unify.get_logs()[0:2]
-    assert [lg.entries["x"] for lg in logs] == [1, 0]
-
-    with unify.Experiment():
-        unify.log(sys_msg="you are a very helpful assistant", x=1)
-        unify.log(sys_msg="you are a very helpful assistant", x=2)
-    assert unify.get_experiment_name(0) == "exp0"
-    assert unify.get_experiment_name(1) == "exp1"
-    logs = unify.get_logs()[0:2]
-    assert [lg.entries["x"] for lg in logs] == [2, 1]
-
-    with unify.Experiment("new_idea"):
-        unify.log(sys_msg="you are a genius assistant", x=2)
-        unify.log(sys_msg="you are a genius assistant", x=3)
-    assert unify.get_experiment_name(0) == "exp0"
-    assert unify.get_experiment_name(1) == "exp1"
-    assert unify.get_experiment_name(2) == "new_idea"
-    logs = unify.get_logs()[0:2]
-    assert [lg.entries["x"] for lg in logs] == [3, 2]
-
-    with unify.Experiment(-1, overwrite=True):
-        unify.log(sys_msg="you are a very helpful assistant", x=3)
-        unify.log(sys_msg="you are a very helpful assistant", x=4)
-    assert unify.get_experiment_name(0) == "exp0"
-    assert unify.get_experiment_name(1) == "exp1"
-    assert unify.get_experiment_name(2) == "new_idea"
-    logs = unify.get_logs()[0:2]
-    assert [lg.entries["x"] for lg in logs] == [4, 3]
-
-
-@_handle_project
-def test_with_experiment_mode():
-    with unify.Experiment("foo", mode="both"):
-        [unify.log(x=i) for i in range(10)]
-        assert len(unify.get_logs()) == 10
-
-    with unify.Experiment("foo", mode="read"):
-        assert len(unify.get_logs()) == 10
-
-    with unify.Experiment("foo", mode="write"):
-        [unify.log(x=i) for i in range(5)]
-        assert len(unify.get_logs()) == 15
-
-    with unify.Experiment("bar", mode="both"):
-        [unify.log(x=i) for i in range(20)]
-        assert len(unify.get_logs()) == 20
-        with unify.Experiment("foo", mode="read"):
-            assert len(unify.get_logs()) == 15
-
-    assert len(unify.get_logs()) == 35
-
-
-@_handle_project
-def test_with_experiment_mode_restricted():
-    with unify.Experiment(mode="read"):
-        with pytest.raises(Exception):
-            with unify.Experiment(mode="write"):
-                pass
-
-    with unify.Experiment(mode="read"):
-        with pytest.raises(Exception):
-            with unify.Experiment(mode="both"):
-                pass
-
-    with unify.Experiment("foo", mode="write"):
-        with pytest.raises(Exception):
-            with unify.Experiment("foo", mode="both"):
-                pass
-
-    with unify.Experiment("foo", mode="write"):
-        with pytest.raises(Exception):
-            with unify.Experiment(mode="read"):
-                pass
 
 
 @_handle_project

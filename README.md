@@ -88,8 +88,7 @@ def evaluate(q: str):
     )
 
 # execute + log your evaluation
-with unify.Experiment():
-    unify.map(evaluate, qs)
+unify.map(evaluate, qs)
 ```
 
 Check out our [Quickstart Video](https://youtu.be/fl9SzsoCegw?si=MhQZDfNS6U-ZsVYc) for a guided walkthrough.
