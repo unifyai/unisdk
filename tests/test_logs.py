@@ -1,37 +1,72 @@
+from datetime import datetime
+
 import unify
 
-from .helpers import _handle_project
+from .helpers import TEST_PROJECT, _handle_project
+
+
+def _unique_context(base: str) -> str:
+    """Generate unique context name for tests that manipulate context directly."""
+    timestamp = datetime.now().strftime("%Y-%m-%dT%H-%M-%S-%f")[:-3]
+    return f"tests/test_logs/{base}/{timestamp}"
+
 
 # =============================================================================
 # Compositional log tests (set_context, Log class behavior, etc.)
 # =============================================================================
 
 
-@_handle_project
 def test_set_context():
-    [unify.log(x=i) for i in range(3)]
+    """Test context read/write mode behavior.
 
-    unify.set_context("Foo", mode="both")
-    [unify.log(x=i) for i in range(10)]
-    assert len(unify.get_logs()) == 10
-    unify.unset_context()
+    This test manipulates context directly via set_context/unset_context,
+    so it manages its own unique context rather than using @_handle_project.
+    """
+    # Ensure test project exists
+    if TEST_PROJECT not in unify.list_projects():
+        unify.create_project(TEST_PROJECT)
+    unify.activate(TEST_PROJECT)
 
-    unify.set_context("Foo", mode="read")
-    assert len(unify.get_logs()) == 10
-    unify.unset_context()
+    # Create unique context paths for this test run
+    root_ctx = _unique_context("test_set_context")
+    foo_ctx = f"{root_ctx}/Foo"
 
-    unify.set_context("Foo", mode="write")
-    [unify.log(x=i) for i in range(10)]
-    assert len(unify.get_logs()) == 3
-    unify.unset_context()
+    try:
+        # Log to root context
+        unify.set_context(root_ctx, relative=False)
+        [unify.log(x=i) for i in range(3)]
+        unify.unset_context()
 
-    unify.set_context("Foo", mode="read")
-    assert len(unify.get_logs()) == 20
-    unify.unset_context()
+        # Set both read and write to Foo
+        unify.set_context(foo_ctx, mode="both", relative=False)
+        [unify.log(x=i) for i in range(10)]
+        assert len(unify.get_logs()) == 10
+        unify.unset_context()
 
-    unify.set_context("Foo")
-    assert len(unify.get_logs()) == 20
-    unify.unset_context()
+        # Set only read to Foo - should read 10 logs from Foo
+        unify.set_context(foo_ctx, mode="read", relative=False)
+        assert len(unify.get_logs()) == 10
+        unify.unset_context()
+
+        # Set only write to Foo, read from root - should read 3 logs from root
+        unify.set_context(foo_ctx, mode="write", relative=False)
+        unify.set_context(root_ctx, mode="read", relative=False)
+        [unify.log(x=i) for i in range(10)]  # Writes to Foo
+        assert len(unify.get_logs()) == 3  # Reads from root
+        unify.unset_context()
+
+        # Read from Foo should now have 20 logs
+        unify.set_context(foo_ctx, mode="read", relative=False)
+        assert len(unify.get_logs()) == 20
+        unify.unset_context()
+
+        # Both mode should also read 20
+        unify.set_context(foo_ctx, relative=False)
+        assert len(unify.get_logs()) == 20
+        unify.unset_context()
+    finally:
+        unify.delete_context(root_ctx, delete_children=True)
+        unify.unset_context()
 
 
 @_handle_project

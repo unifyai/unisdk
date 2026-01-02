@@ -1,11 +1,17 @@
 import concurrent.futures
 import os
+from datetime import datetime
 
 import pytest
 import unify
 from unify.utils.http import RequestError
 
-from .helpers import _handle_project
+
+def _unique_project_name(base: str) -> str:
+    """Generate a unique project name with datetime suffix for concurrency safety."""
+    timestamp = datetime.now().strftime("%Y-%m-%dT%H-%M-%S-%f")[:-3]
+    return f"{base}_{timestamp}"
+
 
 # =============================================================================
 # Basic project tests
@@ -13,43 +19,56 @@ from .helpers import _handle_project
 
 
 def test_set_project():
-    unify.PROJECT = None
-    assert unify.active_project() is None
-    unify.activate("my_project")
-    assert unify.active_project() == "my_project"
-    unify.PROJECT = None
+    name = _unique_project_name("test_set_project")
+    old_project = unify.PROJECT
+    try:
+        unify.PROJECT = None
+        assert unify.active_project() is None
+        unify.activate(name)
+        assert unify.active_project() == name
+    finally:
+        unify.PROJECT = old_project
+        unify.delete_project(name)
 
 
 def test_set_project_then_log():
-    unify.PROJECT = None
-    assert unify.active_project() is None
-    unify.activate("test_set_project_then_log")
-    assert unify.active_project() == "test_set_project_then_log"
-    unify.log(key=1.0)
-    unify.PROJECT = None
-    assert unify.active_project() is None
-    unify.delete_project("test_set_project_then_log")
+    name = _unique_project_name("test_set_project_then_log")
+    old_project = unify.PROJECT
+    try:
+        unify.PROJECT = None
+        assert unify.active_project() is None
+        unify.activate(name)
+        assert unify.active_project() == name
+        unify.log(key=1.0)
+    finally:
+        unify.PROJECT = old_project
+        unify.delete_project(name)
 
 
 def test_project_env_var():
-    unify.PROJECT = None
-    assert unify.active_project() is None
-    os.environ["UNIFY_PROJECT"] = "test_project_env_var"
-    assert unify.active_project() == "test_project_env_var"
+    name = _unique_project_name("test_project_env_var")
+    old_project = unify.PROJECT
+    old_env = os.environ.get("UNIFY_PROJECT")
     try:
-        unify.delete_project("test_project_env_var")
-    except unify.utils.http.RequestError:
-        pass
-    unify.create_project("test_project_env_var")
-    unify.log(x=0, y=1, z=2)
-    del os.environ["UNIFY_PROJECT"]
-    assert unify.active_project() is None
-    try:
-        logs = unify.get_logs(project="test_project_env_var")
+        unify.PROJECT = None
+        assert unify.active_project() is None
+        os.environ["UNIFY_PROJECT"] = name
+        assert unify.active_project() == name
+        unify.delete_project(name)
+        unify.create_project(name)
+        unify.log(x=0, y=1, z=2)
+        del os.environ["UNIFY_PROJECT"]
+        assert unify.active_project() is None
+        logs = unify.get_logs(project=name)
         assert len(logs) == 1
         assert logs[0].entries == {"x": 0, "y": 1, "z": 2}
     finally:
-        unify.delete_project("test_project_env_var")
+        unify.PROJECT = old_project
+        if old_env is not None:
+            os.environ["UNIFY_PROJECT"] = old_env
+        elif "UNIFY_PROJECT" in os.environ:
+            del os.environ["UNIFY_PROJECT"]
+        unify.delete_project(name)
 
 
 # =============================================================================
@@ -58,9 +77,8 @@ def test_project_env_var():
 
 
 def test_project():
-    name = "my_project"
-    if name in unify.list_projects():
-        unify.delete_project(name)
+    name = _unique_project_name("test_project")
+    unify.delete_project(name)
     assert name not in unify.list_projects()
     unify.create_project(name)
     assert name in unify.list_projects()
@@ -69,36 +87,42 @@ def test_project():
 
 
 def test_project_thread_lock():
-    # all 10 threads would try to create the project at the same time without
-    # thread locking, but only one should acquire the lock, and this should pass
-    unify.map(
-        unify.log,
-        project="test_project",
-        a=[1] * 10,
-        b=[2] * 10,
-        c=[3] * 10,
-        from_args=True,
-    )
-    unify.delete_project("test_project")
+    name = _unique_project_name("test_project_thread_lock")
+    try:
+        # all 10 threads would try to create the project at the same time without
+        # thread locking, but only one should acquire the lock, and this should pass
+        unify.map(
+            unify.log,
+            project=name,
+            a=[1] * 10,
+            b=[2] * 10,
+            c=[3] * 10,
+            from_args=True,
+        )
+    finally:
+        unify.delete_project(name)
 
 
-@_handle_project
 def test_delete_project_contexts():
-    unify.create_context("foo")
-    unify.create_context("bar")
+    name = _unique_project_name("test_delete_project_contexts")
+    try:
+        unify.create_project(name)
+        unify.create_context("foo", project=name)
+        unify.create_context("bar", project=name)
 
-    assert len(unify.get_contexts()) == 2
-    unify.delete_project_contexts("test_delete_project_contexts")
+        assert len(unify.get_contexts(project=name)) == 2
+        unify.delete_project_contexts(name)
 
-    assert len(unify.get_contexts()) == 0
-    assert "test_delete_project_contexts" in unify.list_projects()
+        assert len(unify.get_contexts(project=name)) == 0
+        assert name in unify.list_projects()
+    finally:
+        unify.delete_project(name)
 
 
 def test_create_project_exist_ok_true():
     """Test that exist_ok=True (default) silently succeeds when project already exists."""
-    name = "test_exist_ok_true_project"
-    if name in unify.list_projects():
-        unify.delete_project(name)
+    name = _unique_project_name("test_exist_ok_true")
+    unify.delete_project(name)
 
     try:
         unify.create_project(name)
@@ -111,15 +135,13 @@ def test_create_project_exist_ok_true():
         # Project should still exist
         assert name in unify.list_projects()
     finally:
-        if name in unify.list_projects():
-            unify.delete_project(name)
+        unify.delete_project(name)
 
 
 def test_create_project_exist_ok_false():
     """Test that exist_ok=False raises an error when project already exists."""
-    name = "test_exist_ok_false_project"
-    if name in unify.list_projects():
-        unify.delete_project(name)
+    name = _unique_project_name("test_exist_ok_false")
+    unify.delete_project(name)
 
     try:
         unify.create_project(name)
@@ -131,15 +153,13 @@ def test_create_project_exist_ok_false():
 
         assert "already exists" in str(exc_info.value)
     finally:
-        if name in unify.list_projects():
-            unify.delete_project(name)
+        unify.delete_project(name)
 
 
 def test_create_project_concurrent_with_exist_ok():
     """Test that concurrent creation with exist_ok=True handles race conditions."""
-    name = "test_concurrent_exist_ok_project"
-    if name in unify.list_projects():
-        unify.delete_project(name)
+    name = _unique_project_name("test_concurrent_exist_ok")
+    unify.delete_project(name)
 
     try:
         num_workers = 10
@@ -157,15 +177,13 @@ def test_create_project_concurrent_with_exist_ok():
         # Project should exist
         assert name in unify.list_projects()
     finally:
-        if name in unify.list_projects():
-            unify.delete_project(name)
+        unify.delete_project(name)
 
 
 def test_delete_project_missing_ok_true():
     """Test that missing_ok=True (default) silently succeeds when project does not exist."""
-    name = "test_missing_ok_true_project"
-    if name in unify.list_projects():
-        unify.delete_project(name)
+    name = _unique_project_name("test_missing_ok_true")
+    unify.delete_project(name)
 
     assert name not in unify.list_projects()
 
@@ -179,9 +197,8 @@ def test_delete_project_missing_ok_true():
 
 def test_delete_project_missing_ok_false():
     """Test that missing_ok=False raises an error when project does not exist."""
-    name = "test_missing_ok_false_project"
-    if name in unify.list_projects():
-        unify.delete_project(name)
+    name = _unique_project_name("test_missing_ok_false")
+    unify.delete_project(name)
 
     assert name not in unify.list_projects()
 
@@ -194,9 +211,8 @@ def test_delete_project_missing_ok_false():
 
 def test_delete_project_concurrent_with_missing_ok():
     """Test that concurrent deletion with missing_ok=True handles race conditions."""
-    name = "test_concurrent_missing_ok_project"
-    if name in unify.list_projects():
-        unify.delete_project(name)
+    name = _unique_project_name("test_concurrent_missing_ok")
+    unify.delete_project(name)
 
     unify.create_project(name)
     assert name in unify.list_projects()
