@@ -105,12 +105,54 @@ jobs:
         echo "UNIFY_BASE_URL=http://127.0.0.1:8000/v0" >> $GITHUB_ENV
 
     - name: Run unit tests
-      run: poetry run pytest --timeout=120 -p no:warnings -vv -n 8 tests/
+      id: pytest
+      run: |
+        set +e
+        # Run pytest and capture output for summary extraction
+        poetry run pytest --timeout=120 -p no:warnings -vv -n 8 tests/ 2>&1 | tee pytest_output.txt
+        exit_code=${PIPESTATUS[0]}
+        echo "exit_code=$exit_code" >> $GITHUB_OUTPUT
+
+        # Extract pass/fail counts from pytest summary line
+        # Format: "X passed, Y failed, Z warnings in N.NNs" or "X passed in N.NNs"
+        summary_line=$(grep -E "^=+ .*(passed|failed).* in [0-9]+\.[0-9]+s =+$" pytest_output.txt | tail -1)
+        if [ -n "$summary_line" ]; then
+          passed=$(echo "$summary_line" | grep -oE "[0-9]+ passed" | grep -oE "[0-9]+" || echo "0")
+          failed=$(echo "$summary_line" | grep -oE "[0-9]+ failed" | grep -oE "[0-9]+" || echo "0")
+          echo "passed=${passed:-0}" >> $GITHUB_OUTPUT
+          echo "failed=${failed:-0}" >> $GITHUB_OUTPUT
+        else
+          echo "passed=0" >> $GITHUB_OUTPUT
+          echo "failed=0" >> $GITHUB_OUTPUT
+        fi
+
+        exit $exit_code
       env:
         UNIFY_KEY: ${{ secrets.UNIFY_API_KEY }}
         # Enable OpenTelemetry tracing for unify client
         UNIFY_OTEL: "true"
         UNIFY_OTEL_LOG_DIR: ${{ env.LOGS_DIR }}/all
+
+    - name: Generate success summary
+      if: success()
+      run: |
+        ARTIFACTS_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}#artifacts"
+        PASSED="${{ steps.pytest.outputs.passed }}"
+
+        echo "## ✅ All Tests Passed" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**${PASSED}** passed — [view logs]($ARTIFACTS_URL)" >> $GITHUB_STEP_SUMMARY
+
+    - name: Generate failure summary
+      if: failure()
+      run: |
+        ARTIFACTS_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}#artifacts"
+        PASSED="${{ steps.pytest.outputs.passed }}"
+        FAILED="${{ steps.pytest.outputs.failed }}"
+
+        echo "## ❌ Tests Failed" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**${PASSED}** passed, **${FAILED}** failed — [view logs]($ARTIFACTS_URL)" >> $GITHUB_STEP_SUMMARY
 
     - name: Dump orchestra logs on failure
       if: failure()
