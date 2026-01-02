@@ -501,7 +501,9 @@ def test_get_logs_group_by_entries():
     assert log.entries["msg"] == "Bye"
 
 
-@pytest.mark.skip(reason="Backend returns 500 errors for nested_groups=False")
+@pytest.mark.skip(
+    reason="Backend nested_groups=False has logic bug: logs grouped under 'null' instead of actual values",
+)
 @_handle_project
 def test_get_logs_group_by_not_nested():
     for i in range(2):
