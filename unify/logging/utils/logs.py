@@ -391,62 +391,41 @@ def _sync_log(
     )
 
 
-def _create_log(dct, context, api_key, context_entries=None):
-    if context_entries is None:
-        context_entries = {}
+def _create_log(dct, context, api_key):
     return unify.Log(
         id=dct["id"],
         ts=dct["ts"],
         **dct["entries"],
         **dct["derived_entries"],
-        **context_entries,
         context=context,
         api_key=api_key,
     )
 
 
-def _create_log_groups_nested(
-    context,
-    api_key,
-    node,
-    context_entries,
-    prev_key=None,
-):
+def _create_log_groups_nested(context, api_key, node):
     if isinstance(node, dict) and "group" not in node:
         ret = unify.LogGroup(list(node.keys())[0])
         ret.value = _create_log_groups_nested(
             context,
             api_key,
             node[ret.field],
-            context_entries,
-            ret.field,
         )
         return ret
     else:
         if isinstance(node["group"][0]["value"], list):
             ret = {}
             for n in node["group"]:
-                context_entries[prev_key] = n["key"]
                 ret[n["key"]] = [
-                    _create_log(
-                        item,
-                        context,
-                        api_key,
-                        context_entries,
-                    )
-                    for item in n["value"]
+                    _create_log(item, context, api_key) for item in n["value"]
                 ]
             return ret
         else:
             ret = {}
             for n in node["group"]:
-                context_entries[prev_key] = n["key"]
                 ret[n["key"]] = _create_log_groups_nested(
                     context,
                     api_key,
                     n["value"],
-                    context_entries,
-                    n["key"],
                 )
             return ret
 
@@ -833,7 +812,7 @@ def get_logs(
     resp_data = response.json()
     if nested_groups:
         logs_data = resp_data.get("logs", [])
-        return _create_log_groups_nested(context, api_key, logs_data, {})
+        return _create_log_groups_nested(context, api_key, logs_data)
     else:
         groups = resp_data.get("groups", {})
         logs_data = resp_data.get("logs", [])
