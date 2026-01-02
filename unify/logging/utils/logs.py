@@ -711,52 +711,6 @@ def _add_to_log(
         return response.json()
 
 
-def add_log_entries(
-    *,
-    logs: Optional[Union[int, unify.Log, List[Union[int, unify.Log]]]] = None,
-    overwrite: bool = False,
-    mutable: Optional[Union[bool, Dict[str, bool]]] = True,
-    api_key: Optional[str] = None,
-    context: Optional[str] = None,
-    **entries,
-) -> Dict[str, str]:
-    """
-    Add extra entries into an existing log.
-
-    Args:
-        logs: The log(s) to update with extra entries. Looks for the current active log if
-        no id is provided.
-
-        overwrite: Whether or not to overwrite an entry pre-existing with the same name.
-
-        mutable: Either a boolean to apply uniform mutability for all entries, or a dictionary mapping entry names to booleans for per-field control.
-        Defaults to True.
-
-        api_key: If specified, unify API key to be used. Defaults to the value in the
-        `UNIFY_KEY` environment variable.
-
-        entries: Dictionary containing one or more key:value pairs that will be logged
-        into the platform as entries.
-
-    Returns:
-        A message indicating whether the logs were successfully updated.
-    """
-    ret = _add_to_log(
-        logs=logs,
-        overwrite=overwrite,
-        mutable=mutable,
-        api_key=api_key,
-        context=context,
-        **entries,
-    )
-    if USR_LOGGING:
-        logger.info(
-            f"Added Entries {', '.join(list(entries.keys()))} "
-            f"to Logs({', '.join([str(i) for i in _to_log_ids(logs)])})",
-        )
-    return ret
-
-
 def update_logs(
     *,
     logs: Optional[Union[int, unify.Log, List[Union[int, unify.Log]]]] = None,
@@ -836,54 +790,6 @@ def delete_logs(
     )
     if USR_LOGGING:
         logger.info(f"Deleted Logs({', '.join([str(i) for i in log_ids])})")
-    return response.json()
-
-
-def delete_log_fields(
-    *,
-    field: str,
-    logs: Optional[Union[int, unify.Log, List[Union[int, unify.Log]]]] = None,
-    project: Optional[str] = None,
-    context: Optional[str] = None,
-    api_key: Optional[str] = None,
-) -> Dict[str, str]:
-    """
-    Deletes an entry from a log.
-
-    Args:
-        field: Name of the field to delete from the given logs.
-
-        logs: log(s) to delete entries from.
-
-        project: Name of the project to delete logs from.
-
-        context: Context of the logs to delete entries from.
-
-        api_key: If specified, unify API key to be used. Defaults to the value in the
-        `UNIFY_KEY` environment variable.
-
-    Returns:
-        A message indicating whether the log entries were successfully deleted.
-    """
-    log_ids = _to_log_ids(logs)
-    api_key = _validate_api_key(api_key)
-    headers = _create_request_header(api_key)
-    project = _get_and_maybe_create_project(project, api_key=api_key)
-    context = context if context else CONTEXT_READ.get()
-    body = {
-        "project": project,
-        "context": context,
-        "ids_and_fields": [(log_ids, field)],
-    }
-    response = http.delete(
-        BASE_URL + f"/logs",
-        headers=headers,
-        json=body,
-    )
-    if USR_LOGGING:
-        logger.info(
-            f"Deleted Field `{field}` from Logs({', '.join([str(i) for i in log_ids])})",
-        )
     return response.json()
 
 
@@ -1034,49 +940,6 @@ def get_logs(
         groups = resp_data.get("groups", {})
         logs_data = resp_data.get("logs", [])
         return _create_log_groups_not_nested(logs_data, groups, context, api_key)
-
-
-# noinspection PyShadowingBuiltins
-def get_log_by_id(
-    id: int,
-    project: Optional[str] = None,
-    *,
-    api_key: Optional[str] = None,
-) -> unify.Log:
-    """
-    Returns the log associated with a given id.
-
-    Args:
-        id: IDs of the logs to fetch.
-
-        project: Name of the project to get logs from.
-
-        api_key: If specified, unify API key to be used. Defaults to the value in the
-        `UNIFY_KEY` environment variable.
-
-    Returns:
-        The full set of log data.
-    """
-    api_key = _validate_api_key(api_key)
-    headers = _create_request_header(api_key)
-    project = _get_and_maybe_create_project(project, api_key=api_key)
-    response = http.get(
-        BASE_URL + "/logs",
-        params={"project": project, "from_ids": [id]},
-        headers=headers,
-    )
-    resp_data = response.json()
-    lgs = resp_data.get("logs", [])
-    if len(lgs) == 0:
-        raise Exception(f"Log with id {id} does not exist")
-    lg = lgs[0]
-    return unify.Log(
-        id=lg["id"],
-        ts=lg["ts"],
-        **lg["entries"],
-        **lg["derived_entries"],
-        api_key=api_key,
-    )
 
 
 # noinspection PyShadowingBuiltins

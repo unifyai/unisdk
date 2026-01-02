@@ -1,34 +1,6 @@
-import pytest
 import unify
 
 from ..helpers import _handle_project
-
-
-@_handle_project
-def test_log_entry():
-    data = {
-        "question": "What is 1 + 1?",
-        "answer": "It's 2",
-    }
-    assert len(unify.get_logs()) == 0
-    log_id = unify.log(**data).id
-    project_logs = unify.get_logs()
-    assert len(project_logs) and project_logs[0].id == log_id
-    id_log = unify.get_log_by_id(log_id)
-    assert len(id_log) and "question" in id_log.entries
-    unify.delete_log_fields(field="question", logs=log_id)
-    id_log = unify.get_log_by_id(log_id)
-    assert len(id_log) and "question" not in id_log.entries
-    unify.add_log_entries(logs=log_id, question=data["question"])
-    id_log = unify.get_log_by_id(log_id)
-    assert len(id_log) and "question" in id_log.entries
-    unify.delete_logs(logs=log_id)
-    assert len(unify.get_logs()) == 0
-    try:
-        unify.get_log_by_id(log_id)
-        assert False
-    except Exception as e:
-        assert str(e) == f"Log with id {log_id} does not exist"
 
 
 @_handle_project
@@ -58,30 +30,13 @@ def test_create_logs_large_body():
 def test_update_logs():
     log0 = unify.log(a=0, b=1)
     unify.update_logs(logs=log0, entries={"a": 1}, overwrite=True)
-    assert unify.get_log_by_id(log0.id).entries["a"] == 1
+    assert unify.get_logs(from_ids=[log0.id])[0].entries["a"] == 1
     unify.update_logs(logs=log0, entries={"c": 2})
-    assert unify.get_log_by_id(log0.id).entries["c"] == 2
+    assert unify.get_logs(from_ids=[log0.id])[0].entries["c"] == 2
     log1 = unify.log(a=1, b=2)
     unify.update_logs(logs=[log0, log1], entries=[{"a": 3}, {"a": 4}], overwrite=True)
-    assert unify.get_log_by_id(log0.id).entries["a"] == 3
-    assert unify.get_log_by_id(log1.id).entries["a"] == 4
-
-
-@_handle_project
-def test_duplicate_log_field():
-    data = {
-        "system_prompt": "You are a weather assistant",
-        "user_prompt": "hello world",
-    }
-    assert len(unify.get_logs()) == 0
-    log = unify.log(**data)
-    assert len(unify.get_logs()) == 1
-    new_data = {
-        "system_prompt": "You are a maths assistant",
-        "user_prompt": "hi earth",
-    }
-    with pytest.raises(Exception):
-        log.add_entries(**new_data)
+    assert unify.get_logs(from_ids=[log0.id])[0].entries["a"] == 3
+    assert unify.get_logs(from_ids=[log1.id])[0].entries["a"] == 4
 
 
 @_handle_project

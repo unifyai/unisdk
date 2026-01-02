@@ -68,22 +68,6 @@ class Log:
 
     # Public
 
-    def download(self):
-        # If id is not yet resolved, wait for the future
-        if self._id is None and self._future is not None:
-            self._id = self._future.result(timeout=5)
-        log = get_log_by_id(id=self._id, api_key=self._api_key)
-        self._entries = log._entries
-
-    def add_entries(self, **entries) -> None:
-        add_log_entries(
-            logs=self._id,
-            context=self._context,
-            api_key=self._api_key,
-            **entries,
-        )
-        self._entries = {**self._entries, **entries}
-
     def update_entries(self, **entries) -> None:
         update_logs(
             logs=self._id,
@@ -93,14 +77,6 @@ class Log:
             overwrite=True,
         )
         self._entries = {**self._entries, **entries}
-
-    def delete_entries(
-        self,
-        keys_to_delete: List[str],
-    ) -> None:
-        for key in keys_to_delete:
-            delete_log_fields(field=key, logs=self._id, api_key=self._api_key)
-            del self._entries[key]
 
     def delete(self) -> None:
         delete_logs(logs=self._id, api_key=self._api_key)
@@ -137,7 +113,7 @@ class Log:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         if self._id is None and self._future is not None:
-            self.download()
+            self._id = self._future.result(timeout=5)
         ACTIVE_LOG.reset(self._log_token)
 
 
