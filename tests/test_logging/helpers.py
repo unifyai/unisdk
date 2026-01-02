@@ -14,11 +14,13 @@ def _handle_project(test_fn):
         if project in unify.list_projects():
             unify.delete_project(project)
         try:
-            with unify.Project(project):
-                unify.unset_context()
-                test_fn(*args, **kwargs)
+            unify.activate(project)
+            unify.unset_context()
+            test_fn(*args, **kwargs)
+            unify.deactivate()
             unify.delete_project(project)
         except:
+            unify.deactivate()
             unify.delete_project(project)
             exc_type, exc_value, exc_tb = sys.exc_info()
             tb_string = "".join(traceback.format_exception(exc_type, exc_value, exc_tb))
@@ -30,11 +32,13 @@ def _handle_project(test_fn):
         if project in unify.list_projects():
             unify.delete_project(project)
         try:
-            with unify.Project(project):
-                unify.unset_context()
-                await test_fn(*args, **kwargs)
+            unify.activate(project)
+            unify.unset_context()
+            await test_fn(*args, **kwargs)
+            unify.deactivate()
             unify.delete_project(project)
         except:
+            unify.deactivate()
             unify.delete_project(project)
             exc_type, exc_value, exc_tb = sys.exc_info()
             tb_string = "".join(traceback.format_exception(exc_type, exc_value, exc_tb))
