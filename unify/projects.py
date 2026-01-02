@@ -2,12 +2,8 @@ from typing import Dict, List, Optional, Union
 
 from unify import BASE_URL
 from unify.utils import http
+from unify.utils.helpers import _create_request_header, _validate_api_key
 from unify.utils.http import RequestError
-
-from ...utils.helpers import _create_request_header, _validate_api_key
-
-# Projects #
-# ---------#
 
 
 def create_project(

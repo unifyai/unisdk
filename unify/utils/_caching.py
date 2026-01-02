@@ -89,7 +89,7 @@ def _get_cache(
 ) -> Optional[Any]:
     global CACHE_LOCK
     # Prevents circular import
-    from unify.logging.logs import Log
+    from unify.logs import Log
 
     type_mapping = {
         "ChatCompletion": ChatCompletion,

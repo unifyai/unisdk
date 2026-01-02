@@ -1,10 +1,60 @@
 import concurrent.futures
+import os
 
 import pytest
 import unify
 from unify.utils.http import RequestError
 
-from ..helpers import _handle_project
+from .helpers import _handle_project
+
+# =============================================================================
+# Basic project tests
+# =============================================================================
+
+
+def test_set_project():
+    unify.PROJECT = None
+    assert unify.active_project() is None
+    unify.activate("my_project")
+    assert unify.active_project() == "my_project"
+    unify.PROJECT = None
+
+
+def test_set_project_then_log():
+    unify.PROJECT = None
+    assert unify.active_project() is None
+    unify.activate("test_set_project_then_log")
+    assert unify.active_project() == "test_set_project_then_log"
+    unify.log(key=1.0)
+    unify.PROJECT = None
+    assert unify.active_project() is None
+    unify.delete_project("test_set_project_then_log")
+
+
+def test_project_env_var():
+    unify.PROJECT = None
+    assert unify.active_project() is None
+    os.environ["UNIFY_PROJECT"] = "test_project_env_var"
+    assert unify.active_project() == "test_project_env_var"
+    try:
+        unify.delete_project("test_project_env_var")
+    except unify.utils.http.RequestError:
+        pass
+    unify.create_project("test_project_env_var")
+    unify.log(x=0, y=1, z=2)
+    del os.environ["UNIFY_PROJECT"]
+    assert unify.active_project() is None
+    try:
+        logs = unify.get_logs(project="test_project_env_var")
+        assert len(logs) == 1
+        assert logs[0].entries == {"x": 0, "y": 1, "z": 2}
+    finally:
+        unify.delete_project("test_project_env_var")
+
+
+# =============================================================================
+# Project CRUD tests
+# =============================================================================
 
 
 def test_project():

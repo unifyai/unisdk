@@ -4,7 +4,7 @@ import pytest
 import unify
 from unify.utils.http import RequestError
 
-from ..helpers import _handle_project
+from .helpers import _handle_project
 
 
 @_handle_project
