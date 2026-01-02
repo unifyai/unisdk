@@ -1,19 +1,10 @@
-import inspect
-import json
 import os
 import threading
-import warnings
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Optional
 
-import requests
 import unify
-from pydantic import BaseModel, ValidationError
 
 PROJECT_LOCK = threading.Lock()
-
-
-def _res_to_list(response: requests.Response) -> Union[List, Dict]:
-    return json.loads(response.text)
 
 
 def _validate_api_key(api_key: Optional[str]) -> str:
@@ -26,91 +17,12 @@ def _validate_api_key(api_key: Optional[str]) -> str:
     return api_key
 
 
-def _create_request_header(api_key: Optional[str]) -> Dict[str, str]:
+def _create_request_header(api_key: Optional[str]) -> dict:
     return {
         "Authorization": f"Bearer {_validate_api_key(api_key)}",
         "accept": "application/json",
         "Content-Type": "application/json",
     }
-
-
-def _validate_openai_api_key(direct_mode: bool, api_key: Optional[str]) -> str:
-    if not direct_mode:
-        return None
-    if api_key is None:
-        api_key = os.environ.get("OPENAI_API_KEY")
-    if api_key is None:
-        warnings.warn(
-            "OPENAI_API_KEY is missing when trying to use direct mode. "
-            "Falling back to Unify API.",
-        )
-    return api_key
-
-
-def _default(value: Any, default_value: Any) -> Any:
-    return value if value is not None else default_value
-
-
-def _dict_aligns_with_pydantic(dict_in: Dict, pydantic_cls: type(BaseModel)) -> bool:
-    try:
-        pydantic_cls.model_validate(dict_in)
-        return True
-    except ValidationError:
-        return False
-
-
-def _make_json_serializable(
-    item: Any,
-) -> Union[Dict, List, Tuple]:
-    # Add a recursion guard using getattr to avoid infinite recursion
-    if hasattr(item, "_being_serialized") and getattr(item, "_being_serialized", False):
-        return "<circular reference>"
-
-    try:
-        # For objects that might cause recursion, set a flag
-        if hasattr(item, "__dict__") and not isinstance(
-            item,
-            (dict, list, tuple, BaseModel),
-        ):
-            setattr(item, "_being_serialized", True)
-
-        if isinstance(item, list):
-            result = [_make_json_serializable(i) for i in item]
-        elif isinstance(item, dict):
-            result = {k: _make_json_serializable(v) for k, v in item.items()}
-        elif isinstance(item, tuple):
-            result = tuple(_make_json_serializable(i) for i in item)
-        elif inspect.isclass(item) and issubclass(item, BaseModel):
-            result = item.model_json_schema()
-        elif isinstance(item, BaseModel):
-            result = item.model_dump()
-        elif hasattr(item, "json") and callable(item.json):
-            result = _make_json_serializable(item.json())
-        # Handle threading objects specifically
-        elif "threading" in type(item).__module__:
-            result = f"<{type(item).__name__} at {id(item)}>"
-        elif isinstance(item, (int, float, bool, str, type(None))):
-            result = item
-        else:
-            try:
-                result = json.dumps(item)
-            except Exception:
-                try:
-                    result = str(item)
-                except Exception:
-                    result = f"<{type(item).__name__} at {id(item)}>"
-
-        return result
-    finally:
-        # Clean up the recursion guard flag
-        if hasattr(item, "__dict__") and not isinstance(
-            item,
-            (dict, list, tuple, BaseModel),
-        ):
-            try:
-                delattr(item, "_being_serialized")
-            except (AttributeError, TypeError):
-                pass
 
 
 def _get_and_maybe_create_project(
@@ -140,30 +52,6 @@ def _get_and_maybe_create_project(
         if project not in unify.list_projects(api_key=api_key):
             unify.create_project(project, api_key=api_key)
     return project
-
-
-def _prune_dict(val):
-    def keep(v):
-        if v in (None, "NOT_GIVEN"):
-            return False
-        else:
-            ret = _prune_dict(v)
-            if isinstance(ret, dict) or isinstance(ret, list) or isinstance(ret, tuple):
-                return bool(ret)
-            return True
-
-    if (
-        not isinstance(val, dict)
-        and not isinstance(val, list)
-        and not isinstance(val, tuple)
-    ):
-        return val
-    elif isinstance(val, dict):
-        return {k: _prune_dict(v) for k, v in val.items() if keep(v)}
-    elif isinstance(val, list):
-        return [_prune_dict(v) for i, v in enumerate(val) if keep(v)]
-    else:
-        return tuple(_prune_dict(v) for i, v in enumerate(val) if keep(v))
 
 
 import copy
