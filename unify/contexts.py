@@ -4,7 +4,6 @@ from unify import BASE_URL
 from unify.logs import CONTEXT_WRITE
 from unify.utils import http
 from unify.utils.helpers import _create_request_header, _get_and_maybe_create_project
-from unify.utils.http import RequestError
 
 
 def create_context(
@@ -186,7 +185,7 @@ def create_context(
             json=body,
         )
         return response.json()
-    except RequestError as e:
+    except http.RequestError as e:
         if (
             exist_ok
             and e.response.status_code == 400
@@ -464,7 +463,7 @@ def delete_context(
             params={"include_children": delete_children},
         )
         return response.json()
-    except RequestError as e:
+    except http.RequestError as e:
         if (
             missing_ok
             and e.response.status_code == 404

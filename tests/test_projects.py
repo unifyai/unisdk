@@ -4,7 +4,7 @@ from datetime import datetime
 
 import pytest
 import unify
-from unify.utils.http import RequestError
+from unify.utils import http
 
 
 def _unique_project_name(base: str) -> str:
@@ -145,7 +145,7 @@ def test_create_project_exist_ok_false():
         assert name in unify.list_projects()
 
         # Second call should raise an error
-        with pytest.raises(RequestError) as exc_info:
+        with pytest.raises(http.RequestError) as exc_info:
             unify.create_project(name, exist_ok=False)
 
         assert "already exists" in str(exc_info.value)
@@ -200,7 +200,7 @@ def test_delete_project_missing_ok_false():
     assert name not in unify.list_projects()
 
     # Delete non-existent project should raise an error
-    with pytest.raises(RequestError) as exc_info:
+    with pytest.raises(http.RequestError) as exc_info:
         unify.delete_project(name, missing_ok=False)
 
     assert "not found" in str(exc_info.value).lower()

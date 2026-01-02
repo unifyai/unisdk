@@ -515,7 +515,11 @@ def log(
     entries = {**entries, **ACTIVE_ENTRIES_WRITE.get()}
     entries = _handle_special_types(entries)
     entries = _handle_mutability(mutable, entries)
-    project = _get_and_maybe_create_project(project, api_key=api_key)
+    project = _get_and_maybe_create_project(
+        project,
+        api_key=api_key,
+        create_if_missing=True,
+    )
     created_log = _sync_log(
         project=project,
         context=context,
