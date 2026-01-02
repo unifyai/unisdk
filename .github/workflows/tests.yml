@@ -23,18 +23,64 @@ jobs:
     runs-on: ubuntu-latest-8-cores
     environment: unify-testing
     timeout-minutes: 120
+    env:
+      # Local orchestra configuration
+      ORCHESTRA_REPO_PATH: ${{ github.workspace }}/orchestra
+      ORCHESTRA_PREFIX: unify
     steps:
     - uses: actions/checkout@v4
+
+    - name: Clone orchestra repo for local deployment
+      uses: actions/checkout@v4
+      with:
+        repository: unifyai/orchestra
+        ref: staging
+        path: orchestra
+        token: ${{ secrets.ORCHESTRA_CLONE_TOKEN }}
+        fetch-depth: 1
+
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
         python-version: '3.10'
+
     - name: Install deps
       run: |
         python -m pip install --upgrade pip
         pip install poetry
         poetry install --with dev
+
+    - name: Install orchestra dependencies
+      run: |
+        cd "$ORCHESTRA_REPO_PATH"
+        poetry install --no-interaction
+
+    - name: Start local orchestra
+      run: |
+        # Start local orchestra with test user seeding
+        ORCHESTRA_SEED_USER=1 \
+        UNIFY_KEY="${{ secrets.UNIFY_API_KEY }}" \
+        "$ORCHESTRA_REPO_PATH/scripts/local.sh" start
+
+        # Export the local URL for tests
+        echo "UNIFY_BASE_URL=http://127.0.0.1:8000/v0" >> $GITHUB_ENV
+
     - name: Run unit tests
       run: poetry run pytest --timeout=120 -p no:warnings -vv -n 8 .
       env:
         UNIFY_KEY: ${{ secrets.UNIFY_API_KEY }}
+
+    - name: Dump orchestra logs on failure
+      if: failure()
+      run: |
+        echo "=== Orchestra Server Logs ==="
+        if [ -f /tmp/unify-local-server.log ]; then
+          cat /tmp/unify-local-server.log
+        else
+          echo "No orchestra log file found"
+        fi
+
+    - name: Stop local orchestra
+      if: always()
+      run: |
+        "$ORCHESTRA_REPO_PATH/scripts/local.sh" stop || true
