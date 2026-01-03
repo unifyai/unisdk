@@ -21,7 +21,6 @@ jobs:
 
   pytest:
     runs-on: ubuntu-latest-8-cores
-    environment: unify-testing
     timeout-minutes: 120
     env:
       # Local orchestra configuration
