@@ -68,10 +68,8 @@ from .logs import (
 )
 
 # Utils
-from .utils import helpers, map, _caching, storage
-from .utils._caching import set_cache_backend
+from .utils import helpers, map, storage
 from .utils.storage import get_signed_url, download_object
-from .utils.caching import get_cache_stats
 from .utils import http
 from .utils.http import RequestError
 

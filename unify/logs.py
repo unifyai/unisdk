@@ -7,13 +7,12 @@ import os
 import sys
 from contextvars import ContextVar
 from datetime import datetime
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import unify
 from tqdm import tqdm
 from unify import BASE_URL
 from unify.utils import http
-from unify.utils._caching import _get_cache, _write_to_cache, is_caching_enabled
 from unify.utils.helpers import (
     _create_request_header,
     _get_and_maybe_create_project,
@@ -305,29 +304,6 @@ def _apply_row_ids_and_non_unique_auto_count_vals(
             for idx, entry in enumerate(entries):
                 if idx < len(values):
                     entry[key] = values[idx]
-
-
-def _handle_cache(fn: Callable) -> Callable:
-    def wrapped(*args, **kwargs):
-        if not is_caching_enabled():
-            return fn(*args, **kwargs)
-        kw_for_key = flexible_deepcopy(kwargs)
-        combined_kw = {**{f"arg{i}": a for i, a in enumerate(args)}, **kw_for_key}
-        ret = _get_cache(
-            fn_name=fn.__name__,
-            kw=combined_kw,
-        )
-        if ret is not None:
-            return ret
-        ret = fn(*args, **kwargs)
-        _write_to_cache(
-            fn_name=fn.__name__,
-            kw=combined_kw,
-            response=ret,
-        )
-        return ret
-
-    return wrapped
 
 
 def _handle_special_types(
