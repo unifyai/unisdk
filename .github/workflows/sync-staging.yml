@@ -1,0 +1,53 @@
+name: Sync staging with main
+
+on:
+  push:
+    branches:
+    - main
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Check if sync needed
+      id: check
+      run: |
+        git fetch origin staging
+
+        # Count commits on main not on staging
+        behind_count=$(git rev-list --count origin/staging..origin/main)
+
+        if [ "$behind_count" -eq 0 ]; then
+          echo "Staging is up to date with main"
+          echo "needed=false" >> $GITHUB_OUTPUT
+        else
+          echo "Staging is $behind_count commits behind main"
+          echo "needed=true" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Create sync PR
+      if: steps.check.outputs.needed == 'true'
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        # Check if a sync PR already exists
+        existing_pr=$(gh pr list --base staging --head main --state open --json number --jq '.[0].number // empty')
+
+        if [ -n "$existing_pr" ]; then
+          echo "Sync PR #$existing_pr already exists"
+          exit 0
+        fi
+
+        # Create the PR
+        gh pr create \
+          --base staging \
+          --head main \
+          --title "Sync: merge main into staging" \
+          --body "Automated PR to keep staging in sync with main. Merges merge-commits from main back into staging to prevent branch divergence."
+
+        echo "Created sync PR from main -> staging"
