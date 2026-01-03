@@ -2,12 +2,7 @@ from typing import Dict, List, Optional, Union
 
 from unify import BASE_URL
 from unify.utils import http
-from unify.utils.http import RequestError
-
-from ...utils.helpers import _create_request_header, _validate_api_key
-
-# Projects #
-# ---------#
+from unify.utils.helpers import _create_request_header, _validate_api_key
 
 
 def create_project(
@@ -53,7 +48,7 @@ def create_project(
     try:
         response = http.post(BASE_URL + "/project", headers=headers, json=body)
         return response.json()
-    except RequestError as e:
+    except http.RequestError as e:
         if (
             exist_ok
             and e.response.status_code == 400
@@ -89,7 +84,7 @@ def delete_project(
     try:
         response = http.delete(BASE_URL + f"/project/{name}", headers=headers)
         return response.json()
-    except RequestError as e:
+    except http.RequestError as e:
         if (
             missing_ok
             and e.response.status_code == 404

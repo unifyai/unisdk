@@ -4,10 +4,10 @@ import pytest
 import unify
 from unify.utils.http import RequestError
 
-from ..helpers import _handle_project
+from .helpers import _handle_project_isolated
 
 
-@_handle_project
+@_handle_project_isolated
 def test_create_context():
     assert len(unify.get_contexts()) == 0
     unify.create_context("my_context")
@@ -15,7 +15,7 @@ def test_create_context():
     assert "my_context" in unify.get_contexts()
 
 
-@_handle_project
+@_handle_project_isolated
 def test_create_contexts_names_only():
     assert len(unify.get_contexts()) == 0
     unify.create_contexts(["foo", "bar"])
@@ -24,7 +24,7 @@ def test_create_contexts_names_only():
     assert "bar" in unify.get_contexts()
 
 
-@_handle_project
+@_handle_project_isolated
 def test_create_contexts_dicts():
     assert len(unify.get_contexts()) == 0
     unify.create_contexts(
@@ -41,7 +41,7 @@ def test_create_contexts_dicts():
     assert unify.get_context("bar")["description"] == "baz"
 
 
-@_handle_project
+@_handle_project_isolated
 def test_create_contexts_nested():
     unify.create_contexts(
         [
@@ -73,7 +73,7 @@ def test_create_contexts_nested():
     assert "foo/bar/baz" in unify.get_contexts()
 
 
-@_handle_project
+@_handle_project_isolated
 def test_get_contexts():
     assert len(unify.get_contexts()) == 0
     unify.log(x=0, context="a/b")
@@ -94,7 +94,7 @@ def test_get_contexts():
     assert "a/b" not in contexts
 
 
-@_handle_project
+@_handle_project_isolated
 def test_delete_context():
     unify.log(x=0, context="a/b")
     contexts = unify.get_contexts()
@@ -105,7 +105,7 @@ def test_delete_context():
     assert len(unify.get_logs()) == 0
 
 
-@_handle_project
+@_handle_project_isolated
 def test_add_logs_to_context():
     l0 = unify.log(x=0, context="a/b")
     l1 = unify.log(x=1, context="a/b")
@@ -123,7 +123,7 @@ def test_add_logs_to_context():
     ]
 
 
-@_handle_project
+@_handle_project_isolated
 def test_rename_context():
     unify.log(x=0, context="a/b")
     unify.rename_context("a/b", "a/c")
@@ -135,7 +135,7 @@ def test_rename_context():
     assert logs[0].context == "a/c"
 
 
-@_handle_project
+@_handle_project_isolated
 def test_get_context():
     name = "foo"
     desc = "my_description"
@@ -155,7 +155,7 @@ def test_get_context():
     assert context["allow_duplicates"] is allow_duplicates
 
 
-@_handle_project
+@_handle_project_isolated
 def test_context_relative():
     unify.set_context("A", relative=True)
 
@@ -172,7 +172,7 @@ def test_context_relative():
     assert unify.get_context(current_ctx["read"])["name"] == "A/B/C"
 
 
-@_handle_project
+@_handle_project_isolated
 def test_context_not_relative():
     unify.set_context("A", relative=False)
     current_ctx = unify.get_active_context()
@@ -187,7 +187,7 @@ def test_context_not_relative():
     assert unify.get_context(current_ctx["read"])["name"] == "B"
 
 
-@_handle_project
+@_handle_project_isolated
 def test_create_context_with_foreign_keys():
     """Test creating a context with foreign key definitions."""
     # Create referenced context
@@ -223,7 +223,7 @@ def test_create_context_with_foreign_keys():
     assert context["foreign_keys"][0]["on_update"] == "CASCADE"
 
 
-@_handle_project
+@_handle_project_isolated
 def test_create_context_with_multiple_foreign_keys():
     """Test creating a context with multiple foreign keys."""
     # Create referenced contexts
@@ -277,7 +277,7 @@ def test_create_context_with_multiple_foreign_keys():
     assert mgr_fk["on_delete"] == "SET NULL"
 
 
-@_handle_project
+@_handle_project_isolated
 def test_create_contexts_batch_with_foreign_keys():
     """Test batch creation of contexts with foreign keys."""
     unify.create_contexts(
@@ -314,7 +314,7 @@ def test_create_contexts_batch_with_foreign_keys():
     assert employee_context["foreign_keys"][0]["name"] == "department_id"
 
 
-@_handle_project
+@_handle_project_isolated
 def test_create_context_without_foreign_keys():
     """Test that contexts without foreign keys still work (backward compatibility)."""
     unify.create_context(
@@ -328,7 +328,7 @@ def test_create_context_without_foreign_keys():
     assert context["foreign_keys"] == []
 
 
-@_handle_project
+@_handle_project_isolated
 def test_foreign_key_cascade_action():
     """Test CASCADE action on foreign key."""
     # Create parent context with data
@@ -370,7 +370,7 @@ def test_foreign_key_cascade_action():
     assert len(emp_logs) == 1
 
 
-@_handle_project
+@_handle_project_isolated
 def test_foreign_key_set_null_action():
     """Test SET NULL action on foreign key."""
     # Create parent context
@@ -399,7 +399,7 @@ def test_foreign_key_set_null_action():
     assert context["foreign_keys"][0]["on_update"] == "SET NULL"
 
 
-@_handle_project
+@_handle_project_isolated
 def test_nested_contexts_with_foreign_keys():
     """Test foreign keys work with nested context names."""
     # Create nested parent context
@@ -427,7 +427,7 @@ def test_nested_contexts_with_foreign_keys():
     assert context["foreign_keys"][0]["references"] == "org/departments.id"
 
 
-@_handle_project
+@_handle_project_isolated
 def test_flat_array_foreign_key():
     """Test foreign key with flat array notation (tag_ids[*])."""
     # Create referenced context for tags
@@ -472,7 +472,7 @@ def test_flat_array_foreign_key():
     assert fk["path_segments"][0]["is_wildcard"] is True
 
 
-@_handle_project
+@_handle_project_isolated
 def test_nested_array_foreign_key():
     """Test foreign key with nested array notation (images[*].image_id)."""
     # Create referenced context for images
@@ -517,7 +517,7 @@ def test_nested_array_foreign_key():
     assert fk["path_segments"][1]["name"] == "image_id"
 
 
-@_handle_project
+@_handle_project_isolated
 def test_nested_object_foreign_key():
     """Test foreign key with nested object path (metadata.user.user_id)."""
     # Create referenced context for users
@@ -563,7 +563,7 @@ def test_nested_object_foreign_key():
     assert fk["path_segments"][2]["name"] == "user_id"
 
 
-@_handle_project
+@_handle_project_isolated
 def test_mixed_nesting_foreign_key():
     """Test foreign key with mixed array and object nesting (teams[*].members[*].user_id)."""
     # Create referenced context for users
@@ -619,7 +619,7 @@ def test_mixed_nesting_foreign_key():
     assert fk["path_segments"][2]["is_array"] is False
 
 
-@_handle_project
+@_handle_project_isolated
 def test_flat_array_fk_with_actual_data():
     """Test creating logs with flat array FK and verifying FK validation works."""
     # Create Tags context
@@ -667,7 +667,7 @@ def test_flat_array_fk_with_actual_data():
     assert tag2_id in articles[0]._entries.get("tag_ids")
 
 
-@_handle_project
+@_handle_project_isolated
 def test_nested_array_fk_with_actual_data():
     """Test creating logs with nested array FK and verifying FK validation works."""
     # Create Images context
@@ -716,7 +716,7 @@ def test_nested_array_fk_with_actual_data():
     assert len(transcripts[0]._entries.get("images")) == 2
 
 
-@_handle_project
+@_handle_project_isolated
 def test_delete_context_prefix_collision():
     """Test that delete_context uses path-based matching, not simple string prefix.
 
@@ -758,7 +758,7 @@ def test_delete_context_prefix_collision():
     assert "test_call/Logs" not in contexts
 
 
-@_handle_project
+@_handle_project_isolated
 def test_delete_context_without_children():
     """Test that delete_children=False only deletes the exact context."""
     unify.create_contexts(
@@ -782,7 +782,7 @@ def test_delete_context_without_children():
     assert "parent/child2" in contexts
 
 
-@_handle_project
+@_handle_project_isolated
 def test_delete_context_missing_ok_true():
     """Test that missing_ok=True (default) silently succeeds when context does not exist."""
     assert len(unify.get_contexts()) == 0
@@ -795,7 +795,7 @@ def test_delete_context_missing_ok_true():
     assert len(unify.get_contexts()) == 0
 
 
-@_handle_project
+@_handle_project_isolated
 def test_delete_context_missing_ok_false():
     """Test that missing_ok=False raises an error when context does not exist."""
     assert len(unify.get_contexts()) == 0
@@ -807,7 +807,7 @@ def test_delete_context_missing_ok_false():
     assert "not found" in str(exc_info.value).lower()
 
 
-@_handle_project
+@_handle_project_isolated
 def test_delete_context_concurrent_with_missing_ok():
     """Test that concurrent deletion with missing_ok=True handles race conditions."""
     unify.create_context("concurrent_delete_context")
@@ -830,7 +830,7 @@ def test_delete_context_concurrent_with_missing_ok():
     assert len(unify.get_contexts()) == 0
 
 
-@_handle_project
+@_handle_project_isolated
 def test_create_context_exist_ok_true():
     """Test that exist_ok=True (default) silently succeeds when context already exists."""
     unify.create_context("my_context")
@@ -845,7 +845,7 @@ def test_create_context_exist_ok_true():
     assert len(unify.get_contexts()) == 1
 
 
-@_handle_project
+@_handle_project_isolated
 def test_create_context_exist_ok_false():
     """Test that exist_ok=False raises an error when context already exists."""
     unify.create_context("my_context")
@@ -858,7 +858,7 @@ def test_create_context_exist_ok_false():
     assert "already exists" in str(exc_info.value)
 
 
-@_handle_project
+@_handle_project_isolated
 def test_create_context_concurrent_with_exist_ok():
     """Test that concurrent creation with exist_ok=True handles race conditions."""
     num_workers = 10
@@ -879,7 +879,7 @@ def test_create_context_concurrent_with_exist_ok():
     assert len(unify.get_contexts()) == 1
 
 
-@_handle_project
+@_handle_project_isolated
 def test_create_contexts_exist_ok_true():
     """Test that exist_ok=True (default) silently succeeds when contexts already exist."""
     unify.create_contexts(["ctx_a", "ctx_b"])
@@ -899,7 +899,7 @@ def test_create_contexts_exist_ok_true():
     assert "ctx_c" in contexts
 
 
-@_handle_project
+@_handle_project_isolated
 def test_create_contexts_exist_ok_false():
     """Test that exist_ok=False raises an error when any context already exists."""
     unify.create_contexts(["ctx_a", "ctx_b"])
@@ -912,7 +912,7 @@ def test_create_contexts_exist_ok_false():
     assert "ctx_b" in str(exc_info.value)
 
 
-@_handle_project
+@_handle_project_isolated
 def test_create_contexts_concurrent_with_exist_ok():
     """Test that concurrent creation with exist_ok=True handles race conditions."""
     num_workers = 10

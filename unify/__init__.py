@@ -14,17 +14,58 @@ UNIFY_DIR = os.path.dirname(__file__)
 
 
 # Platform API utilities
-from .platform.queries import log_query
-from .platform.user import get_user_basic_info
+from .platform import log_query, get_user_basic_info
 
-# Logging utilities
-from .logging.utils import contexts
-from .logging.utils import logs
-from .logging.utils import projects
+# Contexts
+from .contexts import (
+    add_logs_to_context,
+    commit_context,
+    create_context,
+    create_contexts,
+    delete_context,
+    get_context,
+    get_context_commits,
+    get_contexts,
+    rename_context,
+    rollback_context,
+)
 
-from .logging.utils.contexts import *
-from .logging.utils.logs import *
-from .logging.utils.projects import *
+# Projects
+from .projects import (
+    commit_project,
+    create_project,
+    delete_project,
+    delete_project_contexts,
+    get_project_commits,
+    list_projects,
+    rollback_project,
+)
+
+# Logs
+from .logs import (
+    ACTIVE_LOG,
+    CONTEXT_READ,
+    CONTEXT_WRITE,
+    Log,
+    LogGroup,
+    create_derived_logs,
+    create_fields,
+    create_logs,
+    delete_fields,
+    delete_logs,
+    get_active_context,
+    get_fields,
+    get_groups,
+    get_logs,
+    get_logs_metric,
+    join_logs,
+    log,
+    rename_field,
+    set_context,
+    set_user_logging,
+    unset_context,
+    update_logs,
+)
 
 # Utils
 from .utils import helpers, map, _caching, storage
@@ -34,12 +75,8 @@ from .utils.caching import get_cache_stats
 from .utils import http
 from .utils.http import RequestError
 
-# Logging
-from .logging import logs
-from .logging.logs import *
-
 # Assistants
-from .assistants.management import *
+from .assistants import list_assistants
 
 
 # Project #

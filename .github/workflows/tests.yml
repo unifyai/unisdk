@@ -6,34 +6,240 @@ jobs:
   black:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
     - name: Set up Python
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v5
       with:
-        python-version: '3.9'
-    - name: Install deps
-      uses: knowsuchagency/poetry-install@v1
-      env:
-        POETRY_VIRTUALENVS_CREATE: false
-    - name: Run black check
-      run: poetry run black --check .
-
-  pytest:
-    runs-on: ubuntu-latest
-    environment: unify-testing
-    timeout-minutes: 120
-    steps:
-    - uses: actions/checkout@v2
-    - name: Set up Python
-      uses: actions/setup-python@v2
-      with:
-        python-version: '3.9'
+        python-version: '3.10'
     - name: Install deps
       run: |
         python -m pip install --upgrade pip
         pip install poetry
         poetry install --with dev
+    - name: Run black check
+      run: poetry run black --check .
+
+  pytest:
+    runs-on: ubuntu-latest-8-cores
+    environment: unify-testing
+    timeout-minutes: 120
+    env:
+      # Local orchestra configuration
+      ORCHESTRA_REPO_PATH: ${{ github.workspace }}/orchestra
+      ORCHESTRA_PREFIX: unify
+      # Logging directories (matches unity repo structure)
+      LOGS_DIR: ${{ github.workspace }}/logs
+      # Orchestra GCP configuration (set by google-github-actions/auth step)
+      # ORCHESTRA_VERTEXAI_SERVICE_ACC_JSON is set via GOOGLE_APPLICATION_CREDENTIALS by auth action
+      ORCHESTRA_VERTEXAI_PROJECT: ${{ vars.GCP_PROJECT_ID }}
+      ORCHESTRA_VERTEXAI_LOCATION: ${{ vars.GCP_LOCATION }}
+      # GCP bucket names (passed to orchestra server)
+      ORCHESTRA_GCP_BUCKET_NAME: ${{ vars.GCP_BUCKET_LOGS }}
+      ORCHESTRA_GCP_ASSISTANT_IMAGES_BUCKET_NAME: ${{ vars.GCP_BUCKET_ASSISTANT_IMAGES }}
+      ORCHESTRA_GCP_ASSISTANT_RECORDINGS_BUCKET_NAME: ${{ vars.GCP_BUCKET_RECORDINGS }}
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Clone orchestra repo for local deployment
+      uses: actions/checkout@v4
+      with:
+        repository: unifyai/orchestra
+        ref: staging
+        path: orchestra
+        token: ${{ secrets.ORCHESTRA_CLONE_TOKEN }}
+        fetch-depth: 1
+
+    - name: Authenticate to Google Cloud
+      uses: google-github-actions/auth@v2
+      with:
+        credentials_json: ${{ secrets.GCP_SERVICE_ACCOUNT_JSON }}
+
+    - name: Get orchestra commit SHA
+      id: orchestra-sha
+      run: echo "sha=$(git -C orchestra rev-parse HEAD)" >> $GITHUB_OUTPUT
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+
+    - name: Configure git for private repos
+      run: |
+        # Allow poetry to clone private GitHub repos (orchestra depends on unify)
+        git config --global url."https://x-access-token:${GH_TOKEN}@github.com/".insteadOf "https://github.com/"
+      env:
+        GH_TOKEN: ${{ secrets.UNIFY_CLONE_TOKEN }}
+
+    - name: Install poetry
+      run: |
+        python -m pip install --upgrade pip
+        pip install poetry
+
+    # Cache poetry dependencies (both unify and orchestra share this cache)
+    - name: Cache poetry dependencies
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/pypoetry
+        key: poetry-${{ runner.os }}-${{ hashFiles('poetry.lock') }}-${{ steps.orchestra-sha.outputs.sha }}
+        restore-keys: |
+          poetry-${{ runner.os }}-${{ hashFiles('poetry.lock') }}-
+          poetry-${{ runner.os }}-
+
+    - name: Install unify deps
+      run: poetry install --with dev
+
+    - name: Install orchestra dependencies
+      run: |
+        cd "$ORCHESTRA_REPO_PATH"
+        poetry install --no-interaction
+
+    - name: Setup logging directories
+      run: |
+        # Create log directories matching unity repo structure
+        mkdir -p "$LOGS_DIR/unify"
+        mkdir -p "$LOGS_DIR/orchestra"
+        mkdir -p "$LOGS_DIR/all"
+        echo "Created logging directories:"
+        echo "  - $LOGS_DIR/unify/     (unify client logs)"
+        echo "  - $LOGS_DIR/orchestra/ (orchestra request logs)"
+        echo "  - $LOGS_DIR/all/       (OpenTelemetry traces)"
+
+    - name: Start local orchestra
+      run: |
+        # Start local orchestra with test user seeding, logging, and enough workers for parallel tests
+        ORCHESTRA_SEED_USER=1 \
+        ORCHESTRA_WORKERS=8 \
+        ORCHESTRA_LOG_DIR="$LOGS_DIR/orchestra" \
+        ORCHESTRA_OTEL_LOG_DIR="$LOGS_DIR/all" \
+        UNIFY_KEY="${{ secrets.UNIFY_API_KEY }}" \
+        "$ORCHESTRA_REPO_PATH/scripts/local.sh" start
+
+        # Export the local URL for tests
+        echo "UNIFY_BASE_URL=http://127.0.0.1:8000/v0" >> $GITHUB_ENV
+
     - name: Run unit tests
-      run: poetry run pytest --timeout=120 -p no:warnings -vv .
+      id: pytest
+      run: |
+        set +e
+        # Run pytest and capture output for summary extraction
+        poetry run pytest --timeout=120 -p no:warnings -vv -n 8 tests/ 2>&1 | tee pytest_output.txt
+        exit_code=${PIPESTATUS[0]}
+        echo "exit_code=$exit_code" >> $GITHUB_OUTPUT
+
+        # Extract pass/fail counts from pytest summary line
+        # Format: "X passed, Y failed, Z warnings in N.NNs" or "X passed in N.NNs"
+        summary_line=$(grep -E "^=+ .*(passed|failed).* in [0-9]+\.[0-9]+s =+$" pytest_output.txt | tail -1)
+        if [ -n "$summary_line" ]; then
+          passed=$(echo "$summary_line" | grep -oE "[0-9]+ passed" | grep -oE "[0-9]+" || echo "0")
+          failed=$(echo "$summary_line" | grep -oE "[0-9]+ failed" | grep -oE "[0-9]+" || echo "0")
+          echo "passed=${passed:-0}" >> $GITHUB_OUTPUT
+          echo "failed=${failed:-0}" >> $GITHUB_OUTPUT
+        else
+          echo "passed=0" >> $GITHUB_OUTPUT
+          echo "failed=0" >> $GITHUB_OUTPUT
+        fi
+
+        exit $exit_code
       env:
         UNIFY_KEY: ${{ secrets.UNIFY_API_KEY }}
+        # Enable OpenTelemetry tracing for unify client
+        UNIFY_OTEL: "true"
+        UNIFY_OTEL_LOG_DIR: ${{ env.LOGS_DIR }}/all
+
+    - name: Generate success summary
+      if: success()
+      run: |
+        ARTIFACTS_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}#artifacts"
+        PASSED="${{ steps.pytest.outputs.passed }}"
+
+        echo "## ✅ All Tests Passed" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**${PASSED}** passed — [view logs]($ARTIFACTS_URL)" >> $GITHUB_STEP_SUMMARY
+
+    - name: Generate failure summary
+      if: failure()
+      run: |
+        ARTIFACTS_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}#artifacts"
+        PASSED="${{ steps.pytest.outputs.passed }}"
+        FAILED="${{ steps.pytest.outputs.failed }}"
+
+        echo "## ❌ Tests Failed" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**${PASSED}** passed, **${FAILED}** failed — [view logs]($ARTIFACTS_URL)" >> $GITHUB_STEP_SUMMARY
+
+    - name: Dump orchestra logs on failure
+      if: failure()
+      run: |
+        echo "=== Orchestra Server Logs ==="
+        if [ -f /tmp/unify-local-server.log ]; then
+          cat /tmp/unify-local-server.log
+          # Copy server log to logs/orchestra/ for artifact upload
+          cp /tmp/unify-local-server.log "$LOGS_DIR/orchestra/server.log"
+        else
+          echo "No orchestra log file found"
+        fi
+
+    - name: Prepare logs for upload
+      if: always()
+      run: |
+        echo "=== Preparing logs for upload ==="
+
+        # Copy orchestra server log (always, not just on failure)
+        if [ -f /tmp/unify-local-server.log ]; then
+          cp /tmp/unify-local-server.log "$LOGS_DIR/orchestra/server.log"
+          echo "✓ Copied orchestra server log"
+        fi
+
+        # --- unify logs ---
+        if [ -d "$LOGS_DIR/unify" ]; then
+          file_count=$(find "$LOGS_DIR/unify" -type f 2>/dev/null | wc -l | tr -d ' ')
+          echo "✓ unify logs: $file_count files"
+        else
+          echo "○ unify logs: directory not found"
+        fi
+
+        # --- orchestra logs (requires filename sanitization for Windows compatibility) ---
+        if [ -d "$LOGS_DIR/orchestra" ]; then
+          # Orchestra trace filenames may contain colons from route paths.
+          # Colons are invalid in Windows NTFS, so GitHub Actions rejects them.
+          sanitized=0
+          while IFS= read -r -d '' file; do
+            newname=$(echo "$file" | tr ':' '_')
+            if mv "$file" "$newname" 2>/dev/null; then
+              ((sanitized++)) || true
+            fi
+          done < <(find "$LOGS_DIR/orchestra" -type f -name '*:*' -print0 2>/dev/null || true)
+
+          file_count=$(find "$LOGS_DIR/orchestra" -type f 2>/dev/null | wc -l | tr -d ' ')
+          if [ "$sanitized" -gt 0 ]; then
+            echo "✓ orchestra logs: $file_count files ($sanitized filenames sanitized)"
+          else
+            echo "✓ orchestra logs: $file_count files"
+          fi
+        else
+          echo "○ orchestra logs: directory not found"
+        fi
+
+        # --- OpenTelemetry traces ---
+        if [ -d "$LOGS_DIR/all" ]; then
+          file_count=$(find "$LOGS_DIR/all" -type f 2>/dev/null | wc -l | tr -d ' ')
+          echo "✓ OpenTelemetry traces: $file_count files"
+        else
+          echo "○ OpenTelemetry traces: directory not found"
+        fi
+
+        echo "=== Log preparation complete ==="
+
+    - name: Upload logs
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: logs-${{ github.run_id }}
+        path: logs/
+        if-no-files-found: ignore
+        retention-days: 90
+
+    - name: Stop local orchestra
+      if: always()
+      run: |
+        "$ORCHESTRA_REPO_PATH/scripts/local.sh" stop || true
