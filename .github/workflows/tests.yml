@@ -43,7 +43,7 @@ jobs:
       uses: actions/checkout@v4
       with:
         repository: unifyai/orchestra
-        ref: staging
+        ref: ${{ github.ref_name == 'main' && 'main' || 'staging' }}
         path: orchestra
         token: ${{ secrets.ORCHESTRA_CLONE_TOKEN }}
         fetch-depth: 1
