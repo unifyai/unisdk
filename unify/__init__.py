@@ -14,7 +14,7 @@ UNIFY_DIR = os.path.dirname(__file__)
 
 
 # Platform API utilities
-from .platform import log_query, get_user_basic_info
+from .platform import get_user_basic_info
 
 # Contexts
 from .contexts import (
