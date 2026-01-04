@@ -21,7 +21,6 @@ jobs:
 
   pytest:
     runs-on: ubuntu-latest-8-cores
-    environment: unify-testing
     timeout-minutes: 120
     env:
       # Local orchestra configuration
@@ -44,7 +43,7 @@ jobs:
       uses: actions/checkout@v4
       with:
         repository: unifyai/orchestra
-        ref: staging
+        ref: ${{ github.ref_name == 'main' && 'main' || 'staging' }}
         path: orchestra
         token: ${{ secrets.ORCHESTRA_CLONE_TOKEN }}
         fetch-depth: 1
@@ -200,21 +199,35 @@ jobs:
 
         # --- orchestra logs (requires filename sanitization for Windows compatibility) ---
         if [ -d "$LOGS_DIR/orchestra" ]; then
-          # Orchestra trace filenames may contain colons from route paths.
-          # Colons are invalid in Windows NTFS, so GitHub Actions rejects them.
+          # Sanitize filenames for cross-platform compatibility (Windows NTFS).
+          # Invalid characters: " : < > | * ? \r \n
+          # This is a fallback; the exporter should already sanitize these.
           sanitized=0
+          failed=0
           while IFS= read -r -d '' file; do
-            newname=$(echo "$file" | tr ':' '_')
-            if mv "$file" "$newname" 2>/dev/null; then
-              ((sanitized++)) || true
+            dir=$(dirname "$file")
+            base=$(basename "$file")
+            # Replace all NTFS-invalid characters with underscores
+            newbase=$(echo "$base" | tr ':"<>|*?' '_____?_' | tr -d '\r\n')
+            newname="$dir/$newbase"
+            if [ "$file" != "$newname" ]; then
+              if mv "$file" "$newname" 2>&1; then
+                ((sanitized++)) || true
+              else
+                echo "  ⚠ Failed to rename: $file"
+                ((failed++)) || true
+              fi
             fi
-          done < <(find "$LOGS_DIR/orchestra" -type f -name '*:*' -print0 2>/dev/null || true)
+          done < <(find "$LOGS_DIR/orchestra" -type f \( -name '*:*' -o -name '*"*' -o -name '*<*' -o -name '*>*' -o -name '*|*' -o -name '*?*' \) -print0 2>/dev/null || true)
 
           file_count=$(find "$LOGS_DIR/orchestra" -type f 2>/dev/null | wc -l | tr -d ' ')
           if [ "$sanitized" -gt 0 ]; then
             echo "✓ orchestra logs: $file_count files ($sanitized filenames sanitized)"
           else
             echo "✓ orchestra logs: $file_count files"
+          fi
+          if [ "$failed" -gt 0 ]; then
+            echo "  ⚠ $failed filenames failed to sanitize"
           fi
         else
           echo "○ orchestra logs: directory not found"

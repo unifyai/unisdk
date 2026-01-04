@@ -1,6 +1,5 @@
 import asyncio
 import functools
-import os
 import sys
 import traceback
 import uuid
@@ -10,7 +9,6 @@ from os import sep
 from typing import Optional
 
 import unify
-from unify.utils.caching import LocalCache
 
 # Single shared project for all tests (analogous to UnityTests in unity repo)
 TEST_PROJECT = "UnifyTests"
@@ -166,22 +164,3 @@ def _handle_project_isolated(test_fn):
             unify.delete_project(project)
 
     return async_wrapper if asyncio.iscoroutinefunction(test_fn) else wrapper
-
-
-class _CacheHandler:
-    def __init__(self, fname=".test_cache.ndjson"):
-        self._old_cache_fpath = LocalCache.get_cache_filepath(fname)
-        self._fname = fname
-        self.test_path = ""
-
-    def __enter__(self):
-        LocalCache.set_cache_name(self._fname)
-        self.test_path = LocalCache.get_cache_filepath(self._fname)
-        if os.path.exists(self.test_path):
-            os.remove(self.test_path)
-        return self
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        if os.path.exists(self.test_path):
-            os.remove(self.test_path)
-        LocalCache.set_cache_name(self._old_cache_fpath)

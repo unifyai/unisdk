@@ -14,7 +14,7 @@ UNIFY_DIR = os.path.dirname(__file__)
 
 
 # Platform API utilities
-from .platform import log_query, get_user_basic_info
+from .platform import deduct_credits, get_user_basic_info
 
 # Contexts
 from .contexts import (
@@ -68,10 +68,8 @@ from .logs import (
 )
 
 # Utils
-from .utils import helpers, map, _caching, storage
-from .utils._caching import set_cache_backend
+from .utils import helpers, map, storage
 from .utils.storage import get_signed_url, download_object
-from .utils.caching import get_cache_stats
 from .utils import http
 from .utils.http import RequestError
 

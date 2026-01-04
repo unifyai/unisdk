@@ -88,8 +88,7 @@ unify/
     ├── http.py          # HTTP client
     ├── storage.py       # Object storage
     ├── map.py           # Parallel mapping
-    ├── helpers.py       # Misc helpers
-    └── caching/         # Cache backends
+    └── helpers.py       # Misc helpers
 ```
 
 ## Local Development
