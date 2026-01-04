@@ -30,6 +30,6 @@ jobs:
         gh api repos/${{ github.repository }}/git/refs/heads/staging \
           -X PATCH \
           -f sha="$main_sha" \
-          -f force=true
+          -F force=true
 
         echo "Fast-forwarded staging to $main_sha"
