@@ -1,10 +1,7 @@
 import os
-import threading
 from typing import Optional
 
 import unify
-
-PROJECT_LOCK = threading.Lock()
 
 
 def _validate_api_key(api_key: Optional[str]) -> str:
@@ -25,13 +22,10 @@ def _create_request_header(api_key: Optional[str]) -> dict:
     }
 
 
-def _get_and_maybe_create_project(
+def _get_project(
     project: Optional[str] = None,
     required: bool = True,
-    api_key: Optional[str] = None,
-    create_if_missing: bool = False,
 ) -> Optional[str]:
-    api_key = _validate_api_key(api_key)
     if project is None:
         project = unify.active_project()
         if project is None:
@@ -39,11 +33,6 @@ def _get_and_maybe_create_project(
                 project = "_"
             else:
                 return None
-    if not create_if_missing:
-        return project
-    with PROJECT_LOCK:
-        if project not in unify.list_projects(api_key=api_key):
-            unify.create_project(project, api_key=api_key)
     return project
 
 

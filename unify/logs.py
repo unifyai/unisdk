@@ -15,7 +15,7 @@ from unify import BASE_URL
 from unify.utils import http
 from unify.utils.helpers import (
     _create_request_header,
-    _get_and_maybe_create_project,
+    _get_project,
     _validate_api_key,
     flexible_deepcopy,
 )
@@ -491,11 +491,7 @@ def log(
     entries = {**entries, **ACTIVE_ENTRIES_WRITE.get()}
     entries = _handle_special_types(entries)
     entries = _handle_mutability(mutable, entries)
-    project = _get_and_maybe_create_project(
-        project,
-        api_key=api_key,
-        create_if_missing=True,
-    )
+    project = _get_project(project)
     created_log = _sync_log(
         project=project,
         context=context,
@@ -663,7 +659,7 @@ def create_logs(
         A list of the created logs.
     """
     api_key = _validate_api_key(api_key)
-    project = _get_and_maybe_create_project(project, api_key=api_key)
+    project = _get_project(project)
     context = _handle_context(context)
     headers = _create_request_header(api_key)
     entries = _handle_mutability(mutable, entries)
@@ -832,7 +828,7 @@ def delete_logs(
         logs = get_logs(project=project, context=context, api_key=api_key)
         if not logs:
             return {"message": "No logs to delete"}
-    project = _get_and_maybe_create_project(project, api_key=api_key)
+    project = _get_project(project)
     context = context if context else CONTEXT_READ.get()
     log_ids = _to_log_ids(logs)
     headers = _create_request_header(api_key)
@@ -942,11 +938,7 @@ def get_logs(
     # ToDo: add support for all context handlers
     api_key = _validate_api_key(api_key)
     headers = _create_request_header(api_key)
-    project = _get_and_maybe_create_project(
-        project,
-        api_key=api_key,
-        create_if_missing=False,
-    )
+    project = _get_project(project)
     context = context if context else CONTEXT_READ.get()
     column_context = column_context if column_context else COLUMN_CONTEXT_READ.get()
     merged_filters = ACTIVE_ENTRIES_READ.get()
@@ -1091,7 +1083,7 @@ def get_logs_metric(
     """
     api_key = _validate_api_key(api_key)
     headers = _create_request_header(api_key)
-    project = _get_and_maybe_create_project(project, api_key=api_key)
+    project = _get_project(project)
 
     # Build params dict
     params = {
@@ -1182,7 +1174,7 @@ def get_groups(
     """
     api_key = _validate_api_key(api_key)
     headers = _create_request_header(api_key)
-    project = _get_and_maybe_create_project(project, api_key=api_key)
+    project = _get_project(project)
     context = context if context else CONTEXT_READ.get()
     params = {
         "project": project,
@@ -1221,7 +1213,7 @@ def create_derived_logs(
     """
     api_key = _validate_api_key(api_key)
     headers = _create_request_header(api_key)
-    project = _get_and_maybe_create_project(project, api_key=api_key)
+    project = _get_project(project)
     context = context if context else CONTEXT_WRITE.get()
     body = {
         "project": project,
@@ -1252,7 +1244,7 @@ def join_logs(
     """
     api_key = _validate_api_key(api_key)
     headers = _create_request_header(api_key)
-    project = _get_and_maybe_create_project(project, api_key=api_key)
+    project = _get_project(project)
     body = {
         "project": project,
         "pair_of_args": pair_of_args,
@@ -1289,7 +1281,7 @@ def create_fields(
     """
     api_key = _validate_api_key(api_key)
     headers = _create_request_header(api_key)
-    project = _get_and_maybe_create_project(project, api_key=api_key)
+    project = _get_project(project)
     context = context if context else CONTEXT_WRITE.get()
     if isinstance(fields, list):
         fields = {field: None for field in fields}
@@ -1329,7 +1321,7 @@ def rename_field(
     """
     api_key = _validate_api_key(api_key)
     headers = _create_request_header(api_key)
-    project = _get_and_maybe_create_project(project, api_key=api_key)
+    project = _get_project(project)
     context = context if context else CONTEXT_WRITE.get()
     body = {
         "project": project,
@@ -1367,7 +1359,7 @@ def get_fields(
     """
     api_key = _validate_api_key(api_key)
     headers = _create_request_header(api_key)
-    project = _get_and_maybe_create_project(project, api_key=api_key)
+    project = _get_project(project)
     context = context if context else CONTEXT_READ.get()
     params = {
         "project": project,
@@ -1399,7 +1391,7 @@ def delete_fields(
     """
     api_key = _validate_api_key(api_key)
     headers = _create_request_header(api_key)
-    project = _get_and_maybe_create_project(project, api_key=api_key)
+    project = _get_project(project)
     context = context if context else CONTEXT_WRITE.get()
     body = {
         "project": project,

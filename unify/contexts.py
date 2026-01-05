@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Optional, Union
 from unify import BASE_URL
 from unify.logs import CONTEXT_WRITE
 from unify.utils import http
-from unify.utils.helpers import _create_request_header, _get_and_maybe_create_project
+from unify.utils.helpers import _create_request_header, _get_project
 
 
 def create_context(
@@ -163,11 +163,7 @@ def create_context(
             project="my_project"
         )
     """
-    project = _get_and_maybe_create_project(
-        project,
-        api_key=api_key,
-        create_if_missing=False,
-    )
+    project = _get_project(project)
     headers = _create_request_header(api_key)
     body = {
         "name": name,
@@ -253,11 +249,7 @@ def create_contexts(
             project="my_project"
         )
     """
-    project = _get_and_maybe_create_project(
-        project,
-        api_key=api_key,
-        create_if_missing=False,
-    )
+    project = _get_project(project)
     headers = _create_request_header(api_key)
     response = http.post(
         BASE_URL + f"/project/{project}/contexts",
@@ -295,11 +287,7 @@ def rename_context(
         api_key: If specified, unify API key to be used. Defaults to the value in the
         `UNIFY_KEY` environment variable.
     """
-    project = _get_and_maybe_create_project(
-        project,
-        api_key=api_key,
-        create_if_missing=False,
-    )
+    project = _get_project(project)
     headers = _create_request_header(api_key)
     response = http.patch(
         BASE_URL + f"/project/{project}/contexts/{name}/rename",
@@ -362,11 +350,7 @@ def get_context(
         #     ]
         # }
     """
-    project = _get_and_maybe_create_project(
-        project,
-        api_key=api_key,
-        create_if_missing=False,
-    )
+    project = _get_project(project)
     headers = _create_request_header(api_key)
     response = http.get(
         BASE_URL + f"/project/{project}/contexts/{name}",
@@ -405,11 +389,7 @@ def get_contexts(
         # Returns: {"Departments": "Department master data", "Employees": "Employee data"}
     """
     headers = _create_request_header(api_key)
-    project = _get_and_maybe_create_project(
-        project,
-        api_key=api_key,
-        create_if_missing=False,
-    )
+    project = _get_project(project)
     response = http.get(
         BASE_URL + f"/project/{project}/contexts",
         headers=headers,
@@ -449,11 +429,7 @@ def delete_context(
         api_key: If specified, unify API key to be used. Defaults to the value in the
         `UNIFY_KEY` environment variable.
     """
-    project = _get_and_maybe_create_project(
-        project,
-        api_key=api_key,
-        create_if_missing=False,
-    )
+    project = _get_project(project)
     headers = _create_request_header(api_key)
 
     try:
@@ -497,11 +473,7 @@ def add_logs_to_context(
         A message indicating whether the logs were successfully added to the context.
     """
     context = context if context else CONTEXT_WRITE.get()
-    project = _get_and_maybe_create_project(
-        project,
-        api_key=api_key,
-        create_if_missing=False,
-    )
+    project = _get_project(project)
     headers = _create_request_header(api_key)
     body = {
         "context_name": context,
@@ -535,11 +507,7 @@ def commit_context(
     Returns:
         A dictionary containing the new commit_hash.
     """
-    project = _get_and_maybe_create_project(
-        project,
-        api_key=api_key,
-        create_if_missing=False,
-    )
+    project = _get_project(project)
     headers = _create_request_header(api_key)
     body = {"commit_message": commit_message}
     response = http.post(
@@ -570,11 +538,7 @@ def rollback_context(
     Returns:
         A message indicating the success of the rollback operation.
     """
-    project = _get_and_maybe_create_project(
-        project,
-        api_key=api_key,
-        create_if_missing=False,
-    )
+    project = _get_project(project)
     headers = _create_request_header(api_key)
     body = {"commit_hash": commit_hash}
     response = http.post(
@@ -603,11 +567,7 @@ def get_context_commits(
     Returns:
         A list of dictionaries, each representing a commit.
     """
-    project = _get_and_maybe_create_project(
-        project,
-        api_key=api_key,
-        create_if_missing=False,
-    )
+    project = _get_project(project)
     headers = _create_request_header(api_key)
     response = http.get(
         BASE_URL + f"/project/{project}/contexts/{name}/commits",
