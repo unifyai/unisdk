@@ -67,6 +67,9 @@ from .logs import (
     update_logs,
 )
 
+# Async Logging
+from ._async_logger import AsyncLoggerManager
+
 # Utils
 from .utils import helpers, map, storage
 from .utils.storage import get_signed_url, download_object
