@@ -141,7 +141,7 @@ class Log:
         return {
             "id": self._id,
             "ts": self._ts,
-            "project": self._project,
+            "project_name": self._project,
             "context": self._context,
             "entries": self._entries,
         }
@@ -526,7 +526,7 @@ def _sync_log(
     headers = _create_request_header(api_key)
 
     body = {
-        "project": project,
+        "project_name": project,
         "context": context,
         "entries": entries,
     }
@@ -607,7 +607,7 @@ def _create_log_groups_not_nested(logs, groups, project, context, api_key):
     if missing_ids:
         headers = _create_request_header(api_key)
         params = {
-            "project": project,
+            "project_name": project,
             "from_ids": "&".join(map(str, missing_ids)),
             "context": context,
         }
@@ -666,7 +666,7 @@ def create_logs(
     if entries is None:
         entries = []
     body = {
-        "project": project,
+        "project_name": project,
         "context": context,
         "entries": entries,
     }
@@ -833,7 +833,7 @@ def delete_logs(
     log_ids = _to_log_ids(logs)
     headers = _create_request_header(api_key)
     body = {
-        "project": project,
+        "project_name": project,
         "context": context,
         "ids_and_fields": [(log_ids, None)],
         "source_type": source_type,
@@ -949,7 +949,7 @@ def get_logs(
         else:
             filter = _filter
     params = {
-        "project": project,
+        "project_name": project,
         "context": context,
         "filter_expr": filter,
         "limit": limit,
@@ -1087,7 +1087,7 @@ def get_logs_metric(
 
     # Build params dict
     params = {
-        "project": project,
+        "project_name": project,
         "context": context if context else CONTEXT_READ.get(),
     }
 
@@ -1177,7 +1177,7 @@ def get_groups(
     project = _get_project(project)
     context = context if context else CONTEXT_READ.get()
     params = {
-        "project": project,
+        "project_name": project,
         "context": context,
         "key": key,
         "filter_expr": filter,
@@ -1216,7 +1216,7 @@ def create_derived_logs(
     project = _get_project(project)
     context = context if context else CONTEXT_WRITE.get()
     body = {
-        "project": project,
+        "project_name": project,
         "context": context,
         "key": key,
         "equation": equation,
@@ -1246,7 +1246,7 @@ def join_logs(
     headers = _create_request_header(api_key)
     project = _get_project(project)
     body = {
-        "project": project,
+        "project_name": project,
         "pair_of_args": pair_of_args,
         "join_expr": join_expr,
         "mode": mode,
@@ -1286,7 +1286,7 @@ def create_fields(
     if isinstance(fields, list):
         fields = {field: None for field in fields}
     body = {
-        "project": project,
+        "project_name": project,
         "context": context,
         "fields": fields,
     }
@@ -1324,7 +1324,7 @@ def rename_field(
     project = _get_project(project)
     context = context if context else CONTEXT_WRITE.get()
     body = {
-        "project": project,
+        "project_name": project,
         "context": context,
         "old_field_name": name,
         "new_field_name": new_name,
@@ -1362,7 +1362,7 @@ def get_fields(
     project = _get_project(project)
     context = context if context else CONTEXT_READ.get()
     params = {
-        "project": project,
+        "project_name": project,
         "context": context,
     }
     response = http.get(BASE_URL + "/logs/fields", headers=headers, params=params)
@@ -1394,7 +1394,7 @@ def delete_fields(
     project = _get_project(project)
     context = context if context else CONTEXT_WRITE.get()
     body = {
-        "project": project,
+        "project_name": project,
         "context": context,
         "fields": fields,
     }

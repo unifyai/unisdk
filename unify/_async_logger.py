@@ -179,7 +179,7 @@ class AsyncLoggerManager:
         fut = self.loop.create_future()
         event = {
             "_data": {
-                "project": project,
+                "project_name": project,
                 "context": context,
                 "entries": entries,
             },
@@ -203,7 +203,7 @@ class AsyncLoggerManager:
         event = {
             "_data": {
                 "entries": data,
-                "project": project,
+                "project_name": project,
                 "context": context,
                 "overwrite": overwrite,
             },
