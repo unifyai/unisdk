@@ -159,3 +159,7 @@ implementations.py
 .test_cache.json
 .test_cache.ndjson
 *.cache.json
+
+# Ignore log contents but keep the README
+logs/*
+!logs/README.md
