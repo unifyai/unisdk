@@ -2,7 +2,37 @@
 
 Thin Python SDK wrapping the [Orchestra](https://github.com/unifyai/orchestra) REST API. Provides functional utilities for logging, project management, and assistant operations.
 
-This package is used as a dependency by higher-level frameworks like [Unity](https://github.com/unifyai/unity).
+## System Architecture
+
+Unify is the Python SDK layer in a multi-repository system:
+
+```
+         User (Console/Phone/SMS/Email)
+                      │
+    ┌─────────────────┴──────────────────┐
+    │           Communication            │
+    │    (Webhooks, Voice, SMS, Email)   │
+    └────┬───────────────────────────────┘
+         │
+    ┌────┴────┐    ┌─────────┐    ┌─────────┐
+    │  Unity  │    │  Unify  │    │Orchestra│
+    │ (Brain) │───▶│  (SDK)  │───▶│  (API)  │
+    │         │    │         │    │  (DB)   │
+    └────┬────┘    └────┬────┘    └────┬────┘
+         │              ▲              ▲
+         │              │              │
+         │    ┌─────────┴─┐       ┌────┴───────┐
+         └───▶│  UniLLM   │       │  Console   │
+              │ (LLM API) │       │(Interfaces)│
+              └───────────┘       └────────────┘
+```
+
+**This repo (Unify)** provides a Pythonic interface to Orchestra's REST API. Unity and UniLLM use Unify for all persistence operations (logging, projects, contexts, storage).
+
+Related repositories:
+- [Unity](https://github.com/unifyai/unity) — AI assistant brain (primary consumer)
+- [UniLLM](https://github.com/unifyai/unillm) — LLM client (uses Unify for logging)
+- [Orchestra](https://github.com/unifyai/orchestra) — Backend API that Unify wraps
 
 ## Installation
 
