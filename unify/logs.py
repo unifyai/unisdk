@@ -1406,6 +1406,63 @@ def delete_fields(
     return response.json()
 
 
+def atomic_update(
+    log: Union[int, unify.Log],
+    key: str,
+    operation: str,
+    *,
+    api_key: Optional[str] = None,
+) -> float:
+    """
+    Apply an atomic operation to a numeric value in a log entry.
+
+    This function performs race-safe atomic updates directly in PostgreSQL,
+    ensuring correct results even under high concurrent load. For example,
+    if N concurrent requests all send `+1`, the final value will be correctly
+    incremented by N.
+
+    Args:
+        log: The log ID or Log object to update.
+
+        key: The key of the entry to update.
+
+        operation: The atomic operation to apply. Supported formats:
+            - `+N`: Add N to the current value
+            - `-N`: Subtract N from the current value
+            - `*N`: Multiply the current value by N
+            - `/N`: Divide the current value by N
+            If the key doesn't exist or is NULL, it is treated as 0.
+
+        api_key: If specified, unify API key to be used. Defaults to the value
+            in the `UNIFY_KEY` environment variable.
+
+    Returns:
+        The new value after the operation.
+
+    Example:
+        >>> log = unify.log(counter=10)
+        >>> unify.atomic_update(log, "counter", "+5")
+        15.0
+        >>> unify.atomic_update(log.id, "counter", "*2")
+        30.0
+    """
+    api_key = _validate_api_key(api_key)
+    headers = _create_request_header(api_key)
+
+    # Resolve log ID
+    if isinstance(log, unify.Log):
+        log_id = log.id
+    else:
+        log_id = log
+
+    response = http.patch(
+        f"{BASE_URL}/logs/{log_id}/fields/{key}/atomic",
+        headers=headers,
+        json={"operation": operation},
+    )
+    return response.json()["new_value"]
+
+
 def set_user_logging(value: bool):
     global USR_LOGGING
     USR_LOGGING = value

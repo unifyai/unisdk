@@ -869,5 +869,75 @@ def test_delete_fields():
     assert other_field in fields
 
 
+@_handle_project
+def test_atomic_update_increment():
+    """Test atomic increment operation."""
+    log = unify.log(counter=10)
+    new_value = unify.atomic_update(log, "counter", "+5")
+    assert new_value == 15.0
+
+
+@_handle_project
+def test_atomic_update_decrement():
+    """Test atomic decrement operation."""
+    log = unify.log(counter=100)
+    new_value = unify.atomic_update(log.id, "counter", "-30")
+    assert new_value == 70.0
+
+
+@_handle_project
+def test_atomic_update_multiply():
+    """Test atomic multiplication operation."""
+    log = unify.log(value=7)
+    new_value = unify.atomic_update(log, "value", "*3")
+    assert new_value == 21.0
+
+
+@_handle_project
+def test_atomic_update_divide():
+    """Test atomic division operation."""
+    log = unify.log(value=100)
+    new_value = unify.atomic_update(log, "value", "/4")
+    assert new_value == 25.0
+
+
+@_handle_project
+def test_atomic_update_on_null_key():
+    """Test atomic operation on a key that doesn't exist (should treat as 0)."""
+    log = unify.log(other_key="value")
+    new_value = unify.atomic_update(log, "counter", "+5")
+    assert new_value == 5.0
+
+
+@_handle_project
+def test_atomic_update_with_float_operand():
+    """Test atomic operation with decimal operand."""
+    log = unify.log(score=10)
+    new_value = unify.atomic_update(log, "score", "*1.5")
+    assert new_value == 15.0
+
+
+@_handle_project
+def test_atomic_update_sequential():
+    """Test multiple sequential atomic operations on the same key."""
+    log = unify.log(value=10)
+
+    # 10 + 5 = 15
+    new_value = unify.atomic_update(log, "value", "+5")
+    assert new_value == 15.0
+
+    # 15 * 2 = 30
+    new_value = unify.atomic_update(log, "value", "*2")
+    assert new_value == 30.0
+
+    # 30 - 10 = 20
+    new_value = unify.atomic_update(log, "value", "-10")
+    assert new_value == 20.0
+
+    # 20 / 4 = 5
+    new_value = unify.atomic_update(log, "value", "/4")
+    assert new_value == 5.0
+
+
 if __name__ == "__main__":
     pass

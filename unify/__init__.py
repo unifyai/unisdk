@@ -3,7 +3,6 @@
 import os
 from typing import Optional, Union
 
-
 if "UNIFY_BASE_URL" in os.environ.keys():
     BASE_URL = os.environ["UNIFY_BASE_URL"]
 else:
@@ -48,6 +47,7 @@ from .logs import (
     CONTEXT_WRITE,
     Log,
     LogGroup,
+    atomic_update,
     create_derived_logs,
     create_fields,
     create_logs,
@@ -78,7 +78,6 @@ from .utils.http import RequestError
 
 # Assistants
 from .assistants import list_assistants
-
 
 # Project #
 # --------#
