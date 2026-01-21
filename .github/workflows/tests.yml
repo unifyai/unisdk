@@ -10,14 +10,13 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: '3.10'
+        python-version: '3.12'
+    - name: Install uv
+      uses: astral-sh/setup-uv@v5
     - name: Install deps
-      run: |
-        python -m pip install --upgrade pip
-        pip install poetry
-        poetry install --with dev
+      run: uv sync --group dev
     - name: Run black check
-      run: poetry run black --check .
+      run: uv run black --check .
 
   pytest:
     runs-on: ubuntu-latest-8-cores
@@ -59,25 +58,23 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: '3.10'
+        python-version: '3.12'
 
-    - name: Install poetry
-      run: |
-        python -m pip install --upgrade pip
-        pip install poetry
+    - name: Install uv
+      uses: astral-sh/setup-uv@v5
 
-    # Cache poetry dependencies (both unify and orchestra share this cache)
-    - name: Cache poetry dependencies
+    # Cache uv dependencies
+    - name: Cache uv dependencies
       uses: actions/cache@v4
       with:
-        path: ~/.cache/pypoetry
-        key: poetry-${{ runner.os }}-${{ hashFiles('poetry.lock') }}-${{ steps.orchestra-sha.outputs.sha }}
+        path: ~/.cache/uv
+        key: uv-${{ runner.os }}-${{ hashFiles('pyproject.toml') }}-${{ steps.orchestra-sha.outputs.sha }}
         restore-keys: |
-          poetry-${{ runner.os }}-${{ hashFiles('poetry.lock') }}-
-          poetry-${{ runner.os }}-
+          uv-${{ runner.os }}-${{ hashFiles('pyproject.toml') }}-
+          uv-${{ runner.os }}-
 
     - name: Install unify deps
-      run: poetry install --with dev
+      run: uv sync --group dev
 
     - name: Install orchestra dependencies
       run: |
@@ -113,7 +110,7 @@ jobs:
       run: |
         set +e
         # Run pytest and capture output for summary extraction
-        poetry run pytest --timeout=120 -p no:warnings -vv -n 8 tests/ 2>&1 | tee pytest_output.txt
+        uv run pytest --timeout=120 -p no:warnings -vv -n 8 tests/ 2>&1 | tee pytest_output.txt
         exit_code=${PIPESTATUS[0]}
         echo "exit_code=$exit_code" >> $GITHUB_OUTPUT
 
