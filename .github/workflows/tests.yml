@@ -76,6 +76,9 @@ jobs:
     - name: Install unify deps
       run: uv sync --group dev
 
+    - name: Install poetry (for orchestra)
+      run: pipx install poetry
+
     - name: Install orchestra dependencies
       run: |
         cd "$ORCHESTRA_REPO_PATH"
