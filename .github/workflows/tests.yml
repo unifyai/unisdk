@@ -1,8 +1,68 @@
 name: Testing unify
 
-on: push
+on:
+  # Manual trigger - always runs tests
+  workflow_dispatch:
+
+  # Push events - tests only run if commit message contains [run-tests]
+  push:
+    branches:
+    - '**'
+
+  # Pull request events - tests only run if PR title contains [run-tests]
+  pull_request:
+    branches:
+    - '**'
 
 jobs:
+  # Determine if tests should run based on trigger and commit/PR message
+  should-run-tests:
+    runs-on: ubuntu-latest
+    outputs:
+      run_tests: ${{ steps.check.outputs.run_tests }}
+    steps:
+    - name: Check if tests should run
+      id: check
+      env:
+        EVENT_NAME: ${{ github.event_name }}
+        COMMIT_MSG: ${{ github.event.head_commit.message }}
+        PR_TITLE: ${{ github.event.pull_request.title }}
+      run: |
+        # workflow_dispatch always runs tests
+        if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+          echo "run_tests=true" >> "$GITHUB_OUTPUT"
+          echo "Tests triggered by workflow_dispatch"
+          exit 0
+        fi
+
+        # For push events, check commit message for [run-tests]
+        if [[ "$EVENT_NAME" == "push" ]]; then
+          if [[ "$COMMIT_MSG" == *"[run-tests]"* ]]; then
+            echo "run_tests=true" >> "$GITHUB_OUTPUT"
+            echo "Tests triggered by commit message containing [run-tests]"
+          else
+            echo "run_tests=false" >> "$GITHUB_OUTPUT"
+            echo "Skipping tests - commit message does not contain [run-tests]"
+          fi
+          exit 0
+        fi
+
+        # For pull_request events, check PR title for [run-tests]
+        if [[ "$EVENT_NAME" == "pull_request" ]]; then
+          if [[ "$PR_TITLE" == *"[run-tests]"* ]]; then
+            echo "run_tests=true" >> "$GITHUB_OUTPUT"
+            echo "Tests triggered by PR title containing [run-tests]"
+          else
+            echo "run_tests=false" >> "$GITHUB_OUTPUT"
+            echo "Skipping tests - PR title does not contain [run-tests]"
+          fi
+          exit 0
+        fi
+
+        # Default: don't run tests
+        echo "run_tests=false" >> "$GITHUB_OUTPUT"
+        echo "Skipping tests - unknown event type"
+
   black:
     runs-on: ubuntu-latest
     steps:
@@ -20,6 +80,8 @@ jobs:
 
   pytest:
     runs-on: ubuntu-latest-8-cores
+    needs: should-run-tests
+    if: needs.should-run-tests.outputs.run_tests == 'true'
     timeout-minutes: 120
     env:
       # Local orchestra configuration
