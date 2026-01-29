@@ -499,6 +499,7 @@ def log(
         api_key=api_key,
     )
     created_log.entries.pop("explicit_types", None)
+    created_log.entries.pop("infer_untyped_fields", None)
 
     if ENTRIES_NEST_LEVEL.get() > 0:
         LOGGED.set(
@@ -695,7 +696,11 @@ def create_logs(
             unify.Log(
                 project=project,
                 context=context["name"] if isinstance(context, dict) else context,
-                **{k: v for k, v in e.items() if k != "explicit_types"},
+                **{
+                    k: v
+                    for k, v in e.items()
+                    if k not in ("explicit_types", "infer_untyped_fields")
+                },
                 id=i,
             )
             for e, i in zip(entries, resp_json["log_event_ids"])

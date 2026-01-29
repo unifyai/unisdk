@@ -275,6 +275,125 @@ def test_create_logs_with_explicit_fields_and_payload_explicit_types():
     )
 
 
+@_handle_project_isolated
+def test_create_logs_with_infer_untyped_fields():
+    """Test that infer_untyped_fields causes untyped fields to get their types inferred.
+
+    This test:
+    1. Creates untyped fields (no explicit type provided)
+    2. Verifies the fields have type "Any" initially
+    3. Creates logs with infer_untyped_fields=True
+    4. Verifies the fields' types are inferred from the data values
+    5. Also confirms infer_untyped_fields is not in returned entries
+    """
+    ctx = "infer_untyped_fields_test"
+
+    # Ensure context exists
+    unify.create_context(ctx)
+
+    # Create untyped fields (no explicit type)
+    untyped_fields = ["score", "name", "count"]
+    resp = unify.create_fields(fields=untyped_fields, context=ctx)
+    assert isinstance(resp, dict)
+
+    # Verify fields are untyped (type "Any")
+    fields = unify.get_fields(context=ctx)
+    assert fields["score"]["data_type"] == "Any"
+    assert fields["name"]["data_type"] == "Any"
+    assert fields["count"]["data_type"] == "Any"
+
+    # Create logs with infer_untyped_fields=True
+    # The backend should infer types based on the values
+    payload = [
+        {
+            "score": 0.95,
+            "name": "test_entry",
+            "count": 42,
+            "infer_untyped_fields": True,
+        },
+    ]
+    created = unify.create_logs(context=ctx, entries=payload)
+    assert len(created) == 1
+
+    # Verify infer_untyped_fields is not present in returned entries
+    e0 = created[0].entries
+    assert "infer_untyped_fields" not in e0
+    assert e0["score"] == 0.95
+    assert e0["name"] == "test_entry"
+    assert e0["count"] == 42
+
+    # Verify the fields now have inferred types
+    fields_after = unify.get_fields(context=ctx)
+    assert fields_after["score"]["data_type"] == "float"
+    assert fields_after["name"]["data_type"] == "str"
+    assert fields_after["count"]["data_type"] == "int"
+
+
+@_handle_project_isolated
+def test_log_with_infer_untyped_fields():
+    """Test infer_untyped_fields works with the single log() function as well."""
+    ctx = "infer_untyped_single_log"
+
+    # Ensure context exists
+    unify.create_context(ctx)
+
+    # Create untyped fields
+    untyped_fields = ["value", "label"]
+    unify.create_fields(fields=untyped_fields, context=ctx)
+
+    # Verify fields are untyped
+    fields = unify.get_fields(context=ctx)
+    assert fields["value"]["data_type"] == "Any"
+    assert fields["label"]["data_type"] == "Any"
+
+    # Log with infer_untyped_fields=True
+    lg = unify.log(
+        context=ctx,
+        value=123.45,
+        label="some_label",
+        infer_untyped_fields=True,
+    )
+
+    # Verify infer_untyped_fields is not in entries
+    assert "infer_untyped_fields" not in lg.entries
+    assert lg.entries["value"] == 123.45
+    assert lg.entries["label"] == "some_label"
+
+    # Verify fields now have inferred types
+    fields_after = unify.get_fields(context=ctx)
+    assert fields_after["value"]["data_type"] == "float"
+    assert fields_after["label"]["data_type"] == "str"
+
+
+@_handle_project_isolated
+def test_infer_untyped_fields_defaults_to_false():
+    """Test that without infer_untyped_fields, fields remain untyped.
+
+    This confirms the default behavior (infer_untyped_fields=False) where
+    untyped fields stay as "Any" even after logging data.
+    """
+    ctx = "infer_untyped_default_false"
+
+    # Ensure context exists
+    unify.create_context(ctx)
+
+    # Create untyped fields
+    untyped_fields = ["metric"]
+    unify.create_fields(fields=untyped_fields, context=ctx)
+
+    # Verify field is untyped
+    fields = unify.get_fields(context=ctx)
+    assert fields["metric"]["data_type"] == "Any"
+
+    # Log WITHOUT infer_untyped_fields (defaults to False)
+    lg = unify.log(context=ctx, metric=99.9)
+    assert lg.entries["metric"] == 99.9
+
+    # Field should still be untyped
+    fields_after = unify.get_fields(context=ctx)
+    assert fields_after["metric"]["data_type"] == "Any"
+
+
 # =============================================================================
 # Core log API tests (CRUD, filtering, metrics, etc.)
 # =============================================================================
