@@ -412,7 +412,7 @@ def _handle_mutability(
                 et = {}
                 item["explicit_types"] = et
             for k in list(item.keys()):
-                if k == "explicit_types":
+                if k in ("explicit_types", "infer_untyped_fields"):
                     continue
                 existing = et.get(k, {}) if isinstance(et.get(k, {}), dict) else {}
                 existing = {**existing, "mutable": mutable}
