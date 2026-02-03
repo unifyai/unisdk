@@ -168,7 +168,7 @@ jobs:
         "$ORCHESTRA_REPO_PATH/scripts/local.sh" start
 
         # Export the local URL for tests
-        echo "UNIFY_BASE_URL=http://127.0.0.1:8000/v0" >> $GITHUB_ENV
+        echo "ORCHESTRA_URL=http://127.0.0.1:8000/v0" >> $GITHUB_ENV
 
     - name: Run unit tests
       id: pytest

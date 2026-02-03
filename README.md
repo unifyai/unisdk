@@ -53,7 +53,7 @@ export UNIFY_KEY=<your-api-key>
 Optionally override the API base URL (defaults to `https://api.unify.ai/v0`):
 
 ```bash
-export UNIFY_BASE_URL=https://api.unify.ai/v0
+export ORCHESTRA_URL=https://api.unify.ai/v0
 ```
 
 ## Core API

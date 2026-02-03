@@ -3,8 +3,8 @@
 import os
 from typing import Optional, Union
 
-if "UNIFY_BASE_URL" in os.environ.keys():
-    BASE_URL = os.environ["UNIFY_BASE_URL"]
+if "ORCHESTRA_URL" in os.environ.keys():
+    BASE_URL = os.environ["ORCHESTRA_URL"]
 else:
     BASE_URL = "https://api.unify.ai/v0"
 
