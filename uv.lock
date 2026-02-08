@@ -2279,7 +2279,7 @@ requires-dist = [
 [package.metadata.requires-dev]
 dev = [
     { name = "autoflake", specifier = ">=1.6.1" },
-    { name = "black", specifier = ">=24.3.0" },
+    { name = "black", specifier = "==26.1.0" },
     { name = "flake8", specifier = ">=4.0.1" },
     { name = "isort", specifier = ">=5.11.4" },
     { name = "mypy", specifier = ">=1.1.1" },
