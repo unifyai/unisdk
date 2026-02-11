@@ -19,7 +19,6 @@ dependencies = [
     "rich>=13.8.1",
     "termcolor>=2.5.0",
     "aiohttp>=3.12.14",
-    "litellm>=1.80.7",
     "google-genai>=1.52.0",
 ]
 
