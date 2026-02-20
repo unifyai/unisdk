@@ -3,15 +3,21 @@ HTTP utilities for the Unify SDK.
 
 Provides a requests session with retry logic and optional trace-aware logging.
 
-Logging is controlled by two environment variables:
-- UNIFY_LOG: Enable/disable logging (default: true)
-- UNIFY_LOG_DIR: Directory for log files (default: console only)
+Terminal and file logging are independently controlled:
 
-When UNIFY_LOG_DIR is set, structured JSON files are written:
+- UNIFY_TERMINAL_LOG: Enable/disable terminal (console) output (default: true)
+- UNIFY_LOG_DIR: Directory for file-based request traces (independent of terminal)
+
+When UNIFY_LOG_DIR is set, structured JSON files are written regardless of
+UNIFY_TERMINAL_LOG:
 - Before request: {timestamp}_{method}_{route}_PENDING_{trace_id}.json
 - After response: {timestamp}_{method}_{route}_{duration}ms_{status}_{trace_id}.json
 
 The trace_id suffix enables correlation with pytest logs and Orchestra traces.
+
+Typical production configuration:
+- UNIFY_TERMINAL_LOG=false + UNIFY_LOG_DIR=/var/log/unify/
+  → quiet terminal, verbose file traces
 
 OpenTelemetry tracing is controlled by:
 - UNIFY_OTEL: Enable/disable OTel tracing (default: false)
@@ -43,12 +49,12 @@ from requests.adapters import HTTPAdapter
 from urllib3 import Retry
 
 # ---------------------------------------------------------------------------
-# Console logging setup
+# Logging setup — terminal and file are independent
 # ---------------------------------------------------------------------------
 
 _LOGGER = logging.getLogger("unify")
-_LOG_ENABLED = os.getenv("UNIFY_LOG", "true").lower() in ("true", "1")
-_LOGGER.setLevel(logging.DEBUG if _LOG_ENABLED else logging.WARNING)
+_TERMINAL_LOG_ENABLED = os.getenv("UNIFY_TERMINAL_LOG", "true").lower() in ("true", "1")
+_LOGGER.setLevel(logging.DEBUG if _TERMINAL_LOG_ENABLED else logging.WARNING)
 
 # ---------------------------------------------------------------------------
 # OpenTelemetry setup
@@ -648,20 +654,24 @@ def _mask_auth_key(kwargs: dict) -> dict:
 
 
 def _log_request_if_enabled(fn: Callable) -> Callable:
-    """Decorator that adds console logging, file-based logging, and OTel tracing."""
-    if not _LOG_ENABLED and not _OTEL_ENABLED:
+    """Decorator that adds console logging, file-based logging, and OTel tracing.
+
+    Terminal output and file traces are independent:
+    - Console logging is gated on _TERMINAL_LOG_ENABLED (UNIFY_TERMINAL_LOG)
+    - File traces are gated on _get_log_dir() returning a path (UNIFY_LOG_DIR)
+    - OTel spans are gated on _OTEL_ENABLED (UNIFY_OTEL)
+    """
+    if not _TERMINAL_LOG_ENABLED and not _OTEL_ENABLED and not _get_log_dir():
         return fn
 
     @wraps(fn)
     def inner(method: str, url: str, **kwargs) -> requests.Response:
-        # Console log: request (if logging enabled)
-        if _LOG_ENABLED:
+        # Console log: request
+        if _TERMINAL_LOG_ENABLED:
             _log_to_console(f"{method}", url, True, **kwargs)
 
-        # File trace: pending (if logging enabled)
-        pending_path = (
-            _write_pending_trace(method, url, kwargs) if _LOG_ENABLED else None
-        )
+        # File trace: pending
+        pending_path = _write_pending_trace(method, url, kwargs)
 
         # Get tracer for OTel spans
         tracer = get_tracer()
@@ -712,8 +722,8 @@ def _log_request_if_enabled(fn: Callable) -> Callable:
                     else:
                         span.set_status(Status(StatusCode.OK))
 
-                # Console log: response (if logging enabled)
-                if _LOG_ENABLED:
+                # Console log: response
+                if _TERMINAL_LOG_ENABLED:
                     try:
                         _log_to_console(
                             f"{method} response:{res.status_code}",
@@ -727,9 +737,8 @@ def _log_request_if_enabled(fn: Callable) -> Callable:
                             response=res.text[:500] if res.text else "(empty)",
                         )
 
-                # File trace: finalize (if logging enabled)
-                if _LOG_ENABLED:
-                    _finalize_trace(pending_path, res, duration_ms)
+                # File trace: finalize
+                _finalize_trace(pending_path, res, duration_ms)
 
                 return res
 
@@ -743,9 +752,8 @@ def _log_request_if_enabled(fn: Callable) -> Callable:
                     span.set_attribute("error.message", str(e))
                     span.set_attribute("http.duration_ms", duration_ms)
 
-                # File trace: mark failed (if logging enabled)
-                if _LOG_ENABLED:
-                    _mark_trace_failed(pending_path, e, duration_ms)
+                # File trace: mark failed
+                _mark_trace_failed(pending_path, e, duration_ms)
 
                 raise
 

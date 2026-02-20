@@ -10,7 +10,7 @@ All logs are organized under `logs/` with three main subdirectories:
 
 | Directory | Purpose | Structure | Control |
 |-----------|---------|-----------|---------|
-| `logs/unify/` | Unify SDK HTTP traces | JSON files per request | `UNIFY_LOG` + `UNIFY_LOG_DIR` |
+| `logs/unify/` | Unify SDK HTTP traces | JSON files per request | `UNIFY_LOG_DIR` (+ `UNIFY_TERMINAL_LOG` for console) |
 | `logs/orchestra/` | Orchestra API traces (server-side) | Per-request JSON with spans | `ORCHESTRA_LOG_DIR` |
 | `logs/all/` | Cross-repo OpenTelemetry traces | `{trace_id}.jsonl` per trace | `*_OTEL_LOG_DIR` |
 
@@ -72,12 +72,12 @@ Each JSON file contains the full request and response:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `UNIFY_LOG` | `true` | Master switch for all logging (console + file) |
-| `UNIFY_LOG_DIR` | `""` (disabled) | Directory for file logging; if empty, console only |
+| `UNIFY_TERMINAL_LOG` | `true` | Terminal (console) output for HTTP requests |
+| `UNIFY_LOG_DIR` | `""` (disabled) | Directory for file-based request traces (independent of terminal) |
 
-**Enabling file logging:**
+**Quiet terminal, verbose files (typical production):**
 ```bash
-export UNIFY_LOG=true
+export UNIFY_TERMINAL_LOG=false
 export UNIFY_LOG_DIR=/path/to/logs/unify
 ```
 
@@ -302,7 +302,7 @@ os.environ["UNIFY_OTEL_LOG_DIR"] = "/path/to/logs/all"
 
 ## Console Logging
 
-When `UNIFY_LOG=true` (the default), request/response information is logged to the console via Python's logging system.
+When `UNIFY_TERMINAL_LOG=true` (the default), request/response information is logged to the console via Python's logging system.
 
 The logger name is `unify`, so you can configure it via standard Python logging:
 
