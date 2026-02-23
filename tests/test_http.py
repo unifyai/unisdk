@@ -47,51 +47,36 @@ def reset_otel():
     exporter.clear()
 
 
-class TestLogEnabled:
-    """Tests for UNIFY_LOG master switch."""
+class TestTerminalLogEnabled:
+    """Tests for UNIFY_TERMINAL_LOG."""
 
-    def test_log_enabled_by_default(self):
-        """UNIFY_LOG defaults to true."""
+    def test_terminal_log_enabled_by_default(self):
         with patch.dict(os.environ, {}, clear=False):
-            # Remove UNIFY_LOG if set
-            os.environ.pop("UNIFY_LOG", None)
-            # Re-import to pick up new env var
+            os.environ.pop("UNIFY_TERMINAL_LOG", None)
             import importlib
 
             from unify.utils import http
 
             importlib.reload(http)
-            assert http._LOG_ENABLED is True
+            assert http._TERMINAL_LOG_ENABLED is True
 
-    def test_log_disabled_via_env(self):
-        """UNIFY_LOG=false disables logging."""
-        with patch.dict(os.environ, {"UNIFY_LOG": "false"}):
+    def test_terminal_log_disabled_via_env(self):
+        with patch.dict(os.environ, {"UNIFY_TERMINAL_LOG": "false"}):
             import importlib
 
             from unify.utils import http
 
             importlib.reload(http)
-            assert http._LOG_ENABLED is False
+            assert http._TERMINAL_LOG_ENABLED is False
 
-    def test_log_enabled_true(self):
-        """UNIFY_LOG=true enables logging."""
-        with patch.dict(os.environ, {"UNIFY_LOG": "true"}):
+    def test_terminal_log_enabled_true(self):
+        with patch.dict(os.environ, {"UNIFY_TERMINAL_LOG": "true"}):
             import importlib
 
             from unify.utils import http
 
             importlib.reload(http)
-            assert http._LOG_ENABLED is True
-
-    def test_log_enabled_1(self):
-        """UNIFY_LOG=1 enables logging."""
-        with patch.dict(os.environ, {"UNIFY_LOG": "1"}):
-            import importlib
-
-            from unify.utils import http
-
-            importlib.reload(http)
-            assert http._LOG_ENABLED is True
+            assert http._TERMINAL_LOG_ENABLED is True
 
 
 class TestOtelEnabled:
@@ -448,7 +433,10 @@ class TestOtelTracing:
         """HTTP requests create OTel spans when UNIFY_OTEL is enabled."""
         exporter = reset_otel["exporter"]
 
-        with patch.dict(os.environ, {"UNIFY_OTEL": "true", "UNIFY_LOG": "false"}):
+        with patch.dict(
+            os.environ,
+            {"UNIFY_OTEL": "true", "UNIFY_TERMINAL_LOG": "false"},
+        ):
             import importlib
 
             from unify.utils import http
@@ -482,7 +470,10 @@ class TestOtelTracing:
         """HTTP request spans record errors when exceptions occur."""
         exporter = reset_otel["exporter"]
 
-        with patch.dict(os.environ, {"UNIFY_OTEL": "true", "UNIFY_LOG": "false"}):
+        with patch.dict(
+            os.environ,
+            {"UNIFY_OTEL": "true", "UNIFY_TERMINAL_LOG": "false"},
+        ):
             import importlib
 
             from unify.utils import http
@@ -512,7 +503,10 @@ class TestOtelTracing:
         """HTTP request spans record error status for 4xx/5xx responses."""
         exporter = reset_otel["exporter"]
 
-        with patch.dict(os.environ, {"UNIFY_OTEL": "true", "UNIFY_LOG": "false"}):
+        with patch.dict(
+            os.environ,
+            {"UNIFY_OTEL": "true", "UNIFY_TERMINAL_LOG": "false"},
+        ):
             import importlib
 
             from unify.utils import http
@@ -704,7 +698,10 @@ class TestTraceContextPropagation:
         """HTTP requests inject traceparent header when OTel enabled."""
         exporter = reset_otel["exporter"]
 
-        with patch.dict(os.environ, {"UNIFY_OTEL": "true", "UNIFY_LOG": "false"}):
+        with patch.dict(
+            os.environ,
+            {"UNIFY_OTEL": "true", "UNIFY_TERMINAL_LOG": "false"},
+        ):
             import importlib
 
             from unify.utils import http
@@ -739,7 +736,10 @@ class TestTraceContextPropagation:
         """Traceparent allows downstream service to continue the trace."""
         exporter = reset_otel["exporter"]
 
-        with patch.dict(os.environ, {"UNIFY_OTEL": "true", "UNIFY_LOG": "false"}):
+        with patch.dict(
+            os.environ,
+            {"UNIFY_OTEL": "true", "UNIFY_TERMINAL_LOG": "false"},
+        ):
             import importlib
 
             from unify.utils import http

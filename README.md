@@ -2,7 +2,37 @@
 
 Thin Python SDK wrapping the [Orchestra](https://github.com/unifyai/orchestra) REST API. Provides functional utilities for logging, project management, and assistant operations.
 
-This package is used as a dependency by higher-level frameworks like [Unity](https://github.com/unifyai/unity).
+## System Architecture
+
+Unify is the Python SDK layer in a multi-repository system:
+
+```
+         User (Console/Phone/SMS/Email)
+                      │
+    ┌─────────────────┴──────────────────┐
+    │           Communication            │
+    │    (Webhooks, Voice, SMS, Email)   │
+    └────┬───────────────────────────────┘
+         │
+    ┌────┴────┐    ┌─────────┐    ┌─────────┐
+    │  Unity  │    │  Unify  │    │Orchestra│
+    │ (Brain) │───▶│  (SDK)  │───▶│  (API)  │
+    │         │    │         │    │  (DB)   │
+    └────┬────┘    └────┬────┘    └────┬────┘
+         │              ▲              ▲
+         │              │              │
+         │    ┌─────────┴─┐       ┌────┴───────┐
+         └───▶│  UniLLM   │       │  Console   │
+              │ (LLM API) │       │(Interfaces)│
+              └───────────┘       └────────────┘
+```
+
+**This repo (Unify)** provides a Pythonic interface to Orchestra's REST API. Unity and UniLLM use Unify for all persistence operations (logging, projects, contexts, storage).
+
+Related repositories:
+- [Unity](https://github.com/unifyai/unity) — AI assistant brain (primary consumer)
+- [UniLLM](https://github.com/unifyai/unillm) — LLM client (uses Unify for logging)
+- [Orchestra](https://github.com/unifyai/orchestra) — Backend API that Unify wraps
 
 ## Installation
 
@@ -23,7 +53,7 @@ export UNIFY_KEY=<your-api-key>
 Optionally override the API base URL (defaults to `https://api.unify.ai/v0`):
 
 ```bash
-export UNIFY_BASE_URL=https://api.unify.ai/v0
+export ORCHESTRA_URL=https://api.unify.ai/v0
 ```
 
 ## Core API
@@ -112,6 +142,25 @@ If you encounter `Project _ not found` errors during test startup, unset the `CI
 ```bash
 CI= poetry run pytest tests/path/to/test.py -v
 ```
+
+### Running Tests in CI
+
+**Tests are opt-in to reduce GitHub Actions costs.** Tests only run when explicitly requested:
+
+- **Commit message**: Include `[run-tests]` in your commit message
+- **PR title**: Include `[run-tests]` in your pull request title
+- **Manual trigger**: Use the "Run workflow" button in GitHub Actions
+
+Examples:
+```bash
+# Run tests on this commit
+git commit -m "Fix context handling [run-tests]"
+
+# No tests (default)
+git commit -m "Update README"
+```
+
+Note: The `black` formatting check always runs on every push.
 
 ### Pre-commit Hooks
 

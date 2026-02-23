@@ -412,7 +412,7 @@ def _handle_mutability(
                 et = {}
                 item["explicit_types"] = et
             for k in list(item.keys()):
-                if k == "explicit_types":
+                if k in ("explicit_types", "infer_untyped_fields"):
                     continue
                 existing = et.get(k, {}) if isinstance(et.get(k, {}), dict) else {}
                 existing = {**existing, "mutable": mutable}
@@ -499,6 +499,7 @@ def log(
         api_key=api_key,
     )
     created_log.entries.pop("explicit_types", None)
+    created_log.entries.pop("infer_untyped_fields", None)
 
     if ENTRIES_NEST_LEVEL.get() > 0:
         LOGGED.set(
@@ -695,7 +696,11 @@ def create_logs(
             unify.Log(
                 project=project,
                 context=context["name"] if isinstance(context, dict) else context,
-                **{k: v for k, v in e.items() if k != "explicit_types"},
+                **{
+                    k: v
+                    for k, v in e.items()
+                    if k not in ("explicit_types", "infer_untyped_fields")
+                },
                 id=i,
             )
             for e, i in zip(entries, resp_json["log_event_ids"])
@@ -1404,6 +1409,63 @@ def delete_fields(
         json=body,
     )
     return response.json()
+
+
+def atomic_update(
+    log: Union[int, unify.Log],
+    key: str,
+    operation: str,
+    *,
+    api_key: Optional[str] = None,
+) -> float:
+    """
+    Apply an atomic operation to a numeric value in a log entry.
+
+    This function performs race-safe atomic updates directly in PostgreSQL,
+    ensuring correct results even under high concurrent load. For example,
+    if N concurrent requests all send `+1`, the final value will be correctly
+    incremented by N.
+
+    Args:
+        log: The log ID or Log object to update.
+
+        key: The key of the entry to update.
+
+        operation: The atomic operation to apply. Supported formats:
+            - `+N`: Add N to the current value
+            - `-N`: Subtract N from the current value
+            - `*N`: Multiply the current value by N
+            - `/N`: Divide the current value by N
+            If the key doesn't exist or is NULL, it is treated as 0.
+
+        api_key: If specified, unify API key to be used. Defaults to the value
+            in the `UNIFY_KEY` environment variable.
+
+    Returns:
+        The new value after the operation.
+
+    Example:
+        >>> log = unify.log(counter=10)
+        >>> unify.atomic_update(log, "counter", "+5")
+        15.0
+        >>> unify.atomic_update(log.id, "counter", "*2")
+        30.0
+    """
+    api_key = _validate_api_key(api_key)
+    headers = _create_request_header(api_key)
+
+    # Resolve log ID
+    if isinstance(log, unify.Log):
+        log_id = log.id
+    else:
+        log_id = log
+
+    response = http.patch(
+        f"{BASE_URL}/logs/{log_id}/fields/{key}/atomic",
+        headers=headers,
+        json={"operation": operation},
+    )
+    return response.json()["new_value"]
 
 
 def set_user_logging(value: bool):

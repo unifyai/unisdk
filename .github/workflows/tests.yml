@@ -1,8 +1,68 @@
 name: Testing unify
 
-on: push
+on:
+  # Manual trigger - always runs tests
+  workflow_dispatch:
+
+  # Push events - tests only run if commit message contains [run-tests]
+  push:
+    branches:
+    - '**'
+
+  # Pull request events - tests only run if PR title contains [run-tests]
+  pull_request:
+    branches:
+    - '**'
 
 jobs:
+  # Determine if tests should run based on trigger and commit/PR message
+  should-run-tests:
+    runs-on: ubuntu-latest
+    outputs:
+      run_tests: ${{ steps.check.outputs.run_tests }}
+    steps:
+    - name: Check if tests should run
+      id: check
+      env:
+        EVENT_NAME: ${{ github.event_name }}
+        COMMIT_MSG: ${{ github.event.head_commit.message }}
+        PR_TITLE: ${{ github.event.pull_request.title }}
+      run: |
+        # workflow_dispatch always runs tests
+        if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+          echo "run_tests=true" >> "$GITHUB_OUTPUT"
+          echo "Tests triggered by workflow_dispatch"
+          exit 0
+        fi
+
+        # For push events, check commit message for [run-tests]
+        if [[ "$EVENT_NAME" == "push" ]]; then
+          if [[ "$COMMIT_MSG" == *"[run-tests]"* ]]; then
+            echo "run_tests=true" >> "$GITHUB_OUTPUT"
+            echo "Tests triggered by commit message containing [run-tests]"
+          else
+            echo "run_tests=false" >> "$GITHUB_OUTPUT"
+            echo "Skipping tests - commit message does not contain [run-tests]"
+          fi
+          exit 0
+        fi
+
+        # For pull_request events, check PR title for [run-tests]
+        if [[ "$EVENT_NAME" == "pull_request" ]]; then
+          if [[ "$PR_TITLE" == *"[run-tests]"* ]]; then
+            echo "run_tests=true" >> "$GITHUB_OUTPUT"
+            echo "Tests triggered by PR title containing [run-tests]"
+          else
+            echo "run_tests=false" >> "$GITHUB_OUTPUT"
+            echo "Skipping tests - PR title does not contain [run-tests]"
+          fi
+          exit 0
+        fi
+
+        # Default: don't run tests
+        echo "run_tests=false" >> "$GITHUB_OUTPUT"
+        echo "Skipping tests - unknown event type"
+
   black:
     runs-on: ubuntu-latest
     steps:
@@ -10,28 +70,28 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: '3.10'
+        python-version: '3.12'
+    - name: Install uv
+      uses: astral-sh/setup-uv@v5
     - name: Install deps
-      run: |
-        python -m pip install --upgrade pip
-        pip install poetry
-        poetry install --with dev
+      run: uv sync --group dev
     - name: Run black check
-      run: poetry run black --check .
+      run: uv run black --check .
 
   pytest:
     runs-on: ubuntu-latest-8-cores
+    needs: should-run-tests
+    if: needs.should-run-tests.outputs.run_tests == 'true'
     timeout-minutes: 120
     env:
       # Local orchestra configuration
       ORCHESTRA_REPO_PATH: ${{ github.workspace }}/orchestra
-      ORCHESTRA_PREFIX: unify
       # Logging directories (matches unity repo structure)
       LOGS_DIR: ${{ github.workspace }}/logs
-      # Orchestra GCP configuration (set by google-github-actions/auth step)
-      # ORCHESTRA_VERTEXAI_SERVICE_ACC_JSON is set via GOOGLE_APPLICATION_CREDENTIALS by auth action
-      ORCHESTRA_VERTEXAI_PROJECT: ${{ vars.GCP_PROJECT_ID }}
-      ORCHESTRA_VERTEXAI_LOCATION: ${{ vars.GCP_LOCATION }}
+      # Orchestra GCP configuration
+      # GOOGLE_APPLICATION_CREDENTIALS is set by google-github-actions/auth step
+      GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+      GCP_LOCATION: ${{ vars.GCP_LOCATION }}
       # GCP bucket names (passed to orchestra server)
       ORCHESTRA_GCP_BUCKET_NAME: ${{ vars.GCP_BUCKET_LOGS }}
       ORCHESTRA_GCP_ASSISTANT_IMAGES_BUCKET_NAME: ${{ vars.GCP_BUCKET_ASSISTANT_IMAGES }}
@@ -45,7 +105,7 @@ jobs:
         repository: unifyai/orchestra
         ref: ${{ github.ref_name == 'main' && 'main' || 'staging' }}
         path: orchestra
-        token: ${{ secrets.ORCHESTRA_CLONE_TOKEN }}
+        token: ${{ secrets.CLONE_TOKEN }}
         fetch-depth: 1
 
     - name: Authenticate to Google Cloud
@@ -60,25 +120,26 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: '3.10'
+        python-version: '3.12'
 
-    - name: Install poetry
-      run: |
-        python -m pip install --upgrade pip
-        pip install poetry
+    - name: Install uv
+      uses: astral-sh/setup-uv@v5
 
-    # Cache poetry dependencies (both unify and orchestra share this cache)
-    - name: Cache poetry dependencies
+    # Cache uv dependencies
+    - name: Cache uv dependencies
       uses: actions/cache@v4
       with:
-        path: ~/.cache/pypoetry
-        key: poetry-${{ runner.os }}-${{ hashFiles('poetry.lock') }}-${{ steps.orchestra-sha.outputs.sha }}
+        path: ~/.cache/uv
+        key: uv-${{ runner.os }}-${{ hashFiles('uv.lock') }}-${{ steps.orchestra-sha.outputs.sha }}
         restore-keys: |
-          poetry-${{ runner.os }}-${{ hashFiles('poetry.lock') }}-
-          poetry-${{ runner.os }}-
+          uv-${{ runner.os }}-${{ hashFiles('uv.lock') }}-
+          uv-${{ runner.os }}-
 
     - name: Install unify deps
-      run: poetry install --with dev
+      run: uv sync --group dev
+
+    - name: Install poetry (for orchestra)
+      run: pipx install poetry
 
     - name: Install orchestra dependencies
       run: |
@@ -103,37 +164,43 @@ jobs:
         ORCHESTRA_WORKERS=8 \
         ORCHESTRA_LOG_DIR="$LOGS_DIR/orchestra" \
         ORCHESTRA_OTEL_LOG_DIR="$LOGS_DIR/all" \
-        UNIFY_KEY="${{ secrets.UNIFY_API_KEY }}" \
+        UNIFY_KEY="${{ secrets.UNIFY_KEY }}" \
         "$ORCHESTRA_REPO_PATH/scripts/local.sh" start
 
         # Export the local URL for tests
-        echo "UNIFY_BASE_URL=http://127.0.0.1:8000/v0" >> $GITHUB_ENV
+        echo "ORCHESTRA_URL=http://127.0.0.1:8000/v0" >> $GITHUB_ENV
 
     - name: Run unit tests
       id: pytest
       run: |
         set +e
         # Run pytest and capture output for summary extraction
-        poetry run pytest --timeout=120 -p no:warnings -vv -n 8 tests/ 2>&1 | tee pytest_output.txt
+        uv run pytest --timeout=120 -p no:warnings -vv -n 8 tests/ 2>&1 | tee pytest_output.txt
         exit_code=${PIPESTATUS[0]}
         echo "exit_code=$exit_code" >> $GITHUB_OUTPUT
 
-        # Extract pass/fail counts from pytest summary line
-        # Format: "X passed, Y failed, Z warnings in N.NNs" or "X passed in N.NNs"
-        summary_line=$(grep -E "^=+ .*(passed|failed).* in [0-9]+\.[0-9]+s =+$" pytest_output.txt | tail -1)
+        # Extract pass/fail/error/skip counts from pytest summary line
+        # Format: "X passed, Y failed, Z errors, W skipped in N.NNs"
+        summary_line=$(grep -E "^=+ .*(passed|failed|error).* in [0-9]+(\.[0-9]+)?s" pytest_output.txt | tail -1)
         if [ -n "$summary_line" ]; then
           passed=$(echo "$summary_line" | grep -oE "[0-9]+ passed" | grep -oE "[0-9]+" || echo "0")
           failed=$(echo "$summary_line" | grep -oE "[0-9]+ failed" | grep -oE "[0-9]+" || echo "0")
+          skipped=$(echo "$summary_line" | grep -oE "[0-9]+ skipped" | grep -oE "[0-9]+" || echo "0")
+          errors=$(echo "$summary_line" | grep -oE "[0-9]+ error" | grep -oE "[0-9]+" || echo "0")
           echo "passed=${passed:-0}" >> $GITHUB_OUTPUT
           echo "failed=${failed:-0}" >> $GITHUB_OUTPUT
+          echo "skipped=${skipped:-0}" >> $GITHUB_OUTPUT
+          echo "errors=${errors:-0}" >> $GITHUB_OUTPUT
         else
           echo "passed=0" >> $GITHUB_OUTPUT
           echo "failed=0" >> $GITHUB_OUTPUT
+          echo "skipped=0" >> $GITHUB_OUTPUT
+          echo "errors=0" >> $GITHUB_OUTPUT
         fi
 
         exit $exit_code
       env:
-        UNIFY_KEY: ${{ secrets.UNIFY_API_KEY }}
+        UNIFY_KEY: ${{ secrets.UNIFY_KEY }}
         # Enable OpenTelemetry tracing for unify client
         UNIFY_OTEL: "true"
         UNIFY_OTEL_LOG_DIR: ${{ env.LOGS_DIR }}/all
@@ -143,10 +210,14 @@ jobs:
       run: |
         ARTIFACTS_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}#artifacts"
         PASSED="${{ steps.pytest.outputs.passed }}"
+        SKIPPED="${{ steps.pytest.outputs.skipped }}"
+
+        STATS="**${PASSED}** passed"
+        [ "$SKIPPED" -gt 0 ] 2>/dev/null && STATS="$STATS, **${SKIPPED}** skipped"
 
         echo "## ✅ All Tests Passed" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "**${PASSED}** passed — [view logs]($ARTIFACTS_URL)" >> $GITHUB_STEP_SUMMARY
+        echo "$STATS — [view logs]($ARTIFACTS_URL)" >> $GITHUB_STEP_SUMMARY
 
     - name: Generate failure summary
       if: failure()
@@ -154,19 +225,26 @@ jobs:
         ARTIFACTS_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}#artifacts"
         PASSED="${{ steps.pytest.outputs.passed }}"
         FAILED="${{ steps.pytest.outputs.failed }}"
+        SKIPPED="${{ steps.pytest.outputs.skipped }}"
+        ERRORS="${{ steps.pytest.outputs.errors }}"
+
+        STATS="**${PASSED}** passed"
+        [ "$FAILED" -gt 0 ] 2>/dev/null && STATS="$STATS, **${FAILED}** failed"
+        [ "$ERRORS" -gt 0 ] 2>/dev/null && STATS="$STATS, **${ERRORS}** errors"
+        [ "$SKIPPED" -gt 0 ] 2>/dev/null && STATS="$STATS, **${SKIPPED}** skipped"
 
         echo "## ❌ Tests Failed" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "**${PASSED}** passed, **${FAILED}** failed — [view logs]($ARTIFACTS_URL)" >> $GITHUB_STEP_SUMMARY
+        echo "$STATS — [view logs]($ARTIFACTS_URL)" >> $GITHUB_STEP_SUMMARY
 
     - name: Dump orchestra logs on failure
       if: failure()
       run: |
         echo "=== Orchestra Server Logs ==="
-        if [ -f /tmp/unify-local-server.log ]; then
-          cat /tmp/unify-local-server.log
+        if [ -f /tmp/orchestra-local-server.log ]; then
+          cat /tmp/orchestra-local-server.log
           # Copy server log to logs/orchestra/ for artifact upload
-          cp /tmp/unify-local-server.log "$LOGS_DIR/orchestra/server.log"
+          cp /tmp/orchestra-local-server.log "$LOGS_DIR/orchestra/server.log"
         else
           echo "No orchestra log file found"
         fi
@@ -177,8 +255,8 @@ jobs:
         echo "=== Preparing logs for upload ==="
 
         # Copy orchestra server log (always, not just on failure)
-        if [ -f /tmp/unify-local-server.log ]; then
-          cp /tmp/unify-local-server.log "$LOGS_DIR/orchestra/server.log"
+        if [ -f /tmp/orchestra-local-server.log ]; then
+          cp /tmp/orchestra-local-server.log "$LOGS_DIR/orchestra/server.log"
           echo "✓ Copied orchestra server log"
         fi
 
