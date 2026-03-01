@@ -2,6 +2,7 @@ import asyncio
 import atexit
 import logging
 import os
+import queue as _stdlib_queue
 import threading
 from concurrent.futures import TimeoutError
 from typing import List
@@ -77,7 +78,7 @@ class AsyncLoggerManager:
     async def _join(self):
         if self.queue is None:
             return
-        await self.queue.join()
+        await asyncio.get_event_loop().run_in_executor(None, self.queue.join)
 
     def join(self):
         try:
@@ -88,7 +89,7 @@ class AsyncLoggerManager:
                     break
                 except (asyncio.TimeoutError, TimeoutError):
                     self.logger.debug(
-                        f"Join waiting for {self.queue._unfinished_tasks} tasks to complete",
+                        f"Join waiting for ~{self.queue.qsize()} queued tasks to complete",
                     )
                     continue
         except Exception as e:
@@ -102,7 +103,7 @@ class AsyncLoggerManager:
 
     def _run_loop(self):
         asyncio.set_event_loop(self.loop)
-        self.queue = asyncio.Queue(maxsize=self.max_queue_size)
+        self.queue = _stdlib_queue.Queue(maxsize=self.max_queue_size)
 
         for _ in range(self.num_consumers):
             self.consumers.append(self._log_consumer())
@@ -147,10 +148,26 @@ class AsyncLoggerManager:
                 f"Updated log {res_json['log_event_ids'][0]} with status {res.status}",
             )
 
-    async def _log_consumer(self):
+    _SENTINEL = object()
+
+    def _blocking_get(self):
+        """Blocking get with periodic timeout so consumers can exit on shutdown."""
         while True:
             try:
-                event = await self.queue.get()
+                return self.queue.get(timeout=0.5)
+            except _stdlib_queue.Empty:
+                if self.shutting_down:
+                    return self._SENTINEL
+                continue
+
+    async def _log_consumer(self):
+        loop = asyncio.get_event_loop()
+        while True:
+            event = None
+            try:
+                event = await loop.run_in_executor(None, self._blocking_get)
+                if event is self._SENTINEL:
+                    return
                 idx = self.queue.qsize() + 1
                 self.logger.debug(f"'{event['type']}' processing {idx}")
                 if event["type"] == "create":
@@ -160,12 +177,19 @@ class AsyncLoggerManager:
                 else:
                     raise Exception(f"Unknown event type: {event['type']}")
             except Exception as e:
-                event["future"].set_exception(e)
+                if self.shutting_down:
+                    return
+                if event is not None and event is not self._SENTINEL:
+                    try:
+                        event["future"].set_exception(e)
+                    except Exception:
+                        pass
                 self.logger.error(f"Error in consumer: {e}")
                 raise e
             finally:
-                self.queue.task_done()
-                self._notify_callbacks()
+                if event is not None and event is not self._SENTINEL:
+                    self.queue.task_done()
+                    self._notify_callbacks()
 
     def log_create(
         self,
@@ -174,7 +198,7 @@ class AsyncLoggerManager:
         entries: dict,
     ) -> asyncio.Future:
         if self.shutting_down:
-            self.logger.warning(f"Not running, skipping log create")
+            self.logger.warning("Not running, skipping log create")
             return None
         fut = self.loop.create_future()
         event = {
@@ -186,7 +210,11 @@ class AsyncLoggerManager:
             "type": "create",
             "future": fut,
         }
-        asyncio.run_coroutine_threadsafe(self.queue.put(event), self.loop).result()
+        try:
+            self.queue.put_nowait(event)
+        except _stdlib_queue.Full:
+            self.logger.debug("Queue full, dropping log create")
+            return None
         return fut
 
     def log_update(
@@ -198,7 +226,7 @@ class AsyncLoggerManager:
         data: dict,
     ) -> None:
         if self.shutting_down:
-            self.logger.warning(f"Not running, skipping log update")
+            self.logger.warning("Not running, skipping log update")
             return
         event = {
             "_data": {
@@ -210,16 +238,22 @@ class AsyncLoggerManager:
             "type": "update",
             "future": future,
         }
-        asyncio.run_coroutine_threadsafe(self.queue.put(event), self.loop).result()
+        try:
+            self.queue.put_nowait(event)
+        except _stdlib_queue.Full:
+            self.logger.debug("Queue full, dropping log update")
 
     def clear_queue(self):
         if self.queue is None:
             return
 
         orig_size = self.queue.qsize()
-        while not self.queue.empty():
-            self.queue.get_nowait()
-            self.queue.task_done()
+        while True:
+            try:
+                self.queue.get_nowait()
+                self.queue.task_done()
+            except _stdlib_queue.Empty:
+                break
         self.logger.debug(f"{orig_size} log requests cleared")
 
     def stop_sync(self, immediate=False):
