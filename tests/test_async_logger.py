@@ -12,6 +12,8 @@ calling thread until the private loop processes the queue put.
 """
 
 import asyncio
+import subprocess
+import sys
 import time
 
 
@@ -244,3 +246,46 @@ class TestLogUpdateIsNonBlocking:
             )
         finally:
             logger.stop_sync(immediate=True)
+
+
+class TestGracefulShutdown:
+    """Process exit must not hang when atexit handlers run."""
+
+    def test_single_logger_exits_cleanly(self):
+        """A process with one AsyncLoggerManager should exit within 3s."""
+        result = subprocess.run(
+            [
+                sys.executable,
+                "-c",
+                (
+                    "import time; "
+                    "from unify._async_logger import AsyncLoggerManager; "
+                    "l = AsyncLoggerManager(name='t', num_consumers=16); "
+                    "time.sleep(0.5)"
+                ),
+            ],
+            timeout=3,
+            capture_output=True,
+            text=True,
+        )
+        assert result.returncode == 0
+
+    def test_multiple_loggers_exit_cleanly(self):
+        """A process with two AsyncLoggerManagers should exit within 3s."""
+        result = subprocess.run(
+            [
+                sys.executable,
+                "-c",
+                (
+                    "import time; "
+                    "from unify._async_logger import AsyncLoggerManager; "
+                    "l1 = AsyncLoggerManager(name='a', num_consumers=16); "
+                    "l2 = AsyncLoggerManager(name='b', num_consumers=16); "
+                    "time.sleep(0.5)"
+                ),
+            ],
+            timeout=3,
+            capture_output=True,
+            text=True,
+        )
+        assert result.returncode == 0

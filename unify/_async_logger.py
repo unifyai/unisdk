@@ -4,7 +4,6 @@ import logging
 import os
 import queue as _stdlib_queue
 import threading
-from concurrent.futures import TimeoutError
 from typing import List
 
 import aiohttp
@@ -75,26 +74,11 @@ class AsyncLoggerManager:
         for fn in self.callbacks:
             fn()
 
-    async def _join(self):
+    def join(self):
+        """Block until every enqueued item has been processed."""
         if self.queue is None:
             return
-        await asyncio.get_event_loop().run_in_executor(None, self.queue.join)
-
-    def join(self):
-        try:
-            future = asyncio.run_coroutine_threadsafe(self._join(), self.loop)
-            while True:
-                try:
-                    future.result(timeout=0.5)
-                    break
-                except (asyncio.TimeoutError, TimeoutError):
-                    self.logger.debug(
-                        f"Join waiting for ~{self.queue.qsize()} queued tasks to complete",
-                    )
-                    continue
-        except Exception as e:
-            self.logger.error(f"Error in join: {e}")
-            raise e
+        self.queue.join()
 
     async def _main_loop(self):
         self.start_flag.set()
@@ -152,11 +136,16 @@ class AsyncLoggerManager:
 
     def _blocking_get(self):
         """Blocking get with periodic timeout so consumers can exit on shutdown."""
+        import concurrent.futures.thread as _cft
+
+        _interpreter_exiting = getattr(_cft, "_shutdown", False)
+
         while True:
             try:
                 return self.queue.get(timeout=0.5)
             except _stdlib_queue.Empty:
-                if self.shutting_down:
+                _interpreter_exiting = getattr(_cft, "_shutdown", False)
+                if self.shutting_down or _interpreter_exiting:
                     return self._SENTINEL
                 continue
 
@@ -176,6 +165,10 @@ class AsyncLoggerManager:
                     await self._consume_update(event["_data"], event["future"], idx)
                 else:
                     raise Exception(f"Unknown event type: {event['type']}")
+            except RuntimeError as e:
+                if "shutdown" in str(e).lower():
+                    return
+                raise
             except Exception as e:
                 if self.shutting_down:
                     return
@@ -258,13 +251,13 @@ class AsyncLoggerManager:
 
     def stop_sync(self, immediate=False):
         if self.shutting_down:
-            self.logger.debug(f"Already shutting down, skipping stop")
+            self.logger.debug("Already shutting down, skipping stop")
             return
 
         self.shutting_down = True
         if immediate:
-            self.logger.debug(f"Shutting down immediately")
+            self.logger.debug("Shutting down immediately")
             self.loop.stop()
         else:
-            self.logger.debug(f"Shutting down gracefully")
+            self.logger.debug("Shutting down gracefully")
             self.join()
