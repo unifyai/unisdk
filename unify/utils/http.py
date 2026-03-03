@@ -634,25 +634,6 @@ url:{url}
     _LOGGER.debug(log_msg)
 
 
-def _mask_auth_key(kwargs: dict) -> dict:
-    """Return a sanitized copy of request kwargs suitable for error messages.
-
-    IMPORTANT: This must NOT mutate caller-owned objects (e.g. the headers dict),
-    because higher-level callers may reuse those objects across multiple HTTP
-    calls (e.g. in loops).
-    """
-    if "headers" not in kwargs:
-        return kwargs
-
-    headers = kwargs.get("headers")
-    if not isinstance(headers, dict):
-        return kwargs
-
-    safe_kwargs = dict(kwargs)
-    safe_kwargs["headers"] = _mask_headers(headers)
-    return safe_kwargs
-
-
 def _log_request_if_enabled(fn: Callable) -> Callable:
     """Decorator that adds console logging, file-based logging, and OTel tracing.
 
@@ -768,7 +749,7 @@ def request(method, url, raise_for_status=True, **kwargs) -> requests.Response:
             res.raise_for_status()
         return res
     except requests.exceptions.HTTPError as e:
-        kwargs = _mask_auth_key(kwargs)
+        kwargs.pop("headers", None)
         raise RequestError(url, method, e.response, **kwargs)
 
 

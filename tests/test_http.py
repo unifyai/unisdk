@@ -566,36 +566,6 @@ class TestRequestError:
         assert error.response is response
 
 
-class TestMaskAuthKey:
-    """Tests for _mask_auth_key helper."""
-
-    def test_masks_headers_in_kwargs(self):
-        """_mask_auth_key masks Authorization header in kwargs copy."""
-        from unify.utils.http import _mask_auth_key
-
-        original = {
-            "headers": {"Authorization": "Bearer secret"},
-            "params": {"x": 1},
-        }
-
-        masked = _mask_auth_key(original)
-
-        # Original unchanged
-        assert original["headers"]["Authorization"] == "Bearer secret"
-
-        # Masked copy has hidden auth
-        assert masked["headers"]["Authorization"] == "***"
-        assert masked["params"] == {"x": 1}
-
-    def test_returns_unchanged_without_headers(self):
-        """_mask_auth_key returns unchanged when no headers."""
-        from unify.utils.http import _mask_auth_key
-
-        kwargs = {"params": {"x": 1}}
-        result = _mask_auth_key(kwargs)
-        assert result is kwargs
-
-
 class TestTraceContextPropagation:
     """Tests for W3C Trace Context header injection (traceparent)."""
 
