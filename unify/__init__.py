@@ -79,6 +79,9 @@ from .utils.http import RequestError
 # Assistants
 from .assistants import list_assistants
 
+# Agent
+from . import agent
+
 # Project #
 # --------#
 
