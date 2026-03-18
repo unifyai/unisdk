@@ -634,6 +634,7 @@ def create_logs(
     entries: Optional[Union[List[Dict[str, Any]], Dict[str, Any]]] = None,
     mutable: Optional[Union[bool, Dict[str, bool]]] = True,
     batched: Optional[bool] = None,
+    recompute_derived: Optional[bool] = None,
     api_key: Optional[str] = None,
 ) -> List[int]:
     """
@@ -653,6 +654,10 @@ def create_logs(
 
         mutable: Either a boolean to apply uniform mutability for all fields, or a dictionary mapping field names to booleans for per-field control. Defaults to True.
 
+        recompute_derived: If True, recompute derived columns for the newly created
+        logs using active derived-log templates. Suitable for small batches; for large
+        ingestion workflows, leave as None/False and rely on periodic backfill.
+
         api_key: If specified, unify API key to be used. Defaults to the value in the
         `UNIFY_KEY` environment variable.
 
@@ -671,6 +676,8 @@ def create_logs(
         "context": context,
         "entries": entries,
     }
+    if recompute_derived is not None:
+        body["recompute_derived"] = recompute_derived
     body_size = sys.getsizeof(json.dumps(body))
     if batched is None:
         batched = body_size < CHUNK_LIMIT
