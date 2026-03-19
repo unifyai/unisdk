@@ -1058,5 +1058,49 @@ def test_atomic_update_sequential():
     assert new_value == 5.0
 
 
+@_handle_project_isolated
+def test_create_logs_recompute_derived():
+    """Verify that recompute_derived triggers inline derived column computation."""
+    ctx = _unique_context("recompute_derived")
+    try:
+        unify.create_context(ctx)
+
+        # Seed a log so the derived template has something to reference
+        seed = unify.create_logs(context=ctx, entries=[{"base_value": 1}])
+
+        # Create a derived template (filter_expr to get an ActiveDerivedLog)
+        unify.create_derived_logs(
+            key="derived_value",
+            equation="{log:base_value} * 10",
+            referenced_logs={"log": {"context": ctx}},
+            context=ctx,
+        )
+
+        # Create with recompute_derived=True — derived value should be present
+        logs_with = unify.create_logs(
+            context=ctx,
+            entries=[{"base_value": 5}],
+            recompute_derived=True,
+        )
+        fetched = unify.get_logs(context=ctx, from_ids=[logs_with[0].id])
+        assert len(fetched) == 1
+        derived = getattr(fetched[0], "entries", {}) or {}
+        assert (
+            derived.get("derived_value") == 50
+        ), f"Expected 50, got {derived.get('derived_value')}"
+
+        # Create without recompute_derived — derived value should be absent
+        logs_without = unify.create_logs(
+            context=ctx,
+            entries=[{"base_value": 7}],
+        )
+        fetched = unify.get_logs(context=ctx, from_ids=[logs_without[0].id])
+        assert len(fetched) == 1
+        derived = getattr(fetched[0], "entries", {}) or {}
+        assert derived.get("derived_value") is None
+    finally:
+        unify.delete_context(ctx)
+
+
 if __name__ == "__main__":
     pass
