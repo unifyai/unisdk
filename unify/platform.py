@@ -15,7 +15,9 @@ def deduct_credits(
     """
     Deduct credits from the authenticated user's account.
 
-    The amount must be positive and cannot exceed the user's available credits.
+    The amount must be positive. The balance is allowed to go negative
+    (overdraft) so that downstream spending-limit hooks can detect and
+    block further usage.
 
     Args:
         amount: The amount of credits to deduct (must be > 0).
@@ -26,11 +28,11 @@ def deduct_credits(
         A dict with keys:
             - previous_credits: Credits before deduction
             - deducted: Amount deducted
-            - current_credits: Credits after deduction
+            - current_credits: Credits after deduction (may be negative)
 
     Raises:
-        RequestError: If the request fails (e.g., insufficient credits,
-            invalid amount, or authentication error).
+        RequestError: If the request fails (e.g., invalid amount
+            or authentication error).
     """
     headers = _create_request_header(api_key)
     response = http.post(
