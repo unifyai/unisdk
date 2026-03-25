@@ -48,11 +48,13 @@ class TestDeductCredits:
 
         assert exc_info.value.response.status_code == 422
 
-    def test_deduct_credits_insufficient_funds(self):
-        """Test deduction fails when user has insufficient credits."""
-        # Try to deduct an absurdly large amount
-        with pytest.raises(http.RequestError) as exc_info:
-            unify.deduct_credits(999_999_999_999.0)
+    def test_deduct_credits_allows_overdraft(self):
+        """Overdraft is allowed so spending-limit hooks can detect negative balances."""
+        result = unify.deduct_credits(999_999_999_999.0)
 
-        assert exc_info.value.response.status_code == 400
-        assert "Insufficient credits" in str(exc_info.value)
+        assert result["deducted"] == 999_999_999_999.0
+        assert result["current_credits"] < 0
+        assert math.isclose(
+            result["current_credits"],
+            result["previous_credits"] - 999_999_999_999.0,
+        )
