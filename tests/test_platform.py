@@ -48,6 +48,9 @@ class TestDeductCredits:
 
         assert exc_info.value.response.status_code == 422
 
+    @pytest.mark.skip(
+        reason="This is dangerous, it will drain the account, should be mocked or entirely not tested here.",
+    )
     def test_deduct_credits_allows_overdraft(self):
         """Overdraft is allowed so spending-limit hooks can detect negative balances."""
         result = unify.deduct_credits(999_999_999_999.0)
