@@ -1102,5 +1102,82 @@ def test_create_logs_recompute_derived():
         unify.delete_context(ctx)
 
 
+@_handle_project_isolated
+def test_create_logs_partial_failure_correct_alignment():
+    """When some entries fail type enforcement, returned Logs must align with the
+    correct entries (not shifted) and len(result) must equal the successful count."""
+    ctx = _unique_context("partial_failure_alignment")
+    try:
+        unify.create_context(ctx)
+
+        # Pre-create strict typed fields so type-mismatched entries will be rejected
+        unify.create_fields(
+            {
+                "age": {"type": "int", "mutable": True},
+                "name": {"type": "str", "mutable": True},
+            },
+            context=ctx,
+        )
+
+        entries = [
+            {"name": "ok-1", "age": 10},
+            {"name": "bad", "age": "not_an_int"},  # will fail type enforcement
+            {"name": "ok-2", "age": 20},
+            {"name": "also-bad", "age": "nope"},  # will also fail
+            {"name": "ok-3", "age": 30},
+        ]
+
+        result = unify.create_logs(context=ctx, entries=entries)
+
+        # Only 3 of 5 entries should succeed
+        assert len(result) == 3, f"Expected 3 logs, got {len(result)}"
+
+        # Verify alignment: each Log should have the correct name/age pair
+        result_names = sorted(log.entries.get("name") for log in result)
+        assert result_names == ["ok-1", "ok-2", "ok-3"], f"Got {result_names}"
+
+        # Verify server-side: only 3 logs exist
+        server_logs = unify.get_logs(context=ctx)
+        assert len(server_logs) == 3
+        server_names = sorted(log.entries.get("name") for log in server_logs)
+        assert server_names == ["ok-1", "ok-2", "ok-3"]
+    finally:
+        unify.delete_context(ctx)
+
+
+@_handle_project_isolated
+def test_create_logs_partial_failure_warning():
+    """create_logs emits a warning when entries fail."""
+    import warnings as _warnings
+
+    ctx = _unique_context("partial_failure_warning")
+    try:
+        unify.create_context(ctx)
+
+        unify.create_fields(
+            {"val": {"type": "int", "mutable": True}},
+            context=ctx,
+        )
+
+        entries = [
+            {"val": 1},
+            {"val": "not_int"},  # will fail
+            {"val": 3},
+        ]
+
+        with _warnings.catch_warnings(record=True) as w:
+            _warnings.simplefilter("always")
+            result = unify.create_logs(context=ctx, entries=entries)
+
+        assert len(result) == 2
+
+        warning_msgs = [str(x.message) for x in w]
+        assert any(
+            "1 of 3 entries failed" in m for m in warning_msgs
+        ), f"Expected partial failure warning, got: {warning_msgs}"
+    finally:
+        unify.delete_context(ctx)
+
+
 if __name__ == "__main__":
     pass

@@ -5,6 +5,7 @@ import json
 import logging
 import os
 import sys
+import warnings
 from contextvars import ContextVar
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple, Union
@@ -692,11 +693,26 @@ def create_logs(
             )
         resp_json = response.json()
 
-        # Apply row_ids and non-unique auto_counting values to entries
+        failed = resp_json.get("failed", [])
+
+        if failed:
+            failed_indices = {f["index"] for f in failed}
+            first_err = failed[0].get("error", "unknown")
+            warnings.warn(
+                f"create_logs: {len(failed)} of {len(entries)} entries failed. "
+                f"First error: {first_err}",
+                stacklevel=2,
+            )
+            successful_entries = [
+                e for i, e in enumerate(entries) if i not in failed_indices
+            ]
+        else:
+            successful_entries = entries
+
         _apply_row_ids_and_non_unique_auto_count_vals(
             resp_json.get("row_ids"),
             resp_json.get("auto_counting"),
-            entries,
+            successful_entries,
         )
 
         return [
@@ -710,7 +726,7 @@ def create_logs(
                 },
                 id=i,
             )
-            for e, i in zip(entries, resp_json["log_event_ids"])
+            for e, i in zip(successful_entries, resp_json["log_event_ids"])
         ]
 
     # Fallback for non-batched (iterative) logging
