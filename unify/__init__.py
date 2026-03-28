@@ -70,6 +70,9 @@ from .logs import (
 # Async Logging
 from ._async_logger import AsyncLoggerManager
 
+# Async Admin
+from .async_admin import AsyncAdminClient, AdminRequestError
+
 # Utils
 from .utils import helpers, map, storage
 from .utils.storage import get_signed_url, download_object
