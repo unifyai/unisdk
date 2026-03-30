@@ -103,44 +103,44 @@ unify.map(process, items)
 ```
 unify/
 ├── __init__.py           # Public API exports
-├── assistants/           # Assistant management
-│   └── management.py
-├── logging/              # Logging functionality
-│   ├── logs.py          # Core Log class
-│   └── utils/           # Logging utilities
-│       ├── contexts.py  # Context management
-│       ├── logs.py      # Log CRUD operations
-│       └── projects.py  # Project CRUD operations
-├── platform/             # Platform API
-│   ├── queries.py       # Query logging
-│   └── user.py          # User info
-└── utils/                # Shared utilities
-    ├── http.py          # HTTP client
-    ├── storage.py       # Object storage
-    ├── map.py           # Parallel mapping
-    └── helpers.py       # Misc helpers
+├── agent.py              # Agent messaging (send/receive)
+├── assistants.py         # Assistant listing
+├── async_admin.py        # Async spend tracking client
+├── _async_logger.py      # Async log manager
+├── contexts.py           # Context CRUD operations
+├── logs.py               # Core Log class and log operations
+├── platform.py           # Platform API (credits, user info)
+├── projects.py           # Project CRUD operations
+└── utils/
+    ├── helpers.py         # Misc helpers
+    ├── http.py            # HTTP client
+    ├── map.py             # Parallel mapping
+    └── storage.py         # Object storage (signed URLs)
 ```
 
 ## Local Development
 
-This project uses [Poetry](https://python-poetry.org/) for dependency management.
+This project uses [uv](https://docs.astral.sh/uv/) for dependency management.
 
 ### Setup
 
 ```bash
-poetry install
+pip install uv
+uv sync --group dev
+```
+
+Copy `.env.example` to `.env` and fill in your API key:
+
+```bash
+cp .env.example .env
 ```
 
 ### Running Tests
 
-```bash
-poetry run pytest tests/path/to/test.py -v
-```
-
-If you encounter `Project _ not found` errors during test startup, unset the `CI` variable:
+Tests require a running Orchestra instance and a valid `UNIFY_KEY`:
 
 ```bash
-CI= poetry run pytest tests/path/to/test.py -v
+uv run pytest tests/path/to/test.py -v
 ```
 
 ### Running Tests in CI
@@ -160,7 +160,11 @@ git commit -m "Fix context handling [run-tests]"
 git commit -m "Update README"
 ```
 
-Note: The `black` formatting check always runs on every push.
+> **Note for contributors:** The `black` formatting check runs on every push and
+> works without special credentials. The full `pytest` suite requires org-level
+> secrets (Orchestra access, GCP credentials) and runs only for maintainers.
+> To run tests locally, set `UNIFY_KEY` and `ORCHESTRA_URL` pointing to your
+> Orchestra instance.
 
 ### Pre-commit Hooks
 
