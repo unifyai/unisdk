@@ -1,4 +1,4 @@
-"""Tests for AsyncAdminClient (unify.async_admin).
+"""Tests for AsyncSpendClient (unify.async_admin).
 
 Unit-level tests using mocked aiohttp responses. No real Orchestra server
 required.
@@ -12,7 +12,7 @@ from unittest.mock import AsyncMock, MagicMock
 import aiohttp
 import pytest
 
-from unify.async_admin import AdminRequestError, AsyncAdminClient
+from unify.async_admin import SpendRequestError, AsyncSpendClient
 
 
 def _make_response(*, status: int = 200, json_data: dict | None = None):
@@ -28,7 +28,7 @@ def _make_response(*, status: int = 200, json_data: dict | None = None):
     return cm
 
 
-def _patch_session(client: AsyncAdminClient, side_effect):
+def _patch_session(client: AsyncSpendClient, side_effect):
     """Patch the client's session.request to return controlled responses."""
     mock_session = MagicMock(spec=aiohttp.ClientSession)
     mock_session.closed = False
@@ -46,7 +46,7 @@ def _patch_session(client: AsyncAdminClient, side_effect):
 class TestGetAssistantSpend:
     @pytest.mark.asyncio
     async def test_returns_parsed_json(self):
-        client = AsyncAdminClient(api_key="test-key")
+        client = AsyncSpendClient(api_key="test-key")
         data = {"cumulative_spend": 5.0, "limit": 100.0, "credit_balance": 50.0}
         _patch_session(client, lambda *a, **kw: _make_response(json_data=data))
 
@@ -56,7 +56,7 @@ class TestGetAssistantSpend:
 
     @pytest.mark.asyncio
     async def test_correct_url(self):
-        client = AsyncAdminClient(api_key="test-key", base_url="http://test/v0")
+        client = AsyncSpendClient(api_key="test-key", base_url="http://test/v0")
         data = {"cumulative_spend": 0.0}
         mock_session = _patch_session(
             client,
@@ -66,18 +66,18 @@ class TestGetAssistantSpend:
         await client.get_assistant_spend(agent_id=42, month="2026-01")
 
         call_args = mock_session.request.call_args
-        assert call_args[0] == ("GET", "http://test/v0/admin/assistant/42/spend")
+        assert call_args[0] == ("GET", "http://test/v0/assistant/42/spend")
         assert call_args[1]["params"] == {"month": "2026-01"}
 
 
 class TestGetUserSpend:
     @pytest.mark.asyncio
     async def test_returns_parsed_json(self):
-        client = AsyncAdminClient(api_key="test-key")
+        client = AsyncSpendClient(api_key="test-key")
         data = {"cumulative_spend": 10.0, "limit": None}
         _patch_session(client, lambda *a, **kw: _make_response(json_data=data))
 
-        result = await client.get_user_spend(user_id="user_1", month="2026-03")
+        result = await client.get_user_spend(month="2026-03")
 
         assert result == data
 
@@ -85,7 +85,7 @@ class TestGetUserSpend:
 class TestGetMemberSpend:
     @pytest.mark.asyncio
     async def test_returns_parsed_json(self):
-        client = AsyncAdminClient(api_key="test-key")
+        client = AsyncSpendClient(api_key="test-key")
         data = {"cumulative_spend": 20.0, "limit": 50.0}
         _patch_session(client, lambda *a, **kw: _make_response(json_data=data))
 
@@ -99,7 +99,7 @@ class TestGetMemberSpend:
 
     @pytest.mark.asyncio
     async def test_correct_url(self):
-        client = AsyncAdminClient(api_key="test-key", base_url="http://test/v0")
+        client = AsyncSpendClient(api_key="test-key", base_url="http://test/v0")
         data = {"cumulative_spend": 0.0}
         mock_session = _patch_session(
             client,
@@ -111,14 +111,14 @@ class TestGetMemberSpend:
         call_args = mock_session.request.call_args
         assert call_args[0] == (
             "GET",
-            "http://test/v0/admin/organization/5/members/u1/spend",
+            "http://test/v0/organizations/5/members/u1/spend",
         )
 
 
 class TestGetOrgSpend:
     @pytest.mark.asyncio
     async def test_returns_parsed_json(self):
-        client = AsyncAdminClient(api_key="test-key")
+        client = AsyncSpendClient(api_key="test-key")
         data = {"cumulative_spend": 100.0, "limit": 500.0}
         _patch_session(client, lambda *a, **kw: _make_response(json_data=data))
 
@@ -130,7 +130,7 @@ class TestGetOrgSpend:
 class TestNotifyLimitReached:
     @pytest.mark.asyncio
     async def test_sends_post(self):
-        client = AsyncAdminClient(api_key="test-key", base_url="http://test/v0")
+        client = AsyncSpendClient(api_key="test-key", base_url="http://test/v0")
         resp_data = {"notified": True, "reason": None, "recipient_count": 1}
         mock_session = _patch_session(
             client,
@@ -148,7 +148,7 @@ class TestNotifyLimitReached:
 
         assert result["notified"] is True
         call_args = mock_session.request.call_args
-        assert call_args[0] == ("POST", "http://test/v0/admin/spending-limit-reached")
+        assert call_args[0] == ("POST", "http://test/v0/user/spending-limit-reached")
         assert call_args[1]["json"] == payload
 
 
@@ -159,8 +159,8 @@ class TestNotifyLimitReached:
 
 class TestErrorHandling:
     @pytest.mark.asyncio
-    async def test_404_raises_admin_request_error(self):
-        client = AsyncAdminClient(api_key="test-key")
+    async def test_404_raises_spend_request_error(self):
+        client = AsyncSpendClient(api_key="test-key")
         _patch_session(
             client,
             lambda *a, **kw: _make_response(
@@ -169,14 +169,14 @@ class TestErrorHandling:
             ),
         )
 
-        with pytest.raises(AdminRequestError) as exc_info:
+        with pytest.raises(SpendRequestError) as exc_info:
             await client.get_assistant_spend(agent_id=999, month="2026-03")
 
         assert exc_info.value.status == 404
 
     @pytest.mark.asyncio
-    async def test_422_raises_admin_request_error(self):
-        client = AsyncAdminClient(api_key="test-key")
+    async def test_422_raises_spend_request_error(self):
+        client = AsyncSpendClient(api_key="test-key")
         _patch_session(
             client,
             lambda *a, **kw: _make_response(
@@ -185,8 +185,8 @@ class TestErrorHandling:
             ),
         )
 
-        with pytest.raises(AdminRequestError) as exc_info:
-            await client.get_user_spend(user_id="bad", month="invalid")
+        with pytest.raises(SpendRequestError) as exc_info:
+            await client.get_user_spend(month="invalid")
 
         assert exc_info.value.status == 422
 
@@ -200,7 +200,7 @@ class TestRetryBehavior:
     @pytest.mark.asyncio
     async def test_retries_on_502_then_succeeds(self):
         """A 502 followed by a 200 should succeed after one retry."""
-        client = AsyncAdminClient(
+        client = AsyncSpendClient(
             api_key="test-key",
             backoff_factor=0.01,
         )
@@ -227,7 +227,7 @@ class TestRetryBehavior:
     @pytest.mark.asyncio
     async def test_retries_on_connect_error(self):
         """Connection errors should be retried up to retry_connect times."""
-        client = AsyncAdminClient(
+        client = AsyncSpendClient(
             api_key="test-key",
             backoff_factor=0.01,
             retry_connect=2,
@@ -253,7 +253,7 @@ class TestRetryBehavior:
     @pytest.mark.asyncio
     async def test_exhausted_retries_raises(self):
         """When all retries are exhausted on connect errors, the error propagates."""
-        client = AsyncAdminClient(
+        client = AsyncSpendClient(
             api_key="test-key",
             backoff_factor=0.01,
             retry_connect=1,
@@ -271,7 +271,7 @@ class TestRetryBehavior:
     @pytest.mark.asyncio
     async def test_no_retry_on_4xx(self):
         """4xx errors should NOT be retried."""
-        client = AsyncAdminClient(api_key="test-key", backoff_factor=0.01)
+        client = AsyncSpendClient(api_key="test-key", backoff_factor=0.01)
         call_count = 0
 
         def side_effect(*args, **kwargs):
@@ -281,7 +281,7 @@ class TestRetryBehavior:
 
         _patch_session(client, side_effect)
 
-        with pytest.raises(AdminRequestError):
+        with pytest.raises(SpendRequestError):
             await client.get_assistant_spend(agent_id=999, month="2026-03")
 
         assert call_count == 1
@@ -296,13 +296,13 @@ class TestConnectionReuse:
     @pytest.mark.asyncio
     async def test_shared_session_across_calls(self):
         """Multiple calls should reuse the same aiohttp session."""
-        client = AsyncAdminClient(api_key="test-key")
+        client = AsyncSpendClient(api_key="test-key")
         data = {"cumulative_spend": 0.0}
         _patch_session(client, lambda *a, **kw: _make_response(json_data=data))
 
         session_before = client._session
         await client.get_assistant_spend(agent_id=1, month="2026-03")
-        await client.get_user_spend(user_id="u1", month="2026-03")
+        await client.get_user_spend(month="2026-03")
         session_after = client._session
 
         assert session_before is session_after
@@ -310,7 +310,7 @@ class TestConnectionReuse:
     @pytest.mark.asyncio
     async def test_recreates_session_when_closed(self):
         """If the session is closed, a new one is created."""
-        client = AsyncAdminClient(api_key="test-key")
+        client = AsyncSpendClient(api_key="test-key")
 
         session1 = client._get_session()
         await session1.close()
@@ -323,7 +323,7 @@ class TestConnectionReuse:
 
     @pytest.mark.asyncio
     async def test_closed_property(self):
-        client = AsyncAdminClient(api_key="test-key")
+        client = AsyncSpendClient(api_key="test-key")
         assert client.closed is True  # no session yet
 
         session = client._get_session()
@@ -341,7 +341,7 @@ class TestConnectionReuse:
 class TestAuthHeaders:
     @pytest.mark.asyncio
     async def test_bearer_token_in_headers(self):
-        client = AsyncAdminClient(api_key="my-secret-key")
+        client = AsyncSpendClient(api_key="my-secret-key")
         session = client._get_session()
 
         assert session.headers["Authorization"] == "Bearer my-secret-key"

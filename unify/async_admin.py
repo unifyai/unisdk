@@ -1,12 +1,12 @@
-"""Async HTTP client for Orchestra admin endpoints.
+"""Async HTTP client for Orchestra spend endpoints.
 
-Provides an ``AsyncAdminClient`` backed by ``aiohttp`` with connection pooling
+Provides an ``AsyncSpendClient`` backed by ``aiohttp`` with connection pooling
 and retry logic that mirrors the sync ``unify.utils.http`` session
 (``Retry(total=5, connect=3, read=2, backoff_factor=0.1)``).
 
 Typical usage from Unity's spending-limit hook::
 
-    client = AsyncAdminClient(api_key=os.getenv("ORCHESTRA_ADMIN_KEY"))
+    client = AsyncSpendClient(api_key=os.getenv("UNIFY_KEY"))
     data = await client.get_assistant_spend(agent_id=123, month="2026-03")
     await client.close()
 
@@ -35,8 +35,8 @@ _DEFAULT_TIMEOUT = 5.0
 _DEFAULT_POOL_LIMIT = 20
 
 
-class AsyncAdminClient:
-    """Async client for Orchestra ``/admin/*`` endpoints.
+class AsyncSpendClient:
+    """Async client for Orchestra spend endpoints.
 
     Uses ``aiohttp`` with connection pooling and automatic retries to match
     the reliability characteristics of the sync ``unify.utils.http`` session.
@@ -47,7 +47,7 @@ class AsyncAdminClient:
         Orchestra API base URL.  Defaults to ``unify.BASE_URL``
         (which reads ``ORCHESTRA_URL`` or falls back to production).
     api_key:
-        Bearer token for admin auth (typically ``ORCHESTRA_ADMIN_KEY``).
+        Bearer token for user auth (typically ``UNIFY_KEY``).
     timeout:
         Per-attempt timeout in seconds.
     pool_limit:
@@ -168,7 +168,7 @@ class AsyncAdminClient:
 
                     if resp.status >= 400:
                         body = await resp.text()
-                        raise AdminRequestError(
+                        raise SpendRequestError(
                             url=url,
                             method=method,
                             status=resp.status,
@@ -225,18 +225,17 @@ class AsyncAdminClient:
     ) -> Dict[str, Any]:
         return await self._request(
             "GET",
-            f"/admin/assistant/{agent_id}/spend",
+            f"/assistant/{agent_id}/spend",
             params={"month": month},
         )
 
     async def get_user_spend(
         self,
-        user_id: str,
         month: str,
     ) -> Dict[str, Any]:
         return await self._request(
             "GET",
-            f"/admin/user/{user_id}/spend",
+            "/user/spend",
             params={"month": month},
         )
 
@@ -248,7 +247,7 @@ class AsyncAdminClient:
     ) -> Dict[str, Any]:
         return await self._request(
             "GET",
-            f"/admin/organization/{org_id}/members/{user_id}/spend",
+            f"/organizations/{org_id}/members/{user_id}/spend",
             params={"month": month},
         )
 
@@ -259,7 +258,7 @@ class AsyncAdminClient:
     ) -> Dict[str, Any]:
         return await self._request(
             "GET",
-            f"/admin/organization/{org_id}/spend",
+            f"/organizations/{org_id}/spend",
             params={"month": month},
         )
 
@@ -271,13 +270,13 @@ class AsyncAdminClient:
     ) -> Dict[str, Any]:
         return await self._request(
             "POST",
-            "/admin/spending-limit-reached",
+            "/user/spending-limit-reached",
             json=payload,
         )
 
 
-class AdminRequestError(Exception):
-    """Raised when an admin endpoint returns a non-retryable error (4xx etc.)."""
+class SpendRequestError(Exception):
+    """Raised when a spend endpoint returns a non-retryable error (4xx etc.)."""
 
     def __init__(self, *, url: str, method: str, status: int, body: str) -> None:
         self.url = url

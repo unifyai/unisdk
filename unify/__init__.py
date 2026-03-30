@@ -70,8 +70,8 @@ from .logs import (
 # Async Logging
 from ._async_logger import AsyncLoggerManager
 
-# Async Admin
-from .async_admin import AsyncAdminClient, AdminRequestError
+# Async Spend
+from .async_admin import AsyncSpendClient, SpendRequestError
 
 # Utils
 from .utils import helpers, map, storage
