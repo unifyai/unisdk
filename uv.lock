@@ -1725,7 +1725,7 @@ wheels = [
 ]
 
 [[package]]
-name = "unifyai"
+name = "unify"
 version = "0.9.10"
 source = { editable = "." }
 dependencies = [

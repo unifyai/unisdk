@@ -11,7 +11,7 @@ This SDK is the persistence layer. When Unity's managers need to store contacts,
 ## Installation
 
 ```bash
-pip install unifyai
+pip install git+https://github.com/unifyai/unify.git
 ```
 
 ## Configuration
