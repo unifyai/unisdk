@@ -30,7 +30,7 @@ uv run pre-commit install
 
 ## Running Tests
 
-Tests run against a live Orchestra instance. Set `UNIFY_KEY` and optionally `ORCHESTRA_URL` in your `.env`, then:
+Tests run against a live backend instance. Set `UNIFY_KEY` and optionally `ORCHESTRA_URL` in your `.env`, then:
 
 ```bash
 uv run pytest tests/path/to/test.py -v
@@ -55,7 +55,7 @@ uv run pre-commit run --all-files
 ## CI
 
 - The **black** formatting check runs on every push and works for all contributors.
-- The full **pytest** suite requires org-level secrets (Orchestra access, GCP credentials) and runs only for maintainers. When a maintainer needs to trigger tests, include `[run-tests]` in the commit message or PR title.
+- The full **pytest** suite requires org-level secrets (backend access, GCP credentials) and runs only for maintainers. When a maintainer needs to trigger tests, include `[run-tests]` in the commit message or PR title.
 
 ## Pull Requests
 

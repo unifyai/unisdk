@@ -1,38 +1,12 @@
 # Unify
 
-Thin Python SDK wrapping the [Orchestra](https://github.com/unifyai/orchestra) REST API. Provides functional utilities for logging, project management, and assistant operations.
+Python SDK for the [Unify](https://unify.ai) platform backend. Wraps the REST API in a clean functional interface for projects, structured logging, contexts, storage, and assistant management.
 
-## System Architecture
+## What is Unify?
 
-Unify is the Python SDK layer in a multi-repository system:
+Unify builds AI-powered virtual colleagues — autonomous assistants that communicate via phone, SMS, and email, manage tasks, retain knowledge across conversations, and operate continuously. The platform is a distributed system of specialized managers orchestrated by [Unity](https://github.com/unifyai/unity), the brain.
 
-```
-         User (Console/Phone/SMS/Email)
-                      │
-    ┌─────────────────┴──────────────────┐
-    │           Communication            │
-    │    (Webhooks, Voice, SMS, Email)   │
-    └────┬───────────────────────────────┘
-         │
-    ┌────┴────┐    ┌─────────┐    ┌─────────┐
-    │  Unity  │    │  Unify  │    │Orchestra│
-    │ (Brain) │───▶│  (SDK)  │───▶│  (API)  │
-    │         │    │         │    │  (DB)   │
-    └────┬────┘    └────┬────┘    └────┬────┘
-         │              ▲              ▲
-         │              │              │
-         │    ┌─────────┴─┐       ┌────┴───────┐
-         └───▶│  UniLLM   │       │  Console   │
-              │ (LLM API) │       │(Interfaces)│
-              └───────────┘       └────────────┘
-```
-
-**This repo (Unify)** provides a Pythonic interface to Orchestra's REST API. Unity and UniLLM use Unify for all persistence operations (logging, projects, contexts, storage).
-
-Related repositories:
-- [Unity](https://github.com/unifyai/unity) — AI assistant brain (primary consumer)
-- [UniLLM](https://github.com/unifyai/unillm) — LLM client (uses Unify for logging)
-- [Orchestra](https://github.com/unifyai/orchestra) — Backend API that Unify wraps
+This SDK is the persistence layer. When Unity's managers need to store contacts, log conversations, query knowledge, or manage projects, they call Unify. When you want to interact with the same data programmatically — inspect logs, manage projects, upload files — you use Unify directly.
 
 ## Installation
 
@@ -40,30 +14,28 @@ Related repositories:
 pip install unifyai
 ```
 
-Or add to your project's dependencies pointing to this repo.
-
 ## Configuration
 
-Set your API key via environment variable:
+Set your API key:
 
 ```bash
 export UNIFY_KEY=<your-api-key>
 ```
 
-Optionally override the API base URL (defaults to `https://api.unify.ai/v0`):
+Optionally override the backend API base URL (defaults to `https://api.unify.ai/v0`):
 
 ```bash
 export ORCHESTRA_URL=https://api.unify.ai/v0
 ```
 
-## Core API
+## Usage
 
 ### Projects
 
 ```python
 import unify
 
-# Activate a project (creates if doesn't exist)
+# Activate a project (creates if it doesn't exist)
 unify.activate("my-project")
 
 # Or manage projects directly
@@ -79,7 +51,7 @@ import unify
 
 unify.activate("my-project")
 
-# Log entries
+# Log entries with arbitrary fields
 unify.log(question="What is 2+2?", response="4", score=1.0)
 
 # Retrieve logs
@@ -98,7 +70,19 @@ def process(item):
 unify.map(process, items)
 ```
 
-## Project Structure
+## How it fits together
+
+Unify is one piece of a larger open-source system:
+
+| Repo | What it does |
+|------|-------------|
+| **[unity](https://github.com/unifyai/unity)** | The brain — managers, tool loops, orchestration |
+| **unify** (this) | Python SDK for the backend API |
+| **[unillm](https://github.com/unifyai/unillm)** | LLM abstraction — caching, tracing, cost tracking |
+
+See the [Unity README](https://github.com/unifyai/unity) for the full architecture.
+
+## Project structure
 
 ```
 unify/
@@ -118,7 +102,7 @@ unify/
     └── storage.py         # Object storage (signed URLs)
 ```
 
-## Local Development
+## Local development
 
 This project uses [uv](https://docs.astral.sh/uv/) for dependency management.
 
@@ -127,45 +111,27 @@ This project uses [uv](https://docs.astral.sh/uv/) for dependency management.
 ```bash
 pip install uv
 uv sync --group dev
-```
-
-Copy `.env.example` to `.env` and fill in your API key:
-
-```bash
 cp .env.example .env
 ```
 
-### Running Tests
+### Running tests
 
-Tests require a running Orchestra instance and a valid `UNIFY_KEY`:
+Tests run against a live backend instance:
 
 ```bash
 uv run pytest tests/path/to/test.py -v
 ```
 
-### Running Tests in CI
+### CI
 
-**Tests are opt-in to reduce GitHub Actions costs.** Tests only run when explicitly requested:
+The `black` formatting check runs on every push and works for all contributors. The full test suite requires org-level secrets and runs only for maintainers — see [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 
-- **Commit message**: Include `[run-tests]` in your commit message
-- **PR title**: Include `[run-tests]` in your pull request title
-- **Manual trigger**: Use the "Run workflow" button in GitHub Actions
-
-Examples:
-```bash
-# Run tests on this commit
-git commit -m "Fix context handling [run-tests]"
-
-# No tests (default)
-git commit -m "Update README"
-```
-
-> **Note for contributors:** The `black` formatting check runs on every push and
-> works without special credentials. The full `pytest` suite requires org-level
-> secrets (Orchestra access, GCP credentials) and runs only for maintainers.
-> To run tests locally, set `UNIFY_KEY` and `ORCHESTRA_URL` pointing to your
-> Orchestra instance.
-
-### Pre-commit Hooks
+### Pre-commit hooks
 
 Pre-commit hooks run automatically on `git commit` (Black, isort, autoflake). If a commit fails due to auto-formatting, re-run the commit.
+
+## License
+
+Apache 2.0
+
+Built by the team at [Unify](https://unify.ai).
