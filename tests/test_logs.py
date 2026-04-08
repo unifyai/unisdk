@@ -1179,5 +1179,204 @@ def test_create_logs_partial_failure_warning():
         unify.delete_context(ctx)
 
 
+@_handle_project_isolated
+def test_join_query_reduce():
+    """Fused join_query in reduce mode returns aggregated results."""
+    ctx_a = "orders"
+    ctx_b = "users"
+    unify.create_context(ctx_a)
+    unify.create_context(ctx_b)
+
+    unify.create_logs(
+        entries=[
+            {"user_id": 1, "amount": 10},
+            {"user_id": 2, "amount": 20},
+            {"user_id": 1, "amount": 30},
+        ],
+        context=ctx_a,
+    )
+    unify.create_logs(
+        entries=[
+            {"user_id": 1, "name": "Alice"},
+            {"user_id": 2, "name": "Bob"},
+        ],
+        context=ctx_b,
+    )
+
+    result = unify.join_query(
+        pair_of_args=({"context": ctx_a}, {"context": ctx_b}),
+        join_expr="A.user_id == B.user_id",
+        mode="inner",
+        columns={"A.user_id": "user_id", "A.amount": "amount", "B.name": "name"},
+        metric="sum",
+        key="amount",
+    )
+    assert result == 60  # 10 + 30 + 20
+
+
+@_handle_project_isolated
+def test_join_query_rows():
+    """Fused join_query in row mode returns paginated rows."""
+    ctx_a = "orders"
+    ctx_b = "users"
+    unify.create_context(ctx_a)
+    unify.create_context(ctx_b)
+
+    unify.create_logs(
+        entries=[
+            {"user_id": 1, "amount": 10},
+            {"user_id": 2, "amount": 20},
+        ],
+        context=ctx_a,
+    )
+    unify.create_logs(
+        entries=[
+            {"user_id": 1, "name": "Alice"},
+            {"user_id": 2, "name": "Bob"},
+        ],
+        context=ctx_b,
+    )
+
+    result = unify.join_query(
+        pair_of_args=({"context": ctx_a}, {"context": ctx_b}),
+        join_expr="A.user_id == B.user_id",
+        mode="inner",
+        columns={"A.user_id": "user_id", "A.amount": "amount", "B.name": "name"},
+    )
+    assert "logs" in result
+    assert "count" in result
+    assert result["count"] == 2
+    assert len(result["logs"]) == 2
+
+
+@_handle_project_isolated
+def test_join_query_matches_legacy():
+    """Fused join_query reduce result matches legacy join+metric+delete."""
+    ctx_a = "orders"
+    ctx_b = "users"
+    unify.create_context(ctx_a)
+    unify.create_context(ctx_b)
+
+    unify.create_logs(
+        entries=[
+            {"user_id": 1, "amount": 10},
+            {"user_id": 2, "amount": 20},
+            {"user_id": 1, "amount": 30},
+        ],
+        context=ctx_a,
+    )
+    unify.create_logs(
+        entries=[
+            {"user_id": 1, "name": "Alice"},
+            {"user_id": 2, "name": "Bob"},
+        ],
+        context=ctx_b,
+    )
+
+    columns = {"A.user_id": "user_id", "A.amount": "amount", "B.name": "name"}
+
+    # Legacy path
+    unify.join_logs(
+        pair_of_args=({"context": ctx_a}, {"context": ctx_b}),
+        join_expr="A.user_id == B.user_id",
+        mode="inner",
+        new_context="_legacy_temp",
+        columns=list(columns.keys()),
+    )
+    legacy_result = unify.get_logs_metric(
+        key="amount",
+        metric="sum",
+        context="_legacy_temp",
+    )
+    unify.delete_context("_legacy_temp")
+
+    # Fused path
+    fused_result = unify.join_query(
+        pair_of_args=({"context": ctx_a}, {"context": ctx_b}),
+        join_expr="A.user_id == B.user_id",
+        mode="inner",
+        columns=columns,
+        metric="sum",
+        key="amount",
+    )
+
+    legacy_val = (
+        legacy_result
+        if isinstance(legacy_result, (int, float))
+        else legacy_result.get("sum", legacy_result)
+    )
+    assert float(fused_result) == float(legacy_val)
+
+
+# ---------------------------------------------------------------------------
+# join_query validation rejection tests
+# ---------------------------------------------------------------------------
+
+_JQ_BASE = dict(
+    pair_of_args=({"context": "a"}, {"context": "b"}),
+    join_expr="A.x == B.x",
+    mode="inner",
+)
+
+
+@_handle_project_isolated
+def test_join_query_key_without_metric_400():
+    """Server rejects key without metric with 400."""
+    unify.create_context("a")
+    unify.create_context("b")
+    unify.create_logs(entries=[{"x": 1, "v": 10}], context="a")
+    unify.create_logs(entries=[{"x": 1, "v": 20}], context="b")
+
+    import pytest
+
+    with pytest.raises(unify.RequestError) as exc_info:
+        unify.join_query(**_JQ_BASE, key="v")
+    assert (
+        exc_info.value.response.status_code == 400
+        or "key" in str(exc_info.value).lower()
+    )
+
+
+@_handle_project_isolated
+def test_join_query_group_by_without_metric_400():
+    """Server rejects group_by without metric with 400."""
+    unify.create_context("a")
+    unify.create_context("b")
+    unify.create_logs(entries=[{"x": 1, "v": 10}], context="a")
+    unify.create_logs(entries=[{"x": 1, "v": 20}], context="b")
+
+    import pytest
+
+    with pytest.raises(unify.RequestError) as exc_info:
+        unify.join_query(**_JQ_BASE, group_by="x")
+    assert (
+        exc_info.value.response.status_code == 400
+        or "group_by" in str(exc_info.value).lower()
+    )
+
+
+@_handle_project_isolated
+def test_join_query_sorting_in_reduce_400():
+    """Server rejects sorting when metric is set with 400."""
+    unify.create_context("a")
+    unify.create_context("b")
+    unify.create_logs(entries=[{"x": 1, "v": 10}], context="a")
+    unify.create_logs(entries=[{"x": 1, "v": 20}], context="b")
+
+    import pytest
+
+    with pytest.raises(unify.RequestError) as exc_info:
+        unify.join_query(
+            **_JQ_BASE,
+            metric="sum",
+            key="v",
+            sorting='{"v": "ascending"}',
+        )
+    assert (
+        exc_info.value.response.status_code == 400
+        or "sorting" in str(exc_info.value).lower()
+    )
+
+
 if __name__ == "__main__":
     pass
