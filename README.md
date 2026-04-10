@@ -4,7 +4,7 @@ Python SDK for the [Unify](https://unify.ai) platform backend. Wraps the REST AP
 
 ## What is Unify?
 
-Unify builds AI-powered virtual colleagues — autonomous assistants that communicate via phone, SMS, and email, manage tasks, retain knowledge across conversations, and operate continuously. The platform is a distributed system of specialized managers orchestrated by [Unity](https://github.com/unifyai/unity), the brain.
+Unify builds AI assistants with their own computer, memory, and communication channels. The assistants communicate via phone, SMS, and email, manage tasks, retain knowledge across conversations, and operate continuously. The platform is a distributed system of specialized managers orchestrated by [Unity](https://github.com/unifyai/unity), the brain.
 
 This SDK is the persistence layer. When Unity's managers need to store contacts, log conversations, query knowledge, or manage projects, they call Unify. When you want to interact with the same data programmatically — inspect logs, manage projects, upload files — you use Unify directly.
 

@@ -1286,6 +1286,116 @@ def join_logs(
     return response.json()
 
 
+def join_query(
+    *,
+    pair_of_args: Tuple[Dict[str, Any], Dict[str, Any]],
+    join_expr: str,
+    mode: str = "inner",
+    columns: Optional[Union[Dict[str, str], List[str]]] = None,
+    filter_expr: Optional[str] = None,
+    sorting: Optional[str] = None,
+    limit: Optional[int] = None,
+    offset: int = 0,
+    group_by: Optional[Union[str, List[str]]] = None,
+    metric: Optional[str] = None,
+    key: Optional[Union[str, List[str]]] = None,
+    project: Optional[str] = None,
+    api_key: Optional[str] = None,
+) -> Union[Dict[str, Any], List[Dict], float, int]:
+    """Execute a join and query/reduce the result in a single round-trip.
+
+    Combines the join specification with post-join filtering, sorting,
+    pagination, and optional aggregation — without materialising a
+    temporary context.
+
+    **Modes of operation:**
+
+    * **Row mode** (default, ``metric=None``): returns paginated joined rows,
+      optionally filtered via ``filter_expr`` and sorted via ``sorting``.
+      Accepts ``sorting``, ``limit``, ``offset``, and ``filter_expr``.
+
+    * **Reduce mode** (``metric`` + ``key`` set): returns aggregated metric
+      values, optionally grouped via ``group_by``.  Accepts ``filter_expr``
+      and ``group_by``.  ``sorting``, ``limit``, and ``offset`` do NOT apply.
+
+    Args:
+        pair_of_args: Two dicts, each specifying a side of the join
+            (``context``, ``filter_expr``, ``from_ids``, ``exclude_ids``).
+        join_expr: Join condition using ``A``/``B`` aliases,
+            e.g. ``"A.user_id == B.user_id"``.
+        mode: Join type — ``"inner"``, ``"left"``, ``"right"``, or ``"outer"``.
+        columns: Column projection for the joined result.  Dict maps
+            ``"A.col"`` → alias; list uses original names.  ``None`` merges
+            all columns from both sides.
+        filter_expr: Boolean expression applied to the joined rows
+            (uses output column names).  Works in both modes.
+        sorting: **Row mode only.** JSON-encoded dict mapping column names to
+            ``"ascending"``/``"descending"``.  Note: comparisons are text-based;
+            numeric columns compare lexicographically (``"9" > "10"``).
+        limit: **Row mode only.** Max rows to return (1–1000).
+        offset: **Row mode only.** Rows to skip (default 0).
+        group_by: **Reduce mode only.** Field(s) to group by before aggregation.
+        metric: **Reduce mode.** Aggregation metric (``count``, ``sum``,
+            ``mean``, ``var``, ``std``, ``min``, ``max``, ``median``, ``mode``).
+            Must be paired with ``key``.
+        key: **Reduce mode.** Column(s) to aggregate.  Must be paired with
+            ``metric``.
+        project: Project name.  Falls back to the default project.
+        api_key: Unify API key.  Falls back to ``UNIFY_KEY`` env var.
+
+    Returns:
+        Row mode: list of dicts (joined rows).
+        Reduce mode: dict mapping group keys to aggregate values, or a scalar
+        when no ``group_by`` is specified.
+
+    Raises:
+        HTTPError (400): The server rejects invalid mode/arg combinations
+            with actionable messages:
+
+            - ``metric`` without ``key`` → set ``key`` to the column(s) to
+              aggregate.
+            - ``key`` without ``metric`` → set ``metric`` or remove ``key``.
+            - ``group_by`` without ``metric`` → set ``metric`` and ``key``,
+              or use ``sorting``/``limit``/``offset`` for row-mode pagination.
+            - ``sorting`` with ``metric`` → remove ``sorting`` (reduce mode
+              has no row order).  To sort then aggregate, call this endpoint
+              without ``metric`` first, then call ``POST /logs/metric``.
+            - ``limit`` with ``metric`` → remove ``limit``.  Use
+              ``filter_expr`` to restrict input rows.
+            - ``offset != 0`` with ``metric`` → remove ``offset``.
+
+    See Also:
+        :func:`join_logs`: materialise a join into a new context (supports
+            sequential multi-table joins, embedding search via
+            ``table_search_top_k``).
+        :func:`get_logs`: paginate/filter/sort rows from an existing context.
+        :func:`get_logs_metric`: aggregate a single context (no join).
+    """
+    api_key = _validate_api_key(api_key)
+    headers = _create_request_header(api_key)
+    project = _get_project(project)
+    body = {
+        k: v
+        for k, v in {
+            "project_name": project,
+            "pair_of_args": pair_of_args,
+            "join_expr": join_expr,
+            "mode": mode,
+            "columns": columns,
+            "filter_expr": filter_expr,
+            "sorting": sorting,
+            "limit": limit,
+            "offset": offset,
+            "group_by": group_by,
+            "metric": metric,
+            "key": key,
+        }.items()
+        if v is not None
+    }
+    response = http.post(BASE_URL + "/logs/join_query", headers=headers, json=body)
+    return response.json()
+
+
 def create_fields(
     fields: Union[Dict[str, Any], List[str]],
     *,
