@@ -1,6 +1,7 @@
 import concurrent.futures
 
 import pytest
+
 import unify
 from unify.utils.http import RequestError
 

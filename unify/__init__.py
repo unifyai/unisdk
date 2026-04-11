@@ -84,8 +84,17 @@ __all__ = [
     "storage",
 ]
 
-# Platform API utilities
-from .platform import deduct_credits, get_user_basic_info
+# Agent
+from . import agent
+
+# Async Logging
+from ._async_logger import AsyncLoggerManager
+
+# Assistants
+from .assistants import list_assistants
+
+# Async Spend
+from .async_admin import AsyncSpendClient, SpendRequestError
 
 # Contexts
 from .contexts import (
@@ -99,17 +108,6 @@ from .contexts import (
     get_contexts,
     rename_context,
     rollback_context,
-)
-
-# Projects
-from .projects import (
-    commit_project,
-    create_project,
-    delete_project,
-    delete_project_contexts,
-    get_project_commits,
-    list_projects,
-    rollback_project,
 )
 
 # Logs
@@ -140,23 +138,24 @@ from .logs import (
     update_logs,
 )
 
-# Async Logging
-from ._async_logger import AsyncLoggerManager
+# Platform API utilities
+from .platform import deduct_credits, get_user_basic_info
 
-# Async Spend
-from .async_admin import AsyncSpendClient, SpendRequestError
+# Projects
+from .projects import (
+    commit_project,
+    create_project,
+    delete_project,
+    delete_project_contexts,
+    get_project_commits,
+    list_projects,
+    rollback_project,
+)
 
 # Utils
-from .utils import helpers, map, storage
-from .utils.storage import get_signed_url, download_object
-from .utils import http
+from .utils import helpers, http, map, storage
 from .utils.http import RequestError
-
-# Assistants
-from .assistants import list_assistants
-
-# Agent
-from . import agent
+from .utils.storage import download_object, get_signed_url
 
 # Project #
 # --------#

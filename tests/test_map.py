@@ -3,6 +3,7 @@
 import os
 
 import pytest
+
 import unify
 
 # Disable tqdm progress bars in tests

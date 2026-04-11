@@ -27,11 +27,12 @@ jobs:
       uses: astral-sh/setup-uv@v5
     - name: Install deps
       run: uv sync --group dev
-    - name: Run black check
-      run: uv run black --check .
+    - name: Run pre-commit checks
+      run: uv run pre-commit run --all-files
 
-  pytest:
+  integration-pytest:
     runs-on: ubuntu-latest-8-cores
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     timeout-minutes: 120
     env:
       # Local orchestra configuration
@@ -120,7 +121,7 @@ jobs:
         # Export the local URL for tests
         echo "ORCHESTRA_URL=http://127.0.0.1:8000/v0" >> $GITHUB_ENV
 
-    - name: Run unit tests
+    - name: Run integration tests
       id: pytest
       run: |
         set +e

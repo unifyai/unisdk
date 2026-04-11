@@ -1,26 +1,31 @@
 [build-system]
-requires = ["setuptools>=61.0"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [project]
 name = "unify"
 version = "0.9.10"
-description = "A Python package for interacting with the Unify API"
+description = "Python SDK for Unity's persistence and state layer"
 readme = "README.md"
 requires-python = ">=3.12"
+license = "MIT"
 authors = [
-    {name = "Unify", email = "hello@unify.com"},
+    {name = "Unify", email = "hello@unify.ai"},
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Programming Language :: Python :: 3.12",
 ]
 dependencies = [
     "requests>=2.32.4",
-    "requests-toolbelt>=1.0.0",
-    "openai>=2.8.1",
-    "jsonlines>=3.1.0",
-    "rich>=13.8.1",
-    "termcolor>=2.5.0",
     "aiohttp>=3.12.14",
-    "google-genai>=1.52.0",
+    "tqdm>=4.67.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/unifyai/unify"
+Repository = "https://github.com/unifyai/unify"
+Issues = "https://github.com/unifyai/unify/issues"
 
 [dependency-groups]
 dev = [
@@ -40,11 +45,10 @@ dev = [
     "opentelemetry-api>=1.20.0",
     "opentelemetry-sdk>=1.20.0",
     "opentelemetry-exporter-otlp>=1.20.0",
-    "pytest-cov>=7.1.0",
 ]
 
-[tool.setuptools.packages.find]
-include = ["unify", "unify.*"]
+[tool.hatch.build.targets.wheel]
+packages = ["unify"]
 
 [tool.pytest.ini_options]
 asyncio_default_fixture_loop_scope = "function"

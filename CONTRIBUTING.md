@@ -28,9 +28,29 @@ cp .env.example .env
 uv run pre-commit install
 ```
 
+The `.cursor/` directory and the `global-cursor-rules` submodule are optional editor tooling. They are not required for normal development.
+
 ## Running Tests
 
-Tests run against a live backend instance. Set `UNIFY_KEY` and optionally `ORCHESTRA_URL` in your `.env`, then:
+### Default contributor check
+
+Public PRs are expected to pass the pre-commit suite:
+
+```bash
+uv run pre-commit run --all-files
+```
+
+### Optional local smoke tests
+
+These mocked tests do not require the internal Orchestra/GCP stack:
+
+```bash
+uv run pytest tests/test_async_admin.py tests/test_storage.py tests/test_http.py -v
+```
+
+### Full integration suite
+
+Most of the test suite runs against a live backend or a local Orchestra deployment. Set `UNIFY_KEY` and optionally `ORCHESTRA_URL` in your `.env`, then:
 
 ```bash
 uv run pytest tests/path/to/test.py -v
@@ -43,6 +63,7 @@ This project uses automated formatting via pre-commit hooks:
 - **Black** for code formatting
 - **isort** for import sorting
 - **autoflake** for removing unused imports
+- Basic TOML, YAML, and whitespace hygiene checks
 
 Hooks run automatically on `git commit`. If a commit fails because the hooks reformatted files, stage the changes and commit again.
 
@@ -54,8 +75,8 @@ uv run pre-commit run --all-files
 
 ## CI
 
-- The **black** formatting check runs on every push and works for all contributors.
-- The full **pytest** suite requires org-level secrets (backend access, GCP credentials) and runs only for maintainers. When a maintainer needs to trigger tests, include `[run-tests]` in the commit message or PR title.
+- External PRs and forks run the pre-commit lint/format checks only.
+- The full **pytest** suite requires org-level secrets (backend access, GCP credentials) and internal infrastructure, so it runs only on maintainer-controlled branches and via manual workflow dispatch.
 
 ## Pull Requests
 
