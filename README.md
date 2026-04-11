@@ -1,12 +1,20 @@
 # Unify
 
-Python SDK for the [Unify](https://unify.ai) platform backend. Wraps the REST API in a clean functional interface for projects, structured logging, contexts, storage, and assistant management.
+Python SDK for the persistence and state layer behind [Unity](https://github.com/unifyai/unity). It wraps the backend REST API in a clean functional interface for projects, structured logging, contexts, storage, and assistant management.
 
-## What is Unify?
+If you're here from the Unity quickstart, this is the layer behind `UNIFY_KEY`: Unity runs locally, while `unify` connects the managers to the backend that stores project state, logs, and other persistent data.
 
-Unify builds AI assistants with their own computer, memory, and communication channels. The assistants communicate via phone, SMS, and email, manage tasks, retain knowledge across conversations, and operate continuously. The platform is a distributed system of specialized managers orchestrated by [Unity](https://github.com/unifyai/unity), the brain.
+## What layer is this?
 
-This SDK is the persistence layer. When Unity's managers need to store contacts, log conversations, query knowledge, or manage projects, they call Unify. When you want to interact with the same data programmatically — inspect logs, manage projects, upload files — you use Unify directly.
+Unify is the persistence plane used by Unity's managers. When Unity needs to store contacts, log conversations, query knowledge, or manage projects, it calls `unify`. When you want to interact with the same data programmatically — inspect logs, manage projects, upload files, or query assistant state — you use this SDK directly.
+
+In the default open-source Unity flow, the layering looks like this:
+
+| Layer | Repo | Role |
+|------|------|------|
+| Runtime / orchestration | [unity](https://github.com/unifyai/unity) | Runs the agent brain locally |
+| Persistence / state | **unify** (this repo) | Connects the runtime to backend state and logging |
+| Model access | [unillm](https://github.com/unifyai/unillm) | Routes LLM calls to the provider or endpoint the developer chooses |
 
 ## Installation
 
@@ -16,7 +24,7 @@ pip install git+https://github.com/unifyai/unify.git
 
 ## Configuration
 
-Set your API key:
+Set your API key for the default hosted backend:
 
 ```bash
 export UNIFY_KEY=<your-api-key>
@@ -70,17 +78,11 @@ def process(item):
 unify.map(process, items)
 ```
 
-## How it fits together
+## Backend configuration
 
-Unify is one piece of a larger open-source system:
+By default, `unify` targets Unify's hosted API. If you're running against a different deployment, point `ORCHESTRA_URL` at that base URL and keep using the same SDK surface.
 
-| Repo | What it does |
-|------|-------------|
-| **[unity](https://github.com/unifyai/unity)** | The brain — managers, tool loops, orchestration |
-| **unify** (this) | Python SDK for the backend API |
-| **[unillm](https://github.com/unifyai/unillm)** | LLM abstraction — caching, tracing, cost tracking |
-
-See the [Unity README](https://github.com/unifyai/unity) for the full architecture.
+See the [Unity README](https://github.com/unifyai/unity) for the broader architecture and the default quickstart that uses this SDK.
 
 ## Project structure
 
@@ -132,6 +134,6 @@ Pre-commit hooks run automatically on `git commit` (Black, isort, autoflake). If
 
 ## License
 
-Apache 2.0
+MIT — see [LICENSE](LICENSE) for details.
 
 Built by the team at [Unify](https://unify.ai).
