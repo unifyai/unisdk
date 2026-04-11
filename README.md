@@ -18,9 +18,19 @@ In the default open-source Unity flow, the layering looks like this:
 
 ## Installation
 
+The supported public install path is a direct GitHub/VCS install:
+
 ```bash
-pip install git+https://github.com/unifyai/unify.git
+pip install "unify @ git+https://github.com/unifyai/unify.git"
 ```
+
+Or with [uv](https://docs.astral.sh/uv/):
+
+```bash
+uv add "unify @ git+https://github.com/unifyai/unify.git"
+```
+
+`pip install unify` is not the supported path for this SDK.
 
 ## Configuration
 
@@ -111,26 +121,49 @@ This project uses [uv](https://docs.astral.sh/uv/) for dependency management.
 ### Setup
 
 ```bash
+git clone https://github.com/unifyai/unify.git
+cd unify
 pip install uv
 uv sync --group dev
 cp .env.example .env
+uv run pre-commit install
+```
+
+The `.cursor/` directory and the `global-cursor-rules` submodule are optional editor tooling. They are not required to install, test, or use the SDK.
+
+### Default contributor check
+
+External contributors should treat the pre-commit suite as the default local check:
+
+```bash
+uv run pre-commit run --all-files
+```
+
+### Optional local smoke tests
+
+The following mocked tests run without the internal Orchestra/GCP stack:
+
+```bash
+uv run pytest tests/test_async_admin.py tests/test_storage.py tests/test_http.py -v
 ```
 
 ### Running tests
 
-Tests run against a live backend instance:
+Most of the test suite exercises a live backend or internal local-Orchestra stack:
 
 ```bash
 uv run pytest tests/path/to/test.py -v
 ```
 
+Full integration coverage is maintained on maintainer branches and via manual GitHub Actions runs. Public fork PRs only run lint/format checks in CI.
+
 ### CI
 
-The `black` formatting check runs on every push and works for all contributors. The full test suite requires org-level secrets and runs only for maintainers — see [CONTRIBUTING.md](CONTRIBUTING.md) for details.
+Public PRs run the pre-commit lint/format checks only. The full integration suite requires org-level secrets and internal infrastructure, so it is restricted to maintainer-controlled branches and manual workflow dispatch — see [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 
 ### Pre-commit hooks
 
-Pre-commit hooks run automatically on `git commit` (Black, isort, autoflake). If a commit fails due to auto-formatting, re-run the commit.
+Pre-commit hooks run automatically on `git commit` (Black, isort, autoflake, and basic hygiene checks). If a commit fails due to auto-formatting, re-run the commit.
 
 ## License
 

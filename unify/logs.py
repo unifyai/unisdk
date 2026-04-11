@@ -10,8 +10,9 @@ from contextvars import ContextVar
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-import unify
 from tqdm import tqdm
+
+import unify
 from unify import BASE_URL
 from unify.utils import http
 from unify.utils.helpers import (

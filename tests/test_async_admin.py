@@ -12,7 +12,7 @@ from unittest.mock import AsyncMock, MagicMock
 import aiohttp
 import pytest
 
-from unify.async_admin import SpendRequestError, AsyncSpendClient
+from unify.async_admin import AsyncSpendClient, SpendRequestError
 
 
 def _make_response(*, status: int = 200, json_data: dict | None = None):

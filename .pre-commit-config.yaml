@@ -27,7 +27,7 @@ repos:
   hooks:
   - id: autoflake
     name: autoflake
-    entry: .venv/bin/autoflake
+    entry: uv run autoflake
     language: system
     types: [python]
     args: [--in-place, --remove-all-unused-imports, --remove-duplicate-keys]
@@ -36,8 +36,14 @@ repos:
         .*/__init__\.py      # Exclude all __init__.py files
       )$
 
+  - id: isort
+    name: isort
+    entry: uv run isort
+    language: system
+    types: [python]
+
   - id: black
     name: Format with Black
-    entry: .venv/bin/black
+    entry: uv run black
     language: system
     types: [python]

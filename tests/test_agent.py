@@ -1,6 +1,7 @@
 import uuid
 
 import pytest
+
 import unify
 import unify.agent
 from unify.utils import http

@@ -26,42 +26,47 @@ uv sync --group dev
 
 ## Running Tests
 
-### Basic Command
+### Default Contributor Check
 
 ```bash
-uv run pytest tests/path/to/test.py -v
+uv run pre-commit run --all-files
 ```
 
-### CI Environment Variable
+### Mocked Smoke Tests
 
-The `conftest.py` runs cleanup code when the `CI` environment variable is set. If you encounter errors like `Project _ not found` during test startup, unset `CI`:
+These tests do not require the internal Orchestra/GCP stack:
 
 ```bash
-CI= uv run pytest tests/path/to/test.py -v
+uv run pytest tests/test_async_admin.py tests/test_storage.py tests/test_http.py -v
 ```
 
-### Examples
+### Full Integration Suite
+
+Most of the test suite exercises a live backend or a local Orchestra deployment.
+Set `UNIFY_KEY` and optionally `ORCHESTRA_URL` in `.env`, then run the target
+pytest path directly.
 
 ```bash
 # Single test file
-uv run pytest tests/test_logging/test_utils/test_contexts.py -v
+uv run pytest tests/test_contexts.py -v
 
 # Specific test function
-uv run pytest tests/test_logging/test_utils/test_contexts.py::test_create_context -v
+uv run pytest tests/test_projects.py::test_create_project -v
 
 # Multiple specific tests
-uv run pytest tests/test_logging/test_utils/test_contexts.py::test_create_context tests/test_logging/test_utils/test_contexts.py::test_get_context -v
+uv run pytest tests/test_async_admin.py tests/test_storage.py -v
 
 # Entire directory
-uv run pytest tests/test_logging/ -v
+uv run pytest tests/ -v
 ```
 
 ## Pre-commit Hooks
 
 Pre-commit hooks run automatically on `git commit`. They include:
 - Black (formatting)
+- isort (import sorting)
 - autoflake (unused import removal)
-- trailing whitespace removal
+- YAML/TOML/whitespace hygiene checks
 
 If a commit fails due to auto-formatting, simply re-run the commit command - the hooks will have fixed the files.
 
