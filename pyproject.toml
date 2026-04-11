@@ -17,11 +17,6 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3.12",
 ]
-
-[project.urls]
-Homepage = "https://github.com/unifyai/unify"
-Repository = "https://github.com/unifyai/unify"
-Issues = "https://github.com/unifyai/unify/issues"
 dependencies = [
     "requests>=2.32.4",
     "requests-toolbelt>=1.0.0",
@@ -32,6 +27,11 @@ dependencies = [
     "aiohttp>=3.12.14",
     "google-genai>=1.52.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/unifyai/unify"
+Repository = "https://github.com/unifyai/unify"
+Issues = "https://github.com/unifyai/unify/issues"
 
 [dependency-groups]
 dev = [
