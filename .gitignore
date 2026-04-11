@@ -170,6 +170,3 @@ staging_to_main.sh
 # Ignore log contents but keep the README
 logs/*
 !logs/README.md
-
-# Dev-only shared cursor rules (optional submodule)
-.cursor/rules/global-rules/
