@@ -1,6 +1,6 @@
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "unify"
@@ -53,11 +53,8 @@ dev = [
     "opentelemetry-exporter-otlp>=1.20.0",
 ]
 
-[tool.hatch.build.targets.wheel]
-packages = ["unify"]
-
-[tool.setuptools]
-editable-mode = "strict"
+[tool.setuptools.packages.find]
+include = ["unify", "unify.*"]
 
 [tool.pytest.ini_options]
 asyncio_default_fixture_loop_scope = "function"
