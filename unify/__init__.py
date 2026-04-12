@@ -154,7 +154,6 @@ from .projects import (
 
 # Utils
 from .utils import helpers, http, map, storage
-from .utils.http import RequestError
 from .utils.storage import download_object, get_signed_url
 
 # Project #
@@ -182,3 +181,9 @@ def active_project() -> str:
     if PROJECT is None:
         return os.environ.get("UNIFY_PROJECT")
     return PROJECT
+
+
+def __getattr__(name: str):
+    if name == "RequestError":
+        return http.RequestError
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
