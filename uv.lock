@@ -1195,8 +1195,8 @@ wheels = [
 ]
 
 [[package]]
-name = "unify-sdk"
-version = "0.1.0"
+name = "unify"
+version = "0.9.10"
 source = { editable = "." }
 dependencies = [
     { name = "aiohttp" },
