@@ -1,109 +1,60 @@
 import inspect
-import os
-import time
 import uuid
 from typing import Iterator
 
 import pytest
+from tests.coordinator_helpers import (
+    PreviewOrganization,
+    managed_preview_organization,
+)
 
 import unify
 from unify.utils import http
-from unify.utils.helpers import _create_request_header
-
-COORDINATOR_PREVIEW_URL = "https://internal.example.com/v0"
-
-
-def _headers(api_key: str) -> dict[str, str]:
-    return _create_request_header(api_key)
-
-
-def _require_preview_url() -> str:
-    if unify.BASE_URL.rstrip("/") != COORDINATOR_PREVIEW_URL:
-        pytest.skip(
-            "Coordinator lifecycle tests require ORCHESTRA_URL="
-            f"{COORDINATOR_PREVIEW_URL}",
-        )
-    return COORDINATOR_PREVIEW_URL
-
-
-def _require_admin_key() -> str:
-    admin_key = os.environ.get("COORDINATOR_TEST_ADMIN_KEY") or os.environ.get(
-        "ORCHESTRA_ADMIN_KEY",
-    )
-    if not admin_key:
-        pytest.skip("COORDINATOR_TEST_ADMIN_KEY or ORCHESTRA_ADMIN_KEY is required")
-    return admin_key
-
-
-def _require_user_key() -> str:
-    user_key = os.environ.get("UNIFY_KEY")
-    if not user_key:
-        pytest.skip("UNIFY_KEY is required")
-    return user_key
-
-
-def _delete_preview_organization(
-    base_url: str,
-    organization_id: int,
-    api_key: str,
-) -> None:
-    response = None
-    for attempt in range(3):
-        response = http.delete(
-            f"{base_url}/organizations/{organization_id}",
-            headers=_headers(api_key),
-            raise_for_status=False,
-        )
-        if response.status_code in {204, 404}:
-            return
-        if attempt < 2:
-            time.sleep(1)
-    assert response is not None
-    assert response.status_code in {204, 404}, response.text
 
 
 @pytest.fixture(scope="module")
-def preview_org() -> Iterator[tuple[int, str]]:
-    base_url = _require_preview_url()
-    admin_key = _require_admin_key()
-    user_key = _require_user_key()
-    owner = unify.get_user_basic_info()
-    org_name = f"Coordinator SDK {uuid.uuid4().hex[:12]}"
-
-    response = http.post(
-        f"{base_url}/admin/organizations",
-        headers=_headers(admin_key),
-        json={
-            "name": org_name,
-            "creator_user_id": owner["user_id"],
-            "timezone": owner.get("timezone") or "UTC",
-        },
-        timeout=30,
-    )
-    assert response.status_code == 201, response.text
-    organization = response.json()
-
-    try:
-        yield int(organization["id"]), organization["api_key"]
-    finally:
-        _delete_preview_organization(base_url, int(organization["id"]), user_key)
+def preview_org() -> Iterator[PreviewOrganization]:
+    with managed_preview_organization() as organization:
+        yield organization
 
 
 def test_public_coordinator_sdk_exports() -> None:
     from unify import (  # noqa: PLC0415
         RequestError,
+        add_space_member,
+        cancel_space_invitation,
         create_assistant,
+        create_space,
         delete_assistant,
+        delete_space,
+        invite_assistant_to_space,
         list_assistants,
         list_org_members,
+        list_pending_invitations,
+        list_space_members,
+        list_spaces,
+        list_spaces_for_assistant,
+        remove_space_member,
         update_assistant_config,
+        update_space,
     )
 
+    assert add_space_member is unify.add_space_member
+    assert cancel_space_invitation is unify.cancel_space_invitation
     assert create_assistant is unify.create_assistant
+    assert create_space is unify.create_space
     assert delete_assistant is unify.delete_assistant
+    assert delete_space is unify.delete_space
+    assert invite_assistant_to_space is unify.invite_assistant_to_space
     assert list_assistants is unify.list_assistants
     assert list_org_members is unify.list_org_members
+    assert list_pending_invitations is unify.list_pending_invitations
+    assert list_space_members is unify.list_space_members
+    assert list_spaces is unify.list_spaces
+    assert list_spaces_for_assistant is unify.list_spaces_for_assistant
+    assert remove_space_member is unify.remove_space_member
     assert update_assistant_config is unify.update_assistant_config
+    assert update_space is unify.update_space
     assert RequestError is http.RequestError
 
     list_signature = inspect.signature(unify.list_assistants)
@@ -114,11 +65,14 @@ def test_public_coordinator_sdk_exports() -> None:
     assert "organization_id" not in create_signature.parameters
     assert "is_coordinator" not in create_signature.parameters
 
+    space_signature = inspect.signature(unify.create_space)
+    assert "kind" not in space_signature.parameters
+
 
 def test_assistant_lifecycle_round_trips_against_coordinator_preview(
-    preview_org: tuple[int, str],
+    preview_org: PreviewOrganization,
 ) -> None:
-    _, org_api_key = preview_org
+    org_api_key = preview_org.api_key
     suffix = uuid.uuid4().hex[:10]
     assistant_id: int | None = None
 
@@ -174,9 +128,10 @@ def test_assistant_lifecycle_round_trips_against_coordinator_preview(
 
 
 def test_list_org_members_returns_preview_organization_members(
-    preview_org: tuple[int, str],
+    preview_org: PreviewOrganization,
 ) -> None:
-    organization_id, org_api_key = preview_org
+    organization_id = preview_org.organization_id
+    org_api_key = preview_org.api_key
 
     members = unify.list_org_members(organization_id, api_key=org_api_key)
 
