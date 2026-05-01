@@ -73,7 +73,12 @@ __all__ = [
     "get_signed_url",
     "download_object",
     # Assistants
+    "create_assistant",
+    "delete_assistant",
     "list_assistants",
+    "update_assistant_config",
+    # Organizations
+    "list_org_members",
     # Errors
     "RequestError",
     # Submodules
@@ -91,7 +96,12 @@ from . import agent
 from ._async_logger import AsyncLoggerManager
 
 # Assistants
-from .assistants import list_assistants
+from .assistants import (
+    create_assistant,
+    delete_assistant,
+    list_assistants,
+    update_assistant_config,
+)
 
 # Async Spend
 from .async_admin import AsyncSpendClient, SpendRequestError
@@ -137,6 +147,9 @@ from .logs import (
     unset_context,
     update_logs,
 )
+
+# Organizations
+from .organizations import list_org_members
 
 # Platform API utilities
 from .platform import deduct_credits, get_user_basic_info
