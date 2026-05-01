@@ -79,6 +79,18 @@ __all__ = [
     "update_assistant_config",
     # Organizations
     "list_org_members",
+    # Spaces
+    "add_space_member",
+    "cancel_space_invitation",
+    "create_space",
+    "delete_space",
+    "invite_assistant_to_space",
+    "list_pending_invitations",
+    "list_space_members",
+    "list_spaces",
+    "list_spaces_for_assistant",
+    "remove_space_member",
+    "update_space",
     # Errors
     "RequestError",
     # Submodules
@@ -163,6 +175,21 @@ from .projects import (
     get_project_commits,
     list_projects,
     rollback_project,
+)
+
+# Spaces
+from .spaces import (
+    add_space_member,
+    cancel_space_invitation,
+    create_space,
+    delete_space,
+    invite_assistant_to_space,
+    list_pending_invitations,
+    list_space_members,
+    list_spaces,
+    list_spaces_for_assistant,
+    remove_space_member,
+    update_space,
 )
 
 # Utils
