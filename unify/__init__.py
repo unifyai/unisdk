@@ -73,7 +73,24 @@ __all__ = [
     "get_signed_url",
     "download_object",
     # Assistants
+    "create_assistant",
+    "delete_assistant",
     "list_assistants",
+    "update_assistant_config",
+    # Organizations
+    "list_org_members",
+    # Spaces
+    "add_space_member",
+    "cancel_space_invitation",
+    "create_space",
+    "delete_space",
+    "invite_assistant_to_space",
+    "list_pending_invitations",
+    "list_space_members",
+    "list_spaces",
+    "list_spaces_for_assistant",
+    "remove_space_member",
+    "update_space",
     # Errors
     "RequestError",
     # Submodules
@@ -91,7 +108,12 @@ from . import agent
 from ._async_logger import AsyncLoggerManager
 
 # Assistants
-from .assistants import list_assistants
+from .assistants import (
+    create_assistant,
+    delete_assistant,
+    list_assistants,
+    update_assistant_config,
+)
 
 # Async Spend
 from .async_admin import AsyncSpendClient, SpendRequestError
@@ -138,6 +160,9 @@ from .logs import (
     update_logs,
 )
 
+# Organizations
+from .organizations import list_org_members
+
 # Platform API utilities
 from .platform import deduct_credits, get_user_basic_info
 
@@ -150,6 +175,21 @@ from .projects import (
     get_project_commits,
     list_projects,
     rollback_project,
+)
+
+# Spaces
+from .spaces import (
+    add_space_member,
+    cancel_space_invitation,
+    create_space,
+    delete_space,
+    invite_assistant_to_space,
+    list_pending_invitations,
+    list_space_members,
+    list_spaces,
+    list_spaces_for_assistant,
+    remove_space_member,
+    update_space,
 )
 
 # Utils

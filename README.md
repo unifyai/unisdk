@@ -18,19 +18,34 @@ In the default open-source Unity flow, the layering looks like this:
 
 ## Installation
 
-The supported public install path is a direct GitHub/VCS install:
+For public installs, use the published package:
 
 ```bash
-pip install "unify @ git+https://github.com/unifyai/unify.git"
+pip install unifyai
 ```
 
 Or with [uv](https://docs.astral.sh/uv/):
 
 ```bash
+uv add unifyai
+```
+
+The import name stays `unify`:
+
+```python
+import unify
+```
+
+If you want the exact head of this repository instead of the published release,
+install from Git:
+
+```bash
+pip install "unify @ git+https://github.com/unifyai/unify.git"
+# or
 uv add "unify @ git+https://github.com/unifyai/unify.git"
 ```
 
-`pip install unify` is not the supported path for this SDK.
+`pip install unify` is not this SDK.
 
 ## Configuration
 
