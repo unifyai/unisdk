@@ -17,6 +17,7 @@ def _response_json_or_empty(response: Any) -> Any:
 def create_space(
     *,
     name: str,
+    description: str,
     organization_id: Optional[int] = None,
     owner_user_id: Optional[str] = None,
     api_key: Optional[str] = None,
@@ -26,6 +27,7 @@ def create_space(
 
     Args:
         name: Display name for the space.
+        description: Human-readable purpose and operating scope for the space.
         organization_id: Optional organization identifier for org-owned spaces.
         owner_user_id: Optional owner user identifier.
         api_key: If specified, unify API key to use. Defaults to ``UNIFY_KEY``.
@@ -36,6 +38,7 @@ def create_space(
     headers = _create_request_header(api_key)
     body = {
         "name": name,
+        "description": description,
         "organization_id": organization_id,
         "owner_user_id": owner_user_id,
     }

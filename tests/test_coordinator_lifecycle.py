@@ -34,6 +34,7 @@ def test_public_coordinator_sdk_exports() -> None:
         list_space_members,
         list_spaces,
         list_spaces_for_assistant,
+        pre_seed_colleague,
         remove_space_member,
         update_assistant_config,
         update_space,
@@ -52,6 +53,7 @@ def test_public_coordinator_sdk_exports() -> None:
     assert list_space_members is unify.list_space_members
     assert list_spaces is unify.list_spaces
     assert list_spaces_for_assistant is unify.list_spaces_for_assistant
+    assert pre_seed_colleague is unify.pre_seed_colleague
     assert remove_space_member is unify.remove_space_member
     assert update_assistant_config is unify.update_assistant_config
     assert update_space is unify.update_space
@@ -67,6 +69,14 @@ def test_public_coordinator_sdk_exports() -> None:
 
     space_signature = inspect.signature(unify.create_space)
     assert "kind" not in space_signature.parameters
+    assert "description" in space_signature.parameters
+
+    preseed_signature = inspect.signature(unify.pre_seed_colleague)
+    assert list(preseed_signature.parameters) == [
+        "target_assistant_id",
+        "writes",
+        "api_key",
+    ]
 
 
 def test_assistant_lifecycle_round_trips_against_coordinator_preview(

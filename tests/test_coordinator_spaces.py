@@ -66,6 +66,7 @@ def test_space_lifecycle_and_membership_round_trips_against_coordinator_preview(
 
         space = unify.create_space(
             name=f"Coordinator SDK Space {suffix}",
+            description="SDK integration space for membership lifecycle coverage.",
             organization_id=preview_org.organization_id,
             api_key=preview_org.api_key,
         )
@@ -185,6 +186,7 @@ def test_invitation_cancel_and_pending_lifecycle(
 
         space = unify.create_space(
             name=f"Invitation SDK Space {suffix}",
+            description="SDK integration space for invitation lifecycle coverage.",
             api_key=owner_key,
         )
         space_id = int(space["space_id"])

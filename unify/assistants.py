@@ -120,3 +120,29 @@ def list_assistants(
 
     response = http.get(f"{BASE_URL}/assistant", headers=headers, params=params)
     return response.json()["info"]
+
+
+def pre_seed_colleague(
+    target_assistant_id: int,
+    writes: List[Dict[str, Any]],
+    *,
+    api_key: Optional[str] = None,
+) -> Dict[str, Any]:
+    """
+    Seed task, knowledge, guidance, or other rows into a colleague assistant.
+
+    Args:
+        target_assistant_id: Assistant identifier for the colleague that owns the rows.
+        writes: Context batches shaped as ``{"context": "...", "entries": [...]}``.
+        api_key: If specified, unify API key to use. Defaults to ``UNIFY_KEY``.
+
+    Returns:
+        The API response payload describing the written rows.
+    """
+    headers = _create_request_header(api_key)
+    response = http.post(
+        f"{BASE_URL}/assistant/{target_assistant_id}/preseed",
+        headers=headers,
+        json={"writes": writes},
+    )
+    return response.json()["info"]

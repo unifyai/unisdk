@@ -76,6 +76,7 @@ __all__ = [
     "create_assistant",
     "delete_assistant",
     "list_assistants",
+    "pre_seed_colleague",
     "update_assistant_config",
     # Organizations
     "list_org_members",
@@ -112,6 +113,7 @@ from .assistants import (
     create_assistant,
     delete_assistant,
     list_assistants,
+    pre_seed_colleague,
     update_assistant_config,
 )
 
