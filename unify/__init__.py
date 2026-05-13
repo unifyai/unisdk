@@ -82,11 +82,8 @@ __all__ = [
     "list_org_members",
     # Spaces
     "add_space_member",
-    "cancel_space_invitation",
     "create_space",
     "delete_space",
-    "invite_assistant_to_space",
-    "list_pending_invitations",
     "list_space_members",
     "list_spaces",
     "list_spaces_for_assistant",
@@ -182,11 +179,8 @@ from .projects import (
 # Spaces
 from .spaces import (
     add_space_member,
-    cancel_space_invitation,
     create_space,
     delete_space,
-    invite_assistant_to_space,
-    list_pending_invitations,
     list_space_members,
     list_spaces,
     list_spaces_for_assistant,

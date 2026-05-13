@@ -96,26 +96,43 @@ def update_space(
 
 def add_space_member(
     space_id: int,
-    assistant_id: int,
+    assistant_id: Optional[int] = None,
+    member_user_id: Optional[str] = None,
     *,
     api_key: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
-    Add an assistant to a space or create a pending invitation.
+    Add an assistant or member-targeted personal coordinator to a space.
 
     Args:
         space_id: The space identifier.
-        assistant_id: The assistant identifier.
+        assistant_id: Optional assistant identifier.
+        member_user_id: Optional organization member identifier. When supplied,
+            the API resolves or provisions that member's personal Coordinator.
         api_key: If specified, unify API key to use. Defaults to ``UNIFY_KEY``.
 
     Returns:
         Membership status information for the requested assistant.
     """
+    has_assistant_id = assistant_id is not None
+    normalized_member_user_id = (
+        member_user_id.strip() if isinstance(member_user_id, str) else member_user_id
+    )
+    has_member_user_id = bool(normalized_member_user_id)
+    if has_assistant_id == has_member_user_id:
+        raise ValueError("Provide exactly one of assistant_id or member_user_id.")
+
+    body: Dict[str, Any] = {}
+    if assistant_id is not None:
+        body["assistant_id"] = assistant_id
+    if has_member_user_id:
+        body["member_user_id"] = normalized_member_user_id
+
     headers = _create_request_header(api_key)
     response = http.post(
         f"{BASE_URL}/spaces/{space_id}/members",
         headers=headers,
-        json={"assistant_id": assistant_id},
+        json=body,
     )
     return response.json()
 
@@ -213,68 +230,4 @@ def list_spaces_for_assistant(
         f"{BASE_URL}/assistants/{assistant_id}/spaces",
         headers=headers,
     )
-    return response.json()
-
-
-def invite_assistant_to_space(
-    space_id: int,
-    assistant_id: int,
-    *,
-    api_key: Optional[str] = None,
-) -> Dict[str, Any]:
-    """
-    Invite an assistant's owner to join a space.
-
-    Args:
-        space_id: The space identifier.
-        assistant_id: The assistant identifier.
-        api_key: If specified, unify API key to use. Defaults to ``UNIFY_KEY``.
-
-    Returns:
-        The invitation record.
-    """
-    headers = _create_request_header(api_key)
-    response = http.post(
-        f"{BASE_URL}/spaces/{space_id}/invites",
-        headers=headers,
-        json={"assistant_id": assistant_id},
-    )
-    return response.json()
-
-
-def cancel_space_invitation(
-    invite_id: int,
-    *,
-    api_key: Optional[str] = None,
-) -> Dict[str, Any]:
-    """
-    Cancel a pending space invitation.
-
-    Args:
-        invite_id: The invitation identifier.
-        api_key: If specified, unify API key to use. Defaults to ``UNIFY_KEY``.
-
-    Returns:
-        The API response payload, or an empty dict when the response has no body.
-    """
-    headers = _create_request_header(api_key)
-    response = http.delete(f"{BASE_URL}/space-invites/{invite_id}", headers=headers)
-    return _response_json_or_empty(response)
-
-
-def list_pending_invitations(
-    *,
-    api_key: Optional[str] = None,
-) -> List[Dict[str, Any]]:
-    """
-    List pending space invitations for the caller.
-
-    Args:
-        api_key: If specified, unify API key to use. Defaults to ``UNIFY_KEY``.
-
-    Returns:
-        Pending invitation records visible to the caller.
-    """
-    headers = _create_request_header(api_key)
-    response = http.get(f"{BASE_URL}/space-invites/pending", headers=headers)
     return response.json()
