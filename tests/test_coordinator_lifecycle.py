@@ -22,15 +22,12 @@ def test_public_coordinator_sdk_exports() -> None:
     from unify import (  # noqa: PLC0415
         RequestError,
         add_space_member,
-        cancel_space_invitation,
         create_assistant,
         create_space,
         delete_assistant,
         delete_space,
-        invite_assistant_to_space,
         list_assistants,
         list_org_members,
-        list_pending_invitations,
         list_space_members,
         list_spaces,
         list_spaces_for_assistant,
@@ -41,15 +38,12 @@ def test_public_coordinator_sdk_exports() -> None:
     )
 
     assert add_space_member is unify.add_space_member
-    assert cancel_space_invitation is unify.cancel_space_invitation
     assert create_assistant is unify.create_assistant
     assert create_space is unify.create_space
     assert delete_assistant is unify.delete_assistant
     assert delete_space is unify.delete_space
-    assert invite_assistant_to_space is unify.invite_assistant_to_space
     assert list_assistants is unify.list_assistants
     assert list_org_members is unify.list_org_members
-    assert list_pending_invitations is unify.list_pending_invitations
     assert list_space_members is unify.list_space_members
     assert list_spaces is unify.list_spaces
     assert list_spaces_for_assistant is unify.list_spaces_for_assistant

@@ -6,10 +6,7 @@ from typing import Iterator
 import pytest
 from tests.coordinator_helpers import (
     PreviewOrganization,
-    PreviewUser,
     managed_preview_organization,
-    managed_preview_user,
-    require_user_key,
 )
 
 import unify
@@ -35,12 +32,6 @@ def _raise_cleanup_error_if_test_passed(cleanup_errors: list[Exception]) -> None
 def preview_org() -> Iterator[PreviewOrganization]:
     with managed_preview_organization() as organization:
         yield organization
-
-
-@pytest.fixture
-def invited_user() -> Iterator[PreviewUser]:
-    with managed_preview_user() as user:
-        yield user
 
 
 def test_space_lifecycle_and_membership_round_trips_against_coordinator_preview(
@@ -162,77 +153,70 @@ def test_space_lifecycle_and_membership_round_trips_against_coordinator_preview(
         _raise_cleanup_error_if_test_passed(cleanup_errors)
 
 
-def test_invitation_cancel_and_pending_lifecycle(
-    invited_user: PreviewUser,
+def test_member_target_add_for_org_member_is_idempotent(
+    preview_org: PreviewOrganization,
 ) -> None:
-    owner_key = require_user_key()
     suffix = uuid.uuid4().hex[:10]
-    assistant_id: int | None = None
     space_id: int | None = None
-    invite_id: int | None = None
+    member_assistant_id: int | None = None
 
     try:
-        assistant = unify.create_assistant(
-            first_name=f"Invitee{suffix}",
-            surname="Colleague",
-            config={
-                "create_infra": False,
-                "is_local": True,
-                "timezone": "UTC",
-            },
-            api_key=invited_user.api_key,
-        )
-        assistant_id = int(assistant["agent_id"])
-
         space = unify.create_space(
-            name=f"Invitation SDK Space {suffix}",
-            description="SDK integration space for invitation lifecycle coverage.",
-            api_key=owner_key,
+            name=f"Member Target SDK Space {suffix}",
+            description="SDK integration space for member-target add idempotency coverage.",
+            organization_id=preview_org.organization_id,
+            api_key=preview_org.api_key,
         )
         space_id = int(space["space_id"])
 
-        invitation = unify.invite_assistant_to_space(
+        owner_user_id = unify.get_user_basic_info(api_key=preview_org.api_key)[
+            "user_id"
+        ]
+        first_add = unify.add_space_member(
             space_id,
-            assistant_id,
-            api_key=owner_key,
+            member_user_id=owner_user_id,
+            api_key=preview_org.api_key,
         )
-        invite_id = int(invitation["invite_id"])
-        assert invitation["status"] == "pending"
-        assert int(invitation["assistant_id"]) == assistant_id
-        assert int(invitation["space_id"]) == space_id
+        assert first_add["membership_status"] == "active"
+        assert int(first_add["space_id"]) == space_id
+        member_assistant_id = int(first_add["assistant_id"])
 
-        pending = unify.list_pending_invitations(api_key=invited_user.api_key)
-        assert invite_id in {int(row["invite_id"]) for row in pending}
-
-        cancelled_invite_id = invite_id
-        cancel_response = unify.cancel_space_invitation(invite_id, api_key=owner_key)
-        invite_id = None
-        assert cancel_response == {}
-
-        pending_after_cancel = unify.list_pending_invitations(
-            api_key=invited_user.api_key,
+        second_add = unify.add_space_member(
+            space_id,
+            member_user_id=owner_user_id,
+            api_key=preview_org.api_key,
         )
-        assert cancelled_invite_id not in {
-            int(row["invite_id"]) for row in pending_after_cancel
+        assert second_add["membership_status"] == "active"
+        assert int(second_add["assistant_id"]) == member_assistant_id
+
+        members = unify.list_space_members(space_id, api_key=preview_org.api_key)
+        member_ids = {
+            int(member.get("assistant_id", member.get("agent_id")))
+            for member in members
         }
+        assert member_assistant_id in member_ids
+
+        remove_response = unify.remove_space_member(
+            space_id,
+            member_assistant_id,
+            api_key=preview_org.api_key,
+        )
+        member_assistant_id = None
+        assert remove_response == {}
     finally:
         cleanup_errors: list[Exception] = []
-        if invite_id is not None:
+        if member_assistant_id is not None and space_id is not None:
             _record_cleanup_error(
                 cleanup_errors,
-                lambda: unify.cancel_space_invitation(invite_id, api_key=owner_key),
+                lambda: unify.remove_space_member(
+                    space_id,
+                    member_assistant_id,
+                    api_key=preview_org.api_key,
+                ),
             )
         if space_id is not None:
             _record_cleanup_error(
                 cleanup_errors,
-                lambda: unify.delete_space(space_id, api_key=owner_key),
-            )
-        if assistant_id is not None:
-            _record_cleanup_error(
-                cleanup_errors,
-                lambda: unify.delete_assistant(
-                    assistant_id,
-                    api_key=invited_user.api_key,
-                ),
+                lambda: unify.delete_space(space_id, api_key=preview_org.api_key),
             )
         _raise_cleanup_error_if_test_passed(cleanup_errors)
