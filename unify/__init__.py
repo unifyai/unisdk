@@ -79,6 +79,7 @@ __all__ = [
     "pre_seed_colleague",
     "update_assistant_config",
     # Organizations
+    "invite_org_member",
     "list_org_members",
     # Spaces
     "add_space_member",
@@ -160,7 +161,7 @@ from .logs import (
 )
 
 # Organizations
-from .organizations import list_org_members
+from .organizations import invite_org_member, list_org_members
 
 # Platform API utilities
 from .platform import deduct_credits, get_user_basic_info

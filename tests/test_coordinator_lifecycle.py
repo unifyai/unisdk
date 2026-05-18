@@ -26,6 +26,7 @@ def test_public_coordinator_sdk_exports() -> None:
         create_space,
         delete_assistant,
         delete_space,
+        invite_org_member,
         list_assistants,
         list_org_members,
         list_space_members,
@@ -42,6 +43,7 @@ def test_public_coordinator_sdk_exports() -> None:
     assert create_space is unify.create_space
     assert delete_assistant is unify.delete_assistant
     assert delete_space is unify.delete_space
+    assert invite_org_member is unify.invite_org_member
     assert list_assistants is unify.list_assistants
     assert list_org_members is unify.list_org_members
     assert list_space_members is unify.list_space_members
@@ -71,6 +73,13 @@ def test_public_coordinator_sdk_exports() -> None:
         "writes",
         "api_key",
     ]
+
+
+def test_invite_org_member_sdk_export() -> None:
+    from unify import invite_org_member  # noqa: PLC0415
+
+    assert invite_org_member is unify.invite_org_member
+    assert callable(unify.invite_org_member)
 
 
 def test_assistant_lifecycle_round_trips_against_coordinator_preview(
