@@ -1,15 +1,17 @@
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Literal, Optional
 
 from unify import BASE_URL
 from unify.utils import http
 from unify.utils.helpers import _create_request_header
+
+OrganizationInviteRoleName = Literal["Admin", "Member", "Viewer"]
 
 
 def invite_org_member(
     organization_id: int,
     email: str,
     *,
-    role_name: Optional[str] = None,
+    role_name: Optional[OrganizationInviteRoleName] = None,
     api_key: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
@@ -18,7 +20,7 @@ def invite_org_member(
     Args:
         organization_id: The organization identifier.
         email: Invitee email address.
-        role_name: Optional organization role name for the invite.
+        role_name: Optional invite role (``Admin``, ``Member``, or ``Viewer``).
         api_key: If specified, unify API key to use. Defaults to ``UNIFY_KEY``.
 
     Returns:
