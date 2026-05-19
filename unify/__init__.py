@@ -79,14 +79,12 @@ __all__ = [
     "pre_seed_colleague",
     "update_assistant_config",
     # Organizations
+    "invite_org_member",
     "list_org_members",
     # Spaces
     "add_space_member",
-    "cancel_space_invitation",
     "create_space",
     "delete_space",
-    "invite_assistant_to_space",
-    "list_pending_invitations",
     "list_space_members",
     "list_spaces",
     "list_spaces_for_assistant",
@@ -163,7 +161,7 @@ from .logs import (
 )
 
 # Organizations
-from .organizations import list_org_members
+from .organizations import invite_org_member, list_org_members
 
 # Platform API utilities
 from .platform import deduct_credits, get_user_basic_info
@@ -182,11 +180,8 @@ from .projects import (
 # Spaces
 from .spaces import (
     add_space_member,
-    cancel_space_invitation,
     create_space,
     delete_space,
-    invite_assistant_to_space,
-    list_pending_invitations,
     list_space_members,
     list_spaces,
     list_spaces_for_assistant,
