@@ -29,6 +29,7 @@ def test_public_coordinator_sdk_exports() -> None:
         invite_org_member,
         list_assistants,
         list_org_members,
+        list_organizations,
         list_space_members,
         list_spaces,
         list_spaces_for_assistant,
@@ -45,6 +46,7 @@ def test_public_coordinator_sdk_exports() -> None:
     assert delete_space is unify.delete_space
     assert invite_org_member is unify.invite_org_member
     assert list_assistants is unify.list_assistants
+    assert list_organizations is unify.list_organizations
     assert list_org_members is unify.list_org_members
     assert list_space_members is unify.list_space_members
     assert list_spaces is unify.list_spaces
@@ -151,3 +153,18 @@ def test_list_org_members_returns_preview_organization_members(
     assert members
     assert all(member["organization_id"] == organization_id for member in members)
     assert {"user_id", "organization_id", "role_id"}.issubset(members[0])
+
+
+def test_list_organizations_returns_role_metadata(
+    preview_org: PreviewOrganization,
+) -> None:
+    organizations = unify.list_organizations(api_key=preview_org.api_key)
+
+    assert organizations
+    target = next(
+        (org for org in organizations if int(org["id"]) == preview_org.organization_id),
+        None,
+    )
+    assert target is not None
+    assert isinstance(target.get("role_id"), int)
+    assert isinstance(target.get("role_name"), str)
