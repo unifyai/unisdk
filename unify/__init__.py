@@ -74,9 +74,9 @@ __all__ = [
     "download_object",
     # Assistants
     "create_assistant",
+    "delegate_to_colleague",
     "delete_assistant",
     "list_assistants",
-    "pre_seed_colleague",
     "update_assistant_config",
     # Organizations
     "invite_org_member",
@@ -110,9 +110,9 @@ from ._async_logger import AsyncLoggerManager
 # Assistants
 from .assistants import (
     create_assistant,
+    delegate_to_colleague,
     delete_assistant,
     list_assistants,
-    pre_seed_colleague,
     update_assistant_config,
 )
 
