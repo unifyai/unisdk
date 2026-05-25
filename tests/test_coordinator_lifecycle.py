@@ -24,6 +24,7 @@ def test_public_coordinator_sdk_exports() -> None:
         add_space_member,
         create_assistant,
         create_space,
+        delegate_to_colleague,
         delete_assistant,
         delete_space,
         invite_org_member,
@@ -33,7 +34,6 @@ def test_public_coordinator_sdk_exports() -> None:
         list_space_members,
         list_spaces,
         list_spaces_for_assistant,
-        pre_seed_colleague,
         remove_space_member,
         update_assistant_config,
         update_space,
@@ -42,6 +42,7 @@ def test_public_coordinator_sdk_exports() -> None:
     assert add_space_member is unify.add_space_member
     assert create_assistant is unify.create_assistant
     assert create_space is unify.create_space
+    assert delegate_to_colleague is unify.delegate_to_colleague
     assert delete_assistant is unify.delete_assistant
     assert delete_space is unify.delete_space
     assert invite_org_member is unify.invite_org_member
@@ -51,7 +52,6 @@ def test_public_coordinator_sdk_exports() -> None:
     assert list_space_members is unify.list_space_members
     assert list_spaces is unify.list_spaces
     assert list_spaces_for_assistant is unify.list_spaces_for_assistant
-    assert pre_seed_colleague is unify.pre_seed_colleague
     assert remove_space_member is unify.remove_space_member
     assert update_assistant_config is unify.update_assistant_config
     assert update_space is unify.update_space
@@ -69,10 +69,13 @@ def test_public_coordinator_sdk_exports() -> None:
     assert "kind" not in space_signature.parameters
     assert "description" in space_signature.parameters
 
-    preseed_signature = inspect.signature(unify.pre_seed_colleague)
-    assert list(preseed_signature.parameters) == [
+    delegate_signature = inspect.signature(unify.delegate_to_colleague)
+    assert list(delegate_signature.parameters) == [
         "target_assistant_id",
-        "writes",
+        "instruction",
+        "intent",
+        "dedupe_key",
+        "related_context",
         "api_key",
     ]
 
@@ -82,6 +85,41 @@ def test_invite_org_member_sdk_export() -> None:
 
     assert invite_org_member is unify.invite_org_member
     assert callable(unify.invite_org_member)
+
+
+def test_delegate_to_colleague_posts_delegate_payload(monkeypatch) -> None:
+    captured = {}
+
+    class _Response:
+        def json(self):
+            return {"info": {"status": "attached_to_startup"}}
+
+    def fake_post(url, *, headers=None, json=None):
+        captured["url"] = url
+        captured["headers"] = headers
+        captured["json"] = json
+        return _Response()
+
+    monkeypatch.setattr(http, "post", fake_post)
+
+    result = unify.delegate_to_colleague(
+        42,
+        instruction="Schedule the renewal summary tomorrow.",
+        intent="schedule_task",
+        dedupe_key="renewal-summary",
+        related_context={"source": "coordinator"},
+        api_key="owner-key",
+    )
+
+    assert result == {"status": "attached_to_startup"}
+    assert captured["url"].endswith("/assistant/42/delegate")
+    assert captured["headers"]["Authorization"] == "Bearer owner-key"
+    assert captured["json"] == {
+        "instruction": "Schedule the renewal summary tomorrow.",
+        "intent": "schedule_task",
+        "dedupe_key": "renewal-summary",
+        "related_context": {"source": "coordinator"},
+    }
 
 
 def test_assistant_lifecycle_round_trips_against_coordinator_preview(
