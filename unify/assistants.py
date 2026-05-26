@@ -134,6 +134,13 @@ def delegate_to_colleague(
     """
     Assign asynchronous work to a colleague assistant.
 
+    A successful response is an async delegation receipt. It means the colleague
+    has been woken or notified with the assignment, not that the colleague has
+    already created durable artifacts or completed the work. The returned payload
+    includes ``accepted``, ``completion_status``, ``receipt_type``, and ``message``
+    fields that describe this contract, along with dispatch fields such as
+    ``status`` and ``activation_id``.
+
     Args:
         target_assistant_id: Assistant identifier for the colleague that owns the work.
         instruction: Plain-English assignment the colleague should carry out.
@@ -143,7 +150,7 @@ def delegate_to_colleague(
         api_key: If specified, unify API key to use. Defaults to ``UNIFY_KEY``.
 
     Returns:
-        The API response payload describing dispatch status.
+        The API response payload describing accepted async delegation dispatch.
     """
     headers = _create_request_header(api_key)
     body: Dict[str, Any] = {
