@@ -1,0 +1,11 @@
+# CODEOWNERS — default reviewer set.
+#
+# Yusha Arif (@YushaArif99) and Haris Mahmood (@hmahmood24) are the
+# two founding engineers and serve as default reviewers for all paths.
+# Either approval satisfies branch protection; GitHub auto-excludes
+# the PR author from the request list, so when one of them opens a
+# PR the other becomes the implicit required reviewer.
+#
+# See: https://docs.github.com/articles/about-code-owners
+
+* @YushaArif99 @hmahmood24
