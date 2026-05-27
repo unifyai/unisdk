@@ -50,7 +50,49 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
+    # ─────────────────────────────────────────────────────────────────────
+    # Detect whether internal secrets are available
+    # ─────────────────────────────────────────────────────────────────────
+    # CLONE_TOKEN is an org-wide secret that grants cross-repo read access
+    # for cloning the private unifyai/orchestra repo. It is empty in two
+    # cases:
+    #   1. External fork PRs — GitHub elides all secrets from forked
+    #      contexts for security.
+    #   2. Internal repos where the org-secret's "Selected repositories"
+    #      allowlist doesn't include this repo (admin-side config gap).
+    #
+    # When CLONE_TOKEN is empty we degrade gracefully: skip the orchestra
+    # clone + startup, run integration-tests against the production-API
+    # fallback that the unify client supports. Mirrors the pattern used in
+    # unifyai/unillm's workflow (the reference implementation for "this
+    # repo depends on orchestra but can work without it").
+    #
+    # NOTE: When the integration-pytest job WAS failing with "Input
+    # required and not supplied: token" (history before this commit), the
+    # cause was case #2 — unify was missing from CLONE_TOKEN's allowlist
+    # at the org level. The proper org-side fix is to add unify (and any
+    # future internal repo that depends on orchestra) to the allowlist.
+    # Even simpler scalable design: switch CLONE_TOKEN's "Repository
+    # access" from "Selected repositories" → "All repositories" since
+    # every internal repo is trusted. This eliminates allowlist drift as
+    # a recurring failure mode for new repos.
+    - name: Check internal secrets
+      id: secrets-check
+      run: |
+        if [ -n "$CLONE_TOKEN" ]; then
+          echo "has_internal=true" >> $GITHUB_OUTPUT
+          echo "Running in internal mode (Orchestra + GCP available)"
+        else
+          echo "has_internal=false" >> $GITHUB_OUTPUT
+          echo "Running in external mode (no Orchestra; production-API fallback)"
+        fi
+      env:
+        CLONE_TOKEN: ${{ secrets.CLONE_TOKEN }}
+
+    # ─────────────────────────── Internal-only ────────────────────────────
+
     - name: Clone orchestra repo for local deployment
+      if: steps.secrets-check.outputs.has_internal == 'true'
       uses: actions/checkout@v4
       with:
         repository: unifyai/orchestra
@@ -60,13 +102,17 @@ jobs:
         fetch-depth: 1
 
     - name: Authenticate to Google Cloud
+      if: steps.secrets-check.outputs.has_internal == 'true'
       uses: google-github-actions/auth@v2
       with:
         credentials_json: ${{ secrets.GCP_SERVICE_ACCOUNT_JSON }}
 
     - name: Get orchestra commit SHA
+      if: steps.secrets-check.outputs.has_internal == 'true'
       id: orchestra-sha
       run: echo "sha=$(git -C orchestra rev-parse HEAD)" >> $GITHUB_OUTPUT
+
+    # ─────────────────────────── Common setup ─────────────────────────────
 
     - name: Set up Python
       uses: actions/setup-python@v5
@@ -76,12 +122,13 @@ jobs:
     - name: Install uv
       uses: astral-sh/setup-uv@v5
 
-    # Cache uv dependencies
+    # Cache uv dependencies (key includes orchestra SHA in internal mode
+    # for stricter invalidation; falls back to lockfile-only in external)
     - name: Cache uv dependencies
       uses: actions/cache@v4
       with:
         path: ~/.cache/uv
-        key: uv-${{ runner.os }}-${{ hashFiles('uv.lock') }}-${{ steps.orchestra-sha.outputs.sha }}
+        key: uv-${{ runner.os }}-${{ hashFiles('uv.lock') }}-${{ steps.orchestra-sha.outputs.sha || 'external' }}
         restore-keys: |
           uv-${{ runner.os }}-${{ hashFiles('uv.lock') }}-
           uv-${{ runner.os }}-
@@ -90,9 +137,11 @@ jobs:
       run: uv sync --group dev
 
     - name: Install poetry (for orchestra)
+      if: steps.secrets-check.outputs.has_internal == 'true'
       run: pipx install poetry
 
     - name: Install orchestra dependencies
+      if: steps.secrets-check.outputs.has_internal == 'true'
       run: |
         cd "$ORCHESTRA_REPO_PATH"
         poetry install --no-interaction
@@ -109,6 +158,7 @@ jobs:
         echo "  - $LOGS_DIR/all/       (OpenTelemetry traces)"
 
     - name: Start local orchestra
+      if: steps.secrets-check.outputs.has_internal == 'true'
       run: |
         # Start local orchestra with test user seeding, logging, and enough workers for parallel tests
         ORCHESTRA_SEED_USER=1 \
@@ -189,7 +239,7 @@ jobs:
         echo "$STATS — [view logs]($ARTIFACTS_URL)" >> $GITHUB_STEP_SUMMARY
 
     - name: Dump orchestra logs on failure
-      if: failure()
+      if: failure() && steps.secrets-check.outputs.has_internal == 'true'
       run: |
         echo "=== Orchestra Server Logs ==="
         if [ -f /tmp/orchestra-local-server.log ]; then
@@ -275,6 +325,6 @@ jobs:
         retention-days: 90
 
     - name: Stop local orchestra
-      if: always()
+      if: always() && steps.secrets-check.outputs.has_internal == 'true'
       run: |
         "$ORCHESTRA_REPO_PATH/scripts/local.sh" stop || true
