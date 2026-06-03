@@ -10,7 +10,6 @@ FIRST_PARTY = {
     "communication",
     "console",
     "orchestra",
-    "orchestra-core",
     "unify",
     "unillm",
     "unity",
