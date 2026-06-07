@@ -34,17 +34,18 @@ def preview_org() -> Iterator[PreviewOrganization]:
         yield organization
 
 
-def test_space_lifecycle_and_membership_round_trips_against_coordinator_preview(
+def test_team_lifecycle_and_membership_round_trips_against_coordinator_preview(
     preview_org: PreviewOrganization,
 ) -> None:
     suffix = uuid.uuid4().hex[:10]
     assistant_id: int | None = None
-    space_id: int | None = None
+    team_id: int | None = None
     membership_added = False
+    organization_id = preview_org.organization_id
 
     try:
         assistant = unify.create_assistant(
-            first_name=f"SpaceSDK{suffix}",
+            first_name=f"TeamSDK{suffix}",
             surname="Member",
             config={
                 "create_infra": False,
@@ -55,92 +56,103 @@ def test_space_lifecycle_and_membership_round_trips_against_coordinator_preview(
         )
         assistant_id = int(assistant["agent_id"])
 
-        space = unify.create_space(
-            name=f"Coordinator SDK Space {suffix}",
-            description="SDK integration space for membership lifecycle coverage.",
-            organization_id=preview_org.organization_id,
+        team = unify.create_team(
+            organization_id,
+            name=f"Coordinator SDK Team {suffix}",
+            description="SDK integration team for membership lifecycle coverage.",
             api_key=preview_org.api_key,
         )
-        space_id = int(space["space_id"])
-        assert space["organization_id"] == preview_org.organization_id
+        team_id = int(team["team_id"])
+        assert int(team["organization_id"]) == organization_id
 
-        listed_by_org = unify.list_spaces(
-            organization_id=preview_org.organization_id,
+        listed_by_org = unify.list_teams(
+            organization_id,
             api_key=preview_org.api_key,
         )
-        assert space_id in {int(row["space_id"]) for row in listed_by_org}
+        assert team_id in {int(row["team_id"]) for row in listed_by_org}
 
-        listed_by_owner = unify.list_spaces(
-            owner_user_id=space["owner_user_id"],
+        renamed = unify.update_team(
+            organization_id,
+            team_id,
+            {"name": f"Renamed SDK Team {suffix}"},
             api_key=preview_org.api_key,
         )
-        assert space_id in {int(row["space_id"]) for row in listed_by_owner}
-
-        renamed = unify.update_space(
-            space_id,
-            {"name": f"Renamed SDK Space {suffix}"},
-            api_key=preview_org.api_key,
-        )
-        assert renamed["name"] == f"Renamed SDK Space {suffix}"
+        assert renamed["name"] == f"Renamed SDK Team {suffix}"
 
         with pytest.raises(http.RequestError) as exc_info:
-            unify.update_space(
+            unify.update_team(
+                organization_id,
                 999999999,
-                {"name": "Missing space"},
+                {"name": "Missing team"},
                 api_key=preview_org.api_key,
             )
         assert exc_info.value.response.status_code == 404
         assert exc_info.value.response.text
 
-        membership = unify.add_space_member(
-            space_id,
-            assistant_id,
+        membership = unify.add_team_member(
+            organization_id,
+            team_id,
+            assistant_id=assistant_id,
             api_key=preview_org.api_key,
         )
         membership_added = True
         assert membership["membership_status"] == "active"
         assert int(membership["assistant_id"]) == assistant_id
-        assert int(membership["space_id"]) == space_id
+        assert int(membership["team_id"]) == team_id
 
-        members = unify.list_space_members(space_id, api_key=preview_org.api_key)
+        members = unify.list_team_members(
+            organization_id,
+            team_id,
+            api_key=preview_org.api_key,
+        )
         member_ids = {
             int(member.get("assistant_id", member.get("agent_id")))
             for member in members
         }
         assert assistant_id in member_ids
 
-        assistant_spaces = unify.list_spaces_for_assistant(
+        assistant_teams = unify.list_teams_for_assistant(
             assistant_id,
             api_key=preview_org.api_key,
         )
-        assert space_id in {int(row["space_id"]) for row in assistant_spaces}
+        assert team_id in {int(row["team_id"]) for row in assistant_teams}
 
-        remove_response = unify.remove_space_member(
-            space_id,
+        remove_response = unify.remove_team_member(
+            organization_id,
+            team_id,
             assistant_id,
             api_key=preview_org.api_key,
         )
         membership_added = False
         assert remove_response == {}
 
-        delete_response = unify.delete_space(space_id, api_key=preview_org.api_key)
-        space_id = None
+        delete_response = unify.delete_team(
+            organization_id,
+            team_id,
+            api_key=preview_org.api_key,
+        )
+        team_id = None
         assert delete_response == {}
     finally:
         cleanup_errors: list[Exception] = []
-        if membership_added and space_id is not None and assistant_id is not None:
+        if membership_added and team_id is not None and assistant_id is not None:
             _record_cleanup_error(
                 cleanup_errors,
-                lambda: unify.remove_space_member(
-                    space_id,
+                lambda: unify.remove_team_member(
+                    organization_id,
+                    team_id,
                     assistant_id,
                     api_key=preview_org.api_key,
                 ),
             )
-        if space_id is not None:
+        if team_id is not None:
             _record_cleanup_error(
                 cleanup_errors,
-                lambda: unify.delete_space(space_id, api_key=preview_org.api_key),
+                lambda: unify.delete_team(
+                    organization_id,
+                    team_id,
+                    api_key=preview_org.api_key,
+                ),
             )
         if assistant_id is not None:
             _record_cleanup_error(
@@ -157,47 +169,55 @@ def test_member_target_add_for_org_member_is_idempotent(
     preview_org: PreviewOrganization,
 ) -> None:
     suffix = uuid.uuid4().hex[:10]
-    space_id: int | None = None
+    team_id: int | None = None
     member_assistant_id: int | None = None
+    organization_id = preview_org.organization_id
 
     try:
-        space = unify.create_space(
-            name=f"Member Target SDK Space {suffix}",
-            description="SDK integration space for member-target add idempotency coverage.",
-            organization_id=preview_org.organization_id,
+        team = unify.create_team(
+            organization_id,
+            name=f"Member Target SDK Team {suffix}",
+            description="SDK integration team for member-target add idempotency coverage.",
             api_key=preview_org.api_key,
         )
-        space_id = int(space["space_id"])
+        team_id = int(team["team_id"])
 
         owner_user_id = unify.get_user_basic_info(api_key=preview_org.api_key)[
             "user_id"
         ]
-        first_add = unify.add_space_member(
-            space_id,
+        first_add = unify.add_team_member(
+            organization_id,
+            team_id,
             member_user_id=owner_user_id,
             api_key=preview_org.api_key,
         )
         assert first_add["membership_status"] == "active"
-        assert int(first_add["space_id"]) == space_id
+        assert int(first_add["team_id"]) == team_id
         member_assistant_id = int(first_add["assistant_id"])
 
-        second_add = unify.add_space_member(
-            space_id,
+        second_add = unify.add_team_member(
+            organization_id,
+            team_id,
             member_user_id=owner_user_id,
             api_key=preview_org.api_key,
         )
         assert second_add["membership_status"] == "active"
         assert int(second_add["assistant_id"]) == member_assistant_id
 
-        members = unify.list_space_members(space_id, api_key=preview_org.api_key)
+        members = unify.list_team_members(
+            organization_id,
+            team_id,
+            api_key=preview_org.api_key,
+        )
         member_ids = {
             int(member.get("assistant_id", member.get("agent_id")))
             for member in members
         }
         assert member_assistant_id in member_ids
 
-        remove_response = unify.remove_space_member(
-            space_id,
+        remove_response = unify.remove_team_member(
+            organization_id,
+            team_id,
             member_assistant_id,
             api_key=preview_org.api_key,
         )
@@ -205,18 +225,23 @@ def test_member_target_add_for_org_member_is_idempotent(
         assert remove_response == {}
     finally:
         cleanup_errors: list[Exception] = []
-        if member_assistant_id is not None and space_id is not None:
+        if member_assistant_id is not None and team_id is not None:
             _record_cleanup_error(
                 cleanup_errors,
-                lambda: unify.remove_space_member(
-                    space_id,
+                lambda: unify.remove_team_member(
+                    organization_id,
+                    team_id,
                     member_assistant_id,
                     api_key=preview_org.api_key,
                 ),
             )
-        if space_id is not None:
+        if team_id is not None:
             _record_cleanup_error(
                 cleanup_errors,
-                lambda: unify.delete_space(space_id, api_key=preview_org.api_key),
+                lambda: unify.delete_team(
+                    organization_id,
+                    team_id,
+                    api_key=preview_org.api_key,
+                ),
             )
         _raise_cleanup_error_if_test_passed(cleanup_errors)
