@@ -82,15 +82,15 @@ __all__ = [
     "invite_org_member",
     "list_organizations",
     "list_org_members",
-    # Spaces
-    "add_space_member",
-    "create_space",
-    "delete_space",
-    "list_space_members",
-    "list_spaces",
-    "list_spaces_for_assistant",
-    "remove_space_member",
-    "update_space",
+    # Teams
+    "add_team_member",
+    "create_team",
+    "delete_team",
+    "list_team_members",
+    "list_teams",
+    "list_teams_for_assistant",
+    "remove_team_member",
+    "update_team",
     # Errors
     "RequestError",
     # Submodules
@@ -178,16 +178,16 @@ from .projects import (
     rollback_project,
 )
 
-# Spaces
-from .spaces import (
-    add_space_member,
-    create_space,
-    delete_space,
-    list_space_members,
-    list_spaces,
-    list_spaces_for_assistant,
-    remove_space_member,
-    update_space,
+# Teams
+from .teams import (
+    add_team_member,
+    create_team,
+    delete_team,
+    list_team_members,
+    list_teams,
+    list_teams_for_assistant,
+    remove_team_member,
+    update_team,
 )
 
 # Utils

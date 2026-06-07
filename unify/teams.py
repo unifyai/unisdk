@@ -1,4 +1,4 @@
-"""Space lifecycle helpers for the Unify SDK."""
+"""Team lifecycle helpers for the Unify SDK."""
 
 from typing import Any, Dict, List, Optional
 
@@ -14,101 +14,115 @@ def _response_json_or_empty(response: Any) -> Any:
     return response.json()
 
 
-def create_space(
+def _normalize_team_record(team: Dict[str, Any]) -> Dict[str, Any]:
+    """Ensure team records expose a stable ``team_id`` field."""
+    normalized = dict(team)
+    team_id = normalized.get("team_id")
+    if team_id is None:
+        team_id = normalized.get("id")
+    if team_id is not None:
+        normalized["team_id"] = team_id
+    return normalized
+
+
+def create_team(
+    organization_id: int,
     *,
     name: str,
     description: str,
-    organization_id: Optional[int] = None,
-    owner_user_id: Optional[str] = None,
     api_key: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
-    Create a team space visible to the caller.
+    Create an organization team with shared-memory membership.
 
     Args:
-        name: Display name for the space.
-        description: Human-readable purpose and operating scope for the space.
-        organization_id: Optional organization identifier for org-owned spaces.
-        owner_user_id: Optional owner user identifier.
+        organization_id: Organization that owns the team.
+        name: Display name for the team.
+        description: Human-readable purpose and operating scope for the team.
         api_key: If specified, unify API key to use. Defaults to ``UNIFY_KEY``.
 
     Returns:
-        The created space record.
+        The created team record.
     """
     headers = _create_request_header(api_key)
-    body = {
-        "name": name,
-        "description": description,
-        "organization_id": organization_id,
-        "owner_user_id": owner_user_id,
-    }
-    body = {k: v for k, v in body.items() if v is not None}
-
-    response = http.post(f"{BASE_URL}/spaces", headers=headers, json=body)
-    return response.json()
+    response = http.post(
+        f"{BASE_URL}/organizations/{organization_id}/teams",
+        headers=headers,
+        json={"name": name, "description": description},
+    )
+    return _normalize_team_record(response.json())
 
 
-def delete_space(
-    space_id: int,
+def delete_team(
+    organization_id: int,
+    team_id: int,
     *,
     api_key: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
-    Delete a space the caller can manage.
+    Delete a team the caller can manage.
 
     Args:
-        space_id: The space identifier.
+        organization_id: Organization that owns the team.
+        team_id: The team identifier.
         api_key: If specified, unify API key to use. Defaults to ``UNIFY_KEY``.
 
     Returns:
         The API response payload, or an empty dict when the response has no body.
     """
     headers = _create_request_header(api_key)
-    response = http.delete(f"{BASE_URL}/spaces/{space_id}", headers=headers)
+    response = http.delete(
+        f"{BASE_URL}/organizations/{organization_id}/teams/{team_id}",
+        headers=headers,
+    )
     return _response_json_or_empty(response)
 
 
-def update_space(
-    space_id: int,
+def update_team(
+    organization_id: int,
+    team_id: int,
     patch: Dict[str, Any],
     *,
     api_key: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
-    Update editable fields on a space.
+    Update editable fields on a team.
 
     Args:
-        space_id: The space identifier.
-        patch: Space update fields to send to the API.
+        organization_id: Organization that owns the team.
+        team_id: The team identifier.
+        patch: Team update fields to send to the API.
         api_key: If specified, unify API key to use. Defaults to ``UNIFY_KEY``.
 
     Returns:
-        The updated space record.
+        The updated team record.
     """
     headers = _create_request_header(api_key)
     response = http.patch(
-        f"{BASE_URL}/spaces/{space_id}",
+        f"{BASE_URL}/organizations/{organization_id}/teams/{team_id}",
         headers=headers,
         json=patch,
     )
-    return response.json()
+    return _normalize_team_record(response.json())
 
 
-def add_space_member(
-    space_id: int,
+def add_team_member(
+    organization_id: int,
+    team_id: int,
     assistant_id: Optional[int] = None,
     member_user_id: Optional[str] = None,
     *,
     api_key: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
-    Add an assistant or member-targeted personal coordinator to a space.
+    Add an assistant or organization member to a team.
 
     Args:
-        space_id: The space identifier.
+        organization_id: Organization that owns the team.
+        team_id: The team identifier.
         assistant_id: Optional assistant identifier.
         member_user_id: Optional organization member identifier. When supplied,
-            the API resolves or provisions that member's personal Coordinator.
+            the API resolves or provisions that member's workspace coordinator.
         api_key: If specified, unify API key to use. Defaults to ``UNIFY_KEY``.
 
     Returns:
@@ -130,24 +144,26 @@ def add_space_member(
 
     headers = _create_request_header(api_key)
     response = http.post(
-        f"{BASE_URL}/spaces/{space_id}/members",
+        f"{BASE_URL}/organizations/{organization_id}/teams/{team_id}/assistant-members",
         headers=headers,
         json=body,
     )
     return response.json()
 
 
-def remove_space_member(
-    space_id: int,
+def remove_team_member(
+    organization_id: int,
+    team_id: int,
     assistant_id: int,
     *,
     api_key: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
-    Remove an assistant from a space.
+    Remove an assistant from a team.
 
     Args:
-        space_id: The space identifier.
+        organization_id: Organization that owns the team.
+        team_id: The team identifier.
         assistant_id: The assistant identifier.
         api_key: If specified, unify API key to use. Defaults to ``UNIFY_KEY``.
 
@@ -156,78 +172,84 @@ def remove_space_member(
     """
     headers = _create_request_header(api_key)
     response = http.delete(
-        f"{BASE_URL}/spaces/{space_id}/members/{assistant_id}",
+        (
+            f"{BASE_URL}/organizations/{organization_id}/teams/{team_id}"
+            f"/assistant-members/{assistant_id}"
+        ),
         headers=headers,
     )
     return _response_json_or_empty(response)
 
 
-def list_spaces(
-    *,
-    organization_id: Optional[int] = None,
-    owner_user_id: Optional[str] = None,
-    api_key: Optional[str] = None,
-) -> List[Dict[str, Any]]:
-    """
-    List spaces visible to the caller.
-
-    Args:
-        organization_id: Optional organization filter.
-        owner_user_id: Optional owner user filter.
-        api_key: If specified, unify API key to use. Defaults to ``UNIFY_KEY``.
-
-    Returns:
-        Space records visible to the caller.
-    """
-    headers = _create_request_header(api_key)
-    params = {
-        "organization_id": organization_id,
-        "owner_user_id": owner_user_id,
-    }
-    params = {k: v for k, v in params.items() if v is not None}
-
-    response = http.get(f"{BASE_URL}/spaces", headers=headers, params=params)
-    return response.json()
-
-
-def list_space_members(
-    space_id: int,
+def list_teams(
+    organization_id: int,
     *,
     api_key: Optional[str] = None,
 ) -> List[Dict[str, Any]]:
     """
-    List the live assistant members of a space.
+    List teams in an organization visible to the caller.
 
     Args:
-        space_id: The space identifier.
+        organization_id: Organization whose teams should be listed.
         api_key: If specified, unify API key to use. Defaults to ``UNIFY_KEY``.
 
     Returns:
-        Membership records for the space.
+        Team records visible to the caller.
     """
     headers = _create_request_header(api_key)
-    response = http.get(f"{BASE_URL}/spaces/{space_id}/members", headers=headers)
+    response = http.get(
+        f"{BASE_URL}/organizations/{organization_id}/teams",
+        headers=headers,
+    )
+    return [_normalize_team_record(team) for team in response.json()]
+
+
+def list_team_members(
+    organization_id: int,
+    team_id: int,
+    *,
+    api_key: Optional[str] = None,
+) -> List[Dict[str, Any]]:
+    """
+    List the live assistant members of a team.
+
+    Args:
+        organization_id: Organization that owns the team.
+        team_id: The team identifier.
+        api_key: If specified, unify API key to use. Defaults to ``UNIFY_KEY``.
+
+    Returns:
+        Membership records for the team.
+    """
+    headers = _create_request_header(api_key)
+    response = http.get(
+        (
+            f"{BASE_URL}/organizations/{organization_id}/teams/{team_id}"
+            "/assistant-members"
+        ),
+        headers=headers,
+    )
     return response.json()
 
 
-def list_spaces_for_assistant(
+def list_teams_for_assistant(
     assistant_id: int,
     *,
     api_key: Optional[str] = None,
 ) -> List[Dict[str, Any]]:
     """
-    List spaces where an assistant has a live membership.
+    List teams where an assistant has a live membership.
 
     Args:
         assistant_id: The assistant identifier.
         api_key: If specified, unify API key to use. Defaults to ``UNIFY_KEY``.
 
     Returns:
-        Space records for the assistant.
+        Team summary records for the assistant.
     """
     headers = _create_request_header(api_key)
     response = http.get(
-        f"{BASE_URL}/assistants/{assistant_id}/spaces",
+        f"{BASE_URL}/assistants/{assistant_id}/teams",
         headers=headers,
     )
-    return response.json()
+    return [_normalize_team_record(team) for team in response.json()]
