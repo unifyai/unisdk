@@ -78,6 +78,19 @@ __all__ = [
     "delete_assistant",
     "list_assistants",
     "update_assistant_config",
+    # Integrations
+    "get_integration_apps",
+    "get_integration_tools",
+    "get_integration_tool_schema",
+    "list_integration_apps",
+    "list_integration_connections",
+    "patch_integration_backend",
+    "run_integration_tool",
+    "search_integration_apps",
+    "search_integration_tools",
+    "sync_integrations",
+    "test_integration_connection",
+    "upsert_integration_backend",
     # Organizations
     "invite_org_member",
     "list_organizations",
@@ -131,6 +144,22 @@ from .contexts import (
     get_contexts,
     rename_context,
     rollback_context,
+)
+
+# Integrations
+from .integrations import (
+    get_integration_apps,
+    get_integration_tool_schema,
+    get_integration_tools,
+    list_integration_apps,
+    list_integration_connections,
+    patch_integration_backend,
+    run_integration_tool,
+    search_integration_apps,
+    search_integration_tools,
+    sync_integrations,
+    test_integration_connection,
+    upsert_integration_backend,
 )
 
 # Logs
