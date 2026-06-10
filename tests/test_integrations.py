@@ -15,6 +15,59 @@ def _response(payload):
     return response
 
 
+def test_search_integration_apps_uses_env_api_key_by_default(monkeypatch) -> None:
+    monkeypatch.setenv("UNIFY_KEY", "env-key")
+    with patch.object(
+        integrations.http,
+        "post",
+        return_value=_response([{"canonical_app_slug": "slack"}]),
+    ) as mock_post:
+        result = unify.search_integration_apps(
+            "team chat",
+            owner_scope="assistant",
+            assistant_id=42,
+        )
+
+    assert result == [{"canonical_app_slug": "slack"}]
+    assert mock_post.call_args.kwargs["headers"]["Authorization"] == "Bearer env-key"
+
+
+def test_get_integration_tools_uses_env_api_key_by_default(monkeypatch) -> None:
+    monkeypatch.setenv("UNIFY_KEY", "env-key")
+    with patch.object(
+        integrations.http,
+        "post",
+        return_value=_response({"items": [{"tool_id": "tool-1"}], "total": 1}),
+    ) as mock_post:
+        result = unify.get_integration_tools(
+            owner_scope="assistant",
+            assistant_id=42,
+            canonical_app_slug="slack",
+        )
+
+    assert result["items"] == [{"tool_id": "tool-1"}]
+    assert mock_post.call_args.kwargs["headers"]["Authorization"] == "Bearer env-key"
+
+
+def test_list_integration_connections_uses_env_base_url_and_key_by_default(
+    monkeypatch,
+) -> None:
+    monkeypatch.setenv("UNIFY_KEY", "env-key")
+    monkeypatch.setattr(integrations, "BASE_URL", "http://orchestra.env/v0")
+    with patch.object(
+        integrations.http,
+        "get",
+        return_value=_response([{"connection_id": "conn-1"}]),
+    ) as mock_get:
+        result = unify.list_integration_connections(owner_scope="assistant")
+
+    assert result == [{"connection_id": "conn-1"}]
+    assert mock_get.call_args.args[0] == (
+        "http://orchestra.env/v0/integrations/connections"
+    )
+    assert mock_get.call_args.kwargs["headers"]["Authorization"] == "Bearer env-key"
+
+
 def test_get_integration_apps_posts_get_payload_with_pagination_and_base_url() -> None:
     with patch.object(
         integrations.http,
