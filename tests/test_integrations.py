@@ -19,9 +19,9 @@ def test_search_integration_apps_uses_env_api_key_by_default(monkeypatch) -> Non
     monkeypatch.setenv("UNIFY_KEY", "env-key")
     with patch.object(
         integrations.http,
-        "post",
+        "get",
         return_value=_response([{"canonical_app_slug": "slack"}]),
-    ) as mock_post:
+    ) as mock_get:
         result = unify.search_integration_apps(
             "team chat",
             owner_scope="assistant",
@@ -29,16 +29,16 @@ def test_search_integration_apps_uses_env_api_key_by_default(monkeypatch) -> Non
         )
 
     assert result == [{"canonical_app_slug": "slack"}]
-    assert mock_post.call_args.kwargs["headers"]["Authorization"] == "Bearer env-key"
+    assert mock_get.call_args.kwargs["headers"]["Authorization"] == "Bearer env-key"
 
 
 def test_get_integration_tools_uses_env_api_key_by_default(monkeypatch) -> None:
     monkeypatch.setenv("UNIFY_KEY", "env-key")
     with patch.object(
         integrations.http,
-        "post",
+        "get",
         return_value=_response({"items": [{"tool_id": "tool-1"}], "total": 1}),
-    ) as mock_post:
+    ) as mock_get:
         result = unify.get_integration_tools(
             owner_scope="assistant",
             assistant_id=42,
@@ -46,7 +46,7 @@ def test_get_integration_tools_uses_env_api_key_by_default(monkeypatch) -> None:
         )
 
     assert result["items"] == [{"tool_id": "tool-1"}]
-    assert mock_post.call_args.kwargs["headers"]["Authorization"] == "Bearer env-key"
+    assert mock_get.call_args.kwargs["headers"]["Authorization"] == "Bearer env-key"
 
 
 def test_list_integration_connections_uses_env_base_url_and_key_by_default(
@@ -68,10 +68,10 @@ def test_list_integration_connections_uses_env_base_url_and_key_by_default(
     assert mock_get.call_args.kwargs["headers"]["Authorization"] == "Bearer env-key"
 
 
-def test_get_integration_apps_posts_get_payload_with_pagination_and_base_url() -> None:
+def test_get_integration_apps_uses_get_params_with_pagination_and_base_url() -> None:
     with patch.object(
         integrations.http,
-        "post",
+        "get",
         return_value=_response(
             {
                 "items": [{"canonical_app_slug": "hubspot"}],
@@ -80,7 +80,7 @@ def test_get_integration_apps_posts_get_payload_with_pagination_and_base_url() -
                 "offset": 0,
             },
         ),
-    ) as mock_post:
+    ) as mock_get:
         result = unify.get_integration_apps(
             query="crm",
             source_type="native",
@@ -94,11 +94,11 @@ def test_get_integration_apps_posts_get_payload_with_pagination_and_base_url() -
         )
 
     assert result["items"] == [{"canonical_app_slug": "hubspot"}]
-    mock_post.assert_called_once()
-    url = mock_post.call_args.args[0]
-    kwargs = mock_post.call_args.kwargs
-    assert url == "http://orchestra.local/v0/integrations/apps/get"
-    assert kwargs["json"] == {
+    mock_get.assert_called_once()
+    url = mock_get.call_args.args[0]
+    kwargs = mock_get.call_args.kwargs
+    assert url == "http://orchestra.local/v0/integrations/apps"
+    assert kwargs["params"] == {
         "query": "crm",
         "source_type": "native",
         "owner_scope": "assistant",
@@ -113,7 +113,7 @@ def test_get_integration_apps_posts_get_payload_with_pagination_and_base_url() -
 def test_list_integration_apps_is_backward_compatible_alias() -> None:
     with patch.object(
         integrations.http,
-        "post",
+        "get",
         return_value=_response(
             {
                 "items": [{"canonical_app_slug": "hubspot"}],
@@ -122,7 +122,7 @@ def test_list_integration_apps_is_backward_compatible_alias() -> None:
                 "offset": 0,
             },
         ),
-    ) as mock_post:
+    ) as mock_get:
         result = unify.list_integration_apps(
             query="crm",
             source_type="third_party",
@@ -133,18 +133,16 @@ def test_list_integration_apps_is_backward_compatible_alias() -> None:
         )
 
     assert result == [{"canonical_app_slug": "hubspot"}]
-    assert (
-        mock_post.call_args.args[0] == "http://orchestra.local/v0/integrations/apps/get"
-    )
-    assert mock_post.call_args.kwargs["json"]["source_type"] == "third_party"
+    assert mock_get.call_args.args[0] == "http://orchestra.local/v0/integrations/apps"
+    assert mock_get.call_args.kwargs["params"]["source_type"] == "third_party"
 
 
-def test_search_integration_apps_posts_search_payload() -> None:
+def test_search_integration_apps_uses_get_search_params() -> None:
     with patch.object(
         integrations.http,
-        "post",
+        "get",
         return_value=_response([{"canonical_app_slug": "slack", "score": 0.91}]),
-    ) as mock_post:
+    ) as mock_get:
         result = unify.search_integration_apps(
             "team chat",
             source_type="native",
@@ -157,10 +155,10 @@ def test_search_integration_apps_posts_search_payload() -> None:
         )
 
     assert result == [{"canonical_app_slug": "slack", "score": 0.91}]
-    assert mock_post.call_args.args[0] == (
+    assert mock_get.call_args.args[0] == (
         f"{integrations.BASE_URL}/integrations/apps/search"
     )
-    assert mock_post.call_args.kwargs["json"] == {
+    assert mock_get.call_args.kwargs["params"] == {
         "query": "team chat",
         "source_type": "native",
         "owner_scope": "assistant",
@@ -168,6 +166,22 @@ def test_search_integration_apps_posts_search_payload() -> None:
         "assistant_id": 42,
         "limit": 7,
         "offset": 2,
+    }
+
+
+def test_search_integration_apps_allows_omitted_query() -> None:
+    with patch.object(
+        integrations.http,
+        "get",
+        return_value=_response([{"canonical_app_slug": "slack"}]),
+    ) as mock_get:
+        result = unify.search_integration_apps(limit=3, api_key="test-key")
+
+    assert result == [{"canonical_app_slug": "slack"}]
+    assert mock_get.call_args.kwargs["params"] == {
+        "owner_scope": "assistant",
+        "limit": 3,
+        "offset": 0,
     }
 
 
@@ -199,12 +213,12 @@ def test_list_integration_connections_preserves_owner_scope_params() -> None:
     }
 
 
-def test_search_integration_tools_posts_query_scope_and_limit() -> None:
+def test_search_integration_tools_uses_get_search_params() -> None:
     with patch.object(
         integrations.http,
-        "post",
+        "get",
         return_value=_response([{"tool_id": "composio:hubspot:search_contacts"}]),
-    ) as mock_post:
+    ) as mock_get:
         result = unify.search_integration_tools(
             "HubSpot leads",
             owner_scope="assistant",
@@ -218,10 +232,10 @@ def test_search_integration_tools_posts_query_scope_and_limit() -> None:
         )
 
     assert result == [{"tool_id": "composio:hubspot:search_contacts"}]
-    assert mock_post.call_args.args[0] == (
+    assert mock_get.call_args.args[0] == (
         f"{integrations.BASE_URL}/integrations/tools/search"
     )
-    assert mock_post.call_args.kwargs["json"] == {
+    assert mock_get.call_args.kwargs["params"] == {
         "query": "HubSpot leads",
         "owner_scope": "assistant",
         "user_id": "user-1",
@@ -231,13 +245,31 @@ def test_search_integration_tools_posts_query_scope_and_limit() -> None:
         "limit": 5,
         "offset": 3,
     }
-    assert mock_post.call_args.kwargs["headers"]["Authorization"] == "Bearer test-key"
+    assert mock_get.call_args.kwargs["headers"]["Authorization"] == "Bearer test-key"
 
 
-def test_get_integration_tools_posts_filter_payload_with_total_pagination() -> None:
+def test_search_integration_tools_allows_omitted_query() -> None:
     with patch.object(
         integrations.http,
-        "post",
+        "get",
+        return_value=_response([{"tool_id": "composio:slack:send_message"}]),
+    ) as mock_get:
+        result = unify.search_integration_tools(limit=4, api_key="test-key")
+
+    assert result == [{"tool_id": "composio:slack:send_message"}]
+    assert mock_get.call_args.kwargs["params"] == {
+        "owner_scope": "assistant",
+        "include_unconnected": True,
+        "limit": 4,
+        "offset": 0,
+    }
+    assert mock_get.call_args.kwargs["headers"]["Authorization"] == "Bearer test-key"
+
+
+def test_get_integration_tools_uses_get_filter_params_with_total_pagination() -> None:
+    with patch.object(
+        integrations.http,
+        "get",
         return_value=_response(
             {
                 "items": [{"tool_id": "composio:hubspot:search_contacts"}],
@@ -246,7 +278,7 @@ def test_get_integration_tools_posts_filter_payload_with_total_pagination() -> N
                 "offset": 4,
             },
         ),
-    ) as mock_post:
+    ) as mock_get:
         result = unify.get_integration_tools(
             owner_scope="assistant",
             assistant_id=42,
@@ -260,10 +292,8 @@ def test_get_integration_tools_posts_filter_payload_with_total_pagination() -> N
         )
 
     assert result["total"] == 12
-    assert mock_post.call_args.args[0] == (
-        f"{integrations.BASE_URL}/integrations/tools/get"
-    )
-    assert mock_post.call_args.kwargs["json"] == {
+    assert mock_get.call_args.args[0] == (f"{integrations.BASE_URL}/integrations/tools")
+    assert mock_get.call_args.kwargs["params"] == {
         "owner_scope": "assistant",
         "user_id": "user-1",
         "assistant_id": 42,
