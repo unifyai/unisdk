@@ -39,7 +39,7 @@ def get_integration_apps(
     """Get provider-backed integration apps with direct filters and pagination."""
 
     headers = _create_request_header(api_key)
-    body = _clean_payload(
+    params = _clean_payload(
         {
             "owner_scope": owner_scope,
             "org_id": org_id,
@@ -52,16 +52,16 @@ def get_integration_apps(
             "offset": offset,
         },
     )
-    return http.post(
-        f"{_api_base_url(base_url)}/integrations/apps/get",
+    return http.get(
+        f"{_api_base_url(base_url)}/integrations/apps",
         headers=headers,
-        json=body,
+        params=params,
     ).json()
 
 
 def list_integration_apps(
     *,
-    query: str = "",
+    query: Optional[str] = None,
     source_type: Optional[str] = None,
     owner_scope: str = "assistant",
     org_id: Optional[int] = None,
@@ -90,7 +90,7 @@ def list_integration_apps(
 
 
 def search_integration_apps(
-    query: str,
+    query: Optional[str] = None,
     *,
     source_type: Optional[str] = None,
     owner_scope: str = "assistant",
@@ -106,7 +106,7 @@ def search_integration_apps(
     """Search provider-backed integration apps through the global catalog index."""
 
     headers = _create_request_header(api_key)
-    body = _clean_payload(
+    params = _clean_payload(
         {
             "query": query,
             "source_type": source_type,
@@ -119,10 +119,10 @@ def search_integration_apps(
             "offset": offset,
         },
     )
-    return http.post(
+    return http.get(
         f"{_api_base_url(base_url)}/integrations/apps/search",
         headers=headers,
-        json=body,
+        params=params,
     ).json()
 
 
@@ -173,7 +173,7 @@ def get_integration_tools(
     """Get provider tools with direct filters and count-bearing pagination."""
 
     headers = _create_request_header(api_key)
-    body = _clean_payload(
+    params = _clean_payload(
         {
             "owner_scope": owner_scope,
             "org_id": org_id,
@@ -187,15 +187,15 @@ def get_integration_tools(
             "offset": offset,
         },
     )
-    return http.post(
-        f"{_api_base_url(base_url)}/integrations/tools/get",
+    return http.get(
+        f"{_api_base_url(base_url)}/integrations/tools",
         headers=headers,
-        json=body,
+        params=params,
     ).json()
 
 
 def search_integration_tools(
-    query: str,
+    query: Optional[str] = None,
     *,
     owner_scope: str = "assistant",
     org_id: Optional[int] = None,
@@ -212,7 +212,7 @@ def search_integration_tools(
     """Search provider tools through the global catalog index."""
 
     headers = _create_request_header(api_key)
-    body = _clean_payload(
+    params = _clean_payload(
         {
             "query": query,
             "owner_scope": owner_scope,
@@ -226,10 +226,10 @@ def search_integration_tools(
             "offset": offset,
         },
     )
-    return http.post(
+    return http.get(
         f"{_api_base_url(base_url)}/integrations/tools/search",
         headers=headers,
-        json=body,
+        params=params,
     ).json()
 
 
