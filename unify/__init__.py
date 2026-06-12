@@ -79,12 +79,16 @@ __all__ = [
     "list_assistants",
     "update_assistant_config",
     # Integrations
+    "approve_integration_tool_execution",
+    "deny_integration_tool_execution",
     "get_integration_apps",
     "get_integration_tools",
     "get_integration_tool_schema",
+    "get_integration_tool_policy",
     "list_integration_apps",
     "list_integration_connections",
     "patch_integration_backend",
+    "patch_integration_tool_policy",
     "run_integration_tool",
     "search_integration_apps",
     "search_integration_tools",
@@ -148,12 +152,16 @@ from .contexts import (
 
 # Integrations
 from .integrations import (
+    approve_integration_tool_execution,
+    deny_integration_tool_execution,
     get_integration_apps,
+    get_integration_tool_policy,
     get_integration_tool_schema,
     get_integration_tools,
     list_integration_apps,
     list_integration_connections,
     patch_integration_backend,
+    patch_integration_tool_policy,
     run_integration_tool,
     search_integration_apps,
     search_integration_tools,

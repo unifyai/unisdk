@@ -279,6 +279,7 @@ def run_integration_tool(
     connection_id: Optional[str] = None,
     conversation_id: Optional[str] = None,
     confirmation_token: Optional[str] = None,
+    approval_audit_id: Optional[int] = None,
     api_key: Optional[str] = None,
     base_url: Optional[str] = None,
 ) -> Dict[str, Any]:
@@ -296,10 +297,164 @@ def run_integration_tool(
             "connection_id": connection_id,
             "conversation_id": conversation_id,
             "confirmation_token": confirmation_token,
+            "approval_audit_id": approval_audit_id,
         },
     )
     return http.post(
         f"{_api_base_url(base_url)}/integrations/tools/{tool_id}/run",
+        headers=headers,
+        json=body,
+    ).json()
+
+
+def get_integration_tool_policy(
+    connection_id: str,
+    *,
+    owner_scope: str = "assistant",
+    org_id: Optional[int] = None,
+    team_id: Optional[int] = None,
+    user_id: Optional[str] = None,
+    assistant_id: Optional[int] = None,
+    api_key: Optional[str] = None,
+    base_url: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Get durable tool policy for one provider integration connection."""
+
+    headers = _create_request_header(api_key)
+    params = _clean_payload(
+        {
+            "owner_scope": owner_scope,
+            "org_id": org_id,
+            "team_id": team_id,
+            "user_id": user_id,
+            "assistant_id": assistant_id,
+        },
+    )
+    return http.get(
+        f"{_api_base_url(base_url)}/integrations/connections/{connection_id}/tool-policy",
+        headers=headers,
+        params=params,
+    ).json()
+
+
+def patch_integration_tool_policy(
+    connection_id: str,
+    *,
+    tool_policies: Optional[Dict[str, str]] = None,
+    bulk_approval_level: Optional[str] = None,
+    action_classes: Optional[List[str]] = None,
+    reset_to_defaults: bool = False,
+    owner_scope: str = "assistant",
+    org_id: Optional[int] = None,
+    team_id: Optional[int] = None,
+    user_id: Optional[str] = None,
+    assistant_id: Optional[int] = None,
+    api_key: Optional[str] = None,
+    base_url: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Patch durable tool policy for one provider integration connection."""
+
+    headers = _create_request_header(api_key)
+    params = _clean_payload(
+        {
+            "owner_scope": owner_scope,
+            "org_id": org_id,
+            "team_id": team_id,
+            "user_id": user_id,
+            "assistant_id": assistant_id,
+        },
+    )
+    body = _clean_payload(
+        {
+            "tool_policies": tool_policies or {},
+            "bulk_approval_level": bulk_approval_level,
+            "action_classes": action_classes,
+            "reset_to_defaults": reset_to_defaults,
+        },
+    )
+    return http.patch(
+        f"{_api_base_url(base_url)}/integrations/connections/{connection_id}/tool-policy",
+        headers=headers,
+        params=params,
+        json=body,
+    ).json()
+
+
+def approve_integration_tool_execution(
+    audit_id: int,
+    *,
+    scope: str = "once",
+    persist_policy: bool = False,
+    approval_level: str = "auto",
+    actor_id: Optional[str] = None,
+    expires_at: Optional[str] = None,
+    owner_scope: str = "assistant",
+    org_id: Optional[int] = None,
+    team_id: Optional[int] = None,
+    user_id: Optional[str] = None,
+    assistant_id: Optional[int] = None,
+    api_key: Optional[str] = None,
+    base_url: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Approve a pending provider tool execution audit."""
+
+    headers = _create_request_header(api_key)
+    body = _clean_payload(
+        {
+            "scope": scope,
+            "persist_policy": persist_policy,
+            "approval_level": approval_level,
+            "actor_id": actor_id,
+            "expires_at": expires_at,
+            "owner_scope": owner_scope,
+            "org_id": org_id,
+            "team_id": team_id,
+            "user_id": user_id,
+            "assistant_id": assistant_id,
+        },
+    )
+    return http.post(
+        f"{_api_base_url(base_url)}/integrations/tool-executions/{audit_id}/approve",
+        headers=headers,
+        json=body,
+    ).json()
+
+
+def deny_integration_tool_execution(
+    audit_id: int,
+    *,
+    scope: str = "once",
+    persist_policy: bool = False,
+    approval_level: str = "forbidden",
+    actor_id: Optional[str] = None,
+    reason: Optional[str] = None,
+    owner_scope: str = "assistant",
+    org_id: Optional[int] = None,
+    team_id: Optional[int] = None,
+    user_id: Optional[str] = None,
+    assistant_id: Optional[int] = None,
+    api_key: Optional[str] = None,
+    base_url: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Deny a pending provider tool execution audit."""
+
+    headers = _create_request_header(api_key)
+    body = _clean_payload(
+        {
+            "scope": scope,
+            "persist_policy": persist_policy,
+            "approval_level": approval_level,
+            "actor_id": actor_id,
+            "reason": reason,
+            "owner_scope": owner_scope,
+            "org_id": org_id,
+            "team_id": team_id,
+            "user_id": user_id,
+            "assistant_id": assistant_id,
+        },
+    )
+    return http.post(
+        f"{_api_base_url(base_url)}/integrations/tool-executions/{audit_id}/deny",
         headers=headers,
         json=body,
     ).json()
