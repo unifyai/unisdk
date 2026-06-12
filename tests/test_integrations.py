@@ -242,6 +242,7 @@ def test_search_integration_tools_uses_get_search_params() -> None:
         "assistant_id": 42,
         "canonical_app_slug": "hubspot",
         "include_unconnected": False,
+        "include_schema": False,
         "limit": 5,
         "offset": 3,
     }
@@ -260,6 +261,7 @@ def test_search_integration_tools_allows_omitted_query() -> None:
     assert mock_get.call_args.kwargs["params"] == {
         "owner_scope": "assistant",
         "include_unconnected": True,
+        "include_schema": False,
         "limit": 4,
         "offset": 0,
     }
@@ -286,6 +288,7 @@ def test_get_integration_tools_uses_get_filter_params_with_total_pagination() ->
             canonical_app_slug="hubspot",
             activation_state="connected_ready",
             include_unconnected=False,
+            include_schema=True,
             limit=2,
             offset=4,
             api_key="test-key",
@@ -300,6 +303,7 @@ def test_get_integration_tools_uses_get_filter_params_with_total_pagination() ->
         "canonical_app_slug": "hubspot",
         "activation_state": "connected_ready",
         "include_unconnected": False,
+        "include_schema": True,
         "limit": 2,
         "offset": 4,
     }
