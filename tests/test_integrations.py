@@ -349,6 +349,7 @@ def test_run_integration_tool_posts_arguments_and_confirmation_context() -> None
             connection_id="conn-1",
             conversation_id="conversation-1",
             confirmation_token="confirm-1",
+            approval_audit_id=17,
             api_key="test-key",
         )
 
@@ -364,6 +365,127 @@ def test_run_integration_tool_posts_arguments_and_confirmation_context() -> None
         "connection_id": "conn-1",
         "conversation_id": "conversation-1",
         "confirmation_token": "confirm-1",
+        "approval_audit_id": 17,
+    }
+
+
+def test_get_integration_tool_policy_uses_owner_params() -> None:
+    with patch.object(
+        integrations.http,
+        "get",
+        return_value=_response({"connection_id": "conn-1", "policies": []}),
+    ) as mock_get:
+        result = unify.get_integration_tool_policy(
+            "conn-1",
+            owner_scope="assistant",
+            assistant_id=42,
+            api_key="test-key",
+        )
+
+    assert result == {"connection_id": "conn-1", "policies": []}
+    assert mock_get.call_args.args[0] == (
+        f"{integrations.BASE_URL}/integrations/connections/conn-1/tool-policy"
+    )
+    assert mock_get.call_args.kwargs["params"] == {
+        "owner_scope": "assistant",
+        "assistant_id": 42,
+    }
+
+
+def test_patch_integration_tool_policy_sends_partial_policy_and_owner_params() -> None:
+    with patch.object(
+        integrations.http,
+        "patch",
+        return_value=_response({"connection_id": "conn-1", "policies": []}),
+    ) as mock_patch:
+        result = unify.patch_integration_tool_policy(
+            "conn-1",
+            tool_policies={"tool-1": "auto"},
+            bulk_approval_level="specific_approval",
+            action_classes=["write"],
+            owner_scope="assistant",
+            assistant_id=42,
+            api_key="test-key",
+        )
+
+    assert result == {"connection_id": "conn-1", "policies": []}
+    assert mock_patch.call_args.args[0] == (
+        f"{integrations.BASE_URL}/integrations/connections/conn-1/tool-policy"
+    )
+    assert mock_patch.call_args.kwargs["params"] == {
+        "owner_scope": "assistant",
+        "assistant_id": 42,
+    }
+    assert mock_patch.call_args.kwargs["json"] == {
+        "tool_policies": {"tool-1": "auto"},
+        "bulk_approval_level": "specific_approval",
+        "action_classes": ["write"],
+        "reset_to_defaults": False,
+    }
+
+
+def test_approve_integration_tool_execution_posts_owner_context() -> None:
+    with patch.object(
+        integrations.http,
+        "post",
+        return_value=_response(
+            {"status": "approved", "confirmation_token": "confirm-1"},
+        ),
+    ) as mock_post:
+        result = unify.approve_integration_tool_execution(
+            17,
+            scope="tool",
+            persist_policy=True,
+            approval_level="auto",
+            actor_id="actor-1",
+            owner_scope="assistant",
+            assistant_id=42,
+            api_key="test-key",
+        )
+
+    assert result == {"status": "approved", "confirmation_token": "confirm-1"}
+    assert mock_post.call_args.args[0] == (
+        f"{integrations.BASE_URL}/integrations/tool-executions/17/approve"
+    )
+    assert mock_post.call_args.kwargs["json"] == {
+        "scope": "tool",
+        "persist_policy": True,
+        "approval_level": "auto",
+        "actor_id": "actor-1",
+        "owner_scope": "assistant",
+        "assistant_id": 42,
+    }
+
+
+def test_deny_integration_tool_execution_posts_owner_context() -> None:
+    with patch.object(
+        integrations.http,
+        "post",
+        return_value=_response({"status": "denied"}),
+    ) as mock_post:
+        result = unify.deny_integration_tool_execution(
+            17,
+            scope="once",
+            persist_policy=False,
+            actor_id="actor-1",
+            reason="not needed",
+            owner_scope="assistant",
+            assistant_id=42,
+            api_key="test-key",
+        )
+
+    assert result == {"status": "denied"}
+    assert mock_post.call_args.args[0] == (
+        f"{integrations.BASE_URL}/integrations/tool-executions/17/deny"
+    )
+    assert mock_post.call_args.kwargs["json"] == {
+        "scope": "once",
+        "persist_policy": False,
+        "approval_level": "forbidden",
+        "actor_id": "actor-1",
+        "reason": "not needed",
+        "owner_scope": "assistant",
+        "assistant_id": 42,
     }
 
 
