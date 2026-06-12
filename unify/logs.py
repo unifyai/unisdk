@@ -905,6 +905,7 @@ def get_logs(
     groups_only: Optional[bool] = None,
     return_timestamps: Optional[bool] = None,
     return_ids_only: bool = False,
+    return_sort_distance: bool = False,
     api_key: Optional[str] = None,
 ) -> Union[List[unify.Log], Dict[str, Any]]:
     """
@@ -958,6 +959,10 @@ def get_logs(
 
         return_ids_only: Whether to return only the log ids.
 
+        return_sort_distance: If True and sorting takes the vector ANN
+        fast-path, include the computed distance in each entry under the
+        reserved "_sort_distance" key.
+
         api_key: If specified, unify API key to be used. Defaults to the value in the
         `UNIFY_KEY` environment variable.
 
@@ -1003,6 +1008,7 @@ def get_logs(
         "nested_groups": nested_groups,
         "groups_only": groups_only,
         "return_timestamps": return_timestamps,
+        "return_sort_distance": return_sort_distance,
     }
 
     response = http.get(BASE_URL + "/logs", headers=headers, params=params)
