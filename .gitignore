@@ -170,3 +170,7 @@ staging_to_main.sh
 # Ignore log contents but keep the README
 logs/*
 !logs/README.md
+
+# Cursor local scratch files
+/.cursor/projects/
+/.cursor/plans/
