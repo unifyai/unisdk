@@ -110,7 +110,7 @@ def managed_preview_user() -> Iterator[PreviewUser]:
     base_url = require_preview_url()
     admin_key = require_admin_key()
     suffix = uuid.uuid4().hex[:12]
-    email = f"sdk-space-invite-{suffix}@unify.ai"
+    email = f"sdk-team-invite-{suffix}@unify.ai"
     user_id = None
 
     response = http.post(

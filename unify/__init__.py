@@ -74,22 +74,40 @@ __all__ = [
     "download_object",
     # Assistants
     "create_assistant",
+    "delegate_to_colleague",
     "delete_assistant",
     "list_assistants",
-    "pre_seed_colleague",
     "update_assistant_config",
+    # Integrations
+    "approve_integration_tool_execution",
+    "deny_integration_tool_execution",
+    "get_integration_apps",
+    "get_integration_tools",
+    "get_integration_tool_schema",
+    "get_integration_tool_policy",
+    "list_integration_apps",
+    "list_integration_connections",
+    "patch_integration_backend",
+    "patch_integration_tool_policy",
+    "run_integration_tool",
+    "search_integration_apps",
+    "search_integration_tools",
+    "sync_integrations",
+    "test_integration_connection",
+    "upsert_integration_backend",
     # Organizations
     "invite_org_member",
+    "list_organizations",
     "list_org_members",
-    # Spaces
-    "add_space_member",
-    "create_space",
-    "delete_space",
-    "list_space_members",
-    "list_spaces",
-    "list_spaces_for_assistant",
-    "remove_space_member",
-    "update_space",
+    # Teams
+    "add_team_member",
+    "create_team",
+    "delete_team",
+    "list_team_members",
+    "list_teams",
+    "list_teams_for_assistant",
+    "remove_team_member",
+    "update_team",
     # Errors
     "RequestError",
     # Submodules
@@ -109,9 +127,9 @@ from ._async_logger import AsyncLoggerManager
 # Assistants
 from .assistants import (
     create_assistant,
+    delegate_to_colleague,
     delete_assistant,
     list_assistants,
-    pre_seed_colleague,
     update_assistant_config,
 )
 
@@ -130,6 +148,26 @@ from .contexts import (
     get_contexts,
     rename_context,
     rollback_context,
+)
+
+# Integrations
+from .integrations import (
+    approve_integration_tool_execution,
+    deny_integration_tool_execution,
+    get_integration_apps,
+    get_integration_tool_policy,
+    get_integration_tool_schema,
+    get_integration_tools,
+    list_integration_apps,
+    list_integration_connections,
+    patch_integration_backend,
+    patch_integration_tool_policy,
+    run_integration_tool,
+    search_integration_apps,
+    search_integration_tools,
+    sync_integrations,
+    test_integration_connection,
+    upsert_integration_backend,
 )
 
 # Logs
@@ -161,7 +199,7 @@ from .logs import (
 )
 
 # Organizations
-from .organizations import invite_org_member, list_org_members
+from .organizations import invite_org_member, list_org_members, list_organizations
 
 # Platform API utilities
 from .platform import deduct_credits, get_user_basic_info
@@ -177,16 +215,16 @@ from .projects import (
     rollback_project,
 )
 
-# Spaces
-from .spaces import (
-    add_space_member,
-    create_space,
-    delete_space,
-    list_space_members,
-    list_spaces,
-    list_spaces_for_assistant,
-    remove_space_member,
-    update_space,
+# Teams
+from .teams import (
+    add_team_member,
+    create_team,
+    delete_team,
+    list_team_members,
+    list_teams,
+    list_teams_for_assistant,
+    remove_team_member,
+    update_team,
 )
 
 # Utils

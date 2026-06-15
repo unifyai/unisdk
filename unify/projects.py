@@ -12,6 +12,7 @@ def create_project(
     overwrite: Union[bool, str] = False,
     api_key: Optional[str] = None,
     is_versioned: bool = True,
+    is_public_read: bool = False,
 ) -> Dict[str, str]:
     """
     Creates a logging project and adds this to your account. This project will have
@@ -33,12 +34,19 @@ def create_project(
 
         is_versioned: Whether the project is tracked via version control.
 
+        is_public_read: Whether the project is readable (data-plane reads
+        only) by any authenticated account. Writes remain owner-only.
+
     Returns:
         A message indicating whether the project was created successfully.
     """
     api_key = _validate_api_key(api_key)
     headers = _create_request_header(api_key)
-    body = {"name": name, "is_versioned": is_versioned}
+    body = {
+        "name": name,
+        "is_versioned": is_versioned,
+        "is_public_read": is_public_read,
+    }
     if overwrite:
         if name in list_projects(api_key=api_key):
             if overwrite == "contexts":
