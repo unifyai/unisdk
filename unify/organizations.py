@@ -7,6 +7,27 @@ from unify.utils.helpers import _create_request_header
 OrganizationInviteRoleName = Literal["Admin", "Member", "Viewer"]
 
 
+def list_organizations(
+    *,
+    api_key: Optional[str] = None,
+) -> List[Dict[str, Any]]:
+    """
+    List organizations visible to the authenticated user with role metadata.
+
+    Args:
+        api_key: If specified, unify API key to use. Defaults to ``UNIFY_KEY``.
+
+    Returns:
+        Organization membership records returned by the API.
+    """
+    headers = _create_request_header(api_key)
+    response = http.get(
+        f"{BASE_URL}/organizations",
+        headers=headers,
+    )
+    return response.json()
+
+
 def invite_org_member(
     organization_id: int,
     email: str,

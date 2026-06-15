@@ -122,27 +122,49 @@ def list_assistants(
     return response.json()["info"]
 
 
-def pre_seed_colleague(
+def delegate_to_colleague(
     target_assistant_id: int,
-    writes: List[Dict[str, Any]],
     *,
+    instruction: str,
+    intent: str = "general",
+    dedupe_key: Optional[str] = None,
+    related_context: Optional[Dict[str, Any]] = None,
     api_key: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
-    Seed task, knowledge, guidance, or other rows into a colleague assistant.
+    Assign asynchronous work to a colleague assistant.
+
+    A successful response is an async delegation receipt. It means the colleague
+    has been woken or notified with the assignment, not that the colleague has
+    already created durable artifacts or completed the work. The returned payload
+    includes ``accepted``, ``completion_status``, ``receipt_type``, and ``message``
+    fields that describe this contract, along with dispatch fields such as
+    ``status`` and ``activation_id``.
 
     Args:
-        target_assistant_id: Assistant identifier for the colleague that owns the rows.
-        writes: Context batches shaped as ``{"context": "...", "entries": [...]}``.
+        target_assistant_id: Assistant identifier for the colleague that owns the work.
+        instruction: Plain-English assignment the colleague should carry out.
+        intent: Optional assignment category, for example ``schedule_task``.
+        dedupe_key: Optional retry key for avoiding obvious duplicate work.
+        related_context: Optional structured context for the colleague.
         api_key: If specified, unify API key to use. Defaults to ``UNIFY_KEY``.
 
     Returns:
-        The API response payload describing the written rows.
+        The API response payload describing accepted async delegation dispatch.
     """
     headers = _create_request_header(api_key)
+    body: Dict[str, Any] = {
+        "instruction": instruction,
+        "intent": intent,
+    }
+    if dedupe_key is not None:
+        body["dedupe_key"] = dedupe_key
+    if related_context is not None:
+        body["related_context"] = related_context
+
     response = http.post(
-        f"{BASE_URL}/assistant/{target_assistant_id}/preseed",
+        f"{BASE_URL}/assistant/{target_assistant_id}/delegate",
         headers=headers,
-        json={"writes": writes},
+        json=body,
     )
     return response.json()["info"]

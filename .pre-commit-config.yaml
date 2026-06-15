@@ -47,3 +47,9 @@ repos:
     entry: uv run black
     language: system
     types: [python]
+
+  - id: check-no-release-versioning
+    name: no first-party release versioning
+    entry: python3 scripts/check_no_release_versioning.py
+    language: system
+    pass_filenames: false
