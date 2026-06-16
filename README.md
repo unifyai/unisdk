@@ -131,6 +131,11 @@ unify/
 
 ## Local development
 
+> `unify` is the Python SDK, not a runnable system. To run the whole product
+> locally (Orchestra + Unity + Console), use **`unity stack up`** from the
+> [unity repo](https://github.com/unifyai/unity). The steps below are for
+> developing the SDK itself.
+
 This project uses [uv](https://docs.astral.sh/uv/) for dependency management.
 
 ### Setup
