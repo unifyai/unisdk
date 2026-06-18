@@ -1,4 +1,4 @@
-"""Tests for provider-backed integration SDK helpers."""
+"""Tests for provider-backed integration runtime SDK helpers."""
 
 from __future__ import annotations
 
@@ -13,40 +13,6 @@ def _response(payload):
     response = MagicMock()
     response.json.return_value = payload
     return response
-
-
-def test_search_integration_apps_uses_env_api_key_by_default(monkeypatch) -> None:
-    monkeypatch.setenv("UNIFY_KEY", "env-key")
-    with patch.object(
-        integrations.http,
-        "get",
-        return_value=_response([{"canonical_app_slug": "slack"}]),
-    ) as mock_get:
-        result = unify.search_integration_apps(
-            "team chat",
-            owner_scope="assistant",
-            assistant_id=42,
-        )
-
-    assert result == [{"canonical_app_slug": "slack"}]
-    assert mock_get.call_args.kwargs["headers"]["Authorization"] == "Bearer env-key"
-
-
-def test_get_integration_tools_uses_env_api_key_by_default(monkeypatch) -> None:
-    monkeypatch.setenv("UNIFY_KEY", "env-key")
-    with patch.object(
-        integrations.http,
-        "get",
-        return_value=_response({"items": [{"tool_id": "tool-1"}], "total": 1}),
-    ) as mock_get:
-        result = unify.get_integration_tools(
-            owner_scope="assistant",
-            assistant_id=42,
-            canonical_app_slug="slack",
-        )
-
-    assert result["items"] == [{"tool_id": "tool-1"}]
-    assert mock_get.call_args.kwargs["headers"]["Authorization"] == "Bearer env-key"
 
 
 def test_list_integration_connections_uses_env_base_url_and_key_by_default(
@@ -66,123 +32,6 @@ def test_list_integration_connections_uses_env_base_url_and_key_by_default(
         "http://orchestra.env/v0/integrations/connections"
     )
     assert mock_get.call_args.kwargs["headers"]["Authorization"] == "Bearer env-key"
-
-
-def test_get_integration_apps_uses_get_params_with_pagination_and_base_url() -> None:
-    with patch.object(
-        integrations.http,
-        "get",
-        return_value=_response(
-            {
-                "items": [{"canonical_app_slug": "hubspot"}],
-                "total": 1,
-                "limit": 5,
-                "offset": 0,
-            },
-        ),
-    ) as mock_get:
-        result = unify.get_integration_apps(
-            query="crm",
-            source_type="native",
-            owner_scope="assistant",
-            assistant_id=42,
-            user_id="user-1",
-            limit=5,
-            offset=0,
-            api_key="test-key",
-            base_url="http://orchestra.local",
-        )
-
-    assert result["items"] == [{"canonical_app_slug": "hubspot"}]
-    mock_get.assert_called_once()
-    url = mock_get.call_args.args[0]
-    kwargs = mock_get.call_args.kwargs
-    assert url == "http://orchestra.local/v0/integrations/apps"
-    assert kwargs["params"] == {
-        "query": "crm",
-        "source_type": "native",
-        "owner_scope": "assistant",
-        "user_id": "user-1",
-        "assistant_id": 42,
-        "limit": 5,
-        "offset": 0,
-    }
-    assert kwargs["headers"]["Authorization"] == "Bearer test-key"
-
-
-def test_list_integration_apps_is_backward_compatible_alias() -> None:
-    with patch.object(
-        integrations.http,
-        "get",
-        return_value=_response(
-            {
-                "items": [{"canonical_app_slug": "hubspot"}],
-                "total": 1,
-                "limit": 100,
-                "offset": 0,
-            },
-        ),
-    ) as mock_get:
-        result = unify.list_integration_apps(
-            query="crm",
-            source_type="third_party",
-            owner_scope="assistant",
-            assistant_id=42,
-            api_key="test-key",
-            base_url="http://orchestra.local/v0",
-        )
-
-    assert result == [{"canonical_app_slug": "hubspot"}]
-    assert mock_get.call_args.args[0] == "http://orchestra.local/v0/integrations/apps"
-    assert mock_get.call_args.kwargs["params"]["source_type"] == "third_party"
-
-
-def test_search_integration_apps_uses_get_search_params() -> None:
-    with patch.object(
-        integrations.http,
-        "get",
-        return_value=_response([{"canonical_app_slug": "slack", "score": 0.91}]),
-    ) as mock_get:
-        result = unify.search_integration_apps(
-            "team chat",
-            source_type="native",
-            owner_scope="assistant",
-            assistant_id=42,
-            user_id="user-1",
-            limit=7,
-            offset=2,
-            api_key="test-key",
-        )
-
-    assert result == [{"canonical_app_slug": "slack", "score": 0.91}]
-    assert mock_get.call_args.args[0] == (
-        f"{integrations.BASE_URL}/integrations/apps/search"
-    )
-    assert mock_get.call_args.kwargs["params"] == {
-        "query": "team chat",
-        "source_type": "native",
-        "owner_scope": "assistant",
-        "user_id": "user-1",
-        "assistant_id": 42,
-        "limit": 7,
-        "offset": 2,
-    }
-
-
-def test_search_integration_apps_allows_omitted_query() -> None:
-    with patch.object(
-        integrations.http,
-        "get",
-        return_value=_response([{"canonical_app_slug": "slack"}]),
-    ) as mock_get:
-        result = unify.search_integration_apps(limit=3, api_key="test-key")
-
-    assert result == [{"canonical_app_slug": "slack"}]
-    assert mock_get.call_args.kwargs["params"] == {
-        "owner_scope": "assistant",
-        "limit": 3,
-        "offset": 0,
-    }
 
 
 def test_list_integration_connections_preserves_owner_scope_params() -> None:
@@ -213,127 +62,6 @@ def test_list_integration_connections_preserves_owner_scope_params() -> None:
     }
 
 
-def test_search_integration_tools_uses_get_search_params() -> None:
-    with patch.object(
-        integrations.http,
-        "get",
-        return_value=_response([{"tool_id": "composio:hubspot:search_contacts"}]),
-    ) as mock_get:
-        result = unify.search_integration_tools(
-            "HubSpot leads",
-            owner_scope="assistant",
-            assistant_id=42,
-            user_id="user-1",
-            canonical_app_slug="hubspot",
-            include_unconnected=False,
-            limit=5,
-            offset=3,
-            api_key="test-key",
-        )
-
-    assert result == [{"tool_id": "composio:hubspot:search_contacts"}]
-    assert mock_get.call_args.args[0] == (
-        f"{integrations.BASE_URL}/integrations/tools/search"
-    )
-    assert mock_get.call_args.kwargs["params"] == {
-        "query": "HubSpot leads",
-        "owner_scope": "assistant",
-        "user_id": "user-1",
-        "assistant_id": 42,
-        "canonical_app_slug": "hubspot",
-        "include_unconnected": False,
-        "include_schema": False,
-        "limit": 5,
-        "offset": 3,
-    }
-    assert mock_get.call_args.kwargs["headers"]["Authorization"] == "Bearer test-key"
-
-
-def test_search_integration_tools_allows_omitted_query() -> None:
-    with patch.object(
-        integrations.http,
-        "get",
-        return_value=_response([{"tool_id": "composio:slack:send_message"}]),
-    ) as mock_get:
-        result = unify.search_integration_tools(limit=4, api_key="test-key")
-
-    assert result == [{"tool_id": "composio:slack:send_message"}]
-    assert mock_get.call_args.kwargs["params"] == {
-        "owner_scope": "assistant",
-        "include_unconnected": True,
-        "include_schema": False,
-        "limit": 4,
-        "offset": 0,
-    }
-    assert mock_get.call_args.kwargs["headers"]["Authorization"] == "Bearer test-key"
-
-
-def test_get_integration_tools_uses_get_filter_params_with_total_pagination() -> None:
-    with patch.object(
-        integrations.http,
-        "get",
-        return_value=_response(
-            {
-                "items": [{"tool_id": "composio:hubspot:search_contacts"}],
-                "total": 12,
-                "limit": 2,
-                "offset": 4,
-            },
-        ),
-    ) as mock_get:
-        result = unify.get_integration_tools(
-            owner_scope="assistant",
-            assistant_id=42,
-            user_id="user-1",
-            canonical_app_slug="hubspot",
-            activation_state="connected_ready",
-            include_unconnected=False,
-            include_schema=True,
-            limit=2,
-            offset=4,
-            api_key="test-key",
-        )
-
-    assert result["total"] == 12
-    assert mock_get.call_args.args[0] == (f"{integrations.BASE_URL}/integrations/tools")
-    assert mock_get.call_args.kwargs["params"] == {
-        "owner_scope": "assistant",
-        "user_id": "user-1",
-        "assistant_id": 42,
-        "canonical_app_slug": "hubspot",
-        "activation_state": "connected_ready",
-        "include_unconnected": False,
-        "include_schema": True,
-        "limit": 2,
-        "offset": 4,
-    }
-
-
-def test_get_integration_tool_schema_calls_schema_endpoint_with_scope() -> None:
-    with patch.object(
-        integrations.http,
-        "get",
-        return_value=_response({"tool_id": "tool-1", "input_schema": {}}),
-    ) as mock_get:
-        result = unify.get_integration_tool_schema(
-            "tool-1",
-            owner_scope="assistant",
-            assistant_id=42,
-            user_id="user-1",
-            api_key="test-key",
-        )
-
-    assert result == {"tool_id": "tool-1", "input_schema": {}}
-    assert mock_get.call_args.args[0] == (
-        f"{integrations.BASE_URL}/integrations/tools/tool-1/schema"
-    )
-    assert mock_get.call_args.kwargs["params"] == {
-        "owner_scope": "assistant",
-        "user_id": "user-1",
-        "assistant_id": 42,
-    }
-
-
 def test_run_integration_tool_posts_arguments_and_confirmation_context() -> None:
     with patch.object(
         integrations.http,
@@ -350,6 +78,21 @@ def test_run_integration_tool_posts_arguments_and_confirmation_context() -> None
             conversation_id="conversation-1",
             confirmation_token="confirm-1",
             approval_audit_id=17,
+            backend_id="composio",
+            provider_app_id="hubspot",
+            canonical_app_slug="hubspot",
+            app_display_name="HubSpot",
+            provider_tool_id="hubspot.search_contacts",
+            canonical_name="primitives.integrations.hubspot.search_contacts",
+            function_manager_name="primitives_integrations__hubspot__search_contacts",
+            tool_display_name="Search contacts",
+            action_class="read",
+            behavior_hints=["read_only"],
+            required_scopes=["crm.objects.contacts.read"],
+            input_schema={"type": "object"},
+            output_schema={"type": "object"},
+            examples=[{"arguments": {"query": "alice"}}],
+            confirmation_required=False,
             api_key="test-key",
         )
 
@@ -366,6 +109,21 @@ def test_run_integration_tool_posts_arguments_and_confirmation_context() -> None
         "conversation_id": "conversation-1",
         "confirmation_token": "confirm-1",
         "approval_audit_id": 17,
+        "backend_id": "composio",
+        "provider_app_id": "hubspot",
+        "canonical_app_slug": "hubspot",
+        "app_display_name": "HubSpot",
+        "provider_tool_id": "hubspot.search_contacts",
+        "canonical_name": "primitives.integrations.hubspot.search_contacts",
+        "function_manager_name": "primitives_integrations__hubspot__search_contacts",
+        "tool_display_name": "Search contacts",
+        "action_class": "read",
+        "behavior_hints": ["read_only"],
+        "required_scopes": ["crm.objects.contacts.read"],
+        "input_schema": {"type": "object"},
+        "output_schema": {"type": "object"},
+        "examples": [{"arguments": {"query": "alice"}}],
+        "confirmation_required": False,
     }
 
 
@@ -508,120 +266,6 @@ def test_test_integration_connection_posts_health_check_endpoint() -> None:
     assert mock_post.call_args.kwargs["headers"]["Authorization"] == "Bearer test-key"
 
 
-def test_sync_integrations_posts_admin_catalog_payload() -> None:
-    app = {
-        "provider_app_id": "linear",
-        "canonical_app_slug": "linear",
-        "display_name": "Linear",
-    }
-    tool = {
-        "provider_app_id": "linear",
-        "canonical_app_slug": "linear",
-        "provider_tool_id": "linear-list-issues",
-        "name": "list_issues",
-        "display_name": "List issues",
-        "description": "List issues.",
-    }
-    with patch.object(
-        integrations.http,
-        "post",
-        return_value=_response({"apps_upserted": 1, "tools_upserted": 1}),
-    ) as mock_post:
-        result = unify.sync_integrations(
-            backend_id="provider-backend",
-            apps=[app],
-            tools=[tool],
-            cache_version="sync-v2",
-            api_key="admin-key",
-        )
-
-    assert result == {"apps_upserted": 1, "tools_upserted": 1}
-    assert mock_post.call_args.args[0] == (
-        f"{integrations.BASE_URL}/admin/integrations/sync"
-    )
-    assert mock_post.call_args.kwargs["json"] == {
-        "backend_id": "provider-backend",
-        "cache_version": "sync-v2",
-        "source_type": "third_party",
-        "apps": [app],
-        "tools": [tool],
-        "app_slugs": [],
-        "tool_limit_per_app": 0,
-        "component_limit_per_app": 0,
-        "include_all_managed_apps": False,
-        "include_all_apps": False,
-        "create_auth_configs": True,
-    }
-    assert mock_post.call_args.kwargs["headers"]["Authorization"] == "Bearer admin-key"
-
-
-def test_sync_integrations_posts_app_only_native_payload() -> None:
-    app = {"provider_app_id": "github", "canonical_app_slug": "github"}
-    with patch.object(
-        integrations.http,
-        "post",
-        return_value=_response({"apps_upserted": 1, "tools_upserted": 0}),
-    ) as mock_post:
-        result = unify.sync_integrations(
-            backend_id="unity_native",
-            source_type="native",
-            cache_version="unity-deploy-native-v1",
-            apps=[app],
-            api_key="admin-key",
-        )
-
-    assert result == {"apps_upserted": 1, "tools_upserted": 0}
-    assert mock_post.call_args.kwargs["json"] == {
-        "backend_id": "unity_native",
-        "cache_version": "unity-deploy-native-v1",
-        "source_type": "native",
-        "apps": [app],
-        "tools": [],
-        "app_slugs": [],
-        "tool_limit_per_app": 0,
-        "component_limit_per_app": 0,
-        "include_all_managed_apps": False,
-        "include_all_apps": False,
-        "create_auth_configs": True,
-    }
-
-
-def test_sync_integrations_posts_composio_live_sync_payload() -> None:
-    with patch.object(
-        integrations.http,
-        "post",
-        return_value=_response({"apps_upserted": 20, "tools_upserted": 40}),
-    ) as mock_post:
-        result = unify.sync_integrations(
-            backend_id="composio",
-            app_slugs=["DISCORD", "GOOGLEDRIVE"],
-            tool_limit_per_app=10,
-            include_all_managed_apps=False,
-            create_auth_configs=True,
-            cache_version="local-composio-first-wave",
-            api_key="admin-key",
-        )
-
-    assert result == {"apps_upserted": 20, "tools_upserted": 40}
-    assert mock_post.call_args.args[0] == (
-        f"{integrations.BASE_URL}/admin/integrations/sync"
-    )
-    assert mock_post.call_args.kwargs["json"] == {
-        "backend_id": "composio",
-        "source_type": "third_party",
-        "apps": [],
-        "tools": [],
-        "app_slugs": ["DISCORD", "GOOGLEDRIVE"],
-        "tool_limit_per_app": 10,
-        "component_limit_per_app": 0,
-        "include_all_managed_apps": False,
-        "include_all_apps": False,
-        "create_auth_configs": True,
-        "cache_version": "local-composio-first-wave",
-    }
-    assert mock_post.call_args.kwargs["headers"]["Authorization"] == "Bearer admin-key"
-
-
 def test_upsert_integration_backend_posts_admin_backend_payload() -> None:
     with patch.object(
         integrations.http,
@@ -691,11 +335,20 @@ def test_integration_helpers_do_not_import_provider_sdks() -> None:
     assert "import pipedream" not in source
 
 
-def test_unify_exports_integration_helpers() -> None:
+def test_unify_exports_runtime_integration_helpers_only() -> None:
     for name in [
         "get_integration_apps",
         "search_integration_apps",
+        "get_integration_tools",
+        "search_integration_tools",
+        "get_integration_tool_schema",
         "sync_integrations",
+    ]:
+        assert not hasattr(unify, name)
+    for name in [
+        "list_integration_connections",
+        "run_integration_tool",
+        "get_integration_tool_policy",
         "patch_integration_backend",
     ]:
         assert hasattr(unify, name)

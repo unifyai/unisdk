@@ -16,6 +16,29 @@ def test_create_context():
     assert "my_context" in unify.get_contexts()
 
 
+def test_create_context_forwards_owner_scope(monkeypatch):
+    """create_context forwards explicit owner_scope/owner_id in the request body."""
+    captured = {}
+
+    class _Resp:
+        def json(self):
+            return {"info": "ok"}
+
+    def _fake_post(url, headers=None, json=None):
+        captured["body"] = json
+        return _Resp()
+
+    monkeypatch.setattr(unify.contexts.http, "post", _fake_post)
+    unify.create_context(
+        "ArbitraryName",
+        owner_scope="team",
+        owner_id=555,
+        project="dummy_project",
+    )
+    assert captured["body"]["owner_scope"] == "team"
+    assert captured["body"]["owner_id"] == 555
+
+
 @_handle_project_isolated
 def test_create_contexts_names_only():
     assert len(unify.get_contexts()) == 0

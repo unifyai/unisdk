@@ -22,110 +22,6 @@ def _clean_payload(payload: Dict[str, Any]) -> Dict[str, Any]:
     return {key: value for key, value in payload.items() if value is not None}
 
 
-def get_integration_apps(
-    *,
-    owner_scope: str = "assistant",
-    org_id: Optional[int] = None,
-    team_id: Optional[int] = None,
-    user_id: Optional[str] = None,
-    assistant_id: Optional[int] = None,
-    query: Optional[str] = None,
-    source_type: Optional[str] = None,
-    limit: int = 100,
-    offset: int = 0,
-    api_key: Optional[str] = None,
-    base_url: Optional[str] = None,
-) -> Dict[str, Any]:
-    """Get provider-backed integration apps with direct filters and pagination."""
-
-    headers = _create_request_header(api_key)
-    params = _clean_payload(
-        {
-            "owner_scope": owner_scope,
-            "org_id": org_id,
-            "team_id": team_id,
-            "user_id": user_id,
-            "assistant_id": assistant_id,
-            "query": query,
-            "source_type": source_type,
-            "limit": limit,
-            "offset": offset,
-        },
-    )
-    return http.get(
-        f"{_api_base_url(base_url)}/integrations/apps",
-        headers=headers,
-        params=params,
-    ).json()
-
-
-def list_integration_apps(
-    *,
-    query: Optional[str] = None,
-    source_type: Optional[str] = None,
-    owner_scope: str = "assistant",
-    org_id: Optional[int] = None,
-    team_id: Optional[int] = None,
-    user_id: Optional[str] = None,
-    assistant_id: Optional[int] = None,
-    api_key: Optional[str] = None,
-    base_url: Optional[str] = None,
-) -> List[Dict[str, Any]]:
-    """Backward-compatible alias for ``get_integration_apps(...)[\"items\"]``."""
-
-    response = get_integration_apps(
-        query=query or None,
-        source_type=source_type,
-        owner_scope=owner_scope,
-        org_id=org_id,
-        team_id=team_id,
-        user_id=user_id,
-        assistant_id=assistant_id,
-        api_key=api_key,
-        base_url=base_url,
-    )
-    if isinstance(response, dict) and "items" in response:
-        return response["items"]
-    return response  # type: ignore[return-value]
-
-
-def search_integration_apps(
-    query: Optional[str] = None,
-    *,
-    source_type: Optional[str] = None,
-    owner_scope: str = "assistant",
-    org_id: Optional[int] = None,
-    team_id: Optional[int] = None,
-    user_id: Optional[str] = None,
-    assistant_id: Optional[int] = None,
-    limit: int = 10,
-    offset: int = 0,
-    api_key: Optional[str] = None,
-    base_url: Optional[str] = None,
-) -> List[Dict[str, Any]]:
-    """Search provider-backed integration apps through the global catalog index."""
-
-    headers = _create_request_header(api_key)
-    params = _clean_payload(
-        {
-            "query": query,
-            "source_type": source_type,
-            "owner_scope": owner_scope,
-            "org_id": org_id,
-            "team_id": team_id,
-            "user_id": user_id,
-            "assistant_id": assistant_id,
-            "limit": limit,
-            "offset": offset,
-        },
-    )
-    return http.get(
-        f"{_api_base_url(base_url)}/integrations/apps/search",
-        headers=headers,
-        params=params,
-    ).json()
-
-
 def list_integration_connections(
     *,
     owner_scope: str = "assistant",
@@ -155,118 +51,6 @@ def list_integration_connections(
     ).json()
 
 
-def get_integration_tools(
-    *,
-    owner_scope: str = "assistant",
-    org_id: Optional[int] = None,
-    team_id: Optional[int] = None,
-    user_id: Optional[str] = None,
-    assistant_id: Optional[int] = None,
-    canonical_app_slug: Optional[str] = None,
-    activation_state: Optional[str] = None,
-    include_unconnected: bool = False,
-    include_schema: bool = False,
-    limit: int = 100,
-    offset: int = 0,
-    api_key: Optional[str] = None,
-    base_url: Optional[str] = None,
-) -> Dict[str, Any]:
-    """Get provider tools with direct filters and count-bearing pagination."""
-
-    headers = _create_request_header(api_key)
-    params = _clean_payload(
-        {
-            "owner_scope": owner_scope,
-            "org_id": org_id,
-            "team_id": team_id,
-            "user_id": user_id,
-            "assistant_id": assistant_id,
-            "canonical_app_slug": canonical_app_slug,
-            "activation_state": activation_state,
-            "include_unconnected": include_unconnected,
-            "include_schema": include_schema,
-            "limit": limit,
-            "offset": offset,
-        },
-    )
-    return http.get(
-        f"{_api_base_url(base_url)}/integrations/tools",
-        headers=headers,
-        params=params,
-    ).json()
-
-
-def search_integration_tools(
-    query: Optional[str] = None,
-    *,
-    owner_scope: str = "assistant",
-    org_id: Optional[int] = None,
-    team_id: Optional[int] = None,
-    user_id: Optional[str] = None,
-    assistant_id: Optional[int] = None,
-    include_unconnected: bool = True,
-    canonical_app_slug: Optional[str] = None,
-    include_schema: bool = False,
-    limit: int = 20,
-    offset: int = 0,
-    api_key: Optional[str] = None,
-    base_url: Optional[str] = None,
-) -> List[Dict[str, Any]]:
-    """Search provider tools through the global catalog index."""
-
-    headers = _create_request_header(api_key)
-    params = _clean_payload(
-        {
-            "query": query,
-            "owner_scope": owner_scope,
-            "org_id": org_id,
-            "team_id": team_id,
-            "user_id": user_id,
-            "assistant_id": assistant_id,
-            "canonical_app_slug": canonical_app_slug,
-            "include_unconnected": include_unconnected,
-            "include_schema": include_schema,
-            "limit": limit,
-            "offset": offset,
-        },
-    )
-    return http.get(
-        f"{_api_base_url(base_url)}/integrations/tools/search",
-        headers=headers,
-        params=params,
-    ).json()
-
-
-def get_integration_tool_schema(
-    tool_id: str,
-    *,
-    owner_scope: str = "assistant",
-    org_id: Optional[int] = None,
-    team_id: Optional[int] = None,
-    user_id: Optional[str] = None,
-    assistant_id: Optional[int] = None,
-    api_key: Optional[str] = None,
-    base_url: Optional[str] = None,
-) -> Dict[str, Any]:
-    """Get JSON schema, examples, and activation state for a provider tool."""
-
-    headers = _create_request_header(api_key)
-    params = _clean_payload(
-        {
-            "owner_scope": owner_scope,
-            "org_id": org_id,
-            "team_id": team_id,
-            "user_id": user_id,
-            "assistant_id": assistant_id,
-        },
-    )
-    return http.get(
-        f"{_api_base_url(base_url)}/integrations/tools/{tool_id}/schema",
-        headers=headers,
-        params=params,
-    ).json()
-
-
 def run_integration_tool(
     tool_id: str,
     arguments: Optional[Dict[str, Any]] = None,
@@ -280,6 +64,22 @@ def run_integration_tool(
     conversation_id: Optional[str] = None,
     confirmation_token: Optional[str] = None,
     approval_audit_id: Optional[int] = None,
+    backend_id: Optional[str] = None,
+    provider_app_id: Optional[str] = None,
+    canonical_app_slug: Optional[str] = None,
+    app_display_name: Optional[str] = None,
+    app_icon_url: Optional[str] = None,
+    provider_tool_id: Optional[str] = None,
+    canonical_name: Optional[str] = None,
+    function_manager_name: Optional[str] = None,
+    tool_display_name: Optional[str] = None,
+    action_class: Optional[str] = None,
+    behavior_hints: Optional[list[str]] = None,
+    required_scopes: Optional[list[Any]] = None,
+    input_schema: Optional[Dict[str, Any]] = None,
+    output_schema: Optional[Dict[str, Any]] = None,
+    examples: Optional[list[Dict[str, Any]]] = None,
+    confirmation_required: Optional[bool] = None,
     api_key: Optional[str] = None,
     base_url: Optional[str] = None,
 ) -> Dict[str, Any]:
@@ -298,6 +98,22 @@ def run_integration_tool(
             "conversation_id": conversation_id,
             "confirmation_token": confirmation_token,
             "approval_audit_id": approval_audit_id,
+            "backend_id": backend_id,
+            "provider_app_id": provider_app_id,
+            "canonical_app_slug": canonical_app_slug,
+            "app_display_name": app_display_name,
+            "app_icon_url": app_icon_url,
+            "provider_tool_id": provider_tool_id,
+            "canonical_name": canonical_name,
+            "function_manager_name": function_manager_name,
+            "tool_display_name": tool_display_name,
+            "action_class": action_class,
+            "behavior_hints": behavior_hints,
+            "required_scopes": required_scopes,
+            "input_schema": input_schema,
+            "output_schema": output_schema,
+            "examples": examples,
+            "confirmation_required": confirmation_required,
         },
     )
     return http.post(
@@ -472,51 +288,6 @@ def test_integration_connection(
     return http.post(
         f"{_api_base_url(base_url)}/integrations/connections/{connection_id}/test",
         headers=headers,
-    ).json()
-
-
-def sync_integrations(
-    *,
-    backend_id: str,
-    apps: Optional[List[Dict[str, Any]]] = None,
-    tools: Optional[List[Dict[str, Any]]] = None,
-    cache_version: str = "provider-sync-v1",
-    source_type: str = "third_party",
-    app_slugs: Optional[List[str]] = None,
-    tool_limit_per_app: int = 0,
-    component_limit_per_app: int = 0,
-    include_all_managed_apps: bool = False,
-    include_all_apps: bool = False,
-    create_auth_configs: bool = True,
-    api_key: Optional[str] = None,
-    base_url: Optional[str] = None,
-) -> Dict[str, Any]:
-    """Sync native and provider-backed integrations through one admin API.
-
-    ``backend_id`` selects the backend. Native/custom catalog publishers pass
-    normalized ``apps``/``tools``. Live provider syncs for backends such as
-    Composio and Pipedream pass bounded provider options like ``app_slugs`` and
-    per-app limits; Orchestra handles provider-specific dispatch internally.
-    """
-
-    headers = _create_request_header(api_key)
-    body = {
-        "backend_id": backend_id,
-        "cache_version": cache_version,
-        "source_type": source_type,
-        "apps": apps or [],
-        "tools": tools or [],
-        "app_slugs": app_slugs or [],
-        "tool_limit_per_app": tool_limit_per_app,
-        "component_limit_per_app": component_limit_per_app,
-        "include_all_managed_apps": include_all_managed_apps,
-        "include_all_apps": include_all_apps,
-        "create_auth_configs": create_auth_configs,
-    }
-    return http.post(
-        f"{_api_base_url(base_url)}/admin/integrations/sync",
-        headers=headers,
-        json=body,
     ).json()
 
 
