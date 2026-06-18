@@ -16,6 +16,8 @@ def create_context(
     foreign_keys: Optional[List[Dict[str, Any]]] = None,
     exist_ok: bool = True,
     *,
+    owner_scope: Optional[str] = None,
+    owner_id: Optional[int] = None,
     project: Optional[str] = None,
     api_key: Optional[str] = None,
 ) -> None:
@@ -59,6 +61,13 @@ def create_context(
 
         exist_ok: If True (default), silently succeeds when the context already exists.
             If False, raises an error when the context already exists.
+
+        owner_scope: Explicit ownership scope of the context ('assistant', 'team',
+            'aggregation', 'system'). When omitted, the backend infers the owner
+            from the context name. Determines the unit of O(owner) bulk deletion.
+
+        owner_id: Owner id (agent_id for assistant scope, team_id for team scope)
+            paired with ``owner_scope``; None otherwise.
 
         project: Name of the project the context belongs to.
 
@@ -173,6 +182,8 @@ def create_context(
         "unique_keys": unique_keys,
         "auto_counting": auto_counting,
         "foreign_keys": foreign_keys,
+        "owner_scope": owner_scope,
+        "owner_id": owner_id,
     }
     try:
         response = http.post(
@@ -214,6 +225,9 @@ def create_contexts(
             - foreign_keys: Foreign key definitions for referential integrity. List of dictionaries,
                 each with keys: name (supports nested paths like "tag_ids[*]", "images[*].image_id", or "metadata.user.id"),
                 references, on_delete, on_update. Supported actions: "CASCADE", "SET NULL".
+            - owner_scope: Explicit ownership scope ('assistant', 'team', 'aggregation',
+                'system'); inferred from the name when omitted. Unit of O(owner) bulk deletion.
+            - owner_id: Owner id (agent_id / team_id) paired with owner_scope; None otherwise.
 
         exist_ok: If True (default), silently succeeds when any context already exists.
             If False, raises an error when any context already exists.
@@ -415,6 +429,11 @@ def delete_context(
 ) -> None:
     """
     Delete a context from the server.
+
+    This is the canonical efficient way to delete a context subtree: a single
+    server-side call removes the named context and (when ``delete_children`` is
+    set) every descendant sharing its "/"-separated prefix, instead of the
+    caller enumerating and deleting each child individually.
 
     Args:
         name: Name of the context to delete.
