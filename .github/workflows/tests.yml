@@ -35,8 +35,8 @@ jobs:
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     timeout-minutes: 120
     # Use the unify-testing environment so per-job secret scoping applies
-    # (SOC2-compliant least-privilege model — matches sibling unity which
-    # uses environment: unity-testing). The env was created 2026-05-27 to
+    # (SOC2-compliant least-privilege model — matches sibling droid which
+    # uses environment: droid-testing). The env was created 2026-05-27 to
     # restore CLONE_TOKEN access after org-secret visibility was tightened
     # from "all" → "private" during the Vanta/SOC2 audit (which is the
     # correct security tightening — public repos should NOT inherit org
@@ -51,7 +51,7 @@ jobs:
     env:
       # Local orchestra configuration
       ORCHESTRA_REPO_PATH: ${{ github.workspace }}/orchestra
-      # Logging directories (matches unity repo structure)
+      # Logging directories (matches droid repo structure)
       LOGS_DIR: ${{ github.workspace }}/logs
       # Orchestra GCP configuration
       # GOOGLE_APPLICATION_CREDENTIALS is set by google-github-actions/auth step
@@ -162,7 +162,7 @@ jobs:
 
     - name: Setup logging directories
       run: |
-        # Create log directories matching unity repo structure
+        # Create log directories matching droid repo structure
         mkdir -p "$LOGS_DIR/unify"
         mkdir -p "$LOGS_DIR/orchestra"
         mkdir -p "$LOGS_DIR/all"
