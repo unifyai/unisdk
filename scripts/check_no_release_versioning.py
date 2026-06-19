@@ -12,7 +12,7 @@ FIRST_PARTY = {
     "orchestra",
     "unify",
     "unillm",
-    "unity",
+    "droid",
     "unity-deploy",
 }
 INERT_VERSION = "0.0.0"

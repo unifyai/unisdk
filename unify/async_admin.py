@@ -4,7 +4,7 @@ Provides an ``AsyncSpendClient`` backed by ``aiohttp`` with connection pooling
 and retry logic that mirrors the sync ``unify.utils.http`` session
 (``Retry(total=5, connect=3, read=2, backoff_factor=0.1)``).
 
-Typical usage from Unity's spending-limit hook::
+Typical usage from Droid's spending-limit hook::
 
     client = AsyncSpendClient(api_key=os.getenv("UNIFY_KEY"))
     data = await client.get_assistant_spend(agent_id=123, month="2026-03")

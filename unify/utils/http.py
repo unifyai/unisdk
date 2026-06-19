@@ -25,7 +25,7 @@ OpenTelemetry tracing is controlled by:
 - UNIFY_OTEL_LOG_DIR: Directory for file-based span export (optional)
 
 When UNIFY_OTEL is enabled, HTTP requests create OTel spans that can be
-correlated with parent spans (from Unity) and child spans (in Orchestra).
+correlated with parent spans (from Droid) and child spans (in Orchestra).
 
 File-based span export:
 When UNIFY_OTEL_LOG_DIR is set, spans are written to JSONL files keyed
@@ -174,7 +174,7 @@ def _setup_otel() -> None:
             existing,
             (trace.NoOpTracerProvider, trace.ProxyTracerProvider),
         ):
-            # Parent (e.g., Unity) already configured OTel - use theirs
+            # Parent (e.g., Droid) already configured OTel - use theirs
             _TRACER = trace.get_tracer("unify")
             _LOGGER.debug("Using existing OTel TracerProvider from parent")
             return
