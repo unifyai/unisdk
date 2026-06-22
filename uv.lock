@@ -1223,6 +1223,11 @@ dev = [
     { name = "python-dotenv" },
     { name = "types-requests" },
 ]
+lint = [
+    { name = "autoflake" },
+    { name = "black" },
+    { name = "isort" },
+]
 
 [package.metadata]
 requires-dist = [
@@ -1249,6 +1254,11 @@ dev = [
     { name = "pytest-xdist", specifier = ">=3.8.0" },
     { name = "python-dotenv", specifier = ">=1.2.1" },
     { name = "types-requests" },
+]
+lint = [
+    { name = "autoflake", specifier = ">=1.6.1" },
+    { name = "black", specifier = "==26.5.1" },
+    { name = "isort", specifier = ">=5.11.4" },
 ]
 
 [[package]]
