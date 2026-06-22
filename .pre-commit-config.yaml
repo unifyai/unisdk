@@ -44,8 +44,9 @@ repos:
 
   - id: black
     name: Format with Black
-    entry: uv run black
-    language: system
+    entry: black
+    language: python
+    additional_dependencies: [black==26.3.1]
     types: [python]
 
   - id: check-no-release-versioning
