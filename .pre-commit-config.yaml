@@ -46,7 +46,7 @@ repos:
     name: Format with Black
     entry: black
     language: python
-    additional_dependencies: [black==26.3.1]
+    additional_dependencies: [black==26.5.1]
     types: [python]
 
   - id: check-no-release-versioning
