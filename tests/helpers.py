@@ -10,7 +10,7 @@ from typing import Optional
 
 import unify
 
-# Single shared project for all tests (analogous to UnityTests in droid repo)
+# Single shared project for all tests (analogous to UnityTests in unity repo)
 TEST_PROJECT = "UnifyTests"
 
 # Thread/async-safe context variable for test context tracking
