@@ -1,21 +1,10 @@
 import inspect
 import uuid
-from typing import Iterator
 
 import pytest
-from tests.coordinator_helpers import (
-    PreviewOrganization,
-    managed_preview_organization,
-)
 
 import unify
 from unify.utils import http
-
-
-@pytest.fixture(scope="module")
-def preview_org() -> Iterator[PreviewOrganization]:
-    with managed_preview_organization() as organization:
-        yield organization
 
 
 def test_public_coordinator_sdk_exports() -> None:
@@ -122,10 +111,8 @@ def test_delegate_to_colleague_posts_delegate_payload(monkeypatch) -> None:
     }
 
 
-def test_assistant_lifecycle_round_trips_against_coordinator_preview(
-    preview_org: PreviewOrganization,
-) -> None:
-    org_api_key = preview_org.api_key
+def test_assistant_lifecycle_round_trips_through_orchestra(coordinator_org) -> None:
+    org_api_key = coordinator_org.api_key
     suffix = uuid.uuid4().hex[:10]
     assistant_id: int | None = None
 
@@ -180,11 +167,9 @@ def test_assistant_lifecycle_round_trips_against_coordinator_preview(
             unify.delete_assistant(assistant_id, api_key=org_api_key)
 
 
-def test_list_org_members_returns_preview_organization_members(
-    preview_org: PreviewOrganization,
-) -> None:
-    organization_id = preview_org.organization_id
-    org_api_key = preview_org.api_key
+def test_list_org_members_returns_organization_members(coordinator_org) -> None:
+    organization_id = coordinator_org.organization_id
+    org_api_key = coordinator_org.api_key
 
     members = unify.list_org_members(organization_id, api_key=org_api_key)
 
@@ -193,14 +178,16 @@ def test_list_org_members_returns_preview_organization_members(
     assert {"user_id", "organization_id", "role_id"}.issubset(members[0])
 
 
-def test_list_organizations_returns_role_metadata(
-    preview_org: PreviewOrganization,
-) -> None:
-    organizations = unify.list_organizations(api_key=preview_org.api_key)
+def test_list_organizations_returns_role_metadata(coordinator_org) -> None:
+    organizations = unify.list_organizations(api_key=coordinator_org.api_key)
 
     assert organizations
     target = next(
-        (org for org in organizations if int(org["id"]) == preview_org.organization_id),
+        (
+            org
+            for org in organizations
+            if int(org["id"]) == coordinator_org.organization_id
+        ),
         None,
     )
     assert target is not None
