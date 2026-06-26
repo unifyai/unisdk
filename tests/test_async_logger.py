@@ -158,7 +158,7 @@ class TestLogCreateIsNonBlocking:
     def test_rapid_log_create_does_not_starve_event_loop(self):
         """Rapid log_create calls must not starve other coroutines.
 
-        Simulates the Droid EventBus pattern: a coroutine publishes
+        Simulates the Unity EventBus pattern: a coroutine publishes
         events (calling log_create) while other coroutines need the loop.
         With a small queue, each log_create blocks the loop while waiting
         for space, starving asyncio.sleep(0).

@@ -1,13 +1,8 @@
 import sys
 import uuid
 from collections.abc import Callable
-from typing import Iterator
 
 import pytest
-from tests.coordinator_helpers import (
-    PreviewOrganization,
-    managed_preview_organization,
-)
 
 import unify
 from unify.utils import http
@@ -28,20 +23,12 @@ def _raise_cleanup_error_if_test_passed(cleanup_errors: list[Exception]) -> None
         raise cleanup_errors[0]
 
 
-@pytest.fixture(scope="module")
-def preview_org() -> Iterator[PreviewOrganization]:
-    with managed_preview_organization() as organization:
-        yield organization
-
-
-def test_team_lifecycle_and_membership_round_trips_against_coordinator_preview(
-    preview_org: PreviewOrganization,
-) -> None:
+def test_team_lifecycle_and_membership_round_trips(coordinator_org) -> None:
     suffix = uuid.uuid4().hex[:10]
     assistant_id: int | None = None
     team_id: int | None = None
     membership_added = False
-    organization_id = preview_org.organization_id
+    organization_id = coordinator_org.organization_id
 
     try:
         assistant = unify.create_assistant(
@@ -52,7 +39,7 @@ def test_team_lifecycle_and_membership_round_trips_against_coordinator_preview(
                 "is_local": True,
                 "timezone": "UTC",
             },
-            api_key=preview_org.api_key,
+            api_key=coordinator_org.api_key,
         )
         assistant_id = int(assistant["agent_id"])
 
@@ -60,14 +47,14 @@ def test_team_lifecycle_and_membership_round_trips_against_coordinator_preview(
             organization_id,
             name=f"Coordinator SDK Team {suffix}",
             description="SDK integration team for membership lifecycle coverage.",
-            api_key=preview_org.api_key,
+            api_key=coordinator_org.api_key,
         )
         team_id = int(team["team_id"])
         assert int(team["organization_id"]) == organization_id
 
         listed_by_org = unify.list_teams(
             organization_id,
-            api_key=preview_org.api_key,
+            api_key=coordinator_org.api_key,
         )
         assert team_id in {int(row["team_id"]) for row in listed_by_org}
 
@@ -75,7 +62,7 @@ def test_team_lifecycle_and_membership_round_trips_against_coordinator_preview(
             organization_id,
             team_id,
             {"name": f"Renamed SDK Team {suffix}"},
-            api_key=preview_org.api_key,
+            api_key=coordinator_org.api_key,
         )
         assert renamed["name"] == f"Renamed SDK Team {suffix}"
 
@@ -84,7 +71,7 @@ def test_team_lifecycle_and_membership_round_trips_against_coordinator_preview(
                 organization_id,
                 999999999,
                 {"name": "Missing team"},
-                api_key=preview_org.api_key,
+                api_key=coordinator_org.api_key,
             )
         assert exc_info.value.response.status_code == 404
         assert exc_info.value.response.text
@@ -93,7 +80,7 @@ def test_team_lifecycle_and_membership_round_trips_against_coordinator_preview(
             organization_id,
             team_id,
             assistant_id=assistant_id,
-            api_key=preview_org.api_key,
+            api_key=coordinator_org.api_key,
         )
         membership_added = True
         assert membership["membership_status"] == "active"
@@ -103,7 +90,7 @@ def test_team_lifecycle_and_membership_round_trips_against_coordinator_preview(
         members = unify.list_team_members(
             organization_id,
             team_id,
-            api_key=preview_org.api_key,
+            api_key=coordinator_org.api_key,
         )
         member_ids = {
             int(member.get("assistant_id", member.get("agent_id")))
@@ -113,7 +100,7 @@ def test_team_lifecycle_and_membership_round_trips_against_coordinator_preview(
 
         assistant_teams = unify.list_teams_for_assistant(
             assistant_id,
-            api_key=preview_org.api_key,
+            api_key=coordinator_org.api_key,
         )
         assert team_id in {int(row["team_id"]) for row in assistant_teams}
 
@@ -121,7 +108,7 @@ def test_team_lifecycle_and_membership_round_trips_against_coordinator_preview(
             organization_id,
             team_id,
             assistant_id,
-            api_key=preview_org.api_key,
+            api_key=coordinator_org.api_key,
         )
         membership_added = False
         assert remove_response == {}
@@ -129,7 +116,7 @@ def test_team_lifecycle_and_membership_round_trips_against_coordinator_preview(
         delete_response = unify.delete_team(
             organization_id,
             team_id,
-            api_key=preview_org.api_key,
+            api_key=coordinator_org.api_key,
         )
         team_id = None
         assert delete_response == {}
@@ -142,7 +129,7 @@ def test_team_lifecycle_and_membership_round_trips_against_coordinator_preview(
                     organization_id,
                     team_id,
                     assistant_id,
-                    api_key=preview_org.api_key,
+                    api_key=coordinator_org.api_key,
                 ),
             )
         if team_id is not None:
@@ -151,7 +138,7 @@ def test_team_lifecycle_and_membership_round_trips_against_coordinator_preview(
                 lambda: unify.delete_team(
                     organization_id,
                     team_id,
-                    api_key=preview_org.api_key,
+                    api_key=coordinator_org.api_key,
                 ),
             )
         if assistant_id is not None:
@@ -159,37 +146,35 @@ def test_team_lifecycle_and_membership_round_trips_against_coordinator_preview(
                 cleanup_errors,
                 lambda: unify.delete_assistant(
                     assistant_id,
-                    api_key=preview_org.api_key,
+                    api_key=coordinator_org.api_key,
                 ),
             )
         _raise_cleanup_error_if_test_passed(cleanup_errors)
 
 
-def test_member_target_add_for_org_member_is_idempotent(
-    preview_org: PreviewOrganization,
-) -> None:
+def test_member_target_add_for_org_member_is_idempotent(coordinator_org) -> None:
     suffix = uuid.uuid4().hex[:10]
     team_id: int | None = None
     member_assistant_id: int | None = None
-    organization_id = preview_org.organization_id
+    organization_id = coordinator_org.organization_id
 
     try:
         team = unify.create_team(
             organization_id,
             name=f"Member Target SDK Team {suffix}",
             description="SDK integration team for member-target add idempotency coverage.",
-            api_key=preview_org.api_key,
+            api_key=coordinator_org.api_key,
         )
         team_id = int(team["team_id"])
 
-        owner_user_id = unify.get_user_basic_info(api_key=preview_org.api_key)[
+        owner_user_id = unify.get_user_basic_info(api_key=coordinator_org.api_key)[
             "user_id"
         ]
         first_add = unify.add_team_member(
             organization_id,
             team_id,
             member_user_id=owner_user_id,
-            api_key=preview_org.api_key,
+            api_key=coordinator_org.api_key,
         )
         assert first_add["membership_status"] == "active"
         assert int(first_add["team_id"]) == team_id
@@ -199,7 +184,7 @@ def test_member_target_add_for_org_member_is_idempotent(
             organization_id,
             team_id,
             member_user_id=owner_user_id,
-            api_key=preview_org.api_key,
+            api_key=coordinator_org.api_key,
         )
         assert second_add["membership_status"] == "active"
         assert int(second_add["assistant_id"]) == member_assistant_id
@@ -207,7 +192,7 @@ def test_member_target_add_for_org_member_is_idempotent(
         members = unify.list_team_members(
             organization_id,
             team_id,
-            api_key=preview_org.api_key,
+            api_key=coordinator_org.api_key,
         )
         member_ids = {
             int(member.get("assistant_id", member.get("agent_id")))
@@ -219,7 +204,7 @@ def test_member_target_add_for_org_member_is_idempotent(
             organization_id,
             team_id,
             member_assistant_id,
-            api_key=preview_org.api_key,
+            api_key=coordinator_org.api_key,
         )
         member_assistant_id = None
         assert remove_response == {}
@@ -232,7 +217,7 @@ def test_member_target_add_for_org_member_is_idempotent(
                     organization_id,
                     team_id,
                     member_assistant_id,
-                    api_key=preview_org.api_key,
+                    api_key=coordinator_org.api_key,
                 ),
             )
         if team_id is not None:
@@ -241,7 +226,7 @@ def test_member_target_add_for_org_member_is_idempotent(
                 lambda: unify.delete_team(
                     organization_id,
                     team_id,
-                    api_key=preview_org.api_key,
+                    api_key=coordinator_org.api_key,
                 ),
             )
         _raise_cleanup_error_if_test_passed(cleanup_errors)
