@@ -1,6 +1,8 @@
 # Load .env BEFORE importing unify - BASE_URL is evaluated at import time.
 # Explicit shell environment variables take precedence over .env values.
 import os
+import uuid
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
@@ -124,3 +126,56 @@ def pytest_collection_modifyitems(config, items):
 
     if any("no_orchestra" not in item.keywords for item in items):
         raise pytest.UsageError(error)
+
+
+# ---------------------------------------------------------------------------
+# Coordinator organization provisioning
+# ---------------------------------------------------------------------------
+#
+# The org/team/assistant-management SDK surface is org-scoped, but the seeded
+# test user starts without an organization. These tests create a real one
+# against the configured Orchestra and tear it down afterwards.
+
+
+@dataclass(frozen=True)
+class CoordinatorOrg:
+    """A live organization provisioned for coordinator integration tests."""
+
+    organization_id: int
+    api_key: str
+
+
+@pytest.fixture(scope="module")
+def coordinator_org():
+    """Provision an organization for the seeded user and clean it up.
+
+    Organization creation returns an org-scoped API key used for every
+    subsequent org-scoped call. Deleting the organization on teardown removes
+    it and anything created under it.
+    """
+    import unify  # noqa: PLC0415
+    from unify.utils import http  # noqa: PLC0415
+    from unify.utils.helpers import _create_request_header  # noqa: PLC0415
+
+    name = f"Coordinator SDK {uuid.uuid4().hex[:12]}"
+    response = http.post(
+        f"{unify.BASE_URL}/organizations",
+        headers=_create_request_header(None),
+        json={"name": name},
+        timeout=30,
+    )
+    assert response.status_code == 201, response.text
+    organization = response.json()
+
+    try:
+        yield CoordinatorOrg(
+            organization_id=int(organization["id"]),
+            api_key=organization["api_key"],
+        )
+    finally:
+        http.delete(
+            f"{unify.BASE_URL}/organizations/{organization['id']}",
+            headers=_create_request_header(None),
+            raise_for_status=False,
+            timeout=30,
+        )
