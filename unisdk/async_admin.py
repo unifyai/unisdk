@@ -1,7 +1,7 @@
 """Async HTTP client for Orchestra spend endpoints.
 
 Provides an ``AsyncSpendClient`` backed by ``aiohttp`` with connection pooling
-and retry logic that mirrors the sync ``unify.utils.http`` session
+and retry logic that mirrors the sync ``unisdk.utils.http`` session
 (``Retry(total=5, connect=3, read=2, backoff_factor=0.1)``).
 
 Typical usage from Unity's spending-limit hook::
@@ -21,7 +21,7 @@ from typing import Any, Dict, Optional, Set
 
 import aiohttp
 
-from unify import BASE_URL
+from unisdk import BASE_URL
 
 _logger = logging.getLogger(__name__)
 
@@ -39,12 +39,12 @@ class AsyncSpendClient:
     """Async client for Orchestra spend endpoints.
 
     Uses ``aiohttp`` with connection pooling and automatic retries to match
-    the reliability characteristics of the sync ``unify.utils.http`` session.
+    the reliability characteristics of the sync ``unisdk.utils.http`` session.
 
     Parameters
     ----------
     base_url:
-        Orchestra API base URL.  Defaults to ``unify.BASE_URL``
+        Orchestra API base URL.  Defaults to ``unisdk.BASE_URL``
         (which reads ``ORCHESTRA_URL`` or falls back to production).
     api_key:
         Bearer token for user auth (typically ``UNIFY_KEY``).

@@ -12,10 +12,10 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 from tqdm import tqdm
 
-import unify
-from unify import BASE_URL
-from unify.utils import http
-from unify.utils.helpers import (
+import unisdk
+from unisdk import BASE_URL
+from unisdk.utils import http
+from unisdk.utils.helpers import (
     _create_request_header,
     _get_project,
     _validate_api_key,
@@ -158,7 +158,7 @@ class Log:
     # Context #
 
     def __enter__(self):
-        lg = unify.log(
+        lg = unisdk.log(
             project=self._project,
             new=True,
             api_key=self._api_key,
@@ -176,7 +176,7 @@ class Log:
 
 
 class LogGroup:
-    def __init__(self, field, value: Union[List[unify.Log], "LogGroup"] = None):
+    def __init__(self, field, value: Union[List[unisdk.Log], "LogGroup"] = None):
         self.field = field
         self.value = value
 
@@ -226,13 +226,13 @@ def set_context(
         ), "Cannot skip create and overwrite at the same time"
         return
 
-    context_exists_remote = context in unify.get_contexts()
+    context_exists_remote = context in unisdk.get_contexts()
     if overwrite and context_exists_remote:
         if mode == "read":
             raise Exception(f"Cannot overwrite logs in read mode.")
-        unify.delete_context(context)
+        unisdk.delete_context(context)
     if not context_exists_remote:
-        unify.create_context(context)
+        unisdk.create_context(context)
 
 
 def unset_context():
@@ -321,10 +321,10 @@ def _handle_special_types(
 
 
 def _to_log_ids(
-    logs: Optional[Union[int, unify.Log, List[Union[int, unify.Log]]]] = None,
+    logs: Optional[Union[int, unisdk.Log, List[Union[int, unisdk.Log]]]] = None,
 ):
     def resolve_log_id(log):
-        if isinstance(log, unify.Log):
+        if isinstance(log, unisdk.Log):
             if log.id is None and hasattr(log, "_future"):
                 try:
                     # Wait (with timeout) for the future to resolve
@@ -343,21 +343,21 @@ def _to_log_ids(
         return [resolve_log_id(current_active_logs[-1])]
     elif isinstance(logs, int):
         return [logs]
-    elif isinstance(logs, unify.Log):
+    elif isinstance(logs, unisdk.Log):
         return [resolve_log_id(logs)]
     elif isinstance(logs, list):
         if not logs:
             return logs
         elif isinstance(logs[0], int):
             return logs
-        elif isinstance(logs[0], unify.Log):
+        elif isinstance(logs[0], unisdk.Log):
             return [resolve_log_id(lg) for lg in logs]
         else:
             raise Exception(
-                f"list must contain int or unify.Log types, but found first entry {logs[0]} of type {type(logs[0])}",
+                f"list must contain int or unisdk.Log types, but found first entry {logs[0]} of type {type(logs[0])}",
             )
     raise Exception(
-        f"logs argument must be of type int, unify.Log, or list, but found {logs} of type {type(logs)}",
+        f"logs argument must be of type int, unisdk.Log, or list, but found {logs} of type {type(logs)}",
     )
 
 
@@ -447,9 +447,9 @@ def log(
     mutable: Optional[Union[bool, Dict[str, bool]]] = True,
     api_key: Optional[str] = None,
     **entries,
-) -> unify.Log:
+) -> unisdk.Log:
     """
-    Creates one or more logs associated to a project. unify.Logs are LLM-call-level data
+    Creates one or more logs associated to a project. unisdk.Logs are LLM-call-level data
     that might depend on other variables.
 
     Args:
@@ -520,7 +520,7 @@ def _sync_log(
     context: Optional[str],
     entries: Dict[str, Any],
     api_key: str,
-) -> unify.Log:
+) -> unisdk.Log:
     """
     Synchronously create a log entry using direct HTTP request.
 
@@ -543,7 +543,7 @@ def _sync_log(
         [entries],
     )
 
-    return unify.Log(
+    return unisdk.Log(
         id=resp_json["log_event_ids"][0],
         api_key=api_key,
         **entries,
@@ -552,7 +552,7 @@ def _sync_log(
 
 
 def _create_log(dct, context, api_key):
-    return unify.Log(
+    return unisdk.Log(
         id=dct["id"],
         ts=dct["ts"],
         **dct["entries"],
@@ -564,7 +564,7 @@ def _create_log(dct, context, api_key):
 
 def _create_log_groups_nested(context, api_key, node):
     if isinstance(node, dict) and "group" not in node:
-        ret = unify.LogGroup(list(node.keys())[0])
+        ret = unisdk.LogGroup(list(node.keys())[0])
         ret.value = _create_log_groups_nested(
             context,
             api_key,
@@ -625,7 +625,7 @@ def _create_log_groups_not_nested(logs, groups, project, context, api_key):
             for k, v in group_value.items():
                 if isinstance(v, list):
                     val[k] = [logs_mapping[log_id] for log_id in v]
-            ret.append(unify.LogGroup(group_key, val))
+            ret.append(unisdk.LogGroup(group_key, val))
     return ret
 
 
@@ -717,7 +717,7 @@ def create_logs(
         )
 
         return [
-            unify.Log(
+            unisdk.Log(
                 project=project,
                 context=context["name"] if isinstance(context, dict) else context,
                 **{
@@ -749,7 +749,7 @@ def create_logs(
 def _add_to_log(
     *,
     context: Optional[str] = None,
-    logs: Optional[Union[int, unify.Log, List[Union[int, unify.Log]]]] = None,
+    logs: Optional[Union[int, unisdk.Log, List[Union[int, unisdk.Log]]]] = None,
     overwrite: bool = False,
     mutable: Optional[Union[bool, Dict[str, bool]]] = True,
     api_key: Optional[str] = None,
@@ -799,7 +799,7 @@ def _add_to_log(
 
 def update_logs(
     *,
-    logs: Optional[Union[int, unify.Log, List[Union[int, unify.Log]]]] = None,
+    logs: Optional[Union[int, unisdk.Log, List[Union[int, unisdk.Log]]]] = None,
     context: Optional[Union[str, List[str]]] = None,
     entries: Optional[Union[Dict[str, Any], List[Dict[str, Any]]]] = None,
     overwrite: bool = False,
@@ -825,7 +825,7 @@ def update_logs(
 
 def delete_logs(
     *,
-    logs: Optional[Union[int, unify.Log, List[Union[int, unify.Log]]]] = None,
+    logs: Optional[Union[int, unisdk.Log, List[Union[int, unisdk.Log]]]] = None,
     project: Optional[str] = None,
     context: Optional[str] = None,
     delete_empty_logs: bool = False,
@@ -907,7 +907,7 @@ def get_logs(
     return_ids_only: bool = False,
     return_sort_distance: bool = False,
     api_key: Optional[str] = None,
-) -> Union[List[unify.Log], Dict[str, Any]]:
+) -> Union[List[unisdk.Log], Dict[str, Any]]:
     """
     Returns a list of filtered logs from a project.
 
@@ -1552,7 +1552,7 @@ def delete_fields(
 
 
 def atomic_update(
-    log: Union[int, unify.Log],
+    log: Union[int, unisdk.Log],
     key: str,
     operation: str,
     *,
@@ -1585,17 +1585,17 @@ def atomic_update(
         The new value after the operation.
 
     Example:
-        >>> log = unify.log(counter=10)
-        >>> unify.atomic_update(log, "counter", "+5")
+        >>> log = unisdk.log(counter=10)
+        >>> unisdk.atomic_update(log, "counter", "+5")
         15.0
-        >>> unify.atomic_update(log.id, "counter", "*2")
+        >>> unisdk.atomic_update(log.id, "counter", "*2")
         30.0
     """
     api_key = _validate_api_key(api_key)
     headers = _create_request_header(api_key)
 
     # Resolve log ID
-    if isinstance(log, unify.Log):
+    if isinstance(log, unisdk.Log):
         log_id = log.id
     else:
         log_id = log

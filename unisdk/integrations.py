@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 
-from unify import BASE_URL
-from unify.utils import http
-from unify.utils.helpers import _create_request_header
+from unisdk import BASE_URL
+from unisdk.utils import http
+from unisdk.utils.helpers import _create_request_header
 
 
 def _api_base_url(base_url: Optional[str] = None) -> str:

@@ -3,8 +3,8 @@ Tests for HTTP utilities: logging and OpenTelemetry tracing.
 
 These tests verify:
 1. Console logging can be enabled/disabled via UNIFY_LOG
-2. File-based trace logging works when UNIFY_LOG_DIR is set
-3. OpenTelemetry spans are created when UNIFY_OTEL is enabled
+2. File-based trace logging works when UNISDK_LOG_DIR is set
+3. OpenTelemetry spans are created when UNISDK_OTEL is enabled
 4. Trace context propagation works correctly
 """
 
@@ -48,67 +48,67 @@ def reset_otel():
 
 
 class TestTerminalLogEnabled:
-    """Tests for UNIFY_TERMINAL_LOG."""
+    """Tests for UNISDK_TERMINAL_LOG."""
 
     def test_terminal_log_enabled_by_default(self):
         with patch.dict(os.environ, {}, clear=False):
-            os.environ.pop("UNIFY_TERMINAL_LOG", None)
+            os.environ.pop("UNISDK_TERMINAL_LOG", None)
             import importlib
 
-            from unify.utils import http
+            from unisdk.utils import http
 
             importlib.reload(http)
             assert http._TERMINAL_LOG_ENABLED is True
 
     def test_terminal_log_disabled_via_env(self):
-        with patch.dict(os.environ, {"UNIFY_TERMINAL_LOG": "false"}):
+        with patch.dict(os.environ, {"UNISDK_TERMINAL_LOG": "false"}):
             import importlib
 
-            from unify.utils import http
+            from unisdk.utils import http
 
             importlib.reload(http)
             assert http._TERMINAL_LOG_ENABLED is False
 
     def test_terminal_log_enabled_true(self):
-        with patch.dict(os.environ, {"UNIFY_TERMINAL_LOG": "true"}):
+        with patch.dict(os.environ, {"UNISDK_TERMINAL_LOG": "true"}):
             import importlib
 
-            from unify.utils import http
+            from unisdk.utils import http
 
             importlib.reload(http)
             assert http._TERMINAL_LOG_ENABLED is True
 
 
 class TestOtelEnabled:
-    """Tests for UNIFY_OTEL master switch."""
+    """Tests for UNISDK_OTEL master switch."""
 
     def test_otel_disabled_by_default(self):
-        """UNIFY_OTEL defaults to false."""
+        """UNISDK_OTEL defaults to false."""
         with patch.dict(os.environ, {}, clear=False):
-            os.environ.pop("UNIFY_OTEL", None)
+            os.environ.pop("UNISDK_OTEL", None)
             import importlib
 
-            from unify.utils import http
+            from unisdk.utils import http
 
             importlib.reload(http)
             assert http._OTEL_ENABLED is False
 
     def test_otel_enabled_via_env(self):
-        """UNIFY_OTEL=true enables OTel."""
-        with patch.dict(os.environ, {"UNIFY_OTEL": "true"}):
+        """UNISDK_OTEL=true enables OTel."""
+        with patch.dict(os.environ, {"UNISDK_OTEL": "true"}):
             import importlib
 
-            from unify.utils import http
+            from unisdk.utils import http
 
             importlib.reload(http)
             assert http._OTEL_ENABLED is True
 
     def test_otel_enabled_1(self):
-        """UNIFY_OTEL=1 enables OTel."""
-        with patch.dict(os.environ, {"UNIFY_OTEL": "1"}):
+        """UNISDK_OTEL=1 enables OTel."""
+        with patch.dict(os.environ, {"UNISDK_OTEL": "1"}):
             import importlib
 
-            from unify.utils import http
+            from unisdk.utils import http
 
             importlib.reload(http)
             assert http._OTEL_ENABLED is True
@@ -118,28 +118,28 @@ class TestExtractRoute:
     """Tests for _extract_route helper."""
 
     def test_simple_route(self):
-        from unify.utils.http import _extract_route
+        from unisdk.utils.http import _extract_route
 
         assert _extract_route("https://api.unify.ai/v0/logs") == "logs"
 
     def test_nested_route(self):
-        from unify.utils.http import _extract_route
+        from unisdk.utils.http import _extract_route
 
         assert _extract_route("https://api.unify.ai/v0/logs/derived") == "logs-derived"
 
     def test_route_with_path_params(self):
-        from unify.utils.http import _extract_route
+        from unisdk.utils.http import _extract_route
 
         result = _extract_route("https://api.unify.ai/v0/project/foo/contexts")
         assert result == "project-foo-contexts"
 
     def test_empty_path(self):
-        from unify.utils.http import _extract_route
+        from unisdk.utils.http import _extract_route
 
         assert _extract_route("https://api.unify.ai/") == "unknown"
 
     def test_invalid_url(self):
-        from unify.utils.http import _extract_route
+        from unisdk.utils.http import _extract_route
 
         # Invalid URLs are handled gracefully (the path is extracted as-is)
         result = _extract_route("not-a-url")
@@ -151,7 +151,7 @@ class TestMaskHeaders:
     """Tests for _mask_headers helper."""
 
     def test_masks_authorization(self):
-        from unify.utils.http import _mask_headers
+        from unisdk.utils.http import _mask_headers
 
         headers = {
             "Authorization": "Bearer secret123",
@@ -162,19 +162,19 @@ class TestMaskHeaders:
         assert masked["Content-Type"] == "application/json"
 
     def test_masks_lowercase_authorization(self):
-        from unify.utils.http import _mask_headers
+        from unisdk.utils.http import _mask_headers
 
         headers = {"authorization": "Bearer secret123"}
         masked = _mask_headers(headers)
         assert masked["authorization"] == "***"
 
     def test_none_headers(self):
-        from unify.utils.http import _mask_headers
+        from unisdk.utils.http import _mask_headers
 
         assert _mask_headers(None) is None
 
     def test_empty_headers(self):
-        from unify.utils.http import _mask_headers
+        from unisdk.utils.http import _mask_headers
 
         assert _mask_headers({}) == {}
 
@@ -184,11 +184,11 @@ class TestFileTraceLogging:
 
     def test_write_pending_trace_creates_file(self):
         """_write_pending_trace creates a JSON file."""
-        from unify.utils import http
+        from unisdk.utils import http
 
         with tempfile.TemporaryDirectory() as tmpdir:
             # Configure log directory
-            with patch.dict(os.environ, {"UNIFY_LOG_DIR": tmpdir}):
+            with patch.dict(os.environ, {"UNISDK_LOG_DIR": tmpdir}):
                 http._LOG_DIR = None
                 http._LOG_DIR_CHECKED = False
 
@@ -213,10 +213,10 @@ class TestFileTraceLogging:
 
     def test_finalize_trace_renames_file(self):
         """_finalize_trace renames PENDING to duration and status."""
-        from unify.utils import http
+        from unisdk.utils import http
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            with patch.dict(os.environ, {"UNIFY_LOG_DIR": tmpdir}):
+            with patch.dict(os.environ, {"UNISDK_LOG_DIR": tmpdir}):
                 http._LOG_DIR = None
                 http._LOG_DIR_CHECKED = False
 
@@ -249,10 +249,10 @@ class TestFileTraceLogging:
 
     def test_mark_trace_failed(self):
         """_mark_trace_failed marks trace as failed."""
-        from unify.utils import http
+        from unisdk.utils import http
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            with patch.dict(os.environ, {"UNIFY_LOG_DIR": tmpdir}):
+            with patch.dict(os.environ, {"UNISDK_LOG_DIR": tmpdir}):
                 http._LOG_DIR = None
                 http._LOG_DIR_CHECKED = False
 
@@ -284,11 +284,11 @@ class TestFileTraceLogging:
                 assert data["error"]["type"] == "ConnectionError"
 
     def test_no_logging_when_disabled(self):
-        """No trace files created when UNIFY_LOG_DIR not set."""
-        from unify.utils import http
+        """No trace files created when UNISDK_LOG_DIR not set."""
+        from unisdk.utils import http
 
         with patch.dict(os.environ, {}, clear=False):
-            os.environ.pop("UNIFY_LOG_DIR", None)
+            os.environ.pop("UNISDK_LOG_DIR", None)
             http._LOG_DIR = None
             http._LOG_DIR_CHECKED = False
 
@@ -306,7 +306,7 @@ class TestGetCurrentTraceId:
 
     def test_returns_none_when_no_span(self):
         """Returns None when no active OTel span."""
-        from unify.utils.http import _get_current_trace_id
+        from unisdk.utils.http import _get_current_trace_id
 
         # Without an active span, should return None
         result = _get_current_trace_id()
@@ -317,7 +317,7 @@ class TestGetCurrentTraceId:
         """Returns trace_id when OTel span is active."""
         tracer = trace.get_tracer("test")
 
-        from unify.utils.http import _get_current_trace_id
+        from unisdk.utils.http import _get_current_trace_id
 
         with tracer.start_as_current_span("test-span"):
             result = _get_current_trace_id()
@@ -332,7 +332,7 @@ class TestConfigureLogDir:
 
     def test_configure_with_explicit_path(self):
         """configure_log_dir with explicit path."""
-        from unify.utils import http
+        from unisdk.utils import http
 
         with tempfile.TemporaryDirectory() as tmpdir:
             result = http.configure_log_dir(tmpdir)
@@ -340,11 +340,11 @@ class TestConfigureLogDir:
             assert http._LOG_DIR == Path(tmpdir)
 
     def test_configure_from_env(self):
-        """configure_log_dir reads from UNIFY_LOG_DIR env."""
-        from unify.utils import http
+        """configure_log_dir reads from UNISDK_LOG_DIR env."""
+        from unisdk.utils import http
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            with patch.dict(os.environ, {"UNIFY_LOG_DIR": tmpdir}):
+            with patch.dict(os.environ, {"UNISDK_LOG_DIR": tmpdir}):
                 http._LOG_DIR = None
                 http._LOG_DIR_CHECKED = False
                 result = http.configure_log_dir()
@@ -352,10 +352,10 @@ class TestConfigureLogDir:
 
     def test_configure_returns_none_when_not_set(self):
         """configure_log_dir returns None when no directory configured."""
-        from unify.utils import http
+        from unisdk.utils import http
 
         with patch.dict(os.environ, {}, clear=False):
-            os.environ.pop("UNIFY_LOG_DIR", None)
+            os.environ.pop("UNISDK_LOG_DIR", None)
             http._LOG_DIR = None
             http._LOG_DIR_CHECKED = False
             result = http.configure_log_dir()
@@ -366,29 +366,29 @@ class TestOtelTracing:
     """Tests for OpenTelemetry tracing functionality."""
 
     def test_get_tracer_returns_none_when_disabled(self):
-        """get_tracer returns None when UNIFY_OTEL is false."""
-        with patch.dict(os.environ, {"UNIFY_OTEL": "false"}):
+        """get_tracer returns None when UNISDK_OTEL is false."""
+        with patch.dict(os.environ, {"UNISDK_OTEL": "false"}):
             import importlib
 
-            from unify.utils import http
+            from unisdk.utils import http
 
             importlib.reload(http)
             assert http.get_tracer() is None
 
     def test_is_otel_enabled_reflects_env(self):
-        """is_otel_enabled reflects UNIFY_OTEL env var."""
-        with patch.dict(os.environ, {"UNIFY_OTEL": "true"}):
+        """is_otel_enabled reflects UNISDK_OTEL env var."""
+        with patch.dict(os.environ, {"UNISDK_OTEL": "true"}):
             import importlib
 
-            from unify.utils import http
+            from unisdk.utils import http
 
             importlib.reload(http)
             assert http.is_otel_enabled() is True
 
-        with patch.dict(os.environ, {"UNIFY_OTEL": "false"}):
+        with patch.dict(os.environ, {"UNISDK_OTEL": "false"}):
             import importlib
 
-            from unify.utils import http
+            from unisdk.utils import http
 
             importlib.reload(http)
             assert http.is_otel_enabled() is False
@@ -397,10 +397,10 @@ class TestOtelTracing:
         """OTel setup uses existing TracerProvider if available."""
         existing_provider = reset_otel["provider"]
 
-        with patch.dict(os.environ, {"UNIFY_OTEL": "true"}):
+        with patch.dict(os.environ, {"UNISDK_OTEL": "true"}):
             import importlib
 
-            from unify.utils import http
+            from unisdk.utils import http
 
             # Reset initialization state and reload with OTel enabled
             http._OTEL_INITIALIZED = False
@@ -414,11 +414,11 @@ class TestOtelTracing:
             assert trace.get_tracer_provider() is existing_provider
 
     def test_get_tracer_returns_tracer_when_enabled(self, reset_otel):
-        """get_tracer returns a tracer when UNIFY_OTEL is true."""
-        with patch.dict(os.environ, {"UNIFY_OTEL": "true"}):
+        """get_tracer returns a tracer when UNISDK_OTEL is true."""
+        with patch.dict(os.environ, {"UNISDK_OTEL": "true"}):
             import importlib
 
-            from unify.utils import http
+            from unisdk.utils import http
 
             http._OTEL_INITIALIZED = False
             http._TRACER = None
@@ -430,16 +430,16 @@ class TestOtelTracing:
             assert tracer is not None
 
     def test_spans_created_during_request(self, reset_otel):
-        """HTTP requests create OTel spans when UNIFY_OTEL is enabled."""
+        """HTTP requests create OTel spans when UNISDK_OTEL is enabled."""
         exporter = reset_otel["exporter"]
 
         with patch.dict(
             os.environ,
-            {"UNIFY_OTEL": "true", "UNIFY_TERMINAL_LOG": "false"},
+            {"UNISDK_OTEL": "true", "UNISDK_TERMINAL_LOG": "false"},
         ):
             import importlib
 
-            from unify.utils import http
+            from unisdk.utils import http
 
             # Reset initialization state and reload with OTel enabled
             http._OTEL_INITIALIZED = False
@@ -472,11 +472,11 @@ class TestOtelTracing:
 
         with patch.dict(
             os.environ,
-            {"UNIFY_OTEL": "true", "UNIFY_TERMINAL_LOG": "false"},
+            {"UNISDK_OTEL": "true", "UNISDK_TERMINAL_LOG": "false"},
         ):
             import importlib
 
-            from unify.utils import http
+            from unisdk.utils import http
 
             http._OTEL_INITIALIZED = False
             http._TRACER = None
@@ -505,11 +505,11 @@ class TestOtelTracing:
 
         with patch.dict(
             os.environ,
-            {"UNIFY_OTEL": "true", "UNIFY_TERMINAL_LOG": "false"},
+            {"UNISDK_OTEL": "true", "UNISDK_TERMINAL_LOG": "false"},
         ):
             import importlib
 
-            from unify.utils import http
+            from unisdk.utils import http
 
             http._OTEL_INITIALIZED = False
             http._TRACER = None
@@ -546,7 +546,7 @@ class TestRequestError:
 
     def test_request_error_message(self):
         """RequestError includes URL, method, status, and response text."""
-        from unify.utils.http import RequestError
+        from unisdk.utils.http import RequestError
 
         response = MagicMock(spec=requests.Response)
         response.status_code = 404
@@ -571,7 +571,7 @@ class TestTraceContextPropagation:
 
     def test_inject_trace_context_adds_traceparent(self, reset_otel, monkeypatch):
         """_inject_trace_context adds traceparent header when span is active."""
-        from unify.utils import http
+        from unisdk.utils import http
 
         monkeypatch.setattr(http, "_OTEL_ENABLED", True)
 
@@ -600,7 +600,7 @@ class TestTraceContextPropagation:
 
     def test_inject_trace_context_no_span(self, monkeypatch):
         """_inject_trace_context returns unchanged headers when no span."""
-        from unify.utils import http
+        from unisdk.utils import http
 
         monkeypatch.setattr(http, "_OTEL_ENABLED", True)
 
@@ -617,7 +617,7 @@ class TestTraceContextPropagation:
 
     def test_inject_trace_context_otel_disabled(self, monkeypatch):
         """_inject_trace_context does nothing when OTel disabled."""
-        from unify.utils import http
+        from unisdk.utils import http
 
         monkeypatch.setattr(http, "_OTEL_ENABLED", False)
 
@@ -628,7 +628,7 @@ class TestTraceContextPropagation:
 
     def test_inject_trace_context_none_headers(self, reset_otel, monkeypatch):
         """_inject_trace_context handles None headers."""
-        from unify.utils import http
+        from unisdk.utils import http
 
         monkeypatch.setattr(http, "_OTEL_ENABLED", True)
 
@@ -641,7 +641,7 @@ class TestTraceContextPropagation:
 
     def test_get_traceparent_returns_header_value(self, reset_otel, monkeypatch):
         """get_traceparent returns the traceparent header value."""
-        from unify.utils import http
+        from unisdk.utils import http
 
         monkeypatch.setattr(http, "_OTEL_ENABLED", True)
 
@@ -657,7 +657,7 @@ class TestTraceContextPropagation:
 
     def test_get_traceparent_none_when_disabled(self, monkeypatch):
         """get_traceparent returns None when OTel disabled."""
-        from unify.utils import http
+        from unisdk.utils import http
 
         monkeypatch.setattr(http, "_OTEL_ENABLED", False)
 
@@ -670,11 +670,11 @@ class TestTraceContextPropagation:
 
         with patch.dict(
             os.environ,
-            {"UNIFY_OTEL": "true", "UNIFY_TERMINAL_LOG": "false"},
+            {"UNISDK_OTEL": "true", "UNISDK_TERMINAL_LOG": "false"},
         ):
             import importlib
 
-            from unify.utils import http
+            from unisdk.utils import http
 
             http._OTEL_INITIALIZED = False
             http._TRACER = None
@@ -708,11 +708,11 @@ class TestTraceContextPropagation:
 
         with patch.dict(
             os.environ,
-            {"UNIFY_OTEL": "true", "UNIFY_TERMINAL_LOG": "false"},
+            {"UNISDK_OTEL": "true", "UNISDK_TERMINAL_LOG": "false"},
         ):
             import importlib
 
-            from unify.utils import http
+            from unisdk.utils import http
 
             http._OTEL_INITIALIZED = False
             http._TRACER = None

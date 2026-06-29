@@ -4,8 +4,8 @@ from collections.abc import Callable
 
 import pytest
 
-import unify
-from unify.utils import http
+import unisdk
+from unisdk.utils import http
 
 
 def _record_cleanup_error(
@@ -31,7 +31,7 @@ def test_team_lifecycle_and_membership_round_trips(coordinator_org) -> None:
     organization_id = coordinator_org.organization_id
 
     try:
-        assistant = unify.create_assistant(
+        assistant = unisdk.create_assistant(
             first_name=f"TeamSDK{suffix}",
             surname="Member",
             config={
@@ -43,7 +43,7 @@ def test_team_lifecycle_and_membership_round_trips(coordinator_org) -> None:
         )
         assistant_id = int(assistant["agent_id"])
 
-        team = unify.create_team(
+        team = unisdk.create_team(
             organization_id,
             name=f"Coordinator SDK Team {suffix}",
             description="SDK integration team for membership lifecycle coverage.",
@@ -52,13 +52,13 @@ def test_team_lifecycle_and_membership_round_trips(coordinator_org) -> None:
         team_id = int(team["team_id"])
         assert int(team["organization_id"]) == organization_id
 
-        listed_by_org = unify.list_teams(
+        listed_by_org = unisdk.list_teams(
             organization_id,
             api_key=coordinator_org.api_key,
         )
         assert team_id in {int(row["team_id"]) for row in listed_by_org}
 
-        renamed = unify.update_team(
+        renamed = unisdk.update_team(
             organization_id,
             team_id,
             {"name": f"Renamed SDK Team {suffix}"},
@@ -67,7 +67,7 @@ def test_team_lifecycle_and_membership_round_trips(coordinator_org) -> None:
         assert renamed["name"] == f"Renamed SDK Team {suffix}"
 
         with pytest.raises(http.RequestError) as exc_info:
-            unify.update_team(
+            unisdk.update_team(
                 organization_id,
                 999999999,
                 {"name": "Missing team"},
@@ -76,7 +76,7 @@ def test_team_lifecycle_and_membership_round_trips(coordinator_org) -> None:
         assert exc_info.value.response.status_code == 404
         assert exc_info.value.response.text
 
-        membership = unify.add_team_member(
+        membership = unisdk.add_team_member(
             organization_id,
             team_id,
             assistant_id=assistant_id,
@@ -87,7 +87,7 @@ def test_team_lifecycle_and_membership_round_trips(coordinator_org) -> None:
         assert int(membership["assistant_id"]) == assistant_id
         assert int(membership["team_id"]) == team_id
 
-        members = unify.list_team_members(
+        members = unisdk.list_team_members(
             organization_id,
             team_id,
             api_key=coordinator_org.api_key,
@@ -98,13 +98,13 @@ def test_team_lifecycle_and_membership_round_trips(coordinator_org) -> None:
         }
         assert assistant_id in member_ids
 
-        assistant_teams = unify.list_teams_for_assistant(
+        assistant_teams = unisdk.list_teams_for_assistant(
             assistant_id,
             api_key=coordinator_org.api_key,
         )
         assert team_id in {int(row["team_id"]) for row in assistant_teams}
 
-        remove_response = unify.remove_team_member(
+        remove_response = unisdk.remove_team_member(
             organization_id,
             team_id,
             assistant_id,
@@ -113,7 +113,7 @@ def test_team_lifecycle_and_membership_round_trips(coordinator_org) -> None:
         membership_added = False
         assert remove_response == {}
 
-        delete_response = unify.delete_team(
+        delete_response = unisdk.delete_team(
             organization_id,
             team_id,
             api_key=coordinator_org.api_key,
@@ -125,7 +125,7 @@ def test_team_lifecycle_and_membership_round_trips(coordinator_org) -> None:
         if membership_added and team_id is not None and assistant_id is not None:
             _record_cleanup_error(
                 cleanup_errors,
-                lambda: unify.remove_team_member(
+                lambda: unisdk.remove_team_member(
                     organization_id,
                     team_id,
                     assistant_id,
@@ -135,7 +135,7 @@ def test_team_lifecycle_and_membership_round_trips(coordinator_org) -> None:
         if team_id is not None:
             _record_cleanup_error(
                 cleanup_errors,
-                lambda: unify.delete_team(
+                lambda: unisdk.delete_team(
                     organization_id,
                     team_id,
                     api_key=coordinator_org.api_key,
@@ -144,7 +144,7 @@ def test_team_lifecycle_and_membership_round_trips(coordinator_org) -> None:
         if assistant_id is not None:
             _record_cleanup_error(
                 cleanup_errors,
-                lambda: unify.delete_assistant(
+                lambda: unisdk.delete_assistant(
                     assistant_id,
                     api_key=coordinator_org.api_key,
                 ),
@@ -159,7 +159,7 @@ def test_member_target_add_for_org_member_is_idempotent(coordinator_org) -> None
     organization_id = coordinator_org.organization_id
 
     try:
-        team = unify.create_team(
+        team = unisdk.create_team(
             organization_id,
             name=f"Member Target SDK Team {suffix}",
             description="SDK integration team for member-target add idempotency coverage.",
@@ -167,10 +167,10 @@ def test_member_target_add_for_org_member_is_idempotent(coordinator_org) -> None
         )
         team_id = int(team["team_id"])
 
-        owner_user_id = unify.get_user_basic_info(api_key=coordinator_org.api_key)[
+        owner_user_id = unisdk.get_user_basic_info(api_key=coordinator_org.api_key)[
             "user_id"
         ]
-        first_add = unify.add_team_member(
+        first_add = unisdk.add_team_member(
             organization_id,
             team_id,
             member_user_id=owner_user_id,
@@ -180,7 +180,7 @@ def test_member_target_add_for_org_member_is_idempotent(coordinator_org) -> None
         assert int(first_add["team_id"]) == team_id
         member_assistant_id = int(first_add["assistant_id"])
 
-        second_add = unify.add_team_member(
+        second_add = unisdk.add_team_member(
             organization_id,
             team_id,
             member_user_id=owner_user_id,
@@ -189,7 +189,7 @@ def test_member_target_add_for_org_member_is_idempotent(coordinator_org) -> None
         assert second_add["membership_status"] == "active"
         assert int(second_add["assistant_id"]) == member_assistant_id
 
-        members = unify.list_team_members(
+        members = unisdk.list_team_members(
             organization_id,
             team_id,
             api_key=coordinator_org.api_key,
@@ -200,7 +200,7 @@ def test_member_target_add_for_org_member_is_idempotent(coordinator_org) -> None
         }
         assert member_assistant_id in member_ids
 
-        remove_response = unify.remove_team_member(
+        remove_response = unisdk.remove_team_member(
             organization_id,
             team_id,
             member_assistant_id,
@@ -213,7 +213,7 @@ def test_member_target_add_for_org_member_is_idempotent(coordinator_org) -> None
         if member_assistant_id is not None and team_id is not None:
             _record_cleanup_error(
                 cleanup_errors,
-                lambda: unify.remove_team_member(
+                lambda: unisdk.remove_team_member(
                     organization_id,
                     team_id,
                     member_assistant_id,
@@ -223,7 +223,7 @@ def test_member_target_add_for_org_member_is_idempotent(coordinator_org) -> None
         if team_id is not None:
             _record_cleanup_error(
                 cleanup_errors,
-                lambda: unify.delete_team(
+                lambda: unisdk.delete_team(
                     organization_id,
                     team_id,
                     api_key=coordinator_org.api_key,

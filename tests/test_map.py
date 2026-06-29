@@ -1,10 +1,10 @@
-"""Tests for unify.map functionality."""
+"""Tests for unisdk.map functionality."""
 
 import os
 
 import pytest
 
-import unify
+import unisdk
 
 # Disable tqdm progress bars in tests
 os.environ["TQDM_DISABLE"] = "1"
@@ -43,21 +43,21 @@ class TestFromArgsFalse:
     def test_simple_list_of_items(self, mode):
         """Map over simple list of items."""
         items = [1, 2, 3, 4, 5]
-        results = unify.map(identity, items, mode=mode)
+        results = unisdk.map(identity, items, mode=mode)
         assert results == items
 
     @pytest.mark.parametrize("mode", ["loop", "threading", "asyncio"])
     def test_kwargs_forwarded_to_all_calls(self, mode):
         """Kwargs should be forwarded to every call."""
         items = [1, 2, 3]
-        results = unify.map(multiply, items, factor=10, mode=mode)
+        results = unisdk.map(multiply, items, factor=10, mode=mode)
         assert results == [10, 20, 30]
 
     @pytest.mark.parametrize("mode", ["loop", "threading", "asyncio"])
     def test_multiple_kwargs_forwarded(self, mode):
         """Multiple kwargs should all be forwarded."""
         items = ["hello", "world"]
-        results = unify.map(
+        results = unisdk.map(
             format_with_kwargs,
             items,
             prefix="[",
@@ -73,7 +73,7 @@ class TestFromArgsFalse:
             (("a",), {"prefix": "1-"}),
             (("b",), {"prefix": "2-"}),
         ]
-        results = unify.map(format_with_kwargs, items, mode=mode)
+        results = unisdk.map(format_with_kwargs, items, mode=mode)
         assert results == ["1-a", "2-b"]
 
     @pytest.mark.parametrize("mode", ["loop", "threading", "asyncio"])
@@ -83,7 +83,7 @@ class TestFromArgsFalse:
             (("a",), {"prefix": "1-"}),
             (("b",), {"prefix": "2-"}),
         ]
-        results = unify.map(format_with_kwargs, items, suffix="!", mode=mode)
+        results = unisdk.map(format_with_kwargs, items, suffix="!", mode=mode)
         assert results == ["1-a!", "2-b!"]
 
     @pytest.mark.parametrize("mode", ["loop", "threading", "asyncio"])
@@ -93,7 +93,7 @@ class TestFromArgsFalse:
             {"text": "a", "prefix": "1-"},
             {"text": "b", "prefix": "2-"},
         ]
-        results = unify.map(format_with_kwargs, items, mode=mode)
+        results = unisdk.map(format_with_kwargs, items, mode=mode)
         assert results == ["1-a", "2-b"]
 
     @pytest.mark.parametrize("mode", ["loop", "threading", "asyncio"])
@@ -103,14 +103,14 @@ class TestFromArgsFalse:
             {"text": "a", "prefix": "1-"},
             {"text": "b", "prefix": "2-"},
         ]
-        results = unify.map(format_with_kwargs, items, suffix="!", mode=mode)
+        results = unisdk.map(format_with_kwargs, items, suffix="!", mode=mode)
         assert results == ["1-a!", "2-b!"]
 
     @pytest.mark.parametrize("mode", ["loop", "threading", "asyncio"])
     def test_preserves_order(self, mode):
         """Results should be in the same order as inputs."""
         items = list(range(20))
-        results = unify.map(identity, items, mode=mode)
+        results = unisdk.map(identity, items, mode=mode)
         assert results == items
 
     @pytest.mark.parametrize("mode", ["loop", "threading", "asyncio"])
@@ -118,7 +118,7 @@ class TestFromArgsFalse:
         """In from_args=False mode, list kwargs should be passed as-is, not indexed."""
         items = ["a", "b"]
         # The list [1, 2, 3] should be passed as-is to each call
-        results = unify.map(
+        results = unisdk.map(
             collect_args,
             items,
             my_list=[1, 2, 3],
@@ -134,13 +134,13 @@ class TestFromArgsTrue:
     @pytest.mark.parametrize("mode", ["loop", "threading", "asyncio"])
     def test_parallel_positional_args(self, mode):
         """Multiple positional args should be zipped."""
-        results = unify.map(add, [1, 2, 3], [10, 20, 30], from_args=True, mode=mode)
+        results = unisdk.map(add, [1, 2, 3], [10, 20, 30], from_args=True, mode=mode)
         assert results == [11, 22, 33]
 
     @pytest.mark.parametrize("mode", ["loop", "threading", "asyncio"])
     def test_list_kwargs_indexed(self, mode):
         """List kwargs should be indexed per call."""
-        results = unify.map(
+        results = unisdk.map(
             multiply,
             x=[1, 2, 3],
             factor=[10, 20, 30],
@@ -152,7 +152,7 @@ class TestFromArgsTrue:
     @pytest.mark.parametrize("mode", ["loop", "threading", "asyncio"])
     def test_scalar_kwargs_broadcast(self, mode):
         """Scalar kwargs should be broadcast to all calls."""
-        results = unify.map(
+        results = unisdk.map(
             multiply,
             x=[1, 2, 3],
             factor=10,
@@ -164,7 +164,7 @@ class TestFromArgsTrue:
     @pytest.mark.parametrize("mode", ["loop", "threading", "asyncio"])
     def test_mixed_list_and_scalar_kwargs(self, mode):
         """Mix of list and scalar kwargs should work."""
-        results = unify.map(
+        results = unisdk.map(
             format_with_kwargs,
             text=["a", "b", "c"],
             prefix=["1-", "2-", "3-"],
@@ -178,7 +178,7 @@ class TestFromArgsTrue:
     def test_preserves_order(self, mode):
         """Results should be in the same order as inputs."""
         items = list(range(20))
-        results = unify.map(identity, items, from_args=True, mode=mode)
+        results = unisdk.map(identity, items, from_args=True, mode=mode)
         assert results == items
 
 
@@ -192,7 +192,7 @@ class TestExceptionHandling:
             raise ValueError(f"Failed on {x}")
 
         with pytest.raises(ValueError, match="Failed on"):
-            unify.map(failing_fn, [1, 2, 3], raise_exceptions=True, mode="loop")
+            unisdk.map(failing_fn, [1, 2, 3], raise_exceptions=True, mode="loop")
 
     def test_raise_exceptions_false(self):
         """Exceptions should be silently caught when raise_exceptions=False."""
@@ -202,7 +202,7 @@ class TestExceptionHandling:
                 raise ValueError("Failed")
             return x
 
-        results = unify.map(failing_fn, [1, 2, 3], raise_exceptions=False, mode="loop")
+        results = unisdk.map(failing_fn, [1, 2, 3], raise_exceptions=False, mode="loop")
         assert results == [1, None, 3]
 
 
@@ -215,7 +215,7 @@ class TestEdgeCases:
         # Need to handle this - currently would fail
         # For now, skip this test if it fails
         try:
-            results = unify.map(identity, [], mode=mode)
+            results = unisdk.map(identity, [], mode=mode)
             assert results == []
         except (IndexError, KeyError):
             pytest.skip("Empty list handling not implemented")
@@ -223,18 +223,18 @@ class TestEdgeCases:
     @pytest.mark.parametrize("mode", ["loop", "threading", "asyncio"])
     def test_single_item(self, mode):
         """Single item list should work."""
-        results = unify.map(identity, [42], mode=mode)
+        results = unisdk.map(identity, [42], mode=mode)
         assert results == [42]
 
     def test_invalid_mode_raises(self):
         """Invalid mode should raise assertion error."""
         with pytest.raises(AssertionError):
-            unify.map(identity, [1, 2, 3], mode="invalid")
+            unisdk.map(identity, [1, 2, 3], mode="invalid")
 
     def test_from_args_no_list_raises(self):
         """from_args=True with no lists should raise."""
         with pytest.raises(Exception, match="At least one"):
-            unify.map(identity, x=1, y=2, from_args=True)
+            unisdk.map(identity, x=1, y=2, from_args=True)
 
 
 class TestProgressBar:
@@ -243,5 +243,5 @@ class TestProgressBar:
     def test_name_formatting(self):
         """Name should be formatted for progress bar."""
         # Just verify it doesn't crash - actual progress bar testing is tricky
-        results = unify.map(identity, [1, 2, 3], name="test_name", mode="loop")
+        results = unisdk.map(identity, [1, 2, 3], name="test_name", mode="loop")
         assert results == [1, 2, 3]
