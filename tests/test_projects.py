@@ -24,7 +24,7 @@ def test_set_project(monkeypatch):
     """Test setting the active project via unisdk.activate()."""
     name = _unique_project_name("test_set_project")
     # Use monkeypatch to isolate unisdk.PROJECT mutations
-    monkeypatch.setattr(unify, "PROJECT", None)
+    monkeypatch.setattr(unisdk, "PROJECT", None)
     try:
         assert unisdk.active_project() is None
         unisdk.activate(name)
@@ -37,7 +37,7 @@ def test_set_project_then_log(monkeypatch):
     """Test setting project and logging to it."""
     name = _unique_project_name("test_set_project_then_log")
     # Use monkeypatch to isolate unisdk.PROJECT mutations
-    monkeypatch.setattr(unify, "PROJECT", None)
+    monkeypatch.setattr(unisdk, "PROJECT", None)
     try:
         assert unisdk.active_project() is None
         unisdk.activate(name)
@@ -51,7 +51,7 @@ def test_project_env_var(monkeypatch):
     """Test that UNISDK_PROJECT environment variable sets the active project."""
     name = _unique_project_name("test_project_env_var")
     # Use monkeypatch to isolate both unisdk.PROJECT and env var mutations
-    monkeypatch.setattr(unify, "PROJECT", None)
+    monkeypatch.setattr(unisdk, "PROJECT", None)
     monkeypatch.delenv("UNISDK_PROJECT", raising=False)
     try:
         assert unisdk.active_project() is None
