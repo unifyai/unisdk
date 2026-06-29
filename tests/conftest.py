@@ -1,4 +1,4 @@
-# Load .env BEFORE importing unify - BASE_URL is evaluated at import time.
+# Load .env BEFORE importing unisdk - BASE_URL is evaluated at import time.
 # Explicit shell environment variables take precedence over .env values.
 import os
 import uuid

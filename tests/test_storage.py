@@ -148,14 +148,14 @@ class TestDownloadObject:
 
 
 class TestModuleExports:
-    """Test that functions are properly exported from the unify module."""
+    """Test that functions are properly exported from the unisdk module."""
 
     def test_get_signed_url_exported(self):
         """Test that get_signed_url is accessible from unisdk module."""
-        assert hasattr(unify, "get_signed_url")
+        assert hasattr(unisdk, "get_signed_url")
         assert callable(unisdk.get_signed_url)
 
     def test_download_object_exported(self):
         """Test that download_object is accessible from unisdk module."""
-        assert hasattr(unify, "download_object")
+        assert hasattr(unisdk, "download_object")
         assert callable(unisdk.download_object)

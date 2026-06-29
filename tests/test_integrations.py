@@ -344,11 +344,11 @@ def test_unify_exports_runtime_integration_helpers_only() -> None:
         "get_integration_tool_schema",
         "sync_integrations",
     ]:
-        assert not hasattr(unify, name)
+        assert not hasattr(unisdk, name)
     for name in [
         "list_integration_connections",
         "run_integration_tool",
         "get_integration_tool_policy",
         "patch_integration_backend",
     ]:
-        assert hasattr(unify, name)
+        assert hasattr(unisdk, name)

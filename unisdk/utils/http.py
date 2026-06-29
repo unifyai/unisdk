@@ -216,7 +216,7 @@ def _setup_otel() -> None:
 
         trace.set_tracer_provider(provider)
         _TRACER = trace.get_tracer("unisdk")
-        _LOGGER.debug("Initialized OTel TracerProvider for unify")
+        _LOGGER.debug("Initialized OTel TracerProvider for unisdk")
 
     except ImportError:
         _LOGGER.debug("OpenTelemetry not available - tracing disabled")
