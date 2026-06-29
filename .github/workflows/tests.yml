@@ -1,4 +1,4 @@
-name: Testing unify
+name: Testing unisdk
 
 on:
   # Manual trigger - always runs tests
@@ -218,8 +218,8 @@ jobs:
       env:
         UNIFY_KEY: ${{ secrets.UNIFY_KEY }}
         # Enable OpenTelemetry tracing for unify client
-        UNIFY_OTEL: "true"
-        UNIFY_OTEL_LOG_DIR: ${{ env.LOGS_DIR }}/all
+        UNISDK_OTEL: "true"
+        UNISDK_OTEL_LOG_DIR: ${{ env.LOGS_DIR }}/all
 
     - name: Generate success summary
       if: success()

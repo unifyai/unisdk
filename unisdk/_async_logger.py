@@ -8,11 +8,11 @@ from typing import List
 
 import aiohttp
 
-from unify import BASE_URL
-from unify.utils.helpers import _create_request_header
+from unisdk import BASE_URL
+from unisdk.utils.helpers import _create_request_header
 
 # Configure logging based on environment variable
-ASYNC_LOGGER_DEBUG = os.getenv("UNIFY_ASYNC_LOGGER_DEBUG", "false").lower() in (
+ASYNC_LOGGER_DEBUG = os.getenv("UNISDK_ASYNC_LOGGER_DEBUG", "false").lower() in (
     "true",
     "1",
 )
@@ -28,7 +28,7 @@ class AsyncLoggerManager:
         num_consumers: int = 256,
         max_queue_size: int = 10000,
     ):
-        self.name = f"UnifyAsyncLogger.{name}"
+        self.name = f"UnisdkAsyncLogger.{name}"
         self.loop = asyncio.new_event_loop()
         self.queue = None
         self.consumers: List[asyncio.Task] = []

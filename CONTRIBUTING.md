@@ -10,8 +10,8 @@
 1. Clone the repository and install dependencies:
 
 ```bash
-git clone https://github.com/unifyai/unify.git
-cd unify
+git clone https://github.com/unifyai/unisdk.git
+cd unisdk
 pip install uv
 uv sync --group dev
 ```

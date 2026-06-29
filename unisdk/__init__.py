@@ -9,12 +9,12 @@ else:
     BASE_URL = "https://api.unify.ai/v0"
 
 
-UNIFY_DIR = os.path.dirname(__file__)
+UNISDK_DIR = os.path.dirname(__file__)
 
 __all__ = [
     # Configuration
     "BASE_URL",
-    "UNIFY_DIR",
+    "UNISDK_DIR",
     "PROJECT",
     "activate",
     "active_project",
@@ -240,7 +240,7 @@ def activate(
 def active_project() -> str:
     global PROJECT
     if PROJECT is None:
-        return os.environ.get("UNIFY_PROJECT")
+        return os.environ.get("UNISDK_PROJECT")
     return PROJECT
 
 

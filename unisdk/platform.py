@@ -2,9 +2,9 @@
 
 from typing import Optional
 
-from unify import BASE_URL
-from unify.utils import http
-from unify.utils.helpers import _create_request_header
+from unisdk import BASE_URL
+from unisdk.utils import http
+from unisdk.utils.helpers import _create_request_header
 
 
 def deduct_credits(
