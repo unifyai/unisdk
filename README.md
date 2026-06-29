@@ -18,34 +18,23 @@ In the default open-source Unity flow, the layering looks like this:
 
 ## Installation
 
-For public installs, use the published package:
+Install from Git:
 
 ```bash
-pip install unifyai
+pip install "unisdk @ git+https://github.com/unifyai/unisdk.git"
 ```
 
 Or with [uv](https://docs.astral.sh/uv/):
 
 ```bash
-uv add unifyai
+uv add "unisdk @ git+https://github.com/unifyai/unisdk.git"
 ```
 
-The import name stays `unisdk`:
+The import name is `unisdk`:
 
 ```python
 import unisdk
 ```
-
-If you want the exact head of this repository instead of the published release,
-install from Git:
-
-```bash
-pip install "unisdk @ git+https://github.com/unifyai/unisdk.git"
-# or
-uv add "unisdk @ git+https://github.com/unifyai/unisdk.git"
-```
-
-`pip install unify` is not this SDK.
 
 ## Configuration
 
