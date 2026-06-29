@@ -3,12 +3,12 @@
 import base64
 from unittest.mock import MagicMock, patch
 
-import unify
-from unify.utils import storage
+import unisdk
+from unisdk.utils import storage
 
 
 class TestGetSignedUrl:
-    """Tests for unify.get_signed_url function."""
+    """Tests for unisdk.get_signed_url function."""
 
     def test_returns_signed_url(self):
         """Test that get_signed_url returns the signed URL from the response."""
@@ -23,7 +23,7 @@ class TestGetSignedUrl:
             "post",
             return_value=mock_response,
         ) as mock_post:
-            result = unify.get_signed_url("gs://test-bucket/path/to/object.jpg")
+            result = unisdk.get_signed_url("gs://test-bucket/path/to/object.jpg")
 
             assert (
                 result
@@ -50,7 +50,7 @@ class TestGetSignedUrl:
             "post",
             return_value=mock_response,
         ) as mock_post:
-            result = unify.get_signed_url(
+            result = unisdk.get_signed_url(
                 "gs://bucket/object",
                 expiration_minutes=120,
             )
@@ -72,7 +72,7 @@ class TestGetSignedUrl:
             "post",
             return_value=mock_response,
         ) as mock_post:
-            unify.get_signed_url("gs://bucket/object", api_key="test-key")
+            unisdk.get_signed_url("gs://bucket/object", api_key="test-key")
 
             call_args = mock_post.call_args
             assert "headers" in call_args[1]
@@ -80,7 +80,7 @@ class TestGetSignedUrl:
 
 
 class TestDownloadObject:
-    """Tests for unify.download_object function."""
+    """Tests for unisdk.download_object function."""
 
     def test_returns_decoded_bytes(self):
         """Test that download_object returns decoded bytes from base64 response."""
@@ -99,7 +99,7 @@ class TestDownloadObject:
             "post",
             return_value=mock_response,
         ) as mock_post:
-            result = unify.download_object("gs://test-bucket/hello.txt")
+            result = unisdk.download_object("gs://test-bucket/hello.txt")
 
             assert result == test_content
             mock_post.assert_called_once()
@@ -121,7 +121,7 @@ class TestDownloadObject:
         }
 
         with patch.object(storage.http, "post", return_value=mock_response):
-            result = unify.download_object("gs://bucket/image.png")
+            result = unisdk.download_object("gs://bucket/image.png")
 
             assert result == test_content
             assert result.startswith(b"\x89PNG")
@@ -140,7 +140,7 @@ class TestDownloadObject:
             "post",
             return_value=mock_response,
         ) as mock_post:
-            unify.download_object("gs://bucket/object", api_key="test-key")
+            unisdk.download_object("gs://bucket/object", api_key="test-key")
 
             call_args = mock_post.call_args
             assert "headers" in call_args[1]
@@ -151,11 +151,11 @@ class TestModuleExports:
     """Test that functions are properly exported from the unify module."""
 
     def test_get_signed_url_exported(self):
-        """Test that get_signed_url is accessible from unify module."""
+        """Test that get_signed_url is accessible from unisdk module."""
         assert hasattr(unify, "get_signed_url")
-        assert callable(unify.get_signed_url)
+        assert callable(unisdk.get_signed_url)
 
     def test_download_object_exported(self):
-        """Test that download_object is accessible from unify module."""
+        """Test that download_object is accessible from unisdk module."""
         assert hasattr(unify, "download_object")
-        assert callable(unify.download_object)
+        assert callable(unisdk.download_object)

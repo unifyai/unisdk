@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "unify"
+name = "unisdk"
 version = "0.0.0"
 description = "Python SDK for Unity's persistence and state layer"
 readme = "README.md"
@@ -23,9 +23,9 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/unifyai/unify"
-Repository = "https://github.com/unifyai/unify"
-Issues = "https://github.com/unifyai/unify/issues"
+Homepage = "https://github.com/unifyai/unisdk"
+Repository = "https://github.com/unifyai/unisdk"
+Issues = "https://github.com/unifyai/unisdk/issues"
 
 [dependency-groups]
 # Formatters are the single source of truth for the pinned versions CI and
@@ -54,7 +54,7 @@ dev = [
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["unify"]
+packages = ["unisdk"]
 
 [tool.pytest.ini_options]
 asyncio_default_fixture_loop_scope = "function"
@@ -62,7 +62,7 @@ asyncio_default_fixture_loop_scope = "function"
 [tool.isort]
 profile = "black"
 multi_line_output = 3
-src_paths = ["unify"]
+src_paths = ["unisdk"]
 
 [tool.mypy]
 strict = true

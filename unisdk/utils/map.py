@@ -42,16 +42,16 @@ def map(
     Examples::
 
         # Simple: each item passed as first arg
-        unify.map(process, [item1, item2, item3])
+        unisdk.map(process, [item1, item2, item3])
         # Calls: process(item1), process(item2), process(item3)
 
         # With kwargs: kwargs forwarded to all calls
-        unify.map(embed, ["text1", "text2"], model="gpt-4", dimensions=512)
+        unisdk.map(embed, ["text1", "text2"], model="gpt-4", dimensions=512)
         # Calls: embed("text1", model="gpt-4", dimensions=512),
         #        embed("text2", model="gpt-4", dimensions=512)
 
         # Explicit (args, kwargs) tuples for per-item control
-        unify.map(fn, [
+        unisdk.map(fn, [
             (("arg1",), {"k": 1}),
             (("arg2",), {"k": 2}),
         ])
@@ -65,16 +65,16 @@ def map(
     Examples::
 
         # Positional args as parallel lists
-        unify.map(add, [1, 2, 3], [4, 5, 6], from_args=True)
+        unisdk.map(add, [1, 2, 3], [4, 5, 6], from_args=True)
         # Calls: add(1, 4), add(2, 5), add(3, 6)
 
         # Kwargs as parallel lists
-        unify.map(log, project="myproject", a=[1, 2], b=[3, 4], from_args=True)
+        unisdk.map(log, project="myproject", a=[1, 2], b=[3, 4], from_args=True)
         # Calls: log(project="myproject", a=1, b=3),
         #        log(project="myproject", a=2, b=4)
 
         # Mixed: scalar kwargs broadcast, list kwargs vary per call
-        unify.map(fn, x=[1, 2, 3], constant="same", from_args=True)
+        unisdk.map(fn, x=[1, 2, 3], constant="same", from_args=True)
         # Calls: fn(x=1, constant="same"), fn(x=2, constant="same"), ...
 
     Args:

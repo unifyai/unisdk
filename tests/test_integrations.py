@@ -5,8 +5,8 @@ from __future__ import annotations
 import inspect
 from unittest.mock import MagicMock, patch
 
-import unify
-from unify import integrations
+import unisdk
+from unisdk import integrations
 
 
 def _response(payload):
@@ -25,7 +25,7 @@ def test_list_integration_connections_uses_env_base_url_and_key_by_default(
         "get",
         return_value=_response([{"connection_id": "conn-1"}]),
     ) as mock_get:
-        result = unify.list_integration_connections(owner_scope="assistant")
+        result = unisdk.list_integration_connections(owner_scope="assistant")
 
     assert result == [{"connection_id": "conn-1"}]
     assert mock_get.call_args.args[0] == (
@@ -40,7 +40,7 @@ def test_list_integration_connections_preserves_owner_scope_params() -> None:
         "get",
         return_value=_response([{"connection_id": "conn-1"}]),
     ) as mock_get:
-        result = unify.list_integration_connections(
+        result = unisdk.list_integration_connections(
             owner_scope="org",
             org_id=7,
             team_id=8,
@@ -68,7 +68,7 @@ def test_run_integration_tool_posts_arguments_and_confirmation_context() -> None
         "post",
         return_value=_response({"status": "ok"}),
     ) as mock_post:
-        result = unify.run_integration_tool(
+        result = unisdk.run_integration_tool(
             "tool-1",
             {"query": "alice"},
             owner_scope="assistant",
@@ -133,7 +133,7 @@ def test_get_integration_tool_policy_uses_owner_params() -> None:
         "get",
         return_value=_response({"connection_id": "conn-1", "policies": []}),
     ) as mock_get:
-        result = unify.get_integration_tool_policy(
+        result = unisdk.get_integration_tool_policy(
             "conn-1",
             owner_scope="assistant",
             assistant_id=42,
@@ -156,7 +156,7 @@ def test_patch_integration_tool_policy_sends_partial_policy_and_owner_params() -
         "patch",
         return_value=_response({"connection_id": "conn-1", "policies": []}),
     ) as mock_patch:
-        result = unify.patch_integration_tool_policy(
+        result = unisdk.patch_integration_tool_policy(
             "conn-1",
             tool_policies={"tool-1": "auto"},
             bulk_approval_level="specific_approval",
@@ -190,7 +190,7 @@ def test_approve_integration_tool_execution_posts_owner_context() -> None:
             {"status": "approved", "confirmation_token": "confirm-1"},
         ),
     ) as mock_post:
-        result = unify.approve_integration_tool_execution(
+        result = unisdk.approve_integration_tool_execution(
             17,
             scope="tool",
             persist_policy=True,
@@ -221,7 +221,7 @@ def test_deny_integration_tool_execution_posts_owner_context() -> None:
         "post",
         return_value=_response({"status": "denied"}),
     ) as mock_post:
-        result = unify.deny_integration_tool_execution(
+        result = unisdk.deny_integration_tool_execution(
             17,
             scope="once",
             persist_policy=False,
@@ -253,7 +253,7 @@ def test_test_integration_connection_posts_health_check_endpoint() -> None:
         "post",
         return_value=_response({"connection_id": "conn-1", "health": "ok"}),
     ) as mock_post:
-        result = unify.test_integration_connection(
+        result = unisdk.test_integration_connection(
             "conn-1",
             api_key="test-key",
             base_url="http://orchestra.local/v0/",
@@ -272,7 +272,7 @@ def test_upsert_integration_backend_posts_admin_backend_payload() -> None:
         "post",
         return_value=_response({"backend_id": "pipedream", "status": "enabled"}),
     ) as mock_post:
-        result = unify.upsert_integration_backend(
+        result = unisdk.upsert_integration_backend(
             backend_id="pipedream",
             kind="pipedream",
             display_name="Pipedream",
@@ -307,7 +307,7 @@ def test_patch_integration_backend_patches_admin_backend_payload() -> None:
         "patch",
         return_value=_response({"backend_id": "composio", "status": "disabled"}),
     ) as mock_patch:
-        result = unify.patch_integration_backend(
+        result = unisdk.patch_integration_backend(
             "composio",
             status="disabled",
             config_json={"priority": 50},

@@ -1,4 +1,4 @@
-"""Tests for AsyncSpendClient (unify.async_admin).
+"""Tests for AsyncSpendClient (unisdk.async_admin).
 
 Unit-level tests using mocked aiohttp responses. No real Orchestra server
 required.
@@ -12,7 +12,7 @@ from unittest.mock import AsyncMock, MagicMock
 import aiohttp
 import pytest
 
-from unify.async_admin import AsyncSpendClient, SpendRequestError
+from unisdk.async_admin import AsyncSpendClient, SpendRequestError
 
 
 def _make_response(*, status: int = 200, json_data: dict | None = None):

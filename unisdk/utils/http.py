@@ -5,31 +5,31 @@ Provides a requests session with retry logic and optional trace-aware logging.
 
 Terminal and file logging are independently controlled:
 
-- UNIFY_TERMINAL_LOG: Enable/disable terminal (console) output (default: true)
-- UNIFY_LOG_DIR: Directory for file-based request traces (independent of terminal)
+- UNISDK_TERMINAL_LOG: Enable/disable terminal (console) output (default: true)
+- UNISDK_LOG_DIR: Directory for file-based request traces (independent of terminal)
 
-When UNIFY_LOG_DIR is set, structured JSON files are written regardless of
-UNIFY_TERMINAL_LOG:
+When UNISDK_LOG_DIR is set, structured JSON files are written regardless of
+UNISDK_TERMINAL_LOG:
 - Before request: {timestamp}_{method}_{route}_PENDING_{trace_id}.json
 - After response: {timestamp}_{method}_{route}_{duration}ms_{status}_{trace_id}.json
 
 The trace_id suffix enables correlation with pytest logs and Orchestra traces.
 
 Typical production configuration:
-- UNIFY_TERMINAL_LOG=false + UNIFY_LOG_DIR=/var/log/unify/
+- UNISDK_TERMINAL_LOG=false + UNISDK_LOG_DIR=/var/log/unify/
   → quiet terminal, verbose file traces
 
 OpenTelemetry tracing is controlled by:
-- UNIFY_OTEL: Enable/disable OTel tracing (default: false)
-- UNIFY_OTEL_ENDPOINT: OTLP endpoint for trace export (optional)
-- UNIFY_OTEL_LOG_DIR: Directory for file-based span export (optional)
+- UNISDK_OTEL: Enable/disable OTel tracing (default: false)
+- UNISDK_OTEL_ENDPOINT: OTLP endpoint for trace export (optional)
+- UNISDK_OTEL_LOG_DIR: Directory for file-based span export (optional)
 
-When UNIFY_OTEL is enabled, HTTP requests create OTel spans that can be
+When UNISDK_OTEL is enabled, HTTP requests create OTel spans that can be
 correlated with parent spans (from Unity) and child spans (in Orchestra).
 
 File-based span export:
-When UNIFY_OTEL_LOG_DIR is set, spans are written to JSONL files keyed
-by trace_id: {UNIFY_OTEL_LOG_DIR}/{trace_id}.jsonl
+When UNISDK_OTEL_LOG_DIR is set, spans are written to JSONL files keyed
+by trace_id: {UNISDK_OTEL_LOG_DIR}/{trace_id}.jsonl
 """
 
 import json
@@ -52,17 +52,20 @@ from urllib3 import Retry
 # Logging setup — terminal and file are independent
 # ---------------------------------------------------------------------------
 
-_LOGGER = logging.getLogger("unify")
-_TERMINAL_LOG_ENABLED = os.getenv("UNIFY_TERMINAL_LOG", "true").lower() in ("true", "1")
+_LOGGER = logging.getLogger("unisdk")
+_TERMINAL_LOG_ENABLED = os.getenv("UNISDK_TERMINAL_LOG", "true").lower() in (
+    "true",
+    "1",
+)
 _LOGGER.setLevel(logging.DEBUG if _TERMINAL_LOG_ENABLED else logging.WARNING)
 
 # ---------------------------------------------------------------------------
 # OpenTelemetry setup
 # ---------------------------------------------------------------------------
 
-_OTEL_ENABLED = os.getenv("UNIFY_OTEL", "false").lower() in ("true", "1")
-_OTEL_ENDPOINT = os.getenv("UNIFY_OTEL_ENDPOINT", "").strip()
-_OTEL_LOG_DIR = os.getenv("UNIFY_OTEL_LOG_DIR", "").strip()
+_OTEL_ENABLED = os.getenv("UNISDK_OTEL", "false").lower() in ("true", "1")
+_OTEL_ENDPOINT = os.getenv("UNISDK_OTEL_ENDPOINT", "").strip()
+_OTEL_LOG_DIR = os.getenv("UNISDK_OTEL_LOG_DIR", "").strip()
 _OTEL_INITIALIZED = False
 _TRACER = None
 
@@ -79,7 +82,7 @@ class FileSpanExporter:
     or external collector (Tempo/Jaeger).
     """
 
-    def __init__(self, log_dir: Path, service_name: str = "unify"):
+    def __init__(self, log_dir: Path, service_name: str = "unisdk"):
         self.log_dir = log_dir
         self.service_name = service_name
         self._lock = threading.Lock()
@@ -152,7 +155,7 @@ class FileSpanExporter:
 def _setup_otel() -> None:
     """Initialize OpenTelemetry if enabled and not already configured.
 
-    When UNIFY_OTEL_LOG_DIR is set, spans are written to JSONL files
+    When UNISDK_OTEL_LOG_DIR is set, spans are written to JSONL files
     keyed by trace_id for standalone trace logging.
     """
     global _OTEL_INITIALIZED, _TRACER
@@ -175,12 +178,12 @@ def _setup_otel() -> None:
             (trace.NoOpTracerProvider, trace.ProxyTracerProvider),
         ):
             # Parent (e.g., Unity) already configured OTel - use theirs
-            _TRACER = trace.get_tracer("unify")
+            _TRACER = trace.get_tracer("unisdk")
             _LOGGER.debug("Using existing OTel TracerProvider from parent")
             return
 
         # We're the outermost layer - set up our own provider
-        resource = Resource.create({SERVICE_NAME: "unify"})
+        resource = Resource.create({SERVICE_NAME: "unisdk"})
         provider = TracerProvider(resource=resource)
 
         # Add OTLP exporter if endpoint configured
@@ -205,14 +208,14 @@ def _setup_otel() -> None:
         if _OTEL_LOG_DIR:
             try:
                 log_dir = Path(_OTEL_LOG_DIR)
-                file_exporter = FileSpanExporter(log_dir, service_name="unify")
+                file_exporter = FileSpanExporter(log_dir, service_name="unisdk")
                 provider.add_span_processor(SimpleSpanProcessor(file_exporter))
                 _LOGGER.debug(f"Configured file span exporter at {_OTEL_LOG_DIR}")
             except Exception as e:
                 _LOGGER.warning(f"Failed to configure file span exporter: {e}")
 
         trace.set_tracer_provider(provider)
-        _TRACER = trace.get_tracer("unify")
+        _TRACER = trace.get_tracer("unisdk")
         _LOGGER.debug("Initialized OTel TracerProvider for unify")
 
     except ImportError:
@@ -252,12 +255,12 @@ _LOG_DIR_CHECKED = False
 def configure_log_dir(log_dir: Optional[str] = None) -> Optional[Path]:
     """Configure or reconfigure the log directory for file-based logging.
 
-    Call this after setting UNIFY_LOG_DIR if the env var was set
+    Call this after setting UNISDK_LOG_DIR if the env var was set
     after this module was imported.
 
     Args:
         log_dir: Explicit log directory path. If None, reads from
-                 UNIFY_LOG_DIR env var.
+                 UNISDK_LOG_DIR env var.
 
     Returns:
         The configured log directory Path, or None if disabled.
@@ -268,13 +271,13 @@ def configure_log_dir(log_dir: Optional[str] = None) -> Optional[Path]:
     _LOG_DIR = None
 
     if log_dir is not None:
-        os.environ["UNIFY_LOG_DIR"] = log_dir
+        os.environ["UNISDK_LOG_DIR"] = log_dir
 
     return _get_log_dir()
 
 
 def _get_log_dir() -> Optional[Path]:
-    """Get the log directory from UNIFY_LOG_DIR env var.
+    """Get the log directory from UNISDK_LOG_DIR env var.
 
     Returns None if not set or directory creation fails.
     The directory is created on first access.
@@ -285,7 +288,7 @@ def _get_log_dir() -> Optional[Path]:
         return _LOG_DIR
 
     _LOG_DIR_CHECKED = True
-    log_dir_str = os.getenv("UNIFY_LOG_DIR", "").strip()
+    log_dir_str = os.getenv("UNISDK_LOG_DIR", "").strip()
     if not log_dir_str:
         return None
 
@@ -638,9 +641,9 @@ def _log_request_if_enabled(fn: Callable) -> Callable:
     """Decorator that adds console logging, file-based logging, and OTel tracing.
 
     Terminal output and file traces are independent:
-    - Console logging is gated on _TERMINAL_LOG_ENABLED (UNIFY_TERMINAL_LOG)
-    - File traces are gated on _get_log_dir() returning a path (UNIFY_LOG_DIR)
-    - OTel spans are gated on _OTEL_ENABLED (UNIFY_OTEL)
+    - Console logging is gated on _TERMINAL_LOG_ENABLED (UNISDK_TERMINAL_LOG)
+    - File traces are gated on _get_log_dir() returning a path (UNISDK_LOG_DIR)
+    - OTel spans are gated on _OTEL_ENABLED (UNISDK_OTEL)
     """
     if not _TERMINAL_LOG_ENABLED and not _OTEL_ENABLED and not _get_log_dir():
         return fn
