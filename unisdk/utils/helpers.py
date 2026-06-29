@@ -1,7 +1,7 @@
 import os
 from typing import Optional
 
-import unify
+import unisdk
 
 
 def _validate_api_key(api_key: Optional[str]) -> str:
@@ -27,7 +27,7 @@ def _get_project(
     required: bool = True,
 ) -> Optional[str]:
     if project is None:
-        project = unify.active_project()
+        project = unisdk.active_project()
         if project is None:
             if required:
                 project = "_"

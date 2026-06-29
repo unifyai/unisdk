@@ -2,18 +2,18 @@
 
 Python SDK for the persistence and state layer behind [Unity](https://github.com/unifyai/unity). It wraps the backend REST API in a clean functional interface for projects, structured logging, contexts, storage, and assistant management.
 
-If you're here from the Unity quickstart, this is the layer behind `UNIFY_KEY`: Unity runs locally, while `unify` connects the managers to the backend that stores project state, logs, and other persistent data.
+If you're here from the Unity quickstart, this is the layer behind `UNIFY_KEY`: Unity runs locally, while `unisdk` connects the managers to the backend that stores project state, logs, and other persistent data.
 
 ## What layer is this?
 
-Unify is the persistence plane used by Unity's managers. When Unity needs to store contacts, log conversations, query knowledge, or manage projects, it calls `unify`. When you want to interact with the same data programmatically — inspect logs, manage projects, upload files, or query assistant state — you use this SDK directly.
+Unify is the persistence plane used by Unity's managers. When Unity needs to store contacts, log conversations, query knowledge, or manage projects, it calls `unisdk`. When you want to interact with the same data programmatically — inspect logs, manage projects, upload files, or query assistant state — you use this SDK directly.
 
 In the default open-source Unity flow, the layering looks like this:
 
 | Layer | Repo | Role |
 |------|------|------|
 | Runtime / orchestration | [unity](https://github.com/unifyai/unity) | Runs the agent brain locally |
-| Persistence / state | **unify** (this repo) | Connects the runtime to backend state and logging |
+| Persistence / state | **unisdk** (this repo) | Connects the runtime to backend state and logging |
 | Model access | [unillm](https://github.com/unifyai/unillm) | Routes LLM calls to the provider or endpoint the developer chooses |
 
 ## Installation
@@ -30,19 +30,19 @@ Or with [uv](https://docs.astral.sh/uv/):
 uv add unifyai
 ```
 
-The import name stays `unify`:
+The import name stays `unisdk`:
 
 ```python
-import unify
+import unisdk
 ```
 
 If you want the exact head of this repository instead of the published release,
 install from Git:
 
 ```bash
-pip install "unify @ git+https://github.com/unifyai/unify.git"
+pip install "unisdk @ git+https://github.com/unifyai/unisdk.git"
 # or
-uv add "unify @ git+https://github.com/unifyai/unify.git"
+uv add "unisdk @ git+https://github.com/unifyai/unisdk.git"
 ```
 
 `pip install unify` is not this SDK.
@@ -66,53 +66,53 @@ export ORCHESTRA_URL=https://api.unify.ai/v0
 ### Projects
 
 ```python
-import unify
+import unisdk
 
 # Activate a project (creates if it doesn't exist)
-unify.activate("my-project")
+unisdk.activate("my-project")
 
 # Or manage projects directly
-unify.create_project("my-project")
-unify.list_projects()
-unify.delete_project("my-project")
+unisdk.create_project("my-project")
+unisdk.list_projects()
+unisdk.delete_project("my-project")
 ```
 
 ### Logging
 
 ```python
-import unify
+import unisdk
 
-unify.activate("my-project")
+unisdk.activate("my-project")
 
 # Log entries with arbitrary fields
-unify.log(question="What is 2+2?", response="4", score=1.0)
+unisdk.log(question="What is 2+2?", response="4", score=1.0)
 
 # Retrieve logs
-logs = unify.get_logs()
+logs = unisdk.get_logs()
 ```
 
 ### Parallel Mapping
 
 ```python
-import unify
+import unisdk
 
 def process(item):
     # ... do work ...
-    unify.log(item=item, result=result)
+    unisdk.log(item=item, result=result)
 
-unify.map(process, items)
+unisdk.map(process, items)
 ```
 
 ## Backend configuration
 
-By default, `unify` targets Unify's hosted API. If you're running against a different deployment, point `ORCHESTRA_URL` at that base URL and keep using the same SDK surface.
+By default, `unisdk` targets Unify's hosted API. If you're running against a different deployment, point `ORCHESTRA_URL` at that base URL and keep using the same SDK surface.
 
 See the [Unity README](https://github.com/unifyai/unity) for the broader architecture and the default quickstart that uses this SDK.
 
 ## Project structure
 
 ```
-unify/
+unisdk/
 ├── __init__.py           # Public API exports
 ├── agent.py              # Agent messaging (send/receive)
 ├── assistants.py         # Assistant listing
@@ -131,7 +131,7 @@ unify/
 
 ## Local development
 
-> `unify` is the Python SDK, not a runnable system. To run the whole product
+> `unisdk` is the Python SDK, not a runnable system. To run the whole product
 > locally (Orchestra + Unity + Console), use **`unity stack up`** from the
 > [unity repo](https://github.com/unifyai/unity). The steps below are for
 > developing the SDK itself.
@@ -141,8 +141,8 @@ This project uses [uv](https://docs.astral.sh/uv/) for dependency management.
 ### Setup
 
 ```bash
-git clone https://github.com/unifyai/unify.git
-cd unify
+git clone https://github.com/unifyai/unisdk.git
+cd unisdk
 pip install uv
 uv sync --group dev
 cp .env.example .env

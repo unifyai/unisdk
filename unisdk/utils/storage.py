@@ -8,9 +8,9 @@ Google Cloud Storage without requiring direct GCS credentials.
 import base64
 from typing import Optional
 
-from unify import BASE_URL
-from unify.utils import http
-from unify.utils.helpers import _create_request_header, _validate_api_key
+from unisdk import BASE_URL
+from unisdk.utils import http
+from unisdk.utils.helpers import _create_request_header, _validate_api_key
 
 
 def get_signed_url(
@@ -41,8 +41,8 @@ def get_signed_url(
         RequestError: If the request fails (e.g., object not found, invalid URI).
 
     Example:
-        >>> import unify
-        >>> url = unify.get_signed_url("gs://my-bucket/images/photo.jpg")
+        >>> import unisdk
+        >>> url = unisdk.get_signed_url("gs://my-bucket/images/photo.jpg")
         >>> # Use the URL to download the image
         >>> import requests
         >>> response = requests.get(url)
@@ -88,8 +88,8 @@ def download_object(
         RequestError: If the request fails (e.g., object not found, invalid URI).
 
     Example:
-        >>> import unify
-        >>> content = unify.download_object("gs://my-bucket/data/file.txt")
+        >>> import unisdk
+        >>> content = unisdk.download_object("gs://my-bucket/data/file.txt")
         >>> text = content.decode("utf-8")
         >>> print(text)
     """

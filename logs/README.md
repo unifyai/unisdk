@@ -10,7 +10,7 @@ All logs are organized under `logs/` with three main subdirectories:
 
 | Directory | Purpose | Structure | Control |
 |-----------|---------|-----------|---------|
-| `logs/unify/` | Unify SDK HTTP traces | JSON files per request | `UNIFY_LOG_DIR` (+ `UNIFY_TERMINAL_LOG` for console) |
+| `logs/unify/` | Unify SDK HTTP traces | JSON files per request | `UNISDK_LOG_DIR` (+ `UNISDK_TERMINAL_LOG` for console) |
 | `logs/orchestra/` | Orchestra API traces (server-side) | Per-request JSON with spans | `ORCHESTRA_LOG_DIR` |
 | `logs/all/` | Cross-repo OpenTelemetry traces | `{trace_id}.jsonl` per trace | `*_OTEL_LOG_DIR` |
 
@@ -72,13 +72,13 @@ Each JSON file contains the full request and response:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `UNIFY_TERMINAL_LOG` | `true` | Terminal (console) output for HTTP requests |
-| `UNIFY_LOG_DIR` | `""` (disabled) | Directory for file-based request traces (independent of terminal) |
+| `UNISDK_TERMINAL_LOG` | `true` | Terminal (console) output for HTTP requests |
+| `UNISDK_LOG_DIR` | `""` (disabled) | Directory for file-based request traces (independent of terminal) |
 
 **Quiet terminal, verbose files (typical production):**
 ```bash
-export UNIFY_TERMINAL_LOG=false
-export UNIFY_LOG_DIR=/path/to/logs/unify
+export UNISDK_TERMINAL_LOG=false
+export UNISDK_LOG_DIR=/path/to/logs/unify
 ```
 
 ### Debugging In-Flight Requests
@@ -233,9 +233,9 @@ Each `.jsonl` file contains one JSON object per line, representing a span:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `UNIFY_OTEL` | `false` | Master switch for Unify SDK OTel tracing |
-| `UNIFY_OTEL_ENDPOINT` | `""` | OTLP endpoint for remote export |
-| `UNIFY_OTEL_LOG_DIR` | `""` | Directory for file-based span export |
+| `UNISDK_OTEL` | `false` | Master switch for Unify SDK OTel tracing |
+| `UNISDK_OTEL_ENDPOINT` | `""` | OTLP endpoint for remote export |
+| `UNISDK_OTEL_LOG_DIR` | `""` | Directory for file-based span export |
 
 **Orchestra OTEL settings** (server-side):
 
@@ -246,8 +246,8 @@ Each `.jsonl` file contains one JSON object per line, representing a span:
 **Enabling file-based tracing (all services):**
 ```bash
 # Enable OTEL for all services, writing to same directory for correlation
-export UNIFY_OTEL=true
-export UNIFY_OTEL_LOG_DIR=/path/to/logs/all
+export UNISDK_OTEL=true
+export UNISDK_OTEL_LOG_DIR=/path/to/logs/all
 export ORCHESTRA_OTEL_LOG_DIR=/path/to/logs/all  # Server-side
 ```
 
@@ -286,23 +286,23 @@ cat logs/all/*/*.jsonl | jq -s '[.[] | select(.attributes["db.statement"] != nul
 The logging system can be configured at runtime:
 
 ```python
-from unify.utils.http import configure_log_dir
+from unisdk.utils.http import configure_log_dir
 
 # Enable file logging
 configure_log_dir("/path/to/logs/unify")
 
 # Or via environment
 import os
-os.environ["UNIFY_LOG_DIR"] = "/path/to/logs/unify"
-os.environ["UNIFY_OTEL"] = "true"
-os.environ["UNIFY_OTEL_LOG_DIR"] = "/path/to/logs/all"
+os.environ["UNISDK_LOG_DIR"] = "/path/to/logs/unify"
+os.environ["UNISDK_OTEL"] = "true"
+os.environ["UNISDK_OTEL_LOG_DIR"] = "/path/to/logs/all"
 ```
 
 ---
 
 ## Console Logging
 
-When `UNIFY_TERMINAL_LOG=true` (the default), request/response information is logged to the console via Python's logging system.
+When `UNISDK_TERMINAL_LOG=true` (the default), request/response information is logged to the console via Python's logging system.
 
 The logger name is `unify`, so you can configure it via standard Python logging:
 

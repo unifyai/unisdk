@@ -8,7 +8,7 @@ from datetime import datetime
 from os import sep
 from typing import Optional
 
-import unify
+import unisdk
 
 # Single shared project for all tests (analogous to UnityTests in unity repo)
 TEST_PROJECT = "UnifyTests"
@@ -67,9 +67,9 @@ def _unique_context(fn) -> str:
 
 def _ensure_test_project():
     """Ensure the shared test project exists."""
-    if TEST_PROJECT not in unify.list_projects():
-        unify.create_project(TEST_PROJECT)
-    unify.activate(TEST_PROJECT)
+    if TEST_PROJECT not in unisdk.list_projects():
+        unisdk.create_project(TEST_PROJECT)
+    unisdk.activate(TEST_PROJECT)
 
 
 def _handle_project(test_fn):
@@ -85,7 +85,7 @@ def _handle_project(test_fn):
         _ensure_test_project()
         ctx = _unique_context(test_fn)
         token = _TEST_CTX.set(ctx)
-        unify.set_context(ctx, relative=False)
+        unisdk.set_context(ctx, relative=False)
         try:
             test_fn(*args, **kwargs)
         except:
@@ -94,15 +94,15 @@ def _handle_project(test_fn):
             raise Exception(f"{tb_string}")
         finally:
             _TEST_CTX.reset(token)
-            unify.delete_context(ctx, delete_children=True)
-            unify.unset_context()
+            unisdk.delete_context(ctx, delete_children=True)
+            unisdk.unset_context()
 
     @functools.wraps(test_fn)
     async def async_wrapper(*args, **kwargs):
         _ensure_test_project()
         ctx = _unique_context(test_fn)
         token = _TEST_CTX.set(ctx)
-        unify.set_context(ctx, relative=False)
+        unisdk.set_context(ctx, relative=False)
         try:
             await test_fn(*args, **kwargs)
         except:
@@ -111,8 +111,8 @@ def _handle_project(test_fn):
             raise Exception(f"{tb_string}")
         finally:
             _TEST_CTX.reset(token)
-            unify.delete_context(ctx, delete_children=True)
-            unify.unset_context()
+            unisdk.delete_context(ctx, delete_children=True)
+            unisdk.unset_context()
 
     return async_wrapper if asyncio.iscoroutinefunction(test_fn) else wrapper
 
@@ -137,8 +137,8 @@ def _handle_project_isolated(test_fn):
     def wrapper(*args, **kwargs):
         project = _unique_project(test_fn)
         # Project name is unique (timestamp + random), so it won't exist yet
-        unify.activate(project)
-        unify.unset_context()
+        unisdk.activate(project)
+        unisdk.unset_context()
         try:
             test_fn(*args, **kwargs)
         except:
@@ -146,14 +146,14 @@ def _handle_project_isolated(test_fn):
             tb_string = "".join(traceback.format_exception(exc_type, exc_value, exc_tb))
             raise Exception(f"{tb_string}")
         finally:
-            unify.delete_project(project)
+            unisdk.delete_project(project)
 
     @functools.wraps(test_fn)
     async def async_wrapper(*args, **kwargs):
         project = _unique_project(test_fn)
         # Project name is unique (timestamp + random), so it won't exist yet
-        unify.activate(project)
-        unify.unset_context()
+        unisdk.activate(project)
+        unisdk.unset_context()
         try:
             await test_fn(*args, **kwargs)
         except:
@@ -161,6 +161,6 @@ def _handle_project_isolated(test_fn):
             tb_string = "".join(traceback.format_exception(exc_type, exc_value, exc_tb))
             raise Exception(f"{tb_string}")
         finally:
-            unify.delete_project(project)
+            unisdk.delete_project(project)
 
     return async_wrapper if asyncio.iscoroutinefunction(test_fn) else wrapper

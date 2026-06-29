@@ -16,8 +16,8 @@ import subprocess
 import sys
 import time
 
-import unify
-from unify._async_logger import AsyncLoggerManager
+import unisdk
+from unisdk._async_logger import AsyncLoggerManager
 
 from .helpers import TEST_PROJECT
 
@@ -38,9 +38,9 @@ def _make_logger(
 
 
 def _ensure_project():
-    if TEST_PROJECT not in unify.list_projects():
-        unify.create_project(TEST_PROJECT)
-    unify.activate(TEST_PROJECT)
+    if TEST_PROJECT not in unisdk.list_projects():
+        unisdk.create_project(TEST_PROJECT)
+    unisdk.activate(TEST_PROJECT)
 
 
 CTX = "test_async_logger/bench"
@@ -258,7 +258,7 @@ class TestGracefulShutdown:
                 "-c",
                 (
                     "import time; "
-                    "from unify._async_logger import AsyncLoggerManager; "
+                    "from unisdk._async_logger import AsyncLoggerManager; "
                     "l = AsyncLoggerManager(name='t', num_consumers=16); "
                     "time.sleep(0.5)"
                 ),
@@ -277,7 +277,7 @@ class TestGracefulShutdown:
                 "-c",
                 (
                     "import time; "
-                    "from unify._async_logger import AsyncLoggerManager; "
+                    "from unisdk._async_logger import AsyncLoggerManager; "
                     "l1 = AsyncLoggerManager(name='a', num_consumers=16); "
                     "l2 = AsyncLoggerManager(name='b', num_consumers=16); "
                     "time.sleep(0.5)"
