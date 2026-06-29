@@ -10,7 +10,7 @@ All logs are organized under `logs/` with three main subdirectories:
 
 | Directory | Purpose | Structure | Control |
 |-----------|---------|-----------|---------|
-| `logs/unify/` | Unify SDK HTTP traces | JSON files per request | `UNISDK_LOG_DIR` (+ `UNISDK_TERMINAL_LOG` for console) |
+| `logs/unisdk/` | Unify SDK HTTP traces | JSON files per request | `UNISDK_LOG_DIR` (+ `UNISDK_TERMINAL_LOG` for console) |
 | `logs/orchestra/` | Orchestra API traces (server-side) | Per-request JSON with spans | `ORCHESTRA_LOG_DIR` |
 | `logs/all/` | Cross-repo OpenTelemetry traces | `{trace_id}.jsonl` per trace | `*_OTEL_LOG_DIR` |
 
@@ -18,14 +18,14 @@ All logs are organized under `logs/` with three main subdirectories:
 
 ---
 
-## Unify SDK Logs (`logs/unify/`)
+## Unify SDK Logs (`logs/unisdk/`)
 
 Unify SDK HTTP traces capture all requests to the Orchestra API. These are useful for debugging API issues, inspecting request/response payloads, and correlating with server-side traces.
 
 ### Directory Structure
 
 ```
-logs/unify/
+logs/unisdk/
 └── 2026-01-05T22-00-00_unifypid12345/
     ├── 14-26-27.611_POST_projects-contexts_210ms_200_no-trace.json
     ├── 14-26-46.175_GET_logs_331ms_200_f124f0d3.json
@@ -78,7 +78,7 @@ Each JSON file contains the full request and response:
 **Quiet terminal, verbose files (typical production):**
 ```bash
 export UNISDK_TERMINAL_LOG=false
-export UNISDK_LOG_DIR=/path/to/logs/unify
+export UNISDK_LOG_DIR=/path/to/logs/unisdk
 ```
 
 ### Debugging In-Flight Requests
@@ -176,7 +176,7 @@ Orchestra logs are only created when:
 2. The server was started with `ORCHESTRA_LOG_DIR` set
 3. Requests are made to the local server
 
-For production API calls, you only get client-side traces in `logs/unify/`.
+For production API calls, you only get client-side traces in `logs/unisdk/`.
 
 ---
 
@@ -289,11 +289,11 @@ The logging system can be configured at runtime:
 from unisdk.utils.http import configure_log_dir
 
 # Enable file logging
-configure_log_dir("/path/to/logs/unify")
+configure_log_dir("/path/to/logs/unisdk")
 
 # Or via environment
 import os
-os.environ["UNISDK_LOG_DIR"] = "/path/to/logs/unify"
+os.environ["UNISDK_LOG_DIR"] = "/path/to/logs/unisdk"
 os.environ["UNISDK_OTEL"] = "true"
 os.environ["UNISDK_OTEL_LOG_DIR"] = "/path/to/logs/all"
 ```

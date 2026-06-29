@@ -16,7 +16,7 @@ UNISDK_TERMINAL_LOG:
 The trace_id suffix enables correlation with pytest logs and Orchestra traces.
 
 Typical production configuration:
-- UNISDK_TERMINAL_LOG=false + UNISDK_LOG_DIR=/var/log/unify/
+- UNISDK_TERMINAL_LOG=false + UNISDK_LOG_DIR=/var/log/unisdk/
   → quiet terminal, verbose file traces
 
 OpenTelemetry tracing is controlled by:
