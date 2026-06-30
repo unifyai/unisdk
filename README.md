@@ -1,18 +1,18 @@
 # Unify
 
-Python SDK for the persistence and state layer behind [Unity](https://github.com/unifyai/unity). It wraps the backend REST API in a clean functional interface for projects, structured logging, contexts, storage, and assistant management.
+Python SDK for the persistence and state layer behind [Unify](https://github.com/unifyai/unify). It wraps the backend REST API in a clean functional interface for projects, structured logging, contexts, storage, and assistant management.
 
-If you're here from the Unity quickstart, this is the layer behind `UNIFY_KEY`: Unity runs locally, while `unisdk` connects the managers to the backend that stores project state, logs, and other persistent data.
+If you're here from the Unify quickstart, this is the layer behind `UNIFY_KEY`: Unify runs locally, while `unisdk` connects the managers to the backend that stores project state, logs, and other persistent data.
 
 ## What layer is this?
 
-Unify is the persistence plane used by Unity's managers. When Unity needs to store contacts, log conversations, query knowledge, or manage projects, it calls `unisdk`. When you want to interact with the same data programmatically — inspect logs, manage projects, upload files, or query assistant state — you use this SDK directly.
+Unify is the persistence plane used by Unify's managers. When Unify needs to store contacts, log conversations, query knowledge, or manage projects, it calls `unisdk`. When you want to interact with the same data programmatically — inspect logs, manage projects, upload files, or query assistant state — you use this SDK directly.
 
-In the default open-source Unity flow, the layering looks like this:
+In the default open-source Unify flow, the layering looks like this:
 
 | Layer | Repo | Role |
 |------|------|------|
-| Runtime / orchestration | [unity](https://github.com/unifyai/unity) | Runs the agent brain locally |
+| Runtime / orchestration | [unify](https://github.com/unifyai/unify) | Runs the agent brain locally |
 | Persistence / state | **unisdk** (this repo) | Connects the runtime to backend state and logging |
 | Model access | [unillm](https://github.com/unifyai/unillm) | Routes LLM calls to the provider or endpoint the developer chooses |
 
@@ -96,7 +96,7 @@ unisdk.map(process, items)
 
 By default, `unisdk` targets Unify's hosted API. If you're running against a different deployment, point `ORCHESTRA_URL` at that base URL and keep using the same SDK surface.
 
-See the [Unity README](https://github.com/unifyai/unity) for the broader architecture and the default quickstart that uses this SDK.
+See the [Unify README](https://github.com/unifyai/unify) for the broader architecture and the default quickstart that uses this SDK.
 
 ## Project structure
 
@@ -121,8 +121,8 @@ unisdk/
 ## Local development
 
 > `unisdk` is the Python SDK, not a runnable system. To run the whole product
-> locally (Orchestra + Unity + Console), use **`unity stack up`** from the
-> [unity repo](https://github.com/unifyai/unity). The steps below are for
+> locally (Orchestra + Unify + Console), use **`unify stack up`** from the
+> [unify repo](https://github.com/unifyai/unify). The steps below are for
 > developing the SDK itself.
 
 This project uses [uv](https://docs.astral.sh/uv/) for dependency management.
