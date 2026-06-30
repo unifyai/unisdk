@@ -194,7 +194,7 @@ logs/all/
     └── ...
 ```
 
-Files are keyed by the 32-character trace ID. When running as part of a larger system (e.g., Unity), spans from all services are aggregated into the same file.
+Files are keyed by the 32-character trace ID. When running as part of a larger system (e.g., Unify), spans from all services are aggregated into the same file.
 
 ### Trace File Format (JSONL)
 
@@ -253,10 +253,10 @@ export ORCHESTRA_OTEL_LOG_DIR=/path/to/logs/all  # Server-side
 
 ### Parent TracerProvider Integration
 
-When the Unify SDK runs within a larger system (e.g., Unity or unillm), it automatically detects and uses the parent's TracerProvider. This ensures all spans share the same trace context for end-to-end correlation.
+When the Unify SDK runs within a larger system (e.g., Unify or unillm), it automatically detects and uses the parent's TracerProvider. This ensures all spans share the same trace context for end-to-end correlation.
 
 The integration flow:
-1. Parent (Unity/unillm) creates a TracerProvider and root span
+1. Parent (Unify/unillm) creates a TracerProvider and root span
 2. Unify SDK detects the existing provider and creates child spans
 3. Orchestra receives the trace context via HTTP headers and creates server-side spans
 4. All spans are exported to the same destination (file or collector)
