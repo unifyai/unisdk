@@ -437,6 +437,30 @@ def _mask_headers(headers: Optional[dict]) -> Optional[dict]:
     return masked
 
 
+def _sanitize_log_kwargs(kwargs: dict) -> dict:
+    """Return a JSON-safe copy of request kwargs for logging/traces."""
+    safe = dict(kwargs)
+    files = safe.get("files")
+    if isinstance(files, dict):
+        sanitized: dict[str, Any] = {}
+        for key, value in files.items():
+            if (
+                isinstance(value, tuple)
+                and len(value) >= 2
+                and isinstance(value[1], (bytes, bytearray))
+            ):
+                name = value[0]
+                mimetype = value[2] if len(value) > 2 else "application/octet-stream"
+                sanitized[key] = (name, f"<{len(value[1])} bytes>", mimetype)
+            else:
+                sanitized[key] = value
+        safe["files"] = sanitized
+    data = safe.get("data")
+    if isinstance(data, (bytes, bytearray)):
+        safe["data"] = f"<{len(data)} bytes>"
+    return safe
+
+
 def _write_pending_trace(
     method: str,
     url: str,
@@ -462,6 +486,7 @@ def _write_pending_trace(
         filepath = log_dir / filename
 
         # Build the trace record
+        safe_kwargs = _sanitize_log_kwargs(request_kwargs)
         record = {
             "timestamp": now.isoformat(),
             "trace_id": trace_id,
@@ -470,14 +495,15 @@ def _write_pending_trace(
             "route": route,
             "status": "pending",
             "request": {
-                "headers": _mask_headers(request_kwargs.get("headers")),
-                "params": request_kwargs.get("params"),
-                "json": request_kwargs.get("json"),
+                "headers": _mask_headers(safe_kwargs.get("headers")),
+                "params": safe_kwargs.get("params"),
+                "json": safe_kwargs.get("json"),
                 "data": (
-                    str(request_kwargs.get("data"))[:1000]
-                    if request_kwargs.get("data")
+                    str(safe_kwargs.get("data"))[:1000]
+                    if safe_kwargs.get("data")
                     else None
                 ),
+                "files": safe_kwargs.get("files"),
             },
         }
 
@@ -615,7 +641,7 @@ class RequestError(Exception):
 def _log_to_console(log_type: str, url: str, mask_key: bool = True, /, **kwargs):
     """Log request/response details to the console logger."""
     kwargs_str = ""
-    safe_kwargs = dict(kwargs)
+    safe_kwargs = _sanitize_log_kwargs(dict(kwargs))
 
     if mask_key and "headers" in safe_kwargs:
         safe_kwargs["headers"] = _mask_headers(safe_kwargs["headers"])

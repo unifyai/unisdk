@@ -86,6 +86,7 @@ __all__ = [
     "patch_integration_backend",
     "patch_integration_tool_policy",
     "run_integration_tool",
+    "stage_composio_file",
     "test_integration_connection",
     "upsert_integration_backend",
     # Organizations
@@ -152,6 +153,7 @@ from .integrations import (
     patch_integration_backend,
     patch_integration_tool_policy,
     run_integration_tool,
+    stage_composio_file,
     test_integration_connection,
     upsert_integration_backend,
 )
