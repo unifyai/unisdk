@@ -358,3 +358,29 @@ def patch_integration_backend(
         headers=headers,
         json=body,
     ).json()
+
+
+def stage_composio_file(
+    content: bytes,
+    *,
+    filename: str,
+    mimetype: str,
+    toolkit_slug: str,
+    tool_slug: str,
+    api_key: Optional[str] = None,
+    base_url: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Stage a local file in Composio storage via Orchestra."""
+
+    headers = _create_request_header(api_key)
+    headers.pop("Content-Type", None)
+    return http.post(
+        f"{_api_base_url(base_url)}/integrations/composio/stage-file",
+        headers=headers,
+        files={"file": (filename, content, mimetype)},
+        data={
+            "toolkit_slug": toolkit_slug,
+            "tool_slug": tool_slug,
+        },
+        timeout=(30, 600),
+    ).json()
