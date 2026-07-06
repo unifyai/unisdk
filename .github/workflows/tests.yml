@@ -175,6 +175,10 @@ jobs:
       if: steps.secrets-check.outputs.has_internal == 'true'
       run: |
         # Start local orchestra with test user seeding, logging, and enough workers for parallel tests
+        # MANUAL_TOPUP=1 re-enables real credit deductions (local.sh exports
+        # SELF_HOST=1, which otherwise makes /v0/credits/deduct a no-op) so the
+        # platform billing tests exercise the full path.
+        MANUAL_TOPUP=1 \
         ORCHESTRA_SEED_USER=1 \
         ORCHESTRA_WORKERS=8 \
         ORCHESTRA_LOG_DIR="$LOGS_DIR/orchestra" \
