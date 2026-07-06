@@ -648,8 +648,10 @@ def _log_to_console(log_type: str, url: str, mask_key: bool = True, /, **kwargs)
     kwargs_str = ""
     safe_kwargs = _sanitize_log_kwargs(dict(kwargs))
 
-    if mask_key and "headers" in safe_kwargs:
-        safe_kwargs["headers"] = _mask_headers(safe_kwargs["headers"])
+    # Header values are never logged (any header can carry credentials);
+    # only the header names are useful for debugging.
+    if isinstance(safe_kwargs.get("headers"), dict):
+        safe_kwargs["headers"] = {key: "***" for key in safe_kwargs["headers"]}
 
     for k, v in safe_kwargs.items():
         if isinstance(v, dict):
