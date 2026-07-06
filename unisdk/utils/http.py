@@ -358,7 +358,9 @@ def _inject_trace_context(headers: Optional[dict]) -> dict:
         propagator = TraceContextTextMapPropagator()
         propagator.inject(result)
 
-        _LOGGER.debug(f"Injected traceparent: {result.get('traceparent', 'N/A')}")
+        # Only log presence: `result` carries request headers (incl. auth),
+        # so echoing values would log credentials in clear text.
+        _LOGGER.debug(f"Injected traceparent: {'traceparent' in result}")
 
     except ImportError:
         pass
@@ -631,8 +633,11 @@ _SESSION.mount("https://", _ADAPTER)
 
 class RequestError(Exception):
     def __init__(self, url: str, r_type: str, response: requests.Response, /, **kwargs):
+        safe_kwargs = _sanitize_log_kwargs(dict(kwargs))
+        if "headers" in safe_kwargs:
+            safe_kwargs["headers"] = _mask_headers(safe_kwargs["headers"])
         super().__init__(
-            f"{r_type}:{url} with {kwargs} failed with status code "
+            f"{r_type}:{url} with {safe_kwargs} failed with status code "
             f"{response.status_code}: {response.text}",
         )
         self.response = response
