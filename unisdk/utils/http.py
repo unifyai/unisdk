@@ -633,11 +633,11 @@ _SESSION.mount("https://", _ADAPTER)
 
 class RequestError(Exception):
     def __init__(self, url: str, r_type: str, response: requests.Response, /, **kwargs):
-        safe_kwargs = _sanitize_log_kwargs(dict(kwargs))
-        if "headers" in safe_kwargs:
-            safe_kwargs["headers"] = _mask_headers(safe_kwargs["headers"])
+        # Request kwargs are deliberately excluded from the message: they can
+        # carry credentials (headers, api keys in bodies), and the sanitized
+        # request is already captured by the debug console/file logging.
         super().__init__(
-            f"{r_type}:{url} with {safe_kwargs} failed with status code "
+            f"{r_type}:{url} failed with status code "
             f"{response.status_code}: {response.text}",
         )
         self.response = response
