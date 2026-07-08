@@ -326,6 +326,68 @@ def test_patch_integration_backend_patches_admin_backend_payload() -> None:
     assert mock_patch.call_args.kwargs["headers"]["Authorization"] == "Bearer admin-key"
 
 
+def test_stage_integration_file_posts_generic_stage_endpoint() -> None:
+    with patch.object(
+        integrations.http,
+        "post",
+        return_value=_response(
+            {
+                "status": "ok",
+                "backend_id": "composio",
+                "file": {"name": "invoice.pdf", "mimetype": "application/pdf"},
+            },
+        ),
+    ) as mock_post:
+        result = unisdk.stage_integration_file(
+            b"pdf-bytes",
+            backend_id="composio",
+            filename="invoice.pdf",
+            mimetype="application/pdf",
+            toolkit_slug="google_drive",
+            tool_slug="upload-file",
+            api_key="test-key",
+        )
+
+    assert result["status"] == "ok"
+    assert mock_post.call_args.args[0] == (
+        f"{integrations.BASE_URL}/integrations/stage-file"
+    )
+    assert mock_post.call_args.kwargs["data"] == {
+        "backend_id": "composio",
+        "toolkit_slug": "google_drive",
+        "tool_slug": "upload-file",
+    }
+
+
+def test_download_integration_file_uses_backend_and_s3_key_params() -> None:
+    with patch.object(
+        integrations.http,
+        "get",
+        return_value=_response(
+            {
+                "status": "ok",
+                "backend_id": "pipedream",
+                "filename": "invoice.pdf",
+                "content_base64": "cGRm",
+            },
+        ),
+    ) as mock_get:
+        result = unisdk.download_integration_file(
+            backend_id="pipedream",
+            s3_key="1day/proj/u/invoice.pdf",
+            api_key="test-key",
+        )
+
+    assert result["filename"] == "invoice.pdf"
+    assert mock_get.call_args.args[0] == (
+        f"{integrations.BASE_URL}/integrations/download-file"
+    )
+    assert mock_get.call_args.kwargs["params"] == {
+        "backend_id": "pipedream",
+        "s3_key": "1day/proj/u/invoice.pdf",
+    }
+
+
 def test_integration_helpers_do_not_import_provider_sdks() -> None:
     source = inspect.getsource(integrations).lower()
 
