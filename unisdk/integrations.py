@@ -360,6 +360,52 @@ def patch_integration_backend(
     ).json()
 
 
+def stage_integration_file(
+    content: bytes,
+    *,
+    backend_id: str,
+    filename: str,
+    mimetype: str,
+    toolkit_slug: str,
+    tool_slug: str,
+    api_key: Optional[str] = None,
+    base_url: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Stage a local file through a provider backend via Orchestra."""
+
+    headers = _create_request_header(api_key)
+    headers.pop("Content-Type", None)
+    return http.post(
+        f"{_api_base_url(base_url)}/integrations/stage-file",
+        headers=headers,
+        files={"file": (filename, content, mimetype)},
+        data={
+            "backend_id": backend_id,
+            "toolkit_slug": toolkit_slug,
+            "tool_slug": tool_slug,
+        },
+        timeout=(30, 600),
+    ).json()
+
+
+def download_integration_file(
+    *,
+    backend_id: str,
+    s3_key: str,
+    api_key: Optional[str] = None,
+    base_url: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Download a provider-staged file through Orchestra."""
+
+    headers = _create_request_header(api_key)
+    return http.get(
+        f"{_api_base_url(base_url)}/integrations/download-file",
+        headers=headers,
+        params={"backend_id": backend_id, "s3_key": s3_key},
+        timeout=(30, 600),
+    ).json()
+
+
 def stage_composio_file(
     content: bytes,
     *,
@@ -372,15 +418,13 @@ def stage_composio_file(
 ) -> Dict[str, Any]:
     """Stage a local file in Composio storage via Orchestra."""
 
-    headers = _create_request_header(api_key)
-    headers.pop("Content-Type", None)
-    return http.post(
-        f"{_api_base_url(base_url)}/integrations/composio/stage-file",
-        headers=headers,
-        files={"file": (filename, content, mimetype)},
-        data={
-            "toolkit_slug": toolkit_slug,
-            "tool_slug": tool_slug,
-        },
-        timeout=(30, 600),
-    ).json()
+    return stage_integration_file(
+        content,
+        backend_id="composio",
+        filename=filename,
+        mimetype=mimetype,
+        toolkit_slug=toolkit_slug,
+        tool_slug=tool_slug,
+        api_key=api_key,
+        base_url=base_url,
+    )

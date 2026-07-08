@@ -87,7 +87,9 @@ __all__ = [
     "patch_integration_backend",
     "patch_integration_tool_policy",
     "run_integration_tool",
+    "download_integration_file",
     "stage_composio_file",
+    "stage_integration_file",
     "test_integration_connection",
     "upsert_integration_backend",
     # Organizations
@@ -149,12 +151,14 @@ from .contexts import (
 from .integrations import (
     approve_integration_tool_execution,
     deny_integration_tool_execution,
+    download_integration_file,
     get_integration_tool_policy,
     list_integration_connections,
     patch_integration_backend,
     patch_integration_tool_policy,
     run_integration_tool,
     stage_composio_file,
+    stage_integration_file,
     test_integration_connection,
     upsert_integration_backend,
 )
