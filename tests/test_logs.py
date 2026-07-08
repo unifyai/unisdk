@@ -3,7 +3,12 @@ from datetime import datetime
 
 import unisdk
 
-from .helpers import TEST_PROJECT, _handle_project, _handle_project_isolated
+from .helpers import (
+    TEST_PROJECT,
+    _handle_project,
+    _handle_project_isolated,
+    get_test_context,
+)
 
 
 def _unique_context(base: str) -> str:
@@ -1376,6 +1381,43 @@ def test_join_query_sorting_in_reduce_400():
         exc_info.value.response.status_code == 400
         or "sorting" in str(exc_info.value).lower()
     )
+
+
+@_handle_project
+def test_get_logs_federated_merges_contexts():
+    ctx = get_test_context()
+    ctx_a = f"{ctx}/rootA"
+    ctx_b = f"{ctx}/rootB"
+    unisdk.create_logs(
+        entries=[
+            {"name": "alpha", "score": 30},
+            {"name": "bravo", "score": 10},
+        ],
+        context=ctx_a,
+    )
+    unisdk.create_logs(entries=[{"name": "charlie", "score": 20}], context=ctx_b)
+
+    result = unisdk.get_logs_federated(
+        contexts=[
+            {"context": ctx_a, "source": "a"},
+            {"context": ctx_b, "source": "b"},
+            {"context": f"{ctx}/missing", "source": "ghost"},
+        ],
+        sorting=[{"field": "score", "direction": "ascending"}],
+    )
+
+    assert result["count"] == 3
+    assert result["counts"] == {"a": 2, "b": 1, "ghost": 0}
+    assert [row["name"] for row in result["logs"]] == ["bravo", "charlie", "alpha"]
+    assert [row["_federated_source"] for row in result["logs"]] == ["a", "b", "a"]
+
+    count_only = unisdk.get_logs_federated(
+        contexts=[{"context": ctx_a}, {"context": ctx_b}],
+        filter="score > 15",
+        limit=0,
+    )
+    assert count_only["logs"] == []
+    assert count_only["count"] == 2
 
 
 if __name__ == "__main__":

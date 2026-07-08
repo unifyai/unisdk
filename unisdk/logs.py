@@ -1037,6 +1037,92 @@ def get_logs(
 
 
 # noinspection PyShadowingBuiltins
+def get_logs_federated(
+    *,
+    contexts: List[Dict[str, Any]],
+    project: Optional[str] = None,
+    filter: Optional[str] = None,
+    sorting: Optional[List[Dict[str, Any]]] = None,
+    offset: int = 0,
+    limit: int = 100,
+    unique_id_field: Optional[str] = None,
+    annotate: bool = True,
+    value_limit: Optional[int] = None,
+    api_key: Optional[str] = None,
+) -> Dict[str, Any]:
+    """
+    Read several contexts as one globally-ordered, windowed log list.
+
+    The server runs each context through the ordinary single-context read
+    pipeline and merges the results exactly, so the response is identical to
+    what a single context holding every row would return — one round trip,
+    global ordering, and a total count.
+
+    Args:
+        contexts: Context specs, each a dict with keys ``context`` (required)
+        and optionally ``source`` (label stamped on rows), ``filter``
+        (per-context filter ANDed with the shared one), ``from_fields``
+        (restrict returned fields), and ``project_name`` (for cross-project
+        reads such as the public builtins catalogue).
+
+        project: Default project for the context specs. Defaults to the
+        active project.
+
+        filter: Shared boolean filter expression applied to every context.
+
+        sorting: Global sort specs, each a dict with keys ``field``,
+        ``direction`` ("ascending"/"descending", default ascending) and
+        ``missing`` ("first"/"last", default last) controlling where rows
+        lacking the field are placed.
+
+        offset: The starting index of the merged logs to return.
+
+        limit: The maximum number of merged logs to return. ``0`` performs a
+        count-only read.
+
+        unique_id_field: Deduplicate merged rows on this field, keeping the
+        first instance in merge order.
+
+        annotate: Stamp each row's entries with ``_federated_source`` and
+        ``_federated_context``.
+
+        value_limit: Maximum number of characters to return for string values.
+
+        api_key: If specified, unify API key to be used. Defaults to the
+        value in the `UNIFY_KEY` environment variable.
+
+    Returns:
+        Dict with ``logs`` (the merged, ordered window of entry dicts),
+        ``count`` (total matching rows summed across contexts, pre-dedupe)
+        and ``counts`` (per-source totals).
+    """
+    api_key = _validate_api_key(api_key)
+    headers = _create_request_header(api_key)
+    project = _get_project(project)
+    body = {
+        "project_name": project,
+        "contexts": contexts,
+        "filter": filter,
+        "sorting": sorting or [],
+        "offset": offset,
+        "limit": limit,
+        "unique_id_field": unique_id_field,
+        "annotate": annotate,
+        "value_limit": value_limit,
+    }
+    response = http.post(BASE_URL + "/logs/federated", headers=headers, json=body)
+    resp_data = response.json()
+    return {
+        "logs": [
+            {**dct.get("entries", {}), **dct.get("derived_entries", {})}
+            for dct in resp_data.get("logs", [])
+        ],
+        "count": resp_data.get("count", 0),
+        "counts": resp_data.get("counts", {}),
+    }
+
+
+# noinspection PyShadowingBuiltins
 def get_logs_metric(
     *,
     metric: str,
