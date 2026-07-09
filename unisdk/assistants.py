@@ -19,6 +19,9 @@ def create_assistant(
         first_name: The assistant's first name.
         surname: The assistant's surname.
         config: Additional assistant creation fields accepted by the API.
+            Pass ``desktop_mode`` as ``null`` (default) for no managed computer,
+            or ``"ubuntu"`` / ``"windows"`` to enable the paid Computer Use
+            add-on at hire time (first month charged immediately).
         api_key: If specified, unify API key to use. Defaults to ``UNIFY_KEY``.
 
     Returns:
