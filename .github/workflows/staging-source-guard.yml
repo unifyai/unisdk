@@ -1,8 +1,10 @@
 name: Staging source guard
 
 # Enforce staging-first promotion: PRs into main must come from staging.
+# pull_request_target runs the workflow from the base branch (main), so a
+# feature branch cannot bypass the guard by deleting or rewriting this file.
 on:
-  pull_request:
+  pull_request_target:
     branches:
     - main
     types:
