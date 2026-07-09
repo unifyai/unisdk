@@ -1,0 +1,33 @@
+name: Staging source guard
+
+# Enforce staging-first promotion: PRs into main must come from staging.
+# pull_request_target runs the workflow from the base branch (main), so a
+# feature branch cannot bypass the guard by deleting or rewriting this file.
+on:
+  pull_request_target:
+    branches:
+    - main
+    types:
+    - opened
+    - synchronize
+    - reopened
+    - ready_for_review
+    - edited
+
+permissions:
+  contents: read
+
+jobs:
+  staging-source:
+    name: staging-source
+    runs-on: ubuntu-latest
+    steps:
+    - name: Require PR head to be staging
+      env:
+        HEAD_REF: ${{ github.head_ref }}
+      run: |
+        if [ "$HEAD_REF" != "staging" ]; then
+          echo "::error::PRs into main must come from staging (got '$HEAD_REF')."
+          exit 1
+        fi
+        echo "OK: head branch is staging."
