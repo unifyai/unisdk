@@ -30,7 +30,10 @@ jobs:
     - name: Run pre-commit checks
       run: uv run pre-commit run --all-files
 
-  integration-pytest:
+  # Required staging->main release gate (pytest). Ruleset and main branch
+  # protection require this context with strict latest-commit semantics;
+  # see scripts/ensure_staging_to_main_gates.sh.
+  pytest:
     runs-on: ubuntu-latest-8-cores
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     timeout-minutes: 120
@@ -81,7 +84,7 @@ jobs:
     # unifyai/unillm's workflow (the reference implementation for "this
     # repo depends on orchestra but can work without it").
     #
-    # NOTE: When the integration-pytest job WAS failing with "Input
+    # NOTE: When this job was failing with "Input
     # required and not supplied: token" (history before this commit), the
     # cause was case #2 — unify was missing from CLONE_TOKEN's allowlist
     # at the org level. The proper org-side fix is to add unify (and any

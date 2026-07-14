@@ -237,10 +237,15 @@ def activate(
     overwrite: Union[bool, str] = False,
     api_key: str = None,
 ) -> None:
-    if project not in list_projects(api_key=api_key):
-        create_project(project, api_key=api_key)
-    elif overwrite:
-        create_project(project, api_key=api_key, overwrite=overwrite)
+    # Always go through create_project so activation is a single server-side
+    # operation. list_projects + conditional create is a TOCTOU race under
+    # concurrent callers or multi-worker Orchestra.
+    create_project(
+        project,
+        exist_ok=True,
+        api_key=api_key,
+        overwrite=overwrite,
+    )
     global PROJECT
     PROJECT = project
 
