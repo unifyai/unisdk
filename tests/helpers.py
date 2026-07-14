@@ -136,7 +136,6 @@ def _handle_project_isolated(test_fn):
     @functools.wraps(test_fn)
     def wrapper(*args, **kwargs):
         project = _unique_project(test_fn)
-        # Project name is unique (timestamp + random), so it won't exist yet
         unisdk.activate(project)
         unisdk.unset_context()
         try:
@@ -151,7 +150,6 @@ def _handle_project_isolated(test_fn):
     @functools.wraps(test_fn)
     async def async_wrapper(*args, **kwargs):
         project = _unique_project(test_fn)
-        # Project name is unique (timestamp + random), so it won't exist yet
         unisdk.activate(project)
         unisdk.unset_context()
         try:

@@ -48,11 +48,10 @@ def create_project(
         "is_public_read": is_public_read,
     }
     if overwrite:
-        if name in list_projects(api_key=api_key):
-            if overwrite == "contexts":
-                return delete_project_contexts(name=name, api_key=api_key)
-            else:
-                delete_project(name=name, api_key=api_key)
+        if overwrite == "contexts":
+            delete_project_contexts(name=name, api_key=api_key)
+            return None
+        delete_project(name=name, api_key=api_key)
     try:
         response = http.post(BASE_URL + "/project", headers=headers, json=body)
         return response.json()
@@ -105,6 +104,7 @@ def delete_project(
 def delete_project_contexts(
     name: str,
     *,
+    missing_ok: bool = True,
     api_key: Optional[str] = None,
 ) -> None:
     """
@@ -113,13 +113,28 @@ def delete_project_contexts(
     Args:
         name: Name of the project to delete contexts from.
 
+        missing_ok: If True (default), silently succeeds when the project does not exist.
+            If False, raises an error when the project does not exist.
+
         api_key: If specified, unify API key to be used. Defaults to the value in the
         `UNIFY_KEY` environment variable.
     """
     api_key = _validate_api_key(api_key)
     headers = _create_request_header(api_key)
-    response = http.delete(BASE_URL + f"/project/{name}/contexts", headers=headers)
-    return response.json()
+    try:
+        response = http.delete(
+            BASE_URL + f"/project/{name}/contexts",
+            headers=headers,
+        )
+        return response.json()
+    except http.RequestError as e:
+        if (
+            missing_ok
+            and e.response.status_code == 404
+            and "not found" in e.response.text.lower()
+        ):
+            return None
+        raise
 
 
 def list_projects(
