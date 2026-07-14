@@ -1,4 +1,5 @@
 import uuid
+import warnings
 from datetime import datetime
 
 import unisdk
@@ -108,6 +109,70 @@ def test_create_log_unique_column_batch():
     for i, r in enumerate(ret):
         assert "unique_id" in r.entries
         assert r.entries["unique_id"] == i
+
+
+@_handle_project_isolated
+def test_create_logs_on_duplicate_skip():
+    """on_duplicate=skip inserts non-conflicting rows when unique_keys collide."""
+    unisdk.create_context(
+        "prospects",
+        unique_keys={"github_login": "str"},
+    )
+    seed = unisdk.create_logs(
+        context="prospects",
+        entries=[{"github_login": "alice", "best_email": "a@example.com"}],
+    )
+    assert len(seed) == 1
+
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        created = unisdk.create_logs(
+            context="prospects",
+            on_duplicate="skip",
+            entries=[
+                {"github_login": "alice", "best_email": "a2@example.com"},
+                {"github_login": "bob", "best_email": "b@example.com"},
+                {"github_login": "carol", "best_email": "c@example.com"},
+            ],
+        )
+    assert len(created) == 2
+    logins = {log.entries["github_login"] for log in created}
+    assert logins == {"bob", "carol"}
+    assert any("failed" in str(w.message).lower() for w in caught)
+
+    all_logs = unisdk.get_logs(context="prospects")
+    all_logins = {
+        log.entries.get("github_login")
+        for log in all_logs
+        if log.entries.get("github_login")
+    }
+    assert all_logins == {"alice", "bob", "carol"}
+
+
+@_handle_project_isolated
+def test_create_logs_on_duplicate_skip_within_batch():
+    """Within a skip batch, the first occurrence of a unique key wins."""
+    unisdk.create_context(
+        "prospects",
+        unique_keys={"github_login": "str"},
+    )
+    with warnings.catch_warnings(record=True):
+        warnings.simplefilter("always")
+        created = unisdk.create_logs(
+            context="prospects",
+            on_duplicate="skip",
+            entries=[
+                {"github_login": "dave", "best_email": "first@example.com"},
+                {"github_login": "dave", "best_email": "second@example.com"},
+                {"github_login": "erin", "best_email": "e@example.com"},
+            ],
+        )
+    assert len(created) == 2
+    by_login = {
+        log.entries["github_login"]: log.entries.get("best_email") for log in created
+    }
+    assert by_login["dave"] == "first@example.com"
+    assert by_login["erin"] == "e@example.com"
 
 
 @_handle_project_isolated

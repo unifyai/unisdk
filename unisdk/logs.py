@@ -637,6 +637,7 @@ def create_logs(
     mutable: Optional[Union[bool, Dict[str, bool]]] = True,
     batched: Optional[bool] = None,
     recompute_derived: Optional[bool] = None,
+    on_duplicate: Optional[str] = None,
     api_key: Optional[str] = None,
 ) -> List[int]:
     """
@@ -660,6 +661,13 @@ def create_logs(
         logs using active derived-log templates. Suitable for small batches; for large
         ingestion workflows, leave as None/False and rely on periodic backfill.
 
+        on_duplicate: How Orchestra should treat unique-key / unique-field collisions
+        in a batch. ``"error"`` (Orchestra default) rejects the whole request on the
+        first collision. ``"skip"`` inserts non-conflicting rows and reports
+        collisions in the response ``failed`` list (first occurrence of a key in the
+        batch wins). Omit to leave Orchestra's default unchanged. Only applied in
+        the batched path.
+
         api_key: If specified, unify API key to be used. Defaults to the value in the
         `UNIFY_KEY` environment variable.
 
@@ -680,6 +688,8 @@ def create_logs(
     }
     if recompute_derived is not None:
         body["recompute_derived"] = recompute_derived
+    if on_duplicate is not None:
+        body["on_duplicate"] = on_duplicate
     body_size = sys.getsizeof(json.dumps(body))
     if batched is None:
         batched = body_size < CHUNK_LIMIT
@@ -803,10 +813,17 @@ def update_logs(
     context: Optional[Union[str, List[str]]] = None,
     entries: Optional[Union[Dict[str, Any], List[Dict[str, Any]]]] = None,
     overwrite: bool = False,
+    on_duplicate: Optional[str] = None,
     api_key: Optional[str] = None,
 ) -> Dict[str, str]:
     """
     Updates existing logs.
+
+    Args:
+        on_duplicate: How Orchestra should treat unique-field collisions during
+        update. ``"error"`` (Orchestra default) rejects the whole request.
+        ``"skip"`` applies non-conflicting updates and reports collisions in
+        ``failed``. Omit to leave Orchestra's default unchanged.
     """
     if not logs and not entries:
         return {"detail": "No logs to update."}
@@ -819,6 +836,8 @@ def update_logs(
     }
     if entries is not None:
         body["entries"] = entries
+    if on_duplicate is not None:
+        body["on_duplicate"] = on_duplicate
     response = http.put(BASE_URL + "/logs", headers=headers, json=body)
     return response.json()
 
