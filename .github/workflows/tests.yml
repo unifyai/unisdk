@@ -30,6 +30,9 @@ jobs:
     - name: Run pre-commit checks
       run: uv run pre-commit run --all-files
 
+  # Required staging->main release gate (integration-pytest). Ruleset and main
+  # branch protection require this context with strict latest-commit semantics;
+  # see scripts/ensure_staging_to_main_gates.sh.
   integration-pytest:
     runs-on: ubuntu-latest-8-cores
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
