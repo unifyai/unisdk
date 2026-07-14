@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Keep staging->main release gates aligned with .github/workflows/tests.yml.
-# The integration-pytest job publishes the required status check context.
+# The pytest job publishes the required status check context.
 
 REPO="${REPO:-unifyai/unisdk}"
 RULESET_ID="${RULESET_ID:-11524137}"
@@ -51,7 +51,7 @@ gh api \
         "do_not_enforce_on_create": false,
         "required_status_checks": [
           {"context": "black", "integration_id": 15368},
-          {"context": "integration-pytest", "integration_id": 15368},
+          {"context": "pytest", "integration_id": 15368},
           {"context": "staging-source", "integration_id": 15368}
         ]
       }
@@ -71,7 +71,7 @@ gh api \
     "strict": true,
     "checks": [
       {"context": "black", "app_id": 15368},
-      {"context": "integration-pytest", "app_id": 15368},
+      {"context": "pytest", "app_id": 15368},
       {"context": "staging-source", "app_id": 15368}
     ]
   },
