@@ -905,7 +905,7 @@ def get_logs(
     context: Optional[str] = None,
     column_context: Optional[str] = None,
     filter: Optional[str] = None,
-    limit: Optional[int] = None,
+    limit: Optional[int] = 1000,
     offset: int = 0,
     return_versions: Optional[bool] = None,
     group_threshold: Optional[int] = None,
@@ -940,7 +940,8 @@ def get_logs(
         filter: Boolean string to filter logs, for example:
         "(temperature > 0.5 and (len(system_msg) < 100 or 'no' in usr_response))"
 
-        limit: The maximum number of logs to return. Default is None (unlimited).
+        limit: The maximum number of logs to return. Default is 1000
+        (Orchestra refuses unbounded reads).
 
         offset: The starting index of the logs to return. Default is 0.
 
