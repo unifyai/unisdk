@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional
 
 from unisdk import BASE_URL
-from unisdk.utils import http
+from unisdk.utils import async_http, http
 from unisdk.utils.helpers import _create_request_header
 
 
@@ -51,6 +51,75 @@ def list_integration_connections(
     ).json()
 
 
+def _run_integration_tool_request(
+    tool_id: str,
+    arguments: Optional[Dict[str, Any]] = None,
+    *,
+    owner_scope: str = "assistant",
+    org_id: Optional[int] = None,
+    team_id: Optional[int] = None,
+    user_id: Optional[str] = None,
+    assistant_id: Optional[int] = None,
+    connection_id: Optional[str] = None,
+    conversation_id: Optional[str] = None,
+    confirmation_token: Optional[str] = None,
+    approval_audit_id: Optional[int] = None,
+    backend_id: Optional[str] = None,
+    provider_app_id: Optional[str] = None,
+    canonical_app_slug: Optional[str] = None,
+    app_display_name: Optional[str] = None,
+    app_icon_url: Optional[str] = None,
+    provider_tool_id: Optional[str] = None,
+    canonical_name: Optional[str] = None,
+    function_manager_name: Optional[str] = None,
+    tool_display_name: Optional[str] = None,
+    action_class: Optional[str] = None,
+    behavior_hints: Optional[list[str]] = None,
+    required_scopes: Optional[list[Any]] = None,
+    input_schema: Optional[Dict[str, Any]] = None,
+    output_schema: Optional[Dict[str, Any]] = None,
+    examples: Optional[list[Dict[str, Any]]] = None,
+    confirmation_required: Optional[bool] = None,
+    api_key: Optional[str] = None,
+    base_url: Optional[str] = None,
+) -> tuple[str, Dict[str, str], Dict[str, Any]]:
+    """Build URL, headers, and body for an integration tool run."""
+
+    headers = _create_request_header(api_key)
+    body = _clean_payload(
+        {
+            "arguments": arguments or {},
+            "owner_scope": owner_scope,
+            "org_id": org_id,
+            "team_id": team_id,
+            "user_id": user_id,
+            "assistant_id": assistant_id,
+            "connection_id": connection_id,
+            "conversation_id": conversation_id,
+            "confirmation_token": confirmation_token,
+            "approval_audit_id": approval_audit_id,
+            "backend_id": backend_id,
+            "provider_app_id": provider_app_id,
+            "canonical_app_slug": canonical_app_slug,
+            "app_display_name": app_display_name,
+            "app_icon_url": app_icon_url,
+            "provider_tool_id": provider_tool_id,
+            "canonical_name": canonical_name,
+            "function_manager_name": function_manager_name,
+            "tool_display_name": tool_display_name,
+            "action_class": action_class,
+            "behavior_hints": behavior_hints,
+            "required_scopes": required_scopes,
+            "input_schema": input_schema,
+            "output_schema": output_schema,
+            "examples": examples,
+            "confirmation_required": confirmation_required,
+        },
+    )
+    url = f"{_api_base_url(base_url)}/integrations/tools/{tool_id}/run"
+    return url, headers, body
+
+
 def run_integration_tool(
     tool_id: str,
     arguments: Optional[Dict[str, Any]] = None,
@@ -85,42 +154,111 @@ def run_integration_tool(
 ) -> Dict[str, Any]:
     """Execute a provider tool through Orchestra policy and audit checks."""
 
-    headers = _create_request_header(api_key)
-    body = _clean_payload(
-        {
-            "arguments": arguments or {},
-            "owner_scope": owner_scope,
-            "org_id": org_id,
-            "team_id": team_id,
-            "user_id": user_id,
-            "assistant_id": assistant_id,
-            "connection_id": connection_id,
-            "conversation_id": conversation_id,
-            "confirmation_token": confirmation_token,
-            "approval_audit_id": approval_audit_id,
-            "backend_id": backend_id,
-            "provider_app_id": provider_app_id,
-            "canonical_app_slug": canonical_app_slug,
-            "app_display_name": app_display_name,
-            "app_icon_url": app_icon_url,
-            "provider_tool_id": provider_tool_id,
-            "canonical_name": canonical_name,
-            "function_manager_name": function_manager_name,
-            "tool_display_name": tool_display_name,
-            "action_class": action_class,
-            "behavior_hints": behavior_hints,
-            "required_scopes": required_scopes,
-            "input_schema": input_schema,
-            "output_schema": output_schema,
-            "examples": examples,
-            "confirmation_required": confirmation_required,
-        },
+    url, headers, body = _run_integration_tool_request(
+        tool_id,
+        arguments,
+        owner_scope=owner_scope,
+        org_id=org_id,
+        team_id=team_id,
+        user_id=user_id,
+        assistant_id=assistant_id,
+        connection_id=connection_id,
+        conversation_id=conversation_id,
+        confirmation_token=confirmation_token,
+        approval_audit_id=approval_audit_id,
+        backend_id=backend_id,
+        provider_app_id=provider_app_id,
+        canonical_app_slug=canonical_app_slug,
+        app_display_name=app_display_name,
+        app_icon_url=app_icon_url,
+        provider_tool_id=provider_tool_id,
+        canonical_name=canonical_name,
+        function_manager_name=function_manager_name,
+        tool_display_name=tool_display_name,
+        action_class=action_class,
+        behavior_hints=behavior_hints,
+        required_scopes=required_scopes,
+        input_schema=input_schema,
+        output_schema=output_schema,
+        examples=examples,
+        confirmation_required=confirmation_required,
+        api_key=api_key,
+        base_url=base_url,
     )
-    return http.post(
-        f"{_api_base_url(base_url)}/integrations/tools/{tool_id}/run",
-        headers=headers,
-        json=body,
-    ).json()
+    return http.post(url, headers=headers, json=body).json()
+
+
+async def async_run_integration_tool(
+    tool_id: str,
+    arguments: Optional[Dict[str, Any]] = None,
+    *,
+    owner_scope: str = "assistant",
+    org_id: Optional[int] = None,
+    team_id: Optional[int] = None,
+    user_id: Optional[str] = None,
+    assistant_id: Optional[int] = None,
+    connection_id: Optional[str] = None,
+    conversation_id: Optional[str] = None,
+    confirmation_token: Optional[str] = None,
+    approval_audit_id: Optional[int] = None,
+    backend_id: Optional[str] = None,
+    provider_app_id: Optional[str] = None,
+    canonical_app_slug: Optional[str] = None,
+    app_display_name: Optional[str] = None,
+    app_icon_url: Optional[str] = None,
+    provider_tool_id: Optional[str] = None,
+    canonical_name: Optional[str] = None,
+    function_manager_name: Optional[str] = None,
+    tool_display_name: Optional[str] = None,
+    action_class: Optional[str] = None,
+    behavior_hints: Optional[list[str]] = None,
+    required_scopes: Optional[list[Any]] = None,
+    input_schema: Optional[Dict[str, Any]] = None,
+    output_schema: Optional[Dict[str, Any]] = None,
+    examples: Optional[list[Dict[str, Any]]] = None,
+    confirmation_required: Optional[bool] = None,
+    api_key: Optional[str] = None,
+    base_url: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Async variant of ``run_integration_tool`` for event-loop concurrency.
+
+    Uses the shared ``aiohttp`` client so concurrent ``await`` / ``gather``
+    call sites overlap provider round-trips instead of serializing on the
+    event loop.
+    """
+
+    url, headers, body = _run_integration_tool_request(
+        tool_id,
+        arguments,
+        owner_scope=owner_scope,
+        org_id=org_id,
+        team_id=team_id,
+        user_id=user_id,
+        assistant_id=assistant_id,
+        connection_id=connection_id,
+        conversation_id=conversation_id,
+        confirmation_token=confirmation_token,
+        approval_audit_id=approval_audit_id,
+        backend_id=backend_id,
+        provider_app_id=provider_app_id,
+        canonical_app_slug=canonical_app_slug,
+        app_display_name=app_display_name,
+        app_icon_url=app_icon_url,
+        provider_tool_id=provider_tool_id,
+        canonical_name=canonical_name,
+        function_manager_name=function_manager_name,
+        tool_display_name=tool_display_name,
+        action_class=action_class,
+        behavior_hints=behavior_hints,
+        required_scopes=required_scopes,
+        input_schema=input_schema,
+        output_schema=output_schema,
+        examples=examples,
+        confirmation_required=confirmation_required,
+        api_key=api_key,
+        base_url=base_url,
+    )
+    return await async_http.post(url, headers=headers, json=body)
 
 
 def get_integration_tool_policy(

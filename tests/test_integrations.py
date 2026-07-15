@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import inspect
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 import unisdk
 from unisdk import integrations
@@ -125,6 +127,37 @@ def test_run_integration_tool_posts_arguments_and_confirmation_context() -> None
         "examples": [{"arguments": {"query": "alice"}}],
         "confirmation_required": False,
     }
+
+
+@pytest.mark.asyncio
+async def test_async_run_integration_tool_posts_same_payload_shape() -> None:
+    with patch.object(
+        integrations.async_http,
+        "post",
+        new=AsyncMock(return_value={"status": "ok"}),
+    ) as mock_post:
+        result = await unisdk.async_run_integration_tool(
+            "tool-1",
+            {"query": "alice"},
+            owner_scope="assistant",
+            assistant_id=42,
+            connection_id="conn-1",
+            confirmation_token="confirm-1",
+            api_key="test-key",
+        )
+
+    assert result == {"status": "ok"}
+    assert mock_post.await_args.args[0] == (
+        f"{integrations.BASE_URL}/integrations/tools/tool-1/run"
+    )
+    assert mock_post.await_args.kwargs["json"] == {
+        "arguments": {"query": "alice"},
+        "owner_scope": "assistant",
+        "assistant_id": 42,
+        "connection_id": "conn-1",
+        "confirmation_token": "confirm-1",
+    }
+    assert mock_post.await_args.kwargs["headers"]["Authorization"] == "Bearer test-key"
 
 
 def test_get_integration_tool_policy_uses_owner_params() -> None:
@@ -410,6 +443,7 @@ def test_unify_exports_runtime_integration_helpers_only() -> None:
     for name in [
         "list_integration_connections",
         "run_integration_tool",
+        "async_run_integration_tool",
         "get_integration_tool_policy",
         "patch_integration_backend",
     ]:
