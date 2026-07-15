@@ -87,6 +87,7 @@ __all__ = [
     "patch_integration_backend",
     "patch_integration_tool_policy",
     "run_integration_tool",
+    "async_run_integration_tool",
     "download_integration_file",
     "stage_composio_file",
     "stage_integration_file",
@@ -150,6 +151,7 @@ from .contexts import (
 # Integrations
 from .integrations import (
     approve_integration_tool_execution,
+    async_run_integration_tool,
     deny_integration_tool_execution,
     download_integration_file,
     get_integration_tool_policy,
