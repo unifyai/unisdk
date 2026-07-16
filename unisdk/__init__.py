@@ -83,6 +83,7 @@ __all__ = [
     "approve_integration_tool_execution",
     "deny_integration_tool_execution",
     "get_integration_tool_policy",
+    "get_integration_app_preference",
     "list_integration_connections",
     "patch_integration_backend",
     "patch_integration_tool_policy",
@@ -92,6 +93,7 @@ __all__ = [
     "stage_composio_file",
     "stage_integration_file",
     "test_integration_connection",
+    "update_integration_app_preference",
     "upsert_integration_backend",
     # Organizations
     "invite_org_member",
@@ -154,6 +156,7 @@ from .integrations import (
     async_run_integration_tool,
     deny_integration_tool_execution,
     download_integration_file,
+    get_integration_app_preference,
     get_integration_tool_policy,
     list_integration_connections,
     patch_integration_backend,
@@ -162,6 +165,7 @@ from .integrations import (
     stage_composio_file,
     stage_integration_file,
     test_integration_connection,
+    update_integration_app_preference,
     upsert_integration_backend,
 )
 

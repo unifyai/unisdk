@@ -51,6 +51,68 @@ def list_integration_connections(
     ).json()
 
 
+def get_integration_app_preference(
+    canonical_app_slug: str,
+    *,
+    owner_scope: str = "assistant",
+    org_id: Optional[int] = None,
+    team_id: Optional[int] = None,
+    user_id: Optional[str] = None,
+    assistant_id: Optional[int] = None,
+    api_key: Optional[str] = None,
+    base_url: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Fetch the multi-account usage mode for an owner + app."""
+
+    headers = _create_request_header(api_key)
+    params = _clean_payload(
+        {
+            "owner_scope": owner_scope,
+            "org_id": org_id,
+            "team_id": team_id,
+            "user_id": user_id,
+            "assistant_id": assistant_id,
+        },
+    )
+    return http.get(
+        f"{_api_base_url(base_url)}/integrations/apps/{canonical_app_slug}/preferences",
+        headers=headers,
+        params=params,
+    ).json()
+
+
+def update_integration_app_preference(
+    canonical_app_slug: str,
+    *,
+    usage_mode: str,
+    owner_scope: str = "assistant",
+    org_id: Optional[int] = None,
+    team_id: Optional[int] = None,
+    user_id: Optional[str] = None,
+    assistant_id: Optional[int] = None,
+    api_key: Optional[str] = None,
+    base_url: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Set ``primary`` / ``explicit`` / ``pool`` account selection for an app."""
+
+    headers = _create_request_header(api_key)
+    body = _clean_payload(
+        {
+            "owner_scope": owner_scope,
+            "org_id": org_id,
+            "team_id": team_id,
+            "user_id": user_id,
+            "assistant_id": assistant_id,
+            "usage_mode": usage_mode,
+        },
+    )
+    return http.patch(
+        f"{_api_base_url(base_url)}/integrations/apps/{canonical_app_slug}/preferences",
+        headers=headers,
+        json=body,
+    ).json()
+
+
 def _run_integration_tool_request(
     tool_id: str,
     arguments: Optional[Dict[str, Any]] = None,
