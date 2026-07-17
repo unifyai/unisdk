@@ -1521,7 +1521,11 @@ def create_fields(
     Creates one or more fields in a project.
 
     Args:
-        fields: Dictionary mapping field names to their types (or None if no explicit type).
+        fields: Dictionary mapping field names to their types (or None if no
+        explicit type). Values may be a type string, ``None``, or a dict with
+        keys such as ``type``, ``mutable``, ``ui_editable``, ``unique``, and
+        ``description``. ``ui_editable`` is a UI hint only and does not gate
+        update endpoints.
 
         project: Name of the project to create fields in.
 
