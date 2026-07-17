@@ -204,6 +204,9 @@ from .logs import (
 # Organizations
 from .organizations import invite_org_member, list_org_members, list_organizations
 
+# Platform API utilities
+from .platform import deduct_credits, get_user_basic_info
+
 # Projects
 from .projects import (
     commit_project,
