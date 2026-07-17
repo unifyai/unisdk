@@ -47,6 +47,9 @@ __all__ = [
     "Log",
     "LogGroup",
     "atomic_update",
+    "acquire_sync_lease",
+    "release_sync_lease",
+    "SyncLeaseHeldError",
     "create_derived_logs",
     "create_fields",
     "create_logs",
@@ -201,9 +204,6 @@ from .logs import (
 # Organizations
 from .organizations import invite_org_member, list_org_members, list_organizations
 
-# Platform API utilities
-from .platform import deduct_credits, get_user_basic_info
-
 # Projects
 from .projects import (
     commit_project,
@@ -213,6 +213,11 @@ from .projects import (
     get_project_commits,
     list_projects,
     rollback_project,
+)
+from .sync_lease import (
+    SyncLeaseHeldError,
+    acquire_sync_lease,
+    release_sync_lease,
 )
 
 # Teams
