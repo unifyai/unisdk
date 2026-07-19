@@ -1005,7 +1005,7 @@ def get_logs(
     params = {
         "project_name": project,
         "context": context,
-        "filter_expr": filter,
+        "filter": filter,
         "limit": limit,
         "offset": offset,
         "return_ids_only": return_ids_only,
@@ -1238,12 +1238,12 @@ def get_logs_metric(
     else:
         params["key"] = key
 
-    # Handle filter_expr parameter - JSON encode if it's a dict
+    # Handle filter parameter - JSON encode if it's a dict
     if filter is not None:
         if isinstance(filter, dict):
-            params["filter_expr"] = json.dumps(filter)
+            params["filter"] = json.dumps(filter)
         else:
-            params["filter_expr"] = filter
+            params["filter"] = filter
 
     # Handle from_ids parameter
     if from_ids is not None:
@@ -1321,7 +1321,7 @@ def get_groups(
         "project_name": project,
         "context": context,
         "key": key,
-        "filter_expr": filter,
+        "filter": filter,
         "from_ids": from_ids,
         "exclude_ids": exclude_ids,
     }
@@ -1405,7 +1405,7 @@ def join_query(
     join_expr: str,
     mode: str = "inner",
     columns: Optional[Union[Dict[str, str], List[str]]] = None,
-    filter_expr: Optional[str] = None,
+    filter: Optional[str] = None,
     sorting: Optional[str] = None,
     limit: Optional[int] = None,
     offset: int = 0,
@@ -1424,23 +1424,23 @@ def join_query(
     **Modes of operation:**
 
     * **Row mode** (default, ``metric=None``): returns paginated joined rows,
-      optionally filtered via ``filter_expr`` and sorted via ``sorting``.
-      Accepts ``sorting``, ``limit``, ``offset``, and ``filter_expr``.
+      optionally filtered via ``filter`` and sorted via ``sorting``.
+      Accepts ``sorting``, ``limit``, ``offset``, and ``filter``.
 
     * **Reduce mode** (``metric`` + ``key`` set): returns aggregated metric
-      values, optionally grouped via ``group_by``.  Accepts ``filter_expr``
+      values, optionally grouped via ``group_by``.  Accepts ``filter``
       and ``group_by``.  ``sorting``, ``limit``, and ``offset`` do NOT apply.
 
     Args:
         pair_of_args: Two dicts, each specifying a side of the join
-            (``context``, ``filter_expr``, ``from_ids``, ``exclude_ids``).
+            (``context``, ``filter``, ``from_ids``, ``exclude_ids``).
         join_expr: Join condition using ``A``/``B`` aliases,
             e.g. ``"A.user_id == B.user_id"``.
         mode: Join type — ``"inner"``, ``"left"``, ``"right"``, or ``"outer"``.
         columns: Column projection for the joined result.  Dict maps
             ``"A.col"`` → alias; list uses original names.  ``None`` merges
             all columns from both sides.
-        filter_expr: Boolean expression applied to the joined rows
+        filter: Boolean expression applied to the joined rows
             (uses output column names).  Works in both modes.
         sorting: **Row mode only.** JSON-encoded dict mapping column names to
             ``"ascending"``/``"descending"``.  Note: comparisons are text-based;
@@ -1474,7 +1474,7 @@ def join_query(
               has no row order).  To sort then aggregate, call this endpoint
               without ``metric`` first, then call ``POST /logs/metric``.
             - ``limit`` with ``metric`` → remove ``limit``.  Use
-              ``filter_expr`` to restrict input rows.
+              ``filter`` to restrict input rows.
             - ``offset != 0`` with ``metric`` → remove ``offset``.
 
     See Also:
@@ -1495,7 +1495,7 @@ def join_query(
             "join_expr": join_expr,
             "mode": mode,
             "columns": columns,
-            "filter_expr": filter_expr,
+            "filter": filter,
             "sorting": sorting,
             "limit": limit,
             "offset": offset,
