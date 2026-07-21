@@ -555,8 +555,9 @@ def _create_log(dct, context, api_key):
     return unisdk.Log(
         id=dct["id"],
         ts=dct["ts"],
-        **dct["entries"],
-        **dct["derived_entries"],
+        **dct.get("entries") or {},
+        **dct.get("derived_entries") or {},
+        **dct.get("external_entries") or {},
         context=context,
         api_key=api_key,
     )
@@ -925,6 +926,9 @@ def get_logs(
     return_timestamps: Optional[bool] = None,
     return_ids_only: bool = False,
     return_sort_distance: bool = False,
+    hydrate: Optional[str] = None,
+    hydrate_fields: Optional[List[str]] = None,
+    materialize: Optional[bool] = None,
     api_key: Optional[str] = None,
 ) -> Union[List[unisdk.Log], Dict[str, Any]]:
     """
@@ -983,6 +987,13 @@ def get_logs(
         fast-path, include the computed distance in each entry under the
         reserved "_sort_distance" key.
 
+        hydrate: External field hydrate mode: ``none``, ``stale_ok``, or
+        ``force``. When omitted, Orchestra defaults to ``stale_ok``.
+
+        hydrate_fields: Optional subset of external fields to hydrate.
+
+        materialize: When True, persist hydrated values and cache sidecars.
+
         api_key: If specified, unify API key to be used. Defaults to the value in the
         `UNIFY_KEY` environment variable.
 
@@ -1029,6 +1040,9 @@ def get_logs(
         "groups_only": groups_only,
         "return_timestamps": return_timestamps,
         "return_sort_distance": return_sort_distance,
+        "hydrate": hydrate,
+        "hydrate_fields": "&".join(hydrate_fields) if hydrate_fields else None,
+        "materialize": materialize,
     }
 
     response = http.get(BASE_URL + "/logs", headers=headers, params=params)
@@ -1134,7 +1148,11 @@ def get_logs_federated(
     resp_data = response.json()
     return {
         "logs": [
-            {**dct.get("entries", {}), **dct.get("derived_entries", {})}
+            {
+                **dct.get("entries", {}),
+                **dct.get("derived_entries", {}),
+                **dct.get("external_entries", {}),
+            }
             for dct in resp_data.get("logs", [])
         ],
         "count": resp_data.get("count", 0),
@@ -1523,9 +1541,10 @@ def create_fields(
     Args:
         fields: Dictionary mapping field names to their types (or None if no
         explicit type). Values may be a type string, ``None``, or a dict with
-        keys such as ``type``, ``mutable``, ``ui_editable``, ``unique``, and
-        ``description``. ``ui_editable`` is a UI hint only and does not gate
-        update endpoints.
+        keys such as ``type``, ``mutable``, ``ui_editable``, ``unique``,
+        ``description``, ``category``, and ``binding``. Use
+        ``category="external_entry"`` with a ``binding`` object for
+        REST-bound columns (see Orchestra ``docs/external-field-bindings.md``).
 
         project: Name of the project to create fields in.
 
@@ -1548,6 +1567,101 @@ def create_fields(
     if backfill_logs is not None:
         body["backfill_logs"] = backfill_logs
     response = http.post(BASE_URL + "/logs/fields", headers=headers, json=body)
+    return response.json()
+
+
+def update_external_field_binding(
+    field_name: str,
+    binding: Dict[str, Any],
+    *,
+    project: Optional[str] = None,
+    context: Optional[str] = None,
+    api_key: Optional[str] = None,
+):
+    """Replace the REST binding for an ``external_entry`` field."""
+    api_key = _validate_api_key(api_key)
+    headers = _create_request_header(api_key)
+    project = _get_project(project)
+    context = context if context else CONTEXT_WRITE.get()
+    body = {
+        "project_name": project,
+        "context": context,
+        "field_name": field_name,
+        "binding": binding,
+    }
+    response = http.put(BASE_URL + "/logs/fields/binding", headers=headers, json=body)
+    return response.json()
+
+
+def hydrate_logs(
+    *,
+    project: Optional[str] = None,
+    context: Optional[str] = None,
+    log_ids: Optional[List[int]] = None,
+    filter: Optional[str] = None,
+    hydrate_fields: Optional[List[str]] = None,
+    hydrate: str = "force",
+    materialize: bool = True,
+    limit: int = 500,
+    api_key: Optional[str] = None,
+):
+    """Explicitly hydrate external_entry columns for a set of logs."""
+    api_key = _validate_api_key(api_key)
+    headers = _create_request_header(api_key)
+    project = _get_project(project)
+    context = context if context else CONTEXT_READ.get()
+    body = {
+        "project_name": project,
+        "context": context,
+        "log_ids": log_ids,
+        "filter": filter,
+        "hydrate_fields": hydrate_fields,
+        "hydrate": hydrate,
+        "materialize": materialize,
+        "limit": limit,
+    }
+    response = http.post(BASE_URL + "/logs/hydrate", headers=headers, json=body)
+    return response.json()
+
+
+def request_external_write(
+    *,
+    payload: Dict[str, Any],
+    idempotency_key: str,
+    field_name: Optional[str] = None,
+    connector_id: Optional[str] = None,
+    binding: Optional[Dict[str, Any]] = None,
+    log_event_ids: Optional[List[int]] = None,
+    deliver: str = "async",
+    project: Optional[str] = None,
+    context: Optional[str] = None,
+    api_key: Optional[str] = None,
+):
+    """Enqueue an external through-write intent (outbox).
+
+    ``deliver="async"`` leaves the intent pending for admin drain;
+    ``deliver="sync"`` delivers in-process before returning.
+    """
+    api_key = _validate_api_key(api_key)
+    headers = _create_request_header(api_key)
+    project = _get_project(project)
+    context = context if context else CONTEXT_WRITE.get()
+    body = {
+        "project_name": project,
+        "context": context,
+        "payload": payload,
+        "idempotency_key": idempotency_key,
+        "field_name": field_name,
+        "connector_id": connector_id,
+        "binding": binding,
+        "log_event_ids": log_event_ids,
+        "deliver": deliver,
+    }
+    response = http.post(
+        BASE_URL + "/logs/external_write",
+        headers=headers,
+        json=body,
+    )
     return response.json()
 
 
