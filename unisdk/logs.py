@@ -988,7 +988,9 @@ def get_logs(
         reserved "_sort_distance" key.
 
         hydrate: External field hydrate mode: ``none``, ``stale_ok``, or
-        ``force``. When omitted, Orchestra defaults to ``stale_ok``.
+        ``force``. Auth for external columns uses ``auth_secret_ref`` resolved
+        from the tenant Secrets vault (see Orchestra
+        ``docs/external-field-bindings.md``). When omitted, Orchestra defaults to ``stale_ok``.
 
         hydrate_fields: Optional subset of external fields to hydrate.
 
@@ -1545,6 +1547,9 @@ def create_fields(
         ``description``, ``category``, and ``binding``. Use
         ``category="external_entry"`` with a ``binding`` object for
         REST-bound columns (see Orchestra ``docs/external-field-bindings.md``).
+        ``binding["auth_secret_ref"]`` is a secret *name* resolved from the
+        tenant ``Secrets`` vault (not Orchestra process env). Never inline
+        API keys in the binding.
 
         project: Name of the project to create fields in.
 
@@ -1641,6 +1646,10 @@ def request_external_write(
 
     ``deliver="async"`` leaves the intent pending for admin drain;
     ``deliver="sync"`` delivers in-process before returning.
+
+    Auth for the remote call uses ``auth_secret_ref`` on the field binding
+    (or the inline ``binding``), resolved from the tenant Secrets vault owned
+    by ``context`` at deliver time.
     """
     api_key = _validate_api_key(api_key)
     headers = _create_request_header(api_key)
