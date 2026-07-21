@@ -61,6 +61,7 @@ __all__ = [
     "get_logs",
     "get_logs_federated",
     "get_logs_metric",
+    "hydrate_logs",
     "join_logs",
     "join_query",
     "log",
@@ -68,6 +69,7 @@ __all__ = [
     "set_context",
     "set_user_logging",
     "unset_context",
+    "update_external_field_binding",
     "update_logs",
     # Async
     "AsyncLoggerManager",
@@ -191,6 +193,7 @@ from .logs import (
     get_logs,
     get_logs_federated,
     get_logs_metric,
+    hydrate_logs,
     join_logs,
     join_query,
     log,
@@ -198,6 +201,7 @@ from .logs import (
     set_context,
     set_user_logging,
     unset_context,
+    update_external_field_binding,
     update_logs,
 )
 
