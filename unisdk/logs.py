@@ -1624,6 +1624,47 @@ def hydrate_logs(
     return response.json()
 
 
+def request_external_write(
+    *,
+    payload: Dict[str, Any],
+    idempotency_key: str,
+    field_name: Optional[str] = None,
+    connector_id: Optional[str] = None,
+    binding: Optional[Dict[str, Any]] = None,
+    log_event_ids: Optional[List[int]] = None,
+    deliver: str = "async",
+    project: Optional[str] = None,
+    context: Optional[str] = None,
+    api_key: Optional[str] = None,
+):
+    """Enqueue an external through-write intent (outbox).
+
+    ``deliver="async"`` leaves the intent pending for admin drain;
+    ``deliver="sync"`` delivers in-process before returning.
+    """
+    api_key = _validate_api_key(api_key)
+    headers = _create_request_header(api_key)
+    project = _get_project(project)
+    context = context if context else CONTEXT_WRITE.get()
+    body = {
+        "project_name": project,
+        "context": context,
+        "payload": payload,
+        "idempotency_key": idempotency_key,
+        "field_name": field_name,
+        "connector_id": connector_id,
+        "binding": binding,
+        "log_event_ids": log_event_ids,
+        "deliver": deliver,
+    }
+    response = http.post(
+        BASE_URL + "/logs/external_write",
+        headers=headers,
+        json=body,
+    )
+    return response.json()
+
+
 def rename_field(
     name: str,
     new_name: str,
