@@ -1841,6 +1841,58 @@ def atomic_update(
     return response.json()["new_value"]
 
 
+def claim_logs(
+    *,
+    project: Optional[str] = None,
+    context: str,
+    expect: Dict[str, Any],
+    updates: Dict[str, Any],
+    limit: int = 1,
+    api_key: Optional[str] = None,
+) -> Dict[str, Any]:
+    """
+    Atomically claim log rows via compare-and-set.
+
+    Rows in the given context whose data fields equal every ``expect`` entry
+    are locked server-side (``FOR UPDATE SKIP LOCKED``) and updated with
+    ``updates`` in a single statement. Concurrent claimers never receive the
+    same row, so e.g. ``expect={"status": "queued"}`` /
+    ``updates={"status": "processing"}`` has exactly one winner per row.
+
+    Args:
+        project: Name of the project. Defaults to the active project.
+
+        context: Context path holding the rows.
+
+        expect: Equality conditions on data fields a row must satisfy to be
+        claimable. Values may be str, int, float, bool, or None (None
+        matches a missing/null field).
+
+        updates: Fields merged into the data of each claimed row.
+
+        limit: Maximum number of rows to claim (1-100).
+
+        api_key: If specified, unify API key to be used. Defaults to the
+        value in the `UNIFY_KEY` environment variable.
+
+    Returns:
+        ``{"claimed": [{"id": <log id>, "data": {...}}, ...], "count": N}``.
+        ``count`` is 0 when no row matched (already claimed or ``expect``
+        conditions unmet).
+    """
+    api_key = _validate_api_key(api_key)
+    headers = _create_request_header(api_key)
+    body = {
+        "project": _get_project(project),
+        "context": context,
+        "expect": expect,
+        "updates": updates,
+        "limit": limit,
+    }
+    response = http.post(BASE_URL + "/logs/claim", headers=headers, json=body)
+    return response.json()
+
+
 def set_user_logging(value: bool):
     global USR_LOGGING
     USR_LOGGING = value
