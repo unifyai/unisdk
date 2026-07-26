@@ -1,7 +1,5 @@
 ---
 description: Instructions for local development, test execution, and environment management
-globs: ["**/*"]
-alwaysApply: true
 ---
 
 # Local Development Environment

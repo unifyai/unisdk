@@ -138,7 +138,7 @@ cp .env.example .env
 uv run pre-commit install
 ```
 
-The `.cursor/` directory and the `global-cursor-rules` submodule are optional editor tooling. They are not required to install, test, or use the SDK.
+The `.cursor/` directory and the `global-agent-rules` submodule are optional editor tooling. They are not required to install, test, or use the SDK.
 
 ### Default contributor check
 
