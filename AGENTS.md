@@ -881,50 +881,67 @@ keyword and must not be renamed.
 # TaskScheduler surgery (Tasks rows)
 
 Agents frequently break recurring jobs by hand-editing `Teams/*/Tasks`
-(or assistant-scoped `…/Tasks`) via DataManager / UniSDK. That caused
-production duplicate `(task_id, instance_id)` rows when forks and clones
-desynced from `context_counter`. Follow this rule for **any** TaskScheduler
-ops across brain, unify, and orchestra.
+(or assistant-scoped `…/Tasks`) via DataManager / UniSDK. Follow this rule for
+**any** TaskScheduler ops across brain, unify, and orchestra.
+
+## Identity model
+
+- **`Tasks`** is definition-only: **one row per `task_id`**, the whole series.
+  `unique_keys={"task_id": "int"}`, `auto_counting={"task_id": None}`
+  (`unify/task_scheduler/task_scheduler.py`).
+- **`Tasks/Executions`** holds the runs: one row per wake/attempt, keyed by
+  `run_key` (the idempotency key). Occurrence and attempt are the same row.
+  Recurrence creates the *next* Execution when the current one **starts** — it
+  does **not** clone the Tasks row.
+- **`instance_id` is vestigial.** It is a legacy occurrence counter kept only so
+  pre-migration rows still read back. It is not unique, not auto-counted, and
+  not part of identity; new rows get `0`. Treat any non-zero `instance_id` as a
+  pre-migration artefact, not as a thing to allocate, increment, or reason about.
+- Concurrency is normal now: several Executions can be in flight against one
+  definition, so a definition sitting in `active` is not a zombie by itself.
 
 ## Hard refuse
 
-- Do **not** `update_by_ids` / raw log writes that set or change `instance_id`
-  (Orchestra rejects this on auto-counted unique identity fields).
-- Do **not** resurrect `cancelled` / `failed` / `completed` projections by
-  flipping them back to `scheduled` (or rewriting their `schedule`).
-- Do **not** invent a new Tasks row with an explicit `instance_id`.
-- Do **not** "tombstone" collisions by rewriting `instance_id` to a large
-  number — delete the stray row or use admin release; never renumber.
-- Do **not** treat `instance_id == 0` as missing: never
-  `int(row.get("instance_id") or -1)` / `or 0` when building maps keyed by
-  instance id (template **iid 0** is real).
+- Do **not** set or change `task_id` on an existing row (Orchestra rejects
+  writes to auto-counted unique identity fields).
+- Do **not** resurrect `cancelled` / `failed` / `completed` rows by flipping
+  them back to `scheduled` (or rewriting their `schedule`). Same for terminal
+  Executions.
+- Do **not** invent a Tasks row by hand with an explicit `task_id` — go through
+  TaskScheduler APIs and let Orchestra allocate it.
+- Do **not** write `instance_id` at all. It buys nothing on the current model,
+  and a non-zero value pushes reads down the legacy compat path (see below).
 
 ## Allowed ops
 
 | Goal | How |
 |---|---|
-| Arm a planted custom task | Set **`enabled=True`** on the **template** (`instance_id == 0`, `custom_key` set). Let TaskScheduler project the next `scheduled` head. |
-| Pause | `enabled=False` on the template; optionally cancel future `scheduled` heads only (do not reuse them later). |
-| One-off catch-up / run now | `POST /v0/tasks/{task_id}/trigger` **without** `instance_id` (Orchestra forks a new instance). Or pass an existing **runnable** `instance_id` to run that row early. |
-| Change cadence | Edit `tasks.jsonl` + deploy reconcile, or TaskScheduler APIs that own cloning — not ad-hoc DM patches on old projections. |
+| Arm a planted custom task | Set **`enabled=True`** on the definition row (the single `task_id` row, `custom_key` set). TaskScheduler schedules the next Execution. |
+| Pause | `enabled=False` on the definition row; optionally cancel open Executions. |
+| One-off catch-up / run now | `POST /v0/tasks/{task_id}/trigger` (`trigger_task(task_id=…)` in `typed_tasks_client`). It takes no `instance_id`. |
+| Change cadence | Edit `tasks.jsonl` + deploy reconcile, or TaskScheduler APIs that own the schedule — not ad-hoc DM patches. |
 | Stuck `active` zombie | `POST /admin/task-source/release-active` with the source task log id. |
 
-## Why
+## Legacy compat path
 
-- Tasks use `unique_keys={task_id, instance_id}` and
-  `auto_counting={instance_id: task_id}`.
-- Recurrence clones omit `instance_id` so Orchestra assigns the next counter
-  value. Forks must use that same counter.
-- Hand-editing identity fields or cancelled projections creates parallel
-  owners; lifecycle then dies with `Composite primary key must be unique`.
+`_get_task_row(task_id, instance_id)` addresses by `task_id` alone when
+`instance_id == 0`, and only falls back to the old
+`task_id AND instance_id` filter when it is non-zero
+(`unify/task_scheduler/task_scheduler.py`, the `if instance_id != 0:` branch).
+That fallback exists to read surviving pre-migration rows. Do not lean on it
+for new work, and do not pass a non-zero `instance_id` to make a lookup
+"more specific" — on a post-migration task it just fails to match.
+
+If a `task_id` genuinely resolves to more than one Tasks row, that is a
+pre-migration remnant (or a bad hand-write), not a counter desync. Delete the
+stale duplicate, or leave it terminal and do not re-trigger until the health
+check is clean.
 
 ## Break-glass
 
 Only with an explicit operator rationale: fail an `active` zombie via
-`POST /admin/task-source/release-active`, then clean **extra** `scheduled`
-heads so **one** next `start_at` remains. If two rows already share an
-`instance_id`, **delete** the stale duplicate (or leave it terminal and
-do not re-trigger until health check is clean) — do not renumber it.
+`POST /admin/task-source/release-active`, then clean up **extra** open
+Executions so one next wake remains.
 
 Ops detail: brain `docs/operations/scheduled-jobs.md` (re-arm / disable /
 catch-up). Health check: `python3 -m scripts.tasks_health_check`.
