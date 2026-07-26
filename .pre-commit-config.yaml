@@ -58,7 +58,7 @@ repos:
   hooks:
   - id: agents-md-fresh
     name: AGENTS.md is up to date
-    entry: python3 .agents/global-rules/build_agents_md.py --check
+    entry: "sh -c 'if [ -f .agents/global-rules/build_agents_md.py ]; then python3 .agents/global-rules/build_agents_md.py --check; else echo \"shared-rules submodule not checked out; skipping AGENTS.md check\"; fi'"
     language: system
     pass_filenames: false
     files: ^(\.agents/|AGENTS\.md$)
