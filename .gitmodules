@@ -1,3 +1,4 @@
-[submodule ".cursor/rules/global-rules"]
-	path = .cursor/rules/global-rules
-	url = https://github.com/unifyai/global-cursor-rules.git
+[submodule ".agents/global-rules"]
+	path = .agents/global-rules
+	url = https://github.com/unifyai/global-agent-rules.git
+	branch = staging
