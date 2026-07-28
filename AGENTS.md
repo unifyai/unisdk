@@ -408,46 +408,6 @@ The alternative workflow creates significant noise:
 ## Exception
 If the user **explicitly asks** for a feature branch or PR workflow, follow their instructions. But **never default to this behavior** in worktree mode.
 
-# Git History for Context
-
-## Context
-This rule applies when you are trying to understand the *rationale* behind specific code blocks, the evolution of a module, or when deciding whether "weird" looking code is essential or legacy technical debt.
-
-## Rules
-
-### 1. Strategic Git Usage
-- **Use as a Second Level of Analysis**: If the code's purpose isn't clear from the current state alone (static analysis), use `git blame` or `git log` to uncover the "why".
-- **Not a Mandate**: Do not check git history for every file you touch. This creates noise. Use it selectively when you lack context.
-
-### 2. Understanding Code Evolution
-- **Identify Legacy Code**: If you suspect code is redundant or outdated, check its commit date and message. If it was added months ago for a feature that is no longer relevant, this confirms it can likely be purged.
-- **Find the "Why"**: Expressive commit messages often contain the reasoning that comments lack. Use them to understand the author's original intent before refactoring or deleting complex logic.
-
-### 3. Targeted Queries
-- **Be Surgical**: When querying git, look for the history of specific lines or changes (e.g., `git blame -L n,m filename` or `git log -p filename`) rather than dumping the entire history into the context.
-- **Synthesize**: Use the information to form a narrative about the code's lifecycle (e.g., "This was added in commit X to fix bug Y, but since we rewrote the bug Y subsystem, this is now dead code").
-
-### 4. Investigating Regressions with Git Diff
-
-When debugging test failures or regressions, git history can pinpoint exactly what changed.
-
-**When the user proactively provides context:**
-If the user says something like "the test was passing at commit `<hash>`, and the relevant changes are in `<path>`", use this optimally:
-- Run `git log --oneline <hash>..HEAD -- <path>` to see which commits touched the area
-- Run `git diff <hash>..HEAD -- <path>` to get the **aggregate diff** (not serial diffs commit-by-commit)
-- Cross-reference the diff with commit messages to understand developer intent
-- The overall diff is mathematically equivalent to composing serial diffs, but far more token-efficient and cognitively cleaner
-
-**When debugging hits a roadblock:**
-If direct code analysis and debug logging (`CURSOR_DEBUG_LOG`) aren't yielding answers, *then* ask the user:
-- "Do you know when this test was last passing? If you have a commit hash and know which files/folders are likely involved, that would help narrow down what changed."
-- Don't front-load this question—often the user doesn't know the answer. Try direct debugging first.
-
-**Avoid wasteful patterns:**
-- Don't ask the user to provide diffs—ask for the commit hash and run git commands yourself
-- Don't read diffs commit-by-commit and mentally compose them; use the aggregate diff
-- Don't dump entire file histories; scope queries to the relevant path(s)
-
 # Python Formatting & Pre-commit
 
 Every first-party Python repo (`orchestra`, `unify`, `unisdk`, `unillm`, `unify-deploy`) enforces formatting with **black** (plus `isort`/`autoflake`), and CI rejects unformatted code. A missing local hook or a drifting/duplicated black version is the single most common avoidable CI failure. This rule keeps local and CI identical so it stops blocking us.
@@ -495,46 +455,6 @@ pre-commit run black --all-files          # or: uv run black .  /  poetry run bl
 ## Why this matters
 
 A fresh clone has no git hook until `pre-commit install` runs, so without it the first place formatting is ever checked is CI — which then blocks the PR. Pinning the formatters once in the locked `lint` group, and running that exact locked tool from both the hook and CI, removes every variant of the failure: "hook never ran", "version drift", and "duplicated pin disagreed".
-
-This rule standardizes how we add temporary debug logging during failing tests and how we clean it up afterwards. ALWAYS use this process in agent sessions WHENEVER A TEST FAILS. This is the ONLY permitted way to address failing tests.
-
-1) Always start with hardcoded, unconditional debug logs
-- Add logs immediately, without flags or guards. Do not gate behind environment variables or configuration.
-- Use **only** the `CURSOR_DEBUG_LOG` function. No other logging method is permitted.
-- **Finding the function**: Search for it with `rg "CURSOR_DEBUG_LOG"` to locate the utility in your project, then import and use it.
-  - **Python**: `from <module> import CURSOR_DEBUG_LOG` then `CURSOR_DEBUG_LOG("message", variable)`
-  - **JavaScript/TypeScript**: `import { CURSOR_DEBUG_LOG } from "<module>"` then `CURSOR_DEBUG_LOG("message", { variable })`
-- Behavior: Prints an entry to stderr/stdout, making it easy to correlate with test runs.
-
-2) Python-specific import discipline
-- **Self-contained imports**: Each debug snippet must include ALL its own imports inline (e.g., `import json as _json; import os as _os;`). Never rely on the file's existing imports.
-- **Prefixed names**: Use underscore-prefixed aliases (`_json`, `_os`, `_pid`) to avoid shadowing.
-- **Region markers**: Wrap in `# #region agent log` / `# #endregion` for easy identification and removal.
-- This prevents `NameError` crashes when debug snippets reference modules that aren't imported at that location.
-
-3) Investigation workflow
-- Step A: Add targeted debug calls around suspected code paths.
-- Step B: Re-run the failing test(s) and inspect the new logs.
-- Step C: If you are not 100% certain of the root cause, add more debug entries and repeat.
-- Step D: Only when you are 100% confident of the cause, implement a direct fix (with or without keeping some logs briefly for confirmation).
-- Step E: The user may repeatedly re-run tests and paste logs; continue iterating until the issue is definitively fixed.
-
-4) Cleanup policy
-- After the fix is confirmed, remove all temporary logging.
-- Grep to find every occurrence:
-  - ripgrep: `rg -n "CURSOR_DEBUG_LOG" -S`
-  - grep:    `grep -Rin "CURSOR_DEBUG_LOG" .`
-- Delete each call site (and any now-unused imports) before finalizing the fix.
-
-5) Alignment with workspace rules
-- No fast paths or heuristics: Logging should not add conditional shortcuts; it merely reports state unconditionally.
-- No exception-handling shields: Do not add defensive exception handling (try/catch, try/except) around the logs. Keep failures visible.
-- No test details in production prompts: Temporary logs must not leak test-specific information into production prompts or docstrings.
-- Rapid evolution: This logging is temporary by design; remove it once the issue is resolved—do not preserve backward compatibility.
-
-6) Intent and scope
-- This logging exists solely for interactive debugging in agent sessions.
-- The function name `CURSOR_DEBUG_LOG` is intentionally unique and grep-friendly to ensure quick cleanup on request.
 
 # Full Local Stack First
 
@@ -594,191 +514,72 @@ Prefer the durable full stack above. When isolated Orchestra is required
   **shared** instance for every agent on the machine. Do not stop/restart
   Orchestra from one agent session while another’s tests are using it.
 
-# Local Stack Logs: Where To Look First
+# Shared agent conversation archive
 
-When the user says something like *"we just did a local deployment and X happened,
-check the logs to investigate"*, the logs almost always already exist on disk. Do
-**not** re-explore the filesystem from scratch — go straight to the locations below.
+Unify keeps a private repo of **raw** agent transcripts at **`~/shared_context`**
+(GitHub: `unifyai/shared_context`), keyed by **GitHub login** (e.g. `djl11`).
 
-## 1. Central source of truth: `$UNIFY_REPO_PATH/logs/`
+## Design (important)
 
-Default `~/unify/logs/`. Stack scripts may still export the legacy alias
-`UNITY_REPO_PATH`; both refer to the same checkout. A local deployment aggregates
-**every** repo's logs here — including Orchestra, which runs as a separate process.
-The exact paths are set in `unify-deploy/selfhost/self_host_env.sh` (search
-`*_LOG_DIR`); confirm the live values with `stack.sh status`.
+- **Adjacent clone, not a submodule.** `shared_context` sits next to product
+  checkouts (`~/unify`, `~/orchestra`, `~/brain`, …). It is **not** nested under
+  any public or private product repo.
+- **Why:** `unify` (and other open repos) stay public; transcript data stays
+  private. Public cloners never need or see this tree. One clone serves agents
+  in **every** eng repo that pulls `unifyai/global-agent-rules`.
+- **Applies everywhere** this rule is loaded: `unify`, `orchestra`, `unisdk`,
+  `unillm`, `unify-deploy`, `console`, `brain`, `docs`, `landing-page`, and any
+  other repo that includes these global rules.
 
-| Dir | Env var | Contents |
-|---|---|---|
-| `logs/unillm/` | `UNILLM_LOG_DIR` | Raw LLM request/response, one `.txt` per call — system/user prompts, tool args, `reasoning_content`, model. This is **"what the model actually produced"**. |
-| `logs/unisdk/` | `UNISDK_LOG_DIR` | UniSDK ↔ Orchestra HTTP traces (JSON per request). |
-| `logs/orchestra/` | `ORCHESTRA_LOG_DIR` | Orchestra server-side per-request traces. |
-| `logs/unify/` | `UNITY_LOG_DIR` | Unify runtime file logs (env var name is legacy). |
-| `logs/all/` | `*_OTEL_LOG_DIR` | **Combined cross-repo OTel traces** — one `{trace_id}.jsonl` per request, with unify + unisdk + unillm (+ orchestra) spans stacked together. Use this for the end-to-end story of a single request. |
-| `logs/pytest/`, `logs/ci/` | — | Test runs / downloaded-CI logs. |
+## When to load this
 
-Deep reference (formats, env vars, examples): `<unify>/logs/README.md` (also present
-in `unisdk/logs/README.md` and `unillm/logs/README.md`).
+Use before answering questions about past investigations or decisions across the
+team — e.g. "did we set up X?", "who changed Y?", "why did we do Z?" — when the
+answer might live in someone else's Cursor / Claude Code / Codex session, not
+only the current chat.
 
-## 2. CRITICAL: these dirs are gitignored AND cursorignored
+## How to search
 
-`unify/.gitignore` has `logs/*`; `unify/.cursorignore` has `logs/` and `logs/**`.
-Consequence — this is the usual reason an agent "can't find the logs":
-
-- The built-in **Read / Grep / Glob tools return nothing**, "permission denied", or
-  "filtered out by .cursorignore" for anything under `logs/`.
-- Plain `rg` / `grep` also **skip** these dirs (they respect `.gitignore`).
-
-Always inspect log dirs via the **Shell tool with ignore-bypass**, and read
-individual files through the shell (not the Read tool):
+Prefer ripgrep over reading whole files. Search **tracked** login trees only —
+**do not** search `yours/` unless the user explicitly asks about their local /
+unexported chats:
 
 ```bash
-rg -uu -n "pattern" ~/unify/logs/unillm   # -uu = --no-ignore --hidden
-rg -uu -n . ~/unify/logs/all/<trace_id>.jsonl
+rg -n -i "keyword" ~/shared_context/derived/index.jsonl
+rg -n -i "keyword" ~/shared_context -g '!yours/**' -g '!tools/**' -g '!.git/**'
 ```
 
-## 3. Operational logs that live OUTSIDE the `logs/` tree
-
-- `~/.unity/service.log` — the self-host **stack supervisor**: startup, Orchestra
-  boot, gateway restarts, and the CM's own log path. Location is printed by
-  `stack.sh status`. (Note: may contain a one-off DB dump near a reset.)
-- `/tmp/unity-local.log` — the **ConversationManager event "story"**: notifications,
-  guide/speak decisions, tool calls — the human-readable narrative of a live
-  conversation. Best first read for "what happened in this chat/call".
-- `~/.unity/comms-bridge.log` — inbound email / SMS / WhatsApp polling.
-- `~/.unity/call-tunnel.log` — cloudflared tunnel used for local phone/WhatsApp
-  call webhooks. LiveKit media itself is in LiveKit Cloud for source-stack runs.
-
-## 4. Ground truth that is NOT a file: Orchestra `Transcripts` context
-
-What was actually **spoken / sent / received** on calls and channels lives in
-Orchestra's Postgres, not in a file log. When a file log shows the *intended* text
-but you need the *downstream reality* (e.g. the TTS rendering vs. the LLM text),
-query the `Transcripts` context (and `Contacts`, `Tasks`, …) via the UniSDK logs API
-or Console:
+`derived/index.jsonl` is rebuilt locally by `tools/sync.sh` / `tools/export.py`
+after pull (gitignored). If it is missing, search tracked trees directly or run:
 
 ```bash
-curl -s --get "http://127.0.0.1:8000/v0/logs" \
-  --data-urlencode "project_name=Assistants" \
-  --data-urlencode "context=<userId>/<assistantId>/Transcripts" \
-  --data-urlencode "limit=200" \
-  -H "Authorization: Bearer $KEY"
+python3 ~/shared_context/tools/export.py --index-only
 ```
 
-Local keys: the coordinator/owner API key is in `~/.unity/coordinator-runtime.json`;
-`userId` is in `~/.unity/self-host-owner.json`. `unify_meet` rows are call
-utterances (`sender_id` identifies the speaker).
+Sessions live at
+`<github_login>/{cursor|codex|claude-code}/<yyyy-mm>/<id>/{meta.json,transcript.jsonl}`.
 
-## Quick start
+`yours/{cursor,codex,claude-code}` are local symlinks to personal stores and are
+gitignored.
 
-1. `bash ~/unify-deploy/selfhost/stack.sh status` — running services + log paths.
-2. `rg -uu` into `~/unify/logs/{all,unillm,unisdk,orchestra,unify}` for the request.
-3. For one end-to-end request, open the matching `logs/all/{trace_id}.jsonl`.
-4. For the conversation narrative, read `/tmp/unity-local.log`.
-5. For what was truly spoken/received, query the Orchestra `Transcripts` context.
+If `~/shared_context` is missing, say so and suggest:
 
-# Deployed System Topology (shared context)
+```bash
+git clone git@github.com:unifyai/shared_context.git ~/shared_context
+```
 
-This is broad orientation so agents in **any** repo know the shape of the deployed
-system without re-exploring it every time. The **authoritative, exhaustive source of
-truth** (every resource name, secret, CI trigger, and rename loose-end) is the
-**`unify-deploy` repo root `README.md`**. Read that before deep infra work; do not
-rediscover it from scratch.
+Do **not** suggest `git submodule add` / nesting it under a product repo.
 
-## Repos
+## Citing
 
-`unify` (runtime/brain, public), `unify-deploy` (private: hosted comms app + adapters,
-assistant VM/tunnel infra, self-host stack, client overlay, prod CI/CD), `orchestra`
-(backend API + Postgres, hosted), `console` (Next.js UI, hosted), `unisdk` (Python SDK,
-public), `unillm` (LLM layer, public). Dependency `magnitude` is consumed at branch
-`unity-modifications`. All repos: `main` = prod, `staging` = dev; promote `staging`→`main`.
+Cite **user**, **tool**, **date**, and **path** so a human can open the same session.
 
-## GCP projects (4)
+## Do not
 
-| Project ID | Role |
-|---|---|
-| `responsive-city-458413-a2` (display "Unity LiveKit") | Main runtime: GKE cluster `unity`, Cloud Run `droid-comms-app`/`droid-adapters` (+`-staging`), Pub/Sub fleet, most buckets, tunnel servers, Artifact Registry |
-| `unity-assistant-vms` | Assistant desktop VM pool: pool images/families, pool VMs, static IPs, per-assistant archives |
-| `saas-368716` ("SaaS") | **Orchestra + Console + landing page** (Cloud Run) and **Cloud SQL** Postgres (`prod-ssd-usc1`/`staging-ssd-usc1`, us-central1) |
-| `unify-dns-server` | Public DNS zone `unifyai` → `unify.ai` (incl. `vm.unify.ai`, `tunnel.unify.ai`) |
-
-## gcloud regions (don't trust the defaults)
-
-Almost every resource is **regional/zonal**, and several `gcloud` surfaces **default to the wrong location and return stale/empty output without erroring** — misreading that ("the build never ran", "service doesn't exist") is a recurring mistake. **Pass the location flag explicitly; suspect a wrong/`global` location before suspecting a wrong project.**
-
-- **Cloud Build is the #1 trap — it's regional and the `global` default lies.** All triggers + builds for **both** `responsive-city-458413-a2` and `saas-368716` are in **`us-central1`**. With no `--region`, `gcloud builds …` hits `global`, where `responsive-city-458413-a2` is **empty/months-stale** and `saas-368716` shows **only `landing-page`** (hiding all `orchestra`/`console` builds). Always: `gcloud builds {list,describe,log,triggers list,triggers run} --region=us-central1`.
-- **GKE cluster `unity`**, Cloud Run comms/adapters, tunnel/pool VMs → **`us-central1`** (VM zones `-a`/`-f`).
-- **saas Cloud Run** `orchestra`/`landing-page`/Console (prod + staging) → **`us-central1`**. **Cloud SQL** `prod-ssd-usc1`/`staging-ssd-usc1` → **`us-central1`**. (Consolidated from europe-west1/west3 in July 2026; the entire estate is now `us-central1`.)
-- **Secret Manager** + **Cloud DNS** → global (no region flag; `--project` only).
-- Org GitHub var `GCP_LOCATION=us-central1` is the saas Cloud Run default; the whole estate now shares `us-central1`.
-
-Full per-surface table + exact service names: `unify-deploy` README §3 "gcloud region/zone cheat-sheet".
-
-## Where things run
-
-- **Assistant runtime** = `unity` container as on-demand GKE Jobs (label `app=droid`) on cluster `unity`. Idle→live via Pub/Sub `droid-startup[-staging]` / `droid-{assistant_id}[-staging]`. 7-min inactivity timeout; jobs retained for logs; `job-watcher` (kopf) does crash-safe cleanup.
-- **Hosted comms**: adapters (inbound webhooks) + comms app (outbound + infra control plane `/infra/*`) on Cloud Run; the comms-app image also runs the GKE `assistant-session-controller`/`-pool-controller`.
-- **Assistant desktops**: pooled Ubuntu/Windows VMs in `unity-assistant-vms`; runtime syncs `~/Unity/Local` over rclone SFTP (user `unityuser`, port 2222); cross-session home persisted to `gs://droid-assistant-archives/{id}.tar.gz`; optional rathole tunnel relay (`unity-tunnel-server`) for user machines.
-- **Backend/UI/DB** all in `saas-368716`. Orchestra at `https://api.unify.ai/v0`.
-- **Fleet audit** (`AssistantJobs`): Orchestra `is_system` project; writes via
-  comms `/infra/assistant-jobs/*` (pod `UNIFY_KEY`) or Console hosted reads with
-  `ORCHESTRA_ADMIN_KEY` as `__system__`. Never a Workspace `User` API key.
-
-## Legacy Resource Naming Reality (critical)
-
-The platform has gone through additive renames rather than a single in-place resource cutover.
-Consequence: some live GCP/GitHub resources still intentionally use legacy `droid-*` or
-`unity-*` names. A name mismatch
-fails at *runtime* (404/401/empty config), not at build — this has caused silent prod outages.
-
-**Immutable / permanently `unity` (do NOT try to "fix" in code — code targets these on purpose):**
-project IDs `unity-assistant-vms` & `responsive-city-458413-a2`, all service-account emails
-(`pool-vm-sa@unity-assistant-vms`, `comm-sa@responsive-city-458413-a2`), and GKE cluster `unity`
-(`DROID_GKE_CLUSTER_NAME` default `unity`).
-
-**Canonical names that commonly confuse (use these, verify before assuming):**
-- GKE cluster: `unity`; VM/image project: `unity-assistant-vms`.
-- Tunnel: VM `unity-tunnel-server`, bucket `unity-tunnel-config` (there is **no** `droid-tunnel-config`).
-- Desktop pool: Ubuntu migrated to `droid-pool-ubuntu-*` (image family `droid-pool-ubuntu-vm`); **Windows still `unity-pool-windows-*`**.
-- Archive bucket: `droid-assistant-archives` (live); `unity-assistant-archives` is legacy rollback.
-- Data buckets (recordings/logs/artifacts) and ~84% of Pub/Sub topics/subs are still `unity-*`.
-- CI: GitHub org secrets are still `UNITY_ADAPTERS_URL`/`UNITY_COMMS_URL` while workflows read `DROID_*` (so they can resolve empty).
-- Deliberate legacy-named identifiers (not typos): `UnitySystemEvent` gateway envelope (unity↔console wire contract), `UnityTests` default test project, `unity-user-filesync` SSH key comment, `WaitingForUnity` state labels, `magnitude@unity-modifications`.
-
-When something infra-related "doesn't exist" or 404s/401s, suspect a legacy resource-name mismatch
-and confirm the real resource name against the `unify-deploy` README (or `gcloud`/`gh`) rather
-than trusting the code constant.
-
-# Orchestra Admin vs User API Access
-
-Orchestra (`api.unify.ai/v0` prod, `api.staging.internal.saas.unify.ai/v0` staging) has **two distinct auth paths** (`orchestra/web/api/dependencies.py`). Confusing them wastes hours.
-
-## The two dependencies
-
-- **`auth_api_key`** — looks the Bearer token up as a **user API key** and sets `request.state.user_id`. All **data** endpoints use it (`/logs` get/update/`atomic_field_update`, contexts, dashboards, etc.). Results are **scoped to that key's owner**. There is **no admin bypass** here.
-- **`auth_admin_key`** — matches the Bearer against the server's `ORCHESTRA_ADMIN_KEY` (`secrets.compare_digest`), a Cloud Scheduler OIDC token, or an `AdminUser`'s key. Only the **`/admin/*`** routers (registered with `ADMIN_AUTH`) use it. It **gates operations; it does not grant a data scope.**
-
-### Consequences (do not relearn these the hard way)
-- `ORCHESTRA_ADMIN_KEY` on a data endpoint → **`401 {"detail":"Invalid API key"}`** (because `/logs` only does user-key lookup). This is expected, not a broken key.
-- Even an **admin user's own** `UNIFY_KEY` is data-scoped: it returns `0` for another tenant's contexts. Admin status does not widen `/logs` results.
-- The live `ORCHESTRA_ADMIN_KEY` is the **GCP secret** in `saas-368716` (prod) — repo `.env` copies may be stale. Staging uses a different value. Fetch with `gcloud secrets versions access latest --secret=ORCHESTRA_ADMIN_KEY --project=saas-368716`.
-
-## How to read/write a specific tenant's data smoothly
-
-Use the admin API to fetch the target's **own** API key, then use that key on the normal data endpoints:
-
-1. **Enumerate + get keys** (admin key): `GET /admin/assistant` returns every assistant including its `api_key`, `agent_id`, `user_id` (also `GET /admin/assistant/{id}`, `/admin/assistant/user/{user_id}`).
-   ```bash
-   curl -s --get "$ORCHESTRA_URL/admin/assistant" -H "Authorization: Bearer $ORCHESTRA_ADMIN_KEY"
-   ```
-2. **Use the assistant's `api_key`** as the Bearer on the data API — now scoped to that tenant:
-   ```python
-   import unify
-   logs = unify.get_logs(project="Assistants", filter="'x' in content", api_key=assistant_key)
-   unify.update_logs(logs=log_id, entries={"content": new}, context=ctx, api_key=assistant_key)
-   ```
-
-A cross-tenant migration = loop assistants from `/admin/assistant`, then operate per-assistant with each key (no superuser data key exists). `gcloud` Cloud SQL (`prod-ssd`, `saas-368716`) is the direct-DB fallback for bulk passes.
+- Do not confuse this with `brain` (curated company memory).
+- Do not scrub or rewrite historical transcripts.
+- Do not push/sync unless the user asked you to.
+- Do not grep `yours/` unless the user asked for local-only context.
 
 # Orchestra / DataManager: Server-Side Queries First
 
@@ -878,6 +679,324 @@ keyword and must not be renamed.
 - Playbook with copy-paste recipes:
   `brain/docs/operations/orchestra-data-access.md`
 
+# Infra command safety
+
+Two traps here fail *silently* — wrong output rather than an error — so they
+cannot be discovered by trying.
+
+**`gcloud` is regional and the default lies.** Most resources are regional or
+zonal, and several `gcloud` surfaces default to `global` and return stale or
+empty output **without erroring**. Cloud Build is the worst: with no
+`--region`, `gcloud builds …` hits `global`, where the main project looks
+empty and the saas project hides every `orchestra`/`console` build. Reading
+that as "the build never ran" or "the service doesn't exist" is a recurring
+mistake. Pass the location flag explicitly — the estate is `us-central1` —
+and suspect a wrong location before a wrong project.
+
+**Some live resources keep legacy `droid-*` / `unity-*` names on purpose.**
+The platform was renamed additively, so code targets those names deliberately.
+A name mismatch fails at *runtime* (404/401/empty config), not at build, and
+has caused silent production outages. When something infra-related 404s or
+"doesn't exist", suspect a legacy name before changing the code constant.
+
+Full topology — projects, regions, where things run, and the exhaustive
+legacy-name list — is in
+[`.agents/global-rules/situational/deployed-system-topology.md`](.agents/global-rules/situational/deployed-system-topology.md).
+Read it before any non-trivial infra work.
+
+# Deployed System Topology (shared context)
+
+This is broad orientation so agents in **any** repo know the shape of the deployed
+system without re-exploring it every time. The **authoritative, exhaustive source of
+truth** (every resource name, secret, CI trigger, and rename loose-end) is the
+**`unify-deploy` repo root `README.md`**. Read that before deep infra work; do not
+rediscover it from scratch.
+
+## Repos
+
+`unify` (runtime/brain, public), `unify-deploy` (private: hosted comms app + adapters,
+assistant VM/tunnel infra, self-host stack, client overlay, prod CI/CD), `orchestra`
+(backend API + Postgres, hosted), `console` (Next.js UI, hosted), `unisdk` (Python SDK,
+public), `unillm` (LLM layer, public). Dependency `magnitude` is consumed at branch
+`unity-modifications`. All repos: `main` = prod, `staging` = dev; promote `staging`→`main`.
+
+## GCP projects (4)
+
+| Project ID | Role |
+|---|---|
+| `responsive-city-458413-a2` (display "Unity LiveKit") | Main runtime: GKE cluster `unity`, Cloud Run `droid-comms-app`/`droid-adapters` (+`-staging`), Pub/Sub fleet, most buckets, tunnel servers, Artifact Registry |
+| `unity-assistant-vms` | Assistant desktop VM pool: pool images/families, pool VMs, static IPs, per-assistant archives |
+| `saas-368716` ("SaaS") | **Orchestra + Console + landing page** (Cloud Run) and **Cloud SQL** Postgres (`prod-ssd-usc1`/`staging-ssd-usc1`, us-central1) |
+| `unify-dns-server` | Public DNS zone `unifyai` → `unify.ai` (incl. `vm.unify.ai`, `tunnel.unify.ai`) |
+
+## gcloud regions (don't trust the defaults)
+
+Almost every resource is **regional/zonal**, and several `gcloud` surfaces **default to the wrong location and return stale/empty output without erroring** — misreading that ("the build never ran", "service doesn't exist") is a recurring mistake. **Pass the location flag explicitly; suspect a wrong/`global` location before suspecting a wrong project.**
+
+- **Cloud Build is the #1 trap — it's regional and the `global` default lies.** All triggers + builds for **both** `responsive-city-458413-a2` and `saas-368716` are in **`us-central1`**. With no `--region`, `gcloud builds …` hits `global`, where `responsive-city-458413-a2` is **empty/months-stale** and `saas-368716` shows **only `landing-page`** (hiding all `orchestra`/`console` builds). Always: `gcloud builds {list,describe,log,triggers list,triggers run} --region=us-central1`.
+- **GKE cluster `unity`**, Cloud Run comms/adapters, tunnel/pool VMs → **`us-central1`** (VM zones `-a`/`-f`).
+- **saas Cloud Run** `orchestra`/`landing-page`/Console (prod + staging) → **`us-central1`**. **Cloud SQL** `prod-ssd-usc1`/`staging-ssd-usc1` → **`us-central1`**. (Consolidated from europe-west1/west3 in July 2026; the entire estate is now `us-central1`.)
+- **Secret Manager** + **Cloud DNS** → global (no region flag; `--project` only).
+- Org GitHub var `GCP_LOCATION=us-central1` is the saas Cloud Run default; the whole estate now shares `us-central1`.
+
+Full per-surface table + exact service names: `unify-deploy` README §3 "gcloud region/zone cheat-sheet".
+
+## Where things run
+
+- **Assistant runtime** = `unity` container as on-demand GKE Jobs (label `app=droid`) on cluster `unity`. Idle→live via Pub/Sub `droid-startup[-staging]` / `droid-{assistant_id}[-staging]`. 7-min inactivity timeout; jobs retained for logs; `job-watcher` (kopf) does crash-safe cleanup.
+- **Hosted comms**: adapters (inbound webhooks) + comms app (outbound + infra control plane `/infra/*`) on Cloud Run; the comms-app image also runs the GKE `assistant-session-controller`/`-pool-controller`.
+- **Assistant desktops**: pooled Ubuntu/Windows VMs in `unity-assistant-vms`; runtime syncs `~/Unity/Local` over rclone SFTP (user `unityuser`, port 2222); cross-session home persisted to `gs://droid-assistant-archives/{id}.tar.gz`; optional rathole tunnel relay (`unity-tunnel-server`) for user machines.
+- **Backend/UI/DB** all in `saas-368716`. Orchestra at `https://api.unify.ai/v0`.
+- **Fleet audit** (`AssistantJobs`): Orchestra `is_system` project; writes via
+  comms `/infra/assistant-jobs/*` (pod `UNIFY_KEY`) or Console hosted reads with
+  `ORCHESTRA_ADMIN_KEY` as `__system__`. Never a Workspace `User` API key.
+
+## Legacy Resource Naming Reality (critical)
+
+The platform has gone through additive renames rather than a single in-place resource cutover.
+Consequence: some live GCP/GitHub resources still intentionally use legacy `droid-*` or
+`unity-*` names. A name mismatch
+fails at *runtime* (404/401/empty config), not at build — this has caused silent prod outages.
+
+**Immutable / permanently `unity` (do NOT try to "fix" in code — code targets these on purpose):**
+project IDs `unity-assistant-vms` & `responsive-city-458413-a2`, all service-account emails
+(`pool-vm-sa@unity-assistant-vms`, `comm-sa@responsive-city-458413-a2`), and GKE cluster `unity`
+(`DROID_GKE_CLUSTER_NAME` default `unity`).
+
+**Canonical names that commonly confuse (use these, verify before assuming):**
+- GKE cluster: `unity`; VM/image project: `unity-assistant-vms`.
+- Tunnel: VM `unity-tunnel-server`, bucket `unity-tunnel-config` (there is **no** `droid-tunnel-config`).
+- Desktop pool: Ubuntu migrated to `droid-pool-ubuntu-*` (image family `droid-pool-ubuntu-vm`); **Windows still `unity-pool-windows-*`**.
+- Archive bucket: `droid-assistant-archives` (live); `unity-assistant-archives` is legacy rollback.
+- Data buckets (recordings/logs/artifacts) and ~84% of Pub/Sub topics/subs are still `unity-*`.
+- CI: GitHub org secrets are still `UNITY_ADAPTERS_URL`/`UNITY_COMMS_URL` while workflows read `DROID_*` (so they can resolve empty).
+- Deliberate legacy-named identifiers (not typos): `UnitySystemEvent` gateway envelope (unity↔console wire contract), `UnityTests` default test project, `unity-user-filesync` SSH key comment, `WaitingForUnity` state labels, `magnitude@unity-modifications`.
+
+When something infra-related "doesn't exist" or 404s/401s, suspect a legacy resource-name mismatch
+and confirm the real resource name against the `unify-deploy` README (or `gcloud`/`gh`) rather
+than trusting the code constant.
+
+# Fleet audit auth (AssistantJobs)
+
+Platform fleet audit (`AssistantJobs` / `startup_events` / Console liveview
+discovery) is authenticated as Orchestra **`__system__`** via
+`ORCHESTRA_ADMIN_KEY` against a **`Project.is_system`** project.
+
+## Hard rules
+
+- **Never** create or reuse a Workspace/Console `User` (e.g. `shared@unify.ai`,
+  personal engineer accounts) as the principal for fleet/infra audit auth.
+  `ApiKey.user_id` CASCADE-deletes with the user — a rational account purge
+  will silently break desktop connect / liveview.
+- **Never** mount `ORCHESTRA_ADMIN_KEY` on Unity assistant Job pods. Pods write
+  through ownership-scoped `/infra/assistant-jobs/*` with their own `UNIFY_KEY`.
+- **Never** reintroduce `SHARED_UNIFY_KEY` for AssistantJobs. That secret is
+  retired; scripts and Console hosted reads use `ORCHESTRA_ADMIN_KEY`.
+
+## When purging staging/prod accounts
+
+- Delete unused human users freely.
+- Do **not** delete or rotate keys that look “shared” without checking whether
+  they back a system project (they must not — if they do, migrate to
+  `__system__` first).
+- Prefer verifying AssistantJobs with
+  `deploy/scripts/dev/verify_assistant_jobs_system.py` after Orchestra or
+  secret changes.
+
+# Git History for Context
+
+## Context
+This rule applies when you are trying to understand the *rationale* behind specific code blocks, the evolution of a module, or when deciding whether "weird" looking code is essential or legacy technical debt.
+
+## Rules
+
+### 1. Strategic Git Usage
+- **Use as a Second Level of Analysis**: If the code's purpose isn't clear from the current state alone (static analysis), use `git blame` or `git log` to uncover the "why".
+- **Not a Mandate**: Do not check git history for every file you touch. This creates noise. Use it selectively when you lack context.
+
+### 2. Understanding Code Evolution
+- **Identify Legacy Code**: If you suspect code is redundant or outdated, check its commit date and message. If it was added months ago for a feature that is no longer relevant, this confirms it can likely be purged.
+- **Find the "Why"**: Expressive commit messages often contain the reasoning that comments lack. Use them to understand the author's original intent before refactoring or deleting complex logic.
+
+### 3. Targeted Queries
+- **Be Surgical**: When querying git, look for the history of specific lines or changes (e.g., `git blame -L n,m filename` or `git log -p filename`) rather than dumping the entire history into the context.
+- **Synthesize**: Use the information to form a narrative about the code's lifecycle (e.g., "This was added in commit X to fix bug Y, but since we rewrote the bug Y subsystem, this is now dead code").
+
+### 4. Investigating Regressions with Git Diff
+
+When debugging test failures or regressions, git history can pinpoint exactly what changed.
+
+**When the user proactively provides context:**
+If the user says something like "the test was passing at commit `<hash>`, and the relevant changes are in `<path>`", use this optimally:
+- Run `git log --oneline <hash>..HEAD -- <path>` to see which commits touched the area
+- Run `git diff <hash>..HEAD -- <path>` to get the **aggregate diff** (not serial diffs commit-by-commit)
+- Cross-reference the diff with commit messages to understand developer intent
+- The overall diff is mathematically equivalent to composing serial diffs, but far more token-efficient and cognitively cleaner
+
+**When debugging hits a roadblock:**
+If direct code analysis and debug logging (`CURSOR_DEBUG_LOG`) aren't yielding answers, *then* ask the user:
+- "Do you know when this test was last passing? If you have a commit hash and know which files/folders are likely involved, that would help narrow down what changed."
+- Don't front-load this question—often the user doesn't know the answer. Try direct debugging first.
+
+**Avoid wasteful patterns:**
+- Don't ask the user to provide diffs—ask for the commit hash and run git commands yourself
+- Don't read diffs commit-by-commit and mentally compose them; use the aggregate diff
+- Don't dump entire file histories; scope queries to the relevant path(s)
+
+# Local Stack Logs: Where To Look First
+
+When the user says something like *"we just did a local deployment and X happened,
+check the logs to investigate"*, the logs almost always already exist on disk. Do
+**not** re-explore the filesystem from scratch — go straight to the locations below.
+
+## 1. Central source of truth: `$UNIFY_REPO_PATH/logs/`
+
+Default `~/unify/logs/`. Stack scripts may still export the legacy alias
+`UNITY_REPO_PATH`; both refer to the same checkout. A local deployment aggregates
+**every** repo's logs here — including Orchestra, which runs as a separate process.
+The exact paths are set in `unify-deploy/selfhost/self_host_env.sh` (search
+`*_LOG_DIR`); confirm the live values with `stack.sh status`.
+
+| Dir | Env var | Contents |
+|---|---|---|
+| `logs/unillm/` | `UNILLM_LOG_DIR` | Raw LLM request/response, one `.txt` per call — system/user prompts, tool args, `reasoning_content`, model. This is **"what the model actually produced"**. |
+| `logs/unisdk/` | `UNISDK_LOG_DIR` | UniSDK ↔ Orchestra HTTP traces (JSON per request). |
+| `logs/orchestra/` | `ORCHESTRA_LOG_DIR` | Orchestra server-side per-request traces. |
+| `logs/unify/` | `UNITY_LOG_DIR` | Unify runtime file logs (env var name is legacy). |
+| `logs/all/` | `*_OTEL_LOG_DIR` | **Combined cross-repo OTel traces** — one `{trace_id}.jsonl` per request, with unify + unisdk + unillm (+ orchestra) spans stacked together. Use this for the end-to-end story of a single request. |
+| `logs/pytest/`, `logs/ci/` | — | Test runs / downloaded-CI logs. |
+
+Deep reference (formats, env vars, examples): `<unify>/logs/README.md` (also present
+in `unisdk/logs/README.md` and `unillm/logs/README.md`).
+
+## 2. CRITICAL: these dirs are gitignored AND cursorignored
+
+`unify/.gitignore` has `logs/*`; `unify/.cursorignore` has `logs/` and `logs/**`.
+Consequence — this is the usual reason an agent "can't find the logs":
+
+- The built-in **Read / Grep / Glob tools return nothing**, "permission denied", or
+  "filtered out by .cursorignore" for anything under `logs/`.
+- Plain `rg` / `grep` also **skip** these dirs (they respect `.gitignore`).
+
+Always inspect log dirs via the **Shell tool with ignore-bypass**, and read
+individual files through the shell (not the Read tool):
+
+```bash
+rg -uu -n "pattern" ~/unify/logs/unillm   # -uu = --no-ignore --hidden
+rg -uu -n . ~/unify/logs/all/<trace_id>.jsonl
+```
+
+## 3. Operational logs that live OUTSIDE the `logs/` tree
+
+- `~/.unity/service.log` — the self-host **stack supervisor**: startup, Orchestra
+  boot, gateway restarts, and the CM's own log path. Location is printed by
+  `stack.sh status`. (Note: may contain a one-off DB dump near a reset.)
+- `/tmp/unity-local.log` — the **ConversationManager event "story"**: notifications,
+  guide/speak decisions, tool calls — the human-readable narrative of a live
+  conversation. Best first read for "what happened in this chat/call".
+- `~/.unity/comms-bridge.log` — inbound email / SMS / WhatsApp polling.
+- `~/.unity/call-tunnel.log` — cloudflared tunnel used for local phone/WhatsApp
+  call webhooks. LiveKit media itself is in LiveKit Cloud for source-stack runs.
+
+## 4. Ground truth that is NOT a file: Orchestra `Transcripts` context
+
+What was actually **spoken / sent / received** on calls and channels lives in
+Orchestra's Postgres, not in a file log. When a file log shows the *intended* text
+but you need the *downstream reality* (e.g. the TTS rendering vs. the LLM text),
+query the `Transcripts` context (and `Contacts`, `Tasks`, …) via the UniSDK logs API
+or Console:
+
+```bash
+curl -s --get "http://127.0.0.1:8000/v0/logs" \
+  --data-urlencode "project_name=Assistants" \
+  --data-urlencode "context=<userId>/<assistantId>/Transcripts" \
+  --data-urlencode "limit=200" \
+  -H "Authorization: Bearer $KEY"
+```
+
+Local keys: the coordinator/owner API key is in `~/.unity/coordinator-runtime.json`;
+`userId` is in `~/.unity/self-host-owner.json`. `unify_meet` rows are call
+utterances (`sender_id` identifies the speaker).
+
+## Quick start
+
+1. `bash ~/unify-deploy/selfhost/stack.sh status` — running services + log paths.
+2. `rg -uu` into `~/unify/logs/{all,unillm,unisdk,orchestra,unify}` for the request.
+3. For one end-to-end request, open the matching `logs/all/{trace_id}.jsonl`.
+4. For the conversation narrative, read `/tmp/unity-local.log`.
+5. For what was truly spoken/received, query the Orchestra `Transcripts` context.
+
+# Orchestra Admin vs User API Access
+
+Orchestra (`api.unify.ai/v0` prod, `api.staging.internal.saas.unify.ai/v0` staging) has **two distinct auth paths** (`orchestra/web/api/dependencies.py`). Confusing them wastes hours.
+
+## The two dependencies
+
+- **`auth_api_key`** — looks the Bearer token up as a **user API key** and sets `request.state.user_id`. All **data** endpoints use it (`/logs` get/update/`atomic_field_update`, contexts, dashboards, etc.). Results are **scoped to that key's owner**. There is **no admin bypass** here.
+- **`auth_admin_key`** — matches the Bearer against the server's `ORCHESTRA_ADMIN_KEY` (`secrets.compare_digest`), a Cloud Scheduler OIDC token, or an `AdminUser`'s key. Only the **`/admin/*`** routers (registered with `ADMIN_AUTH`) use it. It **gates operations; it does not grant a data scope.**
+
+### Consequences (do not relearn these the hard way)
+- `ORCHESTRA_ADMIN_KEY` on a data endpoint → **`401 {"detail":"Invalid API key"}`** (because `/logs` only does user-key lookup). This is expected, not a broken key.
+- Even an **admin user's own** `UNIFY_KEY` is data-scoped: it returns `0` for another tenant's contexts. Admin status does not widen `/logs` results.
+- The live `ORCHESTRA_ADMIN_KEY` is the **GCP secret** in `saas-368716` (prod) — repo `.env` copies may be stale. Staging uses a different value. Fetch with `gcloud secrets versions access latest --secret=ORCHESTRA_ADMIN_KEY --project=saas-368716`.
+
+## How to read/write a specific tenant's data smoothly
+
+Use the admin API to fetch the target's **own** API key, then use that key on the normal data endpoints:
+
+1. **Enumerate + get keys** (admin key): `GET /admin/assistant` returns every assistant including its `api_key`, `agent_id`, `user_id` (also `GET /admin/assistant/{id}`, `/admin/assistant/user/{user_id}`).
+   ```bash
+   curl -s --get "$ORCHESTRA_URL/admin/assistant" -H "Authorization: Bearer $ORCHESTRA_ADMIN_KEY"
+   ```
+2. **Use the assistant's `api_key`** as the Bearer on the data API — now scoped to that tenant:
+   ```python
+   import unify
+   logs = unify.get_logs(project="Assistants", filter="'x' in content", api_key=assistant_key)
+   unify.update_logs(logs=log_id, entries={"content": new}, context=ctx, api_key=assistant_key)
+   ```
+
+A cross-tenant migration = loop assistants from `/admin/assistant`, then operate per-assistant with each key (no superuser data key exists). `gcloud` Cloud SQL (`prod-ssd`, `saas-368716`) is the direct-DB fallback for bulk passes.
+
+# OAuth Scopes: Mirrored Between Communication and Orchestra
+
+## Context
+OAuth scope catalogs (Google and Microsoft provider scopes, feature bundles, and the `build_scope_string` resolver) are intentionally duplicated in two places:
+
+- **Communication**: `common/scopes.py`
+- **Orchestra**: `web/api/assistant/scopes.py`
+
+Both services need this data at runtime (Communication when initiating OAuth flows and talking to providers; Orchestra when storing assistant scope grants and serving them to Console). Because the contents are small, static, and change rarely, we deliberately avoid adding a cross-service HTTP round-trip and instead keep two copies in sync.
+
+## Critical Rules
+
+### 1. Any Scope Change Must Be Mirrored
+When modifying **any** of the following in either repo, the identical change MUST be made in the sibling file in the other repo in the same changeset:
+
+- `GOOGLE_SCOPE_BUNDLES` / `MICROSOFT_SCOPE_BUNDLES`
+- `GOOGLE_BASE_SCOPES` / `MICROSOFT_BASE_SCOPES`
+- The `build_scope_string` function signature or behavior
+- Any new provider added to `_BUNDLES` / `_BASE`
+
+This applies to additions, removals, renames, and reorderings.
+
+### 2. Do Not "Fix" the Duplication
+Do not attempt to eliminate the duplication by:
+- Having Communication fetch scopes from Orchestra over HTTP
+- Having Orchestra fetch scopes from Communication
+- Extracting the file into a shared package
+
+The duplication is a conscious trade-off. If you believe the trade-off should be revisited, raise it with the user first.
+
+### 3. Verification Workflow
+When asked to add or modify a scope in one repo:
+1. Make the change in the current repo.
+2. Locate the sibling file in the other repo (paths above).
+3. Apply the matching change there.
+4. If the other repo is not checked out locally, surface this clearly to the user and list the exact edits required so they can apply them.
+
+### 4. Keep the Cross-Reference Comment Accurate
+The docstring at the top of each `scopes.py` points at its sibling. If either file moves, update both docstrings.
+
 # TaskScheduler surgery (Tasks rows)
 
 Agents frequently break recurring jobs by hand-editing `Teams/*/Tasks`
@@ -946,69 +1065,42 @@ Executions so one next wake remains.
 Ops detail: brain `docs/operations/scheduled-jobs.md` (re-arm / disable /
 catch-up). Health check: `python3 -m scripts.tasks_health_check`.
 
-# Fleet audit auth (AssistantJobs)
+This rule standardizes how we add temporary debug logging during failing tests and how we clean it up afterwards. ALWAYS use this process in agent sessions WHENEVER A TEST FAILS. This is the ONLY permitted way to address failing tests.
 
-Platform fleet audit (`AssistantJobs` / `startup_events` / Console liveview
-discovery) is authenticated as Orchestra **`__system__`** via
-`ORCHESTRA_ADMIN_KEY` against a **`Project.is_system`** project.
+1) Always start with hardcoded, unconditional debug logs
+- Add logs immediately, without flags or guards. Do not gate behind environment variables or configuration.
+- Use **only** the `CURSOR_DEBUG_LOG` function. No other logging method is permitted.
+- **Finding the function**: Search for it with `rg "CURSOR_DEBUG_LOG"` to locate the utility in your project, then import and use it.
+  - **Python**: `from <module> import CURSOR_DEBUG_LOG` then `CURSOR_DEBUG_LOG("message", variable)`
+  - **JavaScript/TypeScript**: `import { CURSOR_DEBUG_LOG } from "<module>"` then `CURSOR_DEBUG_LOG("message", { variable })`
+- Behavior: Prints an entry to stderr/stdout, making it easy to correlate with test runs.
 
-## Hard rules
+2) Python-specific import discipline
+- **Self-contained imports**: Each debug snippet must include ALL its own imports inline (e.g., `import json as _json; import os as _os;`). Never rely on the file's existing imports.
+- **Prefixed names**: Use underscore-prefixed aliases (`_json`, `_os`, `_pid`) to avoid shadowing.
+- **Region markers**: Wrap in `# #region agent log` / `# #endregion` for easy identification and removal.
+- This prevents `NameError` crashes when debug snippets reference modules that aren't imported at that location.
 
-- **Never** create or reuse a Workspace/Console `User` (e.g. `shared@unify.ai`,
-  personal engineer accounts) as the principal for fleet/infra audit auth.
-  `ApiKey.user_id` CASCADE-deletes with the user — a rational account purge
-  will silently break desktop connect / liveview.
-- **Never** mount `ORCHESTRA_ADMIN_KEY` on Unity assistant Job pods. Pods write
-  through ownership-scoped `/infra/assistant-jobs/*` with their own `UNIFY_KEY`.
-- **Never** reintroduce `SHARED_UNIFY_KEY` for AssistantJobs. That secret is
-  retired; scripts and Console hosted reads use `ORCHESTRA_ADMIN_KEY`.
+3) Investigation workflow
+- Step A: Add targeted debug calls around suspected code paths.
+- Step B: Re-run the failing test(s) and inspect the new logs.
+- Step C: If you are not 100% certain of the root cause, add more debug entries and repeat.
+- Step D: Only when you are 100% confident of the cause, implement a direct fix (with or without keeping some logs briefly for confirmation).
+- Step E: The user may repeatedly re-run tests and paste logs; continue iterating until the issue is definitively fixed.
 
-## When purging staging/prod accounts
+4) Cleanup policy
+- After the fix is confirmed, remove all temporary logging.
+- Grep to find every occurrence:
+  - ripgrep: `rg -n "CURSOR_DEBUG_LOG" -S`
+  - grep:    `grep -Rin "CURSOR_DEBUG_LOG" .`
+- Delete each call site (and any now-unused imports) before finalizing the fix.
 
-- Delete unused human users freely.
-- Do **not** delete or rotate keys that look “shared” without checking whether
-  they back a system project (they must not — if they do, migrate to
-  `__system__` first).
-- Prefer verifying AssistantJobs with
-  `deploy/scripts/dev/verify_assistant_jobs_system.py` after Orchestra or
-  secret changes.
+5) Alignment with workspace rules
+- No fast paths or heuristics: Logging should not add conditional shortcuts; it merely reports state unconditionally.
+- No exception-handling shields: Do not add defensive exception handling (try/catch, try/except) around the logs. Keep failures visible.
+- No test details in production prompts: Temporary logs must not leak test-specific information into production prompts or docstrings.
+- Rapid evolution: This logging is temporary by design; remove it once the issue is resolved—do not preserve backward compatibility.
 
-# OAuth Scopes: Mirrored Between Communication and Orchestra
-
-## Context
-OAuth scope catalogs (Google and Microsoft provider scopes, feature bundles, and the `build_scope_string` resolver) are intentionally duplicated in two places:
-
-- **Communication**: `common/scopes.py`
-- **Orchestra**: `web/api/assistant/scopes.py`
-
-Both services need this data at runtime (Communication when initiating OAuth flows and talking to providers; Orchestra when storing assistant scope grants and serving them to Console). Because the contents are small, static, and change rarely, we deliberately avoid adding a cross-service HTTP round-trip and instead keep two copies in sync.
-
-## Critical Rules
-
-### 1. Any Scope Change Must Be Mirrored
-When modifying **any** of the following in either repo, the identical change MUST be made in the sibling file in the other repo in the same changeset:
-
-- `GOOGLE_SCOPE_BUNDLES` / `MICROSOFT_SCOPE_BUNDLES`
-- `GOOGLE_BASE_SCOPES` / `MICROSOFT_BASE_SCOPES`
-- The `build_scope_string` function signature or behavior
-- Any new provider added to `_BUNDLES` / `_BASE`
-
-This applies to additions, removals, renames, and reorderings.
-
-### 2. Do Not "Fix" the Duplication
-Do not attempt to eliminate the duplication by:
-- Having Communication fetch scopes from Orchestra over HTTP
-- Having Orchestra fetch scopes from Communication
-- Extracting the file into a shared package
-
-The duplication is a conscious trade-off. If you believe the trade-off should be revisited, raise it with the user first.
-
-### 3. Verification Workflow
-When asked to add or modify a scope in one repo:
-1. Make the change in the current repo.
-2. Locate the sibling file in the other repo (paths above).
-3. Apply the matching change there.
-4. If the other repo is not checked out locally, surface this clearly to the user and list the exact edits required so they can apply them.
-
-### 4. Keep the Cross-Reference Comment Accurate
-The docstring at the top of each `scopes.py` points at its sibling. If either file moves, update both docstrings.
+6) Intent and scope
+- This logging exists solely for interactive debugging in agent sessions.
+- The function name `CURSOR_DEBUG_LOG` is intentionally unique and grep-friendly to ensure quick cleanup on request.
