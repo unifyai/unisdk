@@ -410,32 +410,74 @@ If the user **explicitly asks** for a feature branch or PR workflow, follow thei
 
 # Python Formatting & Pre-commit
 
-Every first-party Python repo (`orchestra`, `unify`, `unisdk`, `unillm`, `unify-deploy`) enforces formatting with **black** (plus `isort`/`autoflake`), and CI rejects unformatted code. A missing local hook or a drifting/duplicated black version is the single most common avoidable CI failure. This rule keeps local and CI identical so it stops blocking us.
+Every first-party Python repo (`orchestra`, `unify`, `unisdk`, `unillm`,
+`unify-deploy`, `docs`) enforces formatting with **black** (plus
+`isort`/`autoflake` where configured), and CI rejects unformatted code. A
+missing local hook or a drifting Black target/Python version is the single
+most common avoidable CI failure. This rule keeps local and CI identical so
+it stops blocking us — for Cursor, Claude Code, Codex, and humans alike.
 
 ## Single source of truth: the locked `lint` group
 
-The formatters are ordinary, locked dependencies — not a version hardcoded in the pre-commit hook or in CI YAML.
+The formatters are ordinary, locked dependencies — not a version hardcoded in
+the pre-commit hook or in CI YAML.
 
-- Each repo declares its formatters in a dedicated **`lint` dependency group**, pinned and committed to the lockfile (`uv.lock` / `poetry.lock`). The `dev` group includes `lint` so a normal sync gives developers everything.
-  - uv repos: `[dependency-groups]` → `lint = ["black==X", "isort>=…", "autoflake>=…"]`, and `dev = [ …, {include-group = "lint"} ]`.
-  - poetry repos: `[tool.poetry.group.lint.dependencies]`.
-- **Both** the pre-commit hook and CI run that **same locked** tool via the package manager — never a separate pin:
-  - pre-commit hook: `entry: uv run black` / `poetry run black`, `language: system` (no `additional_dependencies`).
-  - CI (uv): `uv sync --only-group lint --no-install-project` then `uv run --no-sync black --check .`.
-  - CI (poetry): `poetry install --only lint --no-root` then `poetry run black --check .`.
-- Never introduce a second black version or a parallel invocation anywhere (CI YAML, Dockerfiles, docs, ad-hoc `pip install black`, hook `additional_dependencies`). The locked `lint` group is authoritative; this rule deliberately does not restate the number — look it up in the repo's `pyproject.toml` / lockfile so guidance can never drift from reality. Because the pin lives in the lockfile, security tooling (Dependabot/audit) sees and bumps it like any other dependency.
-- Keep the version **in lockstep across all the Python repos**: a bump is one coordinated change per repo (the `lint` pin + lockfile) applied to every repo so they don't diverge.
+- Each repo declares its formatters in a dedicated **`lint` dependency
+  group**, pinned and committed to the lockfile (`uv.lock` / `poetry.lock`).
+  The `dev` group includes `lint` so a normal sync gives developers everything.
+  - uv repos: `[dependency-groups]` → `lint = ["black==X", "isort>=…",
+    "autoflake>=…"]`, and `dev = [ …, {include-group = "lint"} ]`.
+  - poetry repos: `[tool.poetry.group.lint.dependencies]` (or `dev` where
+    that is the established home).
+- **Both** the pre-commit hook and CI run that **same locked** tool via the
+  package manager — never a separate pin:
+  - pre-commit hook: `entry: uv run black` / `poetry run black`,
+    `language: system` (no `additional_dependencies`).
+  - CI (uv): `uv sync --only-group lint --no-install-project` then
+    `uv run --no-sync black --check .` on **Python 3.12**.
+  - CI (poetry): `poetry install --only lint --no-root` then
+    `poetry run black --check .` on **Python 3.12**.
+- Pin Black's language target in every Python repo so local Mac Pythons and
+  CI 3.12 cannot disagree (Black 26+ defaults toward newer targets):
+
+```toml
+[tool.black]
+target-version = ["py312"]
+```
+
+- Never introduce a second black version or a parallel invocation anywhere
+  (CI YAML, Dockerfiles, docs, ad-hoc `pip install black`, hook
+  `additional_dependencies`). The locked `lint` group is authoritative; this
+  rule deliberately does not restate the number — look it up in the repo's
+  `pyproject.toml` / lockfile so guidance can never drift from reality.
+- Keep the version **in lockstep across all the Python repos**: a bump is one
+  coordinated change per repo (the `lint` pin + lockfile) applied to every
+  repo so they don't diverge.
+
+## Committed hooks (required once per clone / worktree)
+
+`.git/hooks/` is a per-checkout artifact. Fresh clones, Cursor/Codex/Claude
+worktrees, and cloud agents start with **no** hooks, which is why unformatted
+code reaches CI.
+
+Each Python repo commits `.githooks/pre-commit`. Enable it with the shared
+helper (idempotent, tool-agnostic):
+
+```bash
+python3 .agents/global-rules/ensure_git_hooks.py
+```
+
+That sets local `core.hooksPath=.githooks`. Do this before the first commit
+in any new clone or worktree. Coding agents (Cursor, Claude Code, Codex)
+MUST run it at session start when working in a checkout that has
+`.pre-commit-config.yaml`.
+
+`pre-commit install` alone is no longer enough — it writes into `.git/hooks/`,
+which worktrees and new clones miss. Prefer `ensure_git_hooks.py`.
 
 ## Before you commit (required)
 
-1. Hooks are a per-clone, untracked artifact — they do **not** travel with a clone, worktree, or cloud checkout. Install them once per fresh checkout (idempotent):
-
-```bash
-pre-commit install
-```
-
-   Coding agents working in a fresh, worktree, or cloud checkout MUST run this before their first commit.
-
+1. Ensure committed hooks are wired (above).
 2. Let the hook run on `git commit`, or run it explicitly on what you changed:
 
 ```bash
@@ -446,15 +488,28 @@ pre-commit run --files <changed-files>   # or: pre-commit run --all-files
 
 ## Formatting across multiple repos
 
-When juggling several repos, do not invoke a globally-installed `black` — versions drift between machines and repos and produce diffs CI rejects. Always format through the repo's pinned tooling, which uses that repo's locked version:
+When juggling several repos, do not invoke a globally-installed `black` —
+versions drift between machines and repos and produce diffs CI rejects.
+Always format through the repo's pinned tooling, which uses that repo's
+locked version:
 
 ```bash
 pre-commit run black --all-files          # or: uv run black .  /  poetry run black .
 ```
 
+## Release gates
+
+`black` is a required status check on `staging → main` (ruleset and/or branch
+protection) for the Python repos. Direct pushes to `staging` stay open for
+the worktree workflow — the committed git hook is the staging-side gate.
+CI still runs `black` on every push so failures are visible immediately.
+
 ## Why this matters
 
-A fresh clone has no git hook until `pre-commit install` runs, so without it the first place formatting is ever checked is CI — which then blocks the PR. Pinning the formatters once in the locked `lint` group, and running that exact locked tool from both the hook and CI, removes every variant of the failure: "hook never ran", "version drift", and "duplicated pin disagreed".
+Without committed `.githooks` + `ensure_git_hooks.py`, the first place
+formatting is checked is CI — which then burns agent turns on mundane
+reformats. Pinning Black's target and CI Python to 3.12 removes the
+"works on my Mac, fails in Actions" class of failures.
 
 # Full Local Stack First
 
