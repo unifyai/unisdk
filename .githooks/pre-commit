@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+# Committed pre-commit entrypoint. Enable once per clone/worktree with:
+#   python3 .agents/global-rules/ensure_git_hooks.py
+#
+# This avoids depending on `.git/hooks/` (which does not travel with clones
+# or Cursor/Codex/Claude worktrees). Keep this file portable — no machine-
+# specific Python paths.
+set -euo pipefail
+
+HERE="$(cd "$(dirname "$0")" && pwd)"
+ROOT="$(git rev-parse --show-toplevel)"
+cd "$ROOT"
+
+if ! [[ -f .pre-commit-config.yaml ]]; then
+  echo "pre-commit: no .pre-commit-config.yaml in $ROOT" >&2
+  exit 0
+fi
+
+# Prefer the repo's locked Python so language:system hooks (black, custom
+# scripts) do not pick up an older Homebrew/system interpreter.
+# Never invoke `uv run` from this hook — it can create/mutate uv.lock.
+if command -v uv >/dev/null 2>&1; then
+  UV_PY="$(uv python find 3.12 2>/dev/null || uv python find 2>/dev/null || true)"
+  if [[ -n "${UV_PY}" ]]; then
+    export PATH="$(dirname "${UV_PY}"):${PATH}"
+  fi
+fi
+
+run_pre_commit() {
+  if [[ -x .venv/bin/pre-commit ]]; then
+    exec .venv/bin/pre-commit "$@"
+  fi
+  if command -v pre-commit >/dev/null 2>&1; then
+    exec pre-commit "$@"
+  fi
+  if command -v poetry >/dev/null 2>&1; then
+    exec poetry run pre-commit "$@"
+  fi
+  echo "pre-commit is not installed. Install it (brew install pre-commit / pipx install pre-commit)" >&2
+  echo "or sync this repo's lint/dev dependencies, then re-commit." >&2
+  exit 1
+}
+
+run_pre_commit hook-impl \
+  --config=.pre-commit-config.yaml \
+  --hook-type=pre-commit \
+  --hook-dir="$HERE" \
+  -- "$@"
