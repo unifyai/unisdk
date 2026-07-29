@@ -618,3 +618,58 @@ Cite **user**, **tool**, **date**, and **path** so a human can open the same ses
 - Do not scrub or rewrite historical transcripts.
 - Do not push/sync unless the user asked you to.
 - Do not grep `yours/` unless the user asked for local-only context.
+
+# OpenAI is reached only through OpenRouter
+
+Every LLM call in every repo routes through **OpenRouter**, using
+`OPENROUTER_API_KEY`. The company's direct OpenAI account is not active — it
+answers `429 billing_not_active` — so any code path that talks to OpenAI
+natively is dead code that fails slowly.
+
+## Canonical endpoint form
+
+```
+openai/<model-id>@openrouter      # openai/gpt-5.6-terra@openrouter
+```
+
+Never `<model-id>@openai`. In UniLLM, `@openai` and `@openrouter` are distinct
+providers (`unillm/endpoints/utils.py`): `@openrouter` resolves through the
+OpenRouter catalog, `@openai` resolves to a native OpenAI endpoint and litellm
+sends it straight to OpenAI with `OPENAI_API_KEY`.
+
+**The alias changed meaning.** `gpt-*@openai` used to be *transported* via
+OpenRouter inside UniLLM. It now means native OpenAI. Model strings written
+before that change did not move — they silently re-pointed at a dead account.
+The Orchestra migration `2026-08-13-00-00_openrouter_model_endpoints.py`
+rewrote stored assistant endpoints for exactly this reason; source code was not
+covered by it.
+
+## Why this fails slowly rather than loudly
+
+OpenAI reports the billing fault as **HTTP 429**, the same status as
+rate-limiting. UniLLM's `_is_retryable` classifies 429 as transient and retries
+`UNILLM_TRANSIENT_RETRY_COUNT` (default 6) times with 1/2/4/8/16/32s backoff —
+63s of sleeping per call, multiplied by litellm's own internal retries, before
+it finally raises. Under any concurrency this is indistinguishable from a hang,
+and scheduled jobs look stuck rather than broken. Do not "fix" such a stall by
+raising a timeout; check the endpoint's provider suffix first.
+
+## Hard rules
+
+- New LLM call sites use `openai/<id>@openrouter`. Non-OpenAI providers
+  (Anthropic, Google, …) are unaffected by this rule and keep their own routing.
+- Never read `OPENAI_API_KEY` directly, and never construct `openai.OpenAI()`
+  against it, in application code.
+- Env defaults and `.env.example` entries carry the `@openrouter` form, so a
+  fresh checkout cannot inherit a dead route.
+- When a provider call stalls for ~a minute and then fails, suspect a native
+  provider suffix before suspecting the network.
+
+## The one legitimate direct-OpenAI path
+
+Masked image edits (`images.edit` with `gpt-image-2`) have no OpenRouter
+equivalent — OpenRouter's unified Image API does not expose the mask parameter.
+That path may use a separately-named credential (`OPENAI_DIRECT_API_KEY`), must
+never fall back to reading `OPENAI_API_KEY`, and must degrade loudly when the
+credential is absent. It is the only exception; adding another needs an
+explicit reason, not convenience.
