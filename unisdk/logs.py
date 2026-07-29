@@ -552,12 +552,35 @@ def _sync_log(
 
 
 def _create_log(dct, context, api_key):
+    """Build one ``Log`` from a server row's three entry sources.
+
+    The sources are merged before the call rather than splatted into it. A field
+    present in two of them — an external binding mirroring a name that is also
+    stored, say — made the call raise ``TypeError: got multiple values for
+    keyword argument``, so *every* read of that context failed on a payload the
+    server is entitled to return. A GTM campaign row did exactly that and took
+    a live outbound pipeline down with it.
+
+    Precedence is source order, matching ``get_logs_federated``: a derived value
+    overrides a stored one, and an external value overrides both.
+
+    Reserved names (``id``, ``ts``, ``context``, ``api_key``, ``project``) are
+    still passed separately, so a row with an entry of that name would collide.
+    Nothing produces one today; left explicit rather than silently dropped.
+    """
+
+    merged = {}
+    for source in (
+        dct.get("entries"),
+        dct.get("derived_entries"),
+        dct.get("external_entries"),
+    ):
+        if source:
+            merged.update(source)
     return unisdk.Log(
         id=dct["id"],
         ts=dct["ts"],
-        **dct.get("entries") or {},
-        **dct.get("derived_entries") or {},
-        **dct.get("external_entries") or {},
+        **merged,
         context=context,
         api_key=api_key,
     )
