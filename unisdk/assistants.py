@@ -87,6 +87,54 @@ def update_assistant_config(
     return response.json()["info"]
 
 
+def flip_coordinator_multiplayer(
+    coordinator_id: int,
+    *,
+    first_name: str,
+    voice_id: str,
+    voice_provider: str,
+    surname: Optional[str] = None,
+    profile_photo: Optional[str] = None,
+    api_key: Optional[str] = None,
+) -> Dict[str, Any]:
+    """
+    Flip a coordinator to multiplayer mode (one-way).
+
+    Trades the twin's private boss-only surface for a hire-like outward
+    identity: the given name and voice are applied, shared-pool contact
+    details are retired, and a dedicated platform alias email is
+    provisioned. The flip cannot be reverted.
+
+    Args:
+        coordinator_id: The coordinator's assistant identifier.
+        first_name: The twin's outward first name (must differ from the
+            coordinator default).
+        voice_id: Voice for the twin's calls and meetings.
+        voice_provider: Provider of the chosen voice.
+        surname: Optional outward surname.
+        profile_photo: Optional avatar URL.
+        api_key: If specified, unify API key to use. Defaults to ``UNIFY_KEY``.
+
+    Returns:
+        The updated assistant record, with ``is_multiplayer`` set.
+    """
+    headers = _create_request_header(api_key)
+    payload = {
+        "first_name": first_name,
+        "surname": surname,
+        "voice_id": voice_id,
+        "voice_provider": voice_provider,
+        "profile_photo": profile_photo,
+    }
+    payload = {k: v for k, v in payload.items() if v is not None}
+    response = http.post(
+        f"{BASE_URL}/assistant/{coordinator_id}/multiplayer",
+        headers=headers,
+        json=payload,
+    )
+    return response.json()["info"]
+
+
 def list_assistants(
     *,
     phone: Optional[str] = None,

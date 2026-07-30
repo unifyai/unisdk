@@ -84,6 +84,7 @@ __all__ = [
     "create_assistant",
     "delegate_to_colleague",
     "delete_assistant",
+    "flip_coordinator_multiplayer",
     "list_assistants",
     "update_assistant_config",
     # Integrations
@@ -136,6 +137,7 @@ from .assistants import (
     create_assistant,
     delegate_to_colleague,
     delete_assistant,
+    flip_coordinator_multiplayer,
     list_assistants,
     update_assistant_config,
 )
