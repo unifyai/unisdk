@@ -11,6 +11,7 @@ no-test-info-in-production-code.md
 git-commit-safety.md
 worktree-direct-commits.md
 git-history-for-context.md
+staging-main-fail-closed-gates.md
 shared-agent-context.md
 
 openrouter-only-llm-access.md

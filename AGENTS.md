@@ -449,6 +449,83 @@ If direct code analysis and debug logging (`CURSOR_DEBUG_LOG`) aren't yielding a
 - Don't read diffs commit-by-commit and mentally compose them; use the aggregate diff
 - Don't dump entire file histories; scope queries to the relevant path(s)
 
+# Staging→Main Release Gates Are Fail-Closed
+
+Every repo's `Staging->Main` ruleset requires at least one status check whose
+job makes an expensive or conditional run (full pytest matrix, paid LLM smoke
+tests, E2E). Those jobs don't run on every push — they're gated on a
+`[run-tests]`/`[run-flows]`-style commit-message tag, or on the PR event
+itself. As of **2026-07-31**, the required context for that job is published
+**unconditionally** on every push: an explicit pass or fail, never an
+implicit pass from a skip.
+
+## Why: the orchestra incident
+
+Before 2026-07-31, the required context was only published when the gated
+job actually ran; an ordinary push that skipped it published nothing, and
+**GitHub counts a skipped required check as satisfied**. A staging→main
+release PR shares its head SHA with whatever was last pushed to staging, so
+that stale implicit pass could satisfy branch protection before the real
+PR-triggered run finished. In orchestra this let four release PRs (#125,
+#127, #128, #129) merge into main carrying a skipped/failing suite — #125
+merged 83 seconds into an 11-minute test run that later came back failing,
+leaving a broken test on main for thirteen hours.
+
+The fix — "make the gate fail closed" — makes an aggregator job republish the
+required context unconditionally, so a push that didn't run the suite now
+reports that context **red**, not green-by-default.
+
+Rolled out the same week to: orchestra (`pytest`, [`0f040b6c`](https://github.com/unifyai/orchestra/commit/0f040b6c)),
+unillm (`pytest`, `c7b2351`), unify (`Flow smoke`, `e2bb461c7`), unify-deploy
+(`Integration smoke`, `0d886ad1`), console (`Push Gate`, `08cf9a9fd`). Check
+name and trigger tag differ per repo; the fail-closed shape is the same.
+unisdk, brain, docs, and landing-page have no equivalent expensive/conditional
+gate, so this doesn't currently apply there — but treat it as the default
+shape for any new staging→main required check in any repo.
+
+## The known follow-up flaw, and its fix
+
+Fail-closed on its own creates a new failure mode: **GitHub's required-check
+evaluation considers every check-run matching the required context name on a
+commit's SHA, not just the latest one.** If staging gets an untagged direct
+push, that push's run reports the context red. Opening the release PR then
+runs the real suite via the `pull_request` trigger and it can pass cleanly —
+but the earlier red run doesn't get superseded. The release PR is left
+**permanently blocked** on that SHA: re-running the failed job reproduces the
+same failure (the commit still lacks the tag), and the passing PR-triggered
+run sits right next to it, ignored.
+
+`unify` hit this within 36 hours of rolling out fail-closed and fixed it in
+[`05fbdcce9`](https://github.com/unifyai/unify/commit/05fbdcce9): scope the
+aggregator job to `pull_request`/`workflow_dispatch` only, so a plain push
+with no matching trigger publishes **no run at all** for that context
+(`pending`) instead of an explicit failure. Pending isn't a stale pass and
+isn't an unresolvable block — the PR-triggered run is free to become the
+only entry once it lands.
+
+As of this writing, only `unify` has this follow-up. orchestra, unillm,
+unify-deploy, and console still run the plain fail-closed version and can hit
+the stale-permanent-block failure mode above.
+
+## What to do when a release PR is stuck this way
+
+Recognize the shape first: `reviewDecision: APPROVED`, `mergeable: MERGEABLE`,
+`mergeStateStatus: BLOCKED`, and the required context shows both a `FAILURE`
+and a `SUCCESS` entry for the same PR head SHA, from two different workflow
+runs (one push-triggered, one pull_request-triggered). This is not a real
+test failure and not something to route around with an admin bypass — surface
+it and let the user choose:
+
+- **Get a clean SHA**: push a small commit (or empty commit) to staging
+  carrying the trigger tag, giving the release PR a fresh head with a single,
+  unambiguous run for that context.
+- **Port the `unify` follow-up**: scope that repo's aggregator job to
+  `pull_request`/`workflow_dispatch` the way `unify` did, so this stops
+  recurring for every untagged direct push to staging.
+
+Do not force-merge, disable the ruleset, or bypass the check to route around
+this — both remediations above satisfy the gate on its own terms.
+
 # Python Formatting & Pre-commit
 
 Every first-party Python repo (`orchestra`, `unify`, `unisdk`, `unillm`,
