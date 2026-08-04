@@ -758,10 +758,11 @@ Cite **user**, **tool**, **date**, and **path** so a human can open the same ses
 
 # OpenAI is reached only through OpenRouter
 
-Every LLM call in every repo routes through **OpenRouter**, using
-`OPENROUTER_API_KEY`. The company's direct OpenAI account is not active — it
-answers `429 billing_not_active` — so any code path that talks to OpenAI
-natively is dead code that fails slowly.
+Every OpenAI LLM call in every repo routes through **OpenRouter**, using
+`OPENROUTER_API_KEY`. UniLLM does not expose a native OpenAI chat provider, and
+the company's own direct OpenAI account is inactive — it answers
+`429 billing_not_active` — so a native route is dead in practice as well as
+unregistered.
 
 ## Canonical endpoint form
 
@@ -769,38 +770,25 @@ natively is dead code that fails slowly.
 openai/<model-id>@openrouter      # openai/gpt-5.6-terra@openrouter
 ```
 
-Never `<model-id>@openai`. In UniLLM, `@openai` and `@openrouter` are distinct
-providers (`unillm/endpoints/utils.py`): `@openrouter` resolves through the
-OpenRouter catalog, `@openai` resolves to a native OpenAI endpoint and litellm
-sends it straight to OpenAI with `OPENAI_API_KEY`.
+Never `<model-id>@openai`. `@openrouter` resolves dynamically through the
+OpenRouter catalog; `@openai` is not registered and fails endpoint resolution.
 
-**The alias changed meaning.** `gpt-*@openai` used to be *transported* via
-OpenRouter inside UniLLM. It now means native OpenAI. Model strings written
-before that change did not move — they silently re-pointed at a dead account.
 The Orchestra migration `2026-08-13-00-00_openrouter_model_endpoints.py`
-rewrote stored assistant endpoints for exactly this reason; source code was not
-covered by it.
-
-## Why this fails slowly rather than loudly
-
-OpenAI reports the billing fault as **HTTP 429**, the same status as
-rate-limiting. UniLLM's `_is_retryable` classifies 429 as transient and retries
-`UNILLM_TRANSIENT_RETRY_COUNT` (default 6) times with 1/2/4/8/16/32s backoff —
-63s of sleeping per call, multiplied by litellm's own internal retries, before
-it finally raises. Under any concurrency this is indistinguishable from a hang,
-and scheduled jobs look stuck rather than broken. Do not "fix" such a stall by
-raising a timeout; check the endpoint's provider suffix first.
+rewrites stored legacy assistant endpoints. Source, defaults, examples, and
+tests must use the canonical OpenRouter form directly.
 
 ## Hard rules
 
 - New LLM call sites use `openai/<id>@openrouter`. Non-OpenAI providers
   (Anthropic, Google, …) are unaffected by this rule and keep their own routing.
-- Never read `OPENAI_API_KEY` directly, and never construct `openai.OpenAI()`
-  against it, in application code.
+- Never use `OPENAI_API_KEY` or a native `openai.OpenAI()` client for LLM chat
+  or text generation. Non-chat integrations such as speech-to-text, realtime
+  voice, or embeddings may use that key when the call site documents its
+  distinct purpose — that key is the deployment's own (self-host / BYOK), not
+  the company account above.
 - Env defaults and `.env.example` entries carry the `@openrouter` form, so a
   fresh checkout cannot inherit a dead route.
-- When a provider call stalls for ~a minute and then fails, suspect a native
-  provider suffix before suspecting the network.
+- Treat any surviving `@openai` model string as a bug; UniLLM rejects it.
 
 ## The one legitimate direct-OpenAI path
 
