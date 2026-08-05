@@ -475,56 +475,116 @@ The fix — "make the gate fail closed" — makes an aggregator job republish th
 required context unconditionally, so a push that didn't run the suite now
 reports that context **red**, not green-by-default.
 
-Rolled out the same week to: orchestra (`pytest`, [`0f040b6c`](https://github.com/unifyai/orchestra/commit/0f040b6c)),
-unillm (`pytest`, `c7b2351`), unify (`Flow smoke`, `e2bb461c7`), unify-deploy
-(`Integration smoke`, `0d886ad1`), console (`Push Gate`, `08cf9a9fd`). Check
-name and trigger tag differ per repo; the fail-closed shape is the same.
-unisdk, brain, docs, and landing-page have no equivalent expensive/conditional
-gate, so this doesn't currently apply there — but treat it as the default
-shape for any new staging→main required check in any repo.
+Rolled out the same week to: orchestra (`pytest`), unillm (`pytest`), unify
+(`Flow smoke`), unify-deploy (`Integration smoke`), console (`Push Gate`).
+Check name and trigger tag differ per repo; the fail-closed shape is the
+same. unisdk, brain, docs, and landing-page have no equivalent
+expensive/conditional gate, so this doesn't currently apply there — but
+treat it as the default shape for any new staging→main required check in
+any repo.
 
-## The known follow-up flaw, and its fix
+## The `if:`-scoping approach does NOT work — verified 2026-08-03
 
-Fail-closed on its own creates a new failure mode: **GitHub's required-check
-evaluation considers every check-run matching the required context name on a
-commit's SHA, not just the latest one.** If staging gets an untagged direct
-push, that push's run reports the context red. Opening the release PR then
-runs the real suite via the `pull_request` trigger and it can pass cleanly —
-but the earlier red run doesn't get superseded. The release PR is left
-**permanently blocked** on that SHA: re-running the failed job reproduces the
-same failure (the commit still lacks the tag), and the passing PR-triggered
-run sits right next to it, ignored.
+An earlier version of this rule described scoping the aggregator job's own
+`if:` to `pull_request`/`workflow_dispatch` (unify's `05fbdcce9`) as the
+fix for the fail-closed-on-push problem below. **That is wrong, and left
+orchestra and unify-deploy releases merging on a stale pass again**, plus
+unify itself carrying an unnoticed stale pass on its own staging HEAD.
 
-`unify` hit this within 36 hours of rolling out fail-closed and fixed it in
-[`05fbdcce9`](https://github.com/unifyai/unify/commit/05fbdcce9): scope the
-aggregator job to `pull_request`/`workflow_dispatch` only, so a plain push
-with no matching trigger publishes **no run at all** for that context
-(`pending`) instead of an explicit failure. Pending isn't a stale pass and
-isn't an unresolvable block — the PR-triggered run is free to become the
-only entry once it lands.
+The reasoning behind that approach assumed an `if:`-scoped job produces *no
+check run at all* when its condition is false. It does not: **GitHub Actions
+still publishes a "skipped" check run for a job whose `if:` evaluates to
+false**, even when that job is the required aggregator itself, and a skipped
+required check is satisfied exactly like a pass. Scoping only the aggregator
+job's `if:` — while the *workflow file* it lives in still triggers on
+`push` — just changes what an ordinary push publishes from an explicit
+failure back to a skip, which is the original 2026-07-31 bug, verbatim.
 
-As of this writing, only `unify` has this follow-up. orchestra, unillm,
-unify-deploy, and console still run the plain fail-closed version and can hit
-the stale-permanent-block failure mode above.
+## The real fix: no `push` trigger on the gate's workflow file at all
 
-## What to do when a release PR is stuck this way
+The only way to guarantee an ordinary push publishes **nothing** under the
+required context name is for the *workflow file* that defines the
+aggregator to never be triggered by `push` in the first place. A workflow
+with no `push` in its `on:` block simply never runs on a push event, so
+none of its jobs — passing, failing, or skipped — produce a check run for
+that SHA. The context sits genuinely `pending` until the real
+`pull_request`-triggered run supplies an answer.
 
-Recognize the shape first: `reviewDecision: APPROVED`, `mergeable: MERGEABLE`,
-`mergeStateStatus: BLOCKED`, and the required context shows both a `FAILURE`
-and a `SUCCESS` entry for the same PR head SHA, from two different workflow
-runs (one push-triggered, one pull_request-triggered). This is not a real
-test failure and not something to route around with an admin bypass — surface
-it and let the user choose:
+Concretely: split the gate into two workflow files.
 
-- **Get a clean SHA**: push a small commit (or empty commit) to staging
-  carrying the trigger tag, giving the release PR a fresh head with a single,
-  unambiguous run for that context.
-- **Port the `unify` follow-up**: scope that repo's aggregator job to
-  `pull_request`/`workflow_dispatch` the way `unify` did, so this stops
-  recurring for every untagged direct push to staging.
+- **The everyday/ad-hoc workflow** (existing file) keeps `push` (gated by
+  the `[run-tests]`/`[run-flows]`/`[run-integration]`-style tag) and
+  `workflow_dispatch`, for ordinary developer feedback. It must **not**
+  define the aggregator job, and its own expensive test job must not share
+  a job id/name with the required context (see the collision gotcha below).
+- **A new, dedicated workflow file** (e.g. `pytest-release-gate.yml`,
+  `flow-smoke-release-gate.yml`, `integration-smoke-release-gate.yml`)
+  triggers **only** on `pull_request: branches: [main]` and
+  `workflow_dispatch`. It contains its own copy of the expensive test job
+  plus the aggregator job that publishes the required context. Because this
+  file has no `push` trigger, an ordinary push can never populate that
+  context under any name defined in it.
 
-Do not force-merge, disable the ruleset, or bypass the check to route around
-this — both remediations above satisfy the gate on its own terms.
+Applied 2026-08-03 to orchestra (`pytest-release-gate.yml`), unify
+(`flow-smoke-release-gate.yml`), unillm (`pytest-release-gate.yml`), and
+unify-deploy (`integration-smoke-release-gate.yml`). console's `Push Gate`
+was checked and found **not** vulnerable to this bug: its push-triggered run
+genuinely executes the full suite unconditionally (no tag-gating), so there
+is no skip to exploit — no fix needed there.
+
+## Gotcha: job-id collision reintroduces the same bug
+
+After removing the explicit aggregator from the everyday workflow, check
+that its own expensive test job doesn't accidentally publish the exact same
+context name. In orchestra, the plain development `pytest:` matrix job had
+no explicit `name:`, so its check run defaulted to its job id — which
+happened to be the literal string `pytest`, the required context. A job
+whose matrix never expands (because its own `if:` evaluated false) still
+publishes **one** check run under that bare job id, not per-shard, so this
+silently recreated the stale-skip bug via a different job. Fix: give the
+everyday job a distinct job id and/or explicit `name:` (orchestra renamed it
+to `pytest-dev`). Always verify this when doing this split — confirm the
+everyday workflow's job names don't coincide with any required-check context
+string, matrix or not.
+
+## Gotcha: don't write the trigger tag in prose in a commit message
+
+The `push` gating check on these jobs is a naive substring match against the
+full commit message (subject + body) for `[run-tests]` / `[run-flows]` /
+`[run-integration]`. Writing that literal bracketed tag *anywhere* in a
+commit message — including inside a sentence explaining how the tag
+mechanism works — re-triggers the real (sometimes paid, sometimes
+live-infra) job on that push. This happened twice while rolling out the fix
+above: a commit message explaining unify's ad-hoc `[run-flows]` trigger
+accidentally fired a real paid Flow Smoke run (caught and cancelled before
+much cost), and a commit message explaining unify-deploy's
+`[run-integration]` trigger fired a real live Integration Smoke run against
+staging infra that ran to completion (~18 minutes) before failing on an
+unrelated live-infra teardown timeout — cleanup steps still ran, so no
+resource leak, but wasted CI/infra time. When a commit touches one of these
+workflow files and needs to describe its trigger tag, break up the literal
+bracket sequence (e.g. quote it without brackets) so the substring match
+cannot fire.
+
+## What to do when a release PR is stuck or merges on a stale pass
+
+**Stuck/blocked** — `reviewDecision: APPROVED`, `mergeable: MERGEABLE`,
+`mergeStateStatus: BLOCKED`, and the required context shows both a
+`FAILURE` and a `SUCCESS` entry for the same PR head SHA from two different
+workflow runs (one push-triggered, one pull_request-triggered): this is the
+pre-`if:`-scoping failure mode. Push a small commit carrying the trigger tag
+to give the release PR a fresh head with a single, unambiguous run, and
+apply the real fix above so it stops recurring.
+
+**Merges anyway on a stale pass** — the required context shows `SKIPPED` on
+a push-triggered run for the PR's head SHA, and the PR merges (or already
+merged) before the real `pull_request`-triggered run finished: this is the
+`if:`-scoping-is-insufficient failure mode described above. Apply the real
+fix (dedicated no-`push` workflow file) — do not consider the job's `if:`
+condition alone a fix.
+
+In both cases: do not force-merge, disable the ruleset, or bypass the check
+to route around this — the real fix satisfies the gate on its own terms.
 
 # Python Formatting & Pre-commit
 
@@ -698,10 +758,11 @@ Cite **user**, **tool**, **date**, and **path** so a human can open the same ses
 
 # OpenAI is reached only through OpenRouter
 
-Every LLM call in every repo routes through **OpenRouter**, using
-`OPENROUTER_API_KEY`. The company's direct OpenAI account is not active — it
-answers `429 billing_not_active` — so any code path that talks to OpenAI
-natively is dead code that fails slowly.
+Every OpenAI LLM call in every repo routes through **OpenRouter**, using
+`OPENROUTER_API_KEY`. UniLLM does not expose a native OpenAI chat provider, and
+the company's own direct OpenAI account is inactive — it answers
+`429 billing_not_active` — so a native route is dead in practice as well as
+unregistered.
 
 ## Canonical endpoint form
 
@@ -709,38 +770,25 @@ natively is dead code that fails slowly.
 openai/<model-id>@openrouter      # openai/gpt-5.6-terra@openrouter
 ```
 
-Never `<model-id>@openai`. In UniLLM, `@openai` and `@openrouter` are distinct
-providers (`unillm/endpoints/utils.py`): `@openrouter` resolves through the
-OpenRouter catalog, `@openai` resolves to a native OpenAI endpoint and litellm
-sends it straight to OpenAI with `OPENAI_API_KEY`.
+Never `<model-id>@openai`. `@openrouter` resolves dynamically through the
+OpenRouter catalog; `@openai` is not registered and fails endpoint resolution.
 
-**The alias changed meaning.** `gpt-*@openai` used to be *transported* via
-OpenRouter inside UniLLM. It now means native OpenAI. Model strings written
-before that change did not move — they silently re-pointed at a dead account.
 The Orchestra migration `2026-08-13-00-00_openrouter_model_endpoints.py`
-rewrote stored assistant endpoints for exactly this reason; source code was not
-covered by it.
-
-## Why this fails slowly rather than loudly
-
-OpenAI reports the billing fault as **HTTP 429**, the same status as
-rate-limiting. UniLLM's `_is_retryable` classifies 429 as transient and retries
-`UNILLM_TRANSIENT_RETRY_COUNT` (default 6) times with 1/2/4/8/16/32s backoff —
-63s of sleeping per call, multiplied by litellm's own internal retries, before
-it finally raises. Under any concurrency this is indistinguishable from a hang,
-and scheduled jobs look stuck rather than broken. Do not "fix" such a stall by
-raising a timeout; check the endpoint's provider suffix first.
+rewrites stored legacy assistant endpoints. Source, defaults, examples, and
+tests must use the canonical OpenRouter form directly.
 
 ## Hard rules
 
 - New LLM call sites use `openai/<id>@openrouter`. Non-OpenAI providers
   (Anthropic, Google, …) are unaffected by this rule and keep their own routing.
-- Never read `OPENAI_API_KEY` directly, and never construct `openai.OpenAI()`
-  against it, in application code.
+- Never use `OPENAI_API_KEY` or a native `openai.OpenAI()` client for LLM chat
+  or text generation. Non-chat integrations such as speech-to-text, realtime
+  voice, or embeddings may use that key when the call site documents its
+  distinct purpose — that key is the deployment's own (self-host / BYOK), not
+  the company account above.
 - Env defaults and `.env.example` entries carry the `@openrouter` form, so a
   fresh checkout cannot inherit a dead route.
-- When a provider call stalls for ~a minute and then fails, suspect a native
-  provider suffix before suspecting the network.
+- Treat any surviving `@openai` model string as a bug; UniLLM rejects it.
 
 ## The one legitimate direct-OpenAI path
 
