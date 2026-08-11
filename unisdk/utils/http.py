@@ -3,6 +3,13 @@ HTTP utilities for the Unify SDK.
 
 Provides a requests session with retry logic and optional trace-aware logging.
 
+Every request carries a timeout so a stalled connection can never hang callers
+indefinitely. Defaults (overridable per call via the ``timeout`` kwarg, or per
+scope via the ``default_timeout`` context manager):
+
+- UNISDK_HTTP_TIMEOUT: Read timeout in seconds (default: 600)
+- UNISDK_HTTP_CONNECT_TIMEOUT: Connect timeout in seconds (default: 30)
+
 Terminal and file logging are independently controlled:
 
 - UNISDK_TERMINAL_LOG: Enable/disable terminal (console) output (default: true)
@@ -38,10 +45,12 @@ import os
 import re
 import threading
 import time
+from contextlib import contextmanager
+from contextvars import ContextVar
 from datetime import datetime, timezone
 from functools import wraps
 from pathlib import Path
-from typing import Any, Callable, Optional
+from typing import Any, Callable, Optional, Tuple, Union
 from urllib.parse import urlparse
 
 import requests
@@ -625,6 +634,43 @@ _ADAPTER = HTTPAdapter(max_retries=_RETRIES, pool_connections=20, pool_maxsize=2
 _SESSION.mount("http://", _ADAPTER)
 _SESSION.mount("https://", _ADAPTER)
 
+# Default (connect, read) timeouts, mirroring async_http's defaults. Applied to
+# every request that doesn't pass an explicit ``timeout`` kwarg, so a stalled
+# connection can never hang a caller indefinitely. The read timeout bounds each
+# socket wait (time-to-first-byte / between bytes), not total transfer time.
+_DEFAULT_TIMEOUT_READ = float(os.getenv("UNISDK_HTTP_TIMEOUT", "600"))
+_DEFAULT_TIMEOUT_CONNECT = float(os.getenv("UNISDK_HTTP_CONNECT_TIMEOUT", "30"))
+
+TimeoutSpec = Union[float, Tuple[float, float]]
+
+_TIMEOUT_OVERRIDE: ContextVar[Optional[TimeoutSpec]] = ContextVar(
+    "unisdk_http_timeout_override",
+    default=None,
+)
+
+
+@contextmanager
+def default_timeout(timeout: TimeoutSpec):
+    """Override the default timeout for sync requests made within this context.
+
+    Applies to requests that don't pass an explicit ``timeout`` kwarg. Accepts
+    a single float (seconds, used for both connect and read) or a
+    ``(connect, read)`` tuple. Useful for scoping fast-failure semantics onto
+    call paths that must not block, e.g. quick metadata calls during setup.
+    """
+    token = _TIMEOUT_OVERRIDE.set(timeout)
+    try:
+        yield
+    finally:
+        _TIMEOUT_OVERRIDE.reset(token)
+
+
+def _resolve_timeout() -> TimeoutSpec:
+    override = _TIMEOUT_OVERRIDE.get()
+    if override is not None:
+        return override
+    return (_DEFAULT_TIMEOUT_CONNECT, _DEFAULT_TIMEOUT_READ)
+
 
 # ---------------------------------------------------------------------------
 # Public API
@@ -779,6 +825,8 @@ def _log_request_if_enabled(fn: Callable) -> Callable:
 
 @_log_request_if_enabled
 def request(method, url, raise_for_status=True, **kwargs) -> requests.Response:
+    if "timeout" not in kwargs:
+        kwargs["timeout"] = _resolve_timeout()
     try:
         res = _SESSION.request(method, url, **kwargs)
         if raise_for_status:
