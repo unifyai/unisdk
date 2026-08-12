@@ -33,9 +33,6 @@ run_pre_commit() {
   if command -v pre-commit >/dev/null 2>&1; then
     exec pre-commit "$@"
   fi
-  if command -v poetry >/dev/null 2>&1; then
-    exec poetry run pre-commit "$@"
-  fi
   echo "pre-commit is not installed. Install it (brew install pre-commit / pipx install pre-commit)" >&2
   echo "or sync this repo's lint/dev dependencies, then re-commit." >&2
   exit 1
