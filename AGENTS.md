@@ -601,20 +601,17 @@ The formatters are ordinary, locked dependencies — not a version hardcoded in
 the pre-commit hook or in CI YAML.
 
 - Each repo declares its formatters in a dedicated **`lint` dependency
-  group**, pinned and committed to the lockfile (`uv.lock` / `poetry.lock`).
-  The `dev` group includes `lint` so a normal sync gives developers everything.
-  - uv repos: `[dependency-groups]` → `lint = ["black==X", "isort>=…",
-    "autoflake>=…"]`, and `dev = [ …, {include-group = "lint"} ]`.
-  - poetry repos: `[tool.poetry.group.lint.dependencies]` (or `dev` where
-    that is the established home).
-- **Both** the pre-commit hook and CI run that **same locked** tool via the
-  package manager — never a separate pin:
-  - pre-commit hook: `entry: uv run black` / `poetry run black`,
-    `language: system` (no `additional_dependencies`).
-  - CI (uv): `uv sync --only-group lint --no-install-project` then
+  group**, pinned and committed to `uv.lock`. Every first-party Python repo
+  is uv-managed with a repo-local `.venv` — there are no poetry repos.
+  The `dev` group includes `lint` so a normal sync gives developers everything:
+  `[dependency-groups]` → `lint = ["black==X", "isort>=…", "autoflake>=…"]`,
+  and `dev = [ …, {include-group = "lint"} ]`.
+- **Both** the pre-commit hook and CI run that **same locked** tool via uv —
+  never a separate pin:
+  - pre-commit hook: `entry: uv run black`, `language: system`
+    (no `additional_dependencies`).
+  - CI: `uv sync --only-group lint --no-install-project --frozen` then
     `uv run --no-sync black --check .` on **Python 3.12**.
-  - CI (poetry): `poetry install --only lint --no-root` then
-    `poetry run black --check .` on **Python 3.12**.
 - Pin Black's language target in every Python repo so local Mac Pythons and
   CI 3.12 cannot disagree (Black 26+ defaults toward newer targets):
 
@@ -672,7 +669,7 @@ Always format through the repo's pinned tooling, which uses that repo's
 locked version:
 
 ```bash
-pre-commit run black --all-files          # or: uv run black .  /  poetry run black .
+pre-commit run black --all-files          # or: uv run black .
 ```
 
 ## Release gates
