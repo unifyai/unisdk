@@ -1,0 +1,48 @@
+# Dependabot configuration for unifyai/unisdk.
+#
+# Version updates target `staging` because this repo promotes staging -> main:
+# a PR against `main` cannot be merged directly under staging-first promotion,
+# and whatever did land there would be overridden by the next promotion.
+#
+# Security updates are fire-on-CVE and always open against the default branch
+# (`main`) regardless of this file — apply the same bump on `staging`, let it
+# promote, then close the security PR as superseded.
+
+version: 2
+updates:
+- package-ecosystem: "uv"
+  directory: "/"
+  target-branch: "staging"
+  schedule:
+    interval: "weekly"
+    day: "monday"
+  open-pull-requests-limit: 5
+  labels:
+  - "dependencies"
+  commit-message:
+    prefix: "chore(deps)"
+    include: "scope"
+  groups:
+    uv-minor-patch:
+      update-types:
+      - "minor"
+      - "patch"
+
+- package-ecosystem: "github-actions"
+  directory: "/"
+  target-branch: "staging"
+  schedule:
+    interval: "weekly"
+    day: "monday"
+  open-pull-requests-limit: 5
+  labels:
+  - "dependencies"
+  - "github-actions"
+  commit-message:
+    prefix: "chore(actions)"
+    include: "scope"
+  groups:
+    actions-minor-patch:
+      update-types:
+      - "minor"
+      - "patch"

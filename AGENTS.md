@@ -285,6 +285,37 @@ The local `gh` CLI has two authenticated accounts:
 `magic-marty` is a GitHub service account (Security Lead accountable). Use it
 only for the approval step, not for authoring commits or opening PRs.
 
+### The org's machine accounts are not interchangeable
+
+`unifyai` has two, with deliberately different jobs. They are not a fallback
+for one another, and the names do not say which is which.
+
+| Account | Job | Access |
+|---|---|---|
+| `magic-marty` | **Approves PRs.** Nothing else. | Admin on the private repos |
+| `unify-dev-bot` | **CI automation** — clones private dependencies, dispatches cross-repo workflows, commits dependency bumps. Owns the `CLONE_TOKEN` secret. | Read on `brain`/`branding`, write where it must push |
+
+Never move CI credentials onto `magic-marty`. Its whole value is being a
+different principal from whoever authored the change — that is the separation
+of duties the branch protection exists to enforce. `CLONE_TOKEN` is shared by
+`unify`, `unillm` and `unify-deploy`, so putting it on an account that holds
+admin and can approve releases would mean one leaked CI secret could approve
+its own merge into `main`.
+
+Give `unify-dev-bot` the least access its job needs, and no more: an
+automation credential that can edit rulesets can switch off the release gates.
+It was dropped from admin to write on `unify-deploy` on 2026-08-14 for exactly
+that reason, after a check found nothing requiring admin — a repository
+dispatch, its only cross-repo write, needs write.
+
+`CLONE_TOKEN` is a classic PAT and has expired at least once, silently taking
+out private-dependency clones across three repos and self-host image
+publishing for ten days with nothing reporting it. If private clones start
+failing with `Repository not found` on a repo that plainly exists, suspect the
+token before the repo: GitHub answers 404 rather than 403 when a credential
+cannot see a private repository, so an expired, unauthorised, or
+wrong-account token looks exactly like a missing one.
+
 ### When this applies
 
 - Any `staging` → `main` release PR the agent opens under the active author account

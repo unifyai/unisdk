@@ -1,4 +1,4 @@
 [submodule ".agents/global-rules"]
 	path = .agents/global-rules
 	url = https://github.com/unifyai/global-agent-rules.git
-	branch = staging
+	branch = main
