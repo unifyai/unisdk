@@ -343,11 +343,22 @@ project holds an enabled version before concluding a credential is broken:
 gcloud secrets versions list DEVBOT_GITHUB_TOKEN --project=saas-368716
 ```
 
-**Rotation needs a human at a browser.** GitHub exposes no API for minting a
-personal access token — it is web-UI only. Rotating any bot-owned PAT
-therefore requires the bot account's own password and 2FA, and no automation
-removes that step. It is a standing bottleneck; plan around it rather than
-discovering it mid-incident.
+**PATs are the old approach here — do not mint more.** GitHub exposes no API
+for creating a personal access token, so rotating one means signing into the
+web UI *as the account that owns it*. A token owned by a bot therefore needs
+the bot's password and 2FA; a token owned by a person makes that person the
+only one who can rotate it. Neither is acceptable, and sharing a login is not
+the way out of it — that is the practice being retired, not the fix.
+
+**A GitHub App is the direction.** An App has no login, no password and no
+2FA: it signs a JWT with a private key and exchanges it for an installation
+token that expires in an hour, scoped to chosen repositories and permissions.
+Rotation becomes a key swap that no one has to do at a browser, and a stolen
+token is worthless by the end of the hour.
+
+The self-hosted CI runner moves first, because its credential is a *personal*
+PAT expiring 2026-09-23; `CLONE_TOKEN`'s six consuming repos follow. Until
+then the tokens above are simply what exists — record them, and add none.
 
 ### When this applies
 
