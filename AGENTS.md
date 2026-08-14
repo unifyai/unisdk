@@ -316,6 +316,39 @@ token before the repo: GitHub answers 404 rather than 403 when a credential
 cannot see a private repository, so an expired, unauthorised, or
 wrong-account token looks exactly like a missing one.
 
+### `unify-dev-bot`'s credential already exists — find it before minting one
+
+The bot's PAT lives in **GCP Secret Manager as `DEVBOT_GITHUB_TOKEN`**: a
+classic PAT, `repo` scope, no expiry. Look there before hunting for the bot's
+*password*. On 2026-08-14 an engineer spent an afternoon on that hunt and
+minted a redundant second PAT while a working token sat in Secret Manager the
+whole time.
+
+**Read it from the right project.** The same secret name exists in three
+projects and one of them is dead:
+
+| Project | State |
+|---|---|
+| `saas-368716` | **Live — the authoritative copy** |
+| `unity-assistant-vms` | Live, byte-identical to the above |
+| `responsive-city-458413-a2` | **Dead — every version disabled** |
+
+Fetching the dead copy fails, and a script that does not check the exit status
+carries an empty string into `git clone` — which GitHub answers with
+`Repository not found`, the same 404-instead-of-403 as above. An empty secret
+and a missing repo are indistinguishable from the error alone. Confirm the
+project holds an enabled version before concluding a credential is broken:
+
+```bash
+gcloud secrets versions list DEVBOT_GITHUB_TOKEN --project=saas-368716
+```
+
+**Rotation needs a human at a browser.** GitHub exposes no API for minting a
+personal access token — it is web-UI only. Rotating any bot-owned PAT
+therefore requires the bot account's own password and 2FA, and no automation
+removes that step. It is a standing bottleneck; plan around it rather than
+discovering it mid-incident.
+
 ### When this applies
 
 - Any `staging` → `main` release PR the agent opens under the active author account
