@@ -33,7 +33,7 @@ Issues = "https://github.com/unifyai/unisdk/issues"
 # pre-commit hook.
 lint = [
     "black==26.5.1",
-    "isort>=5.11.4",
+    "isort>=8.0.1",
     "autoflake>=1.6.1",
 ]
 dev = [
