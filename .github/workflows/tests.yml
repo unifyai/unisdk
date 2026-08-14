@@ -142,7 +142,7 @@ jobs:
     # Cache uv dependencies (key includes orchestra SHA in internal mode
     # for stricter invalidation; falls back to lockfile-only in external)
     - name: Cache uv dependencies
-      uses: actions/cache@v4
+      uses: actions/cache@v6
       with:
         path: ~/.cache/uv
         key: uv-${{ runner.os }}-${{ hashFiles('uv.lock') }}-${{ steps.orchestra-sha.outputs.sha || 'external' }}
