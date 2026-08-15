@@ -38,18 +38,16 @@ jobs:
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     timeout-minutes: 120
     # Use the unify-testing environment so per-job secret scoping applies
-    # (SOC2-compliant least-privilege model — matches sibling unify which
-    # uses environment: unity-testing). The env was created 2026-05-27 to
-    # restore CLONE_TOKEN access after org-secret visibility was tightened
-    # from "all" → "private" during the Vanta/SOC2 audit (which is the
-    # correct security tightening — public repos should NOT inherit org
-    # secrets that grant cross-repo access; they should opt in via
-    # environment with explicit per-secret scope).
-    # Environment secrets to populate (manually, via GitHub UI — write-only,
-    # never appear in source): CLONE_TOKEN, GCP_SERVICE_ACCOUNT_JSON,
-    # OPENAI_API_KEY, ANTHROPIC_API_KEY, UNIFY_KEY. Until all five are
-    # populated, the secrets-check gate below routes the job through
-    # external mode (production-API fallback, no orchestra).
+    # (SOC2-compliant least-privilege model — matches sibling unify, which
+    # uses environment: unity-testing). Its secrets are populated by hand
+    # through the GitHub UI and never appear in source:
+    # GCP_SERVICE_ACCOUNT_JSON, OPENAI_API_KEY, ANTHROPIC_API_KEY, UNIFY_KEY.
+    #
+    # The credential for reading private repos is deliberately not among
+    # them: it is the org-level CI_CLONE_APP_PRIVATE_KEY below. Environment
+    # secrets shadow org secrets of the same name, so a copy here would
+    # override the org value invisibly — which is how six repos once ran
+    # against two different credentials without anything reporting it.
     environment: unify-testing
     env:
       # Local orchestra configuration
@@ -70,33 +68,24 @@ jobs:
     # ─────────────────────────────────────────────────────────────────────
     # Detect whether internal secrets are available
     # ─────────────────────────────────────────────────────────────────────
-    # CLONE_TOKEN is an org-wide secret that grants cross-repo read access
-    # for cloning the private unifyai/orchestra repo. It is empty in two
-    # cases:
+    # Reading the private unifyai/orchestra repo needs the private key of
+    # the unifyai-ci-clone GitHub App. It is absent in two cases:
     #   1. External fork PRs — GitHub elides all secrets from forked
     #      contexts for security.
-    #   2. Internal repos where the org-secret's "Selected repositories"
-    #      allowlist doesn't include this repo (admin-side config gap).
+    #   2. This repo is missing from the org secret's "Selected
+    #      repositories" list. unisdk is public, and org secrets whose
+    #      visibility is "private" never reach public repos, so the
+    #      selection has to name it explicitly.
     #
-    # When CLONE_TOKEN is empty we degrade gracefully: skip the orchestra
-    # clone + startup, run integration-tests against the production-API
-    # fallback that the unify client supports. Mirrors the pattern used in
+    # Without the key we degrade gracefully: skip the orchestra clone and
+    # startup, and run the integration tests against the production-API
+    # fallback the unify client supports. Mirrors the pattern in
     # unifyai/unillm's workflow (the reference implementation for "this
     # repo depends on orchestra but can work without it").
-    #
-    # NOTE: When this job was failing with "Input
-    # required and not supplied: token" (history before this commit), the
-    # cause was case #2 — unify was missing from CLONE_TOKEN's allowlist
-    # at the org level. The proper org-side fix is to add unify (and any
-    # future internal repo that depends on orchestra) to the allowlist.
-    # Even simpler scalable design: switch CLONE_TOKEN's "Repository
-    # access" from "Selected repositories" → "All repositories" since
-    # every internal repo is trusted. This eliminates allowlist drift as
-    # a recurring failure mode for new repos.
     - name: Check internal secrets
       id: secrets-check
       run: |
-        if [ -n "$CLONE_TOKEN" ]; then
+        if [ -n "$CI_CLONE_APP_PRIVATE_KEY" ]; then
           echo "has_internal=true" >> $GITHUB_OUTPUT
           echo "Running in internal mode (Orchestra + GCP available)"
         else
@@ -104,9 +93,22 @@ jobs:
           echo "Running in external mode (no Orchestra; production-API fallback)"
         fi
       env:
-        CLONE_TOKEN: ${{ secrets.CLONE_TOKEN }}
+        CI_CLONE_APP_PRIVATE_KEY: ${{ secrets.CI_CLONE_APP_PRIVATE_KEY }}
 
     # ─────────────────────────── Internal-only ────────────────────────────
+
+    # Mints an installation token that can read orchestra and nothing else,
+    # then revokes it when the job ends. 4606137 is the unifyai-ci-clone
+    # App, which holds Contents: Read only; an App id is not a secret.
+    - name: Mint a token that can read orchestra
+      id: clone-token
+      if: steps.secrets-check.outputs.has_internal == 'true'
+      uses: actions/create-github-app-token@v3
+      with:
+        app-id: '4606137'
+        private-key: ${{ secrets.CI_CLONE_APP_PRIVATE_KEY }}
+        owner: ${{ github.repository_owner }}
+        repositories: orchestra
 
     - name: Clone orchestra repo for local deployment
       if: steps.secrets-check.outputs.has_internal == 'true'
@@ -115,7 +117,7 @@ jobs:
         repository: unifyai/orchestra
         ref: ${{ github.ref_name == 'main' && 'main' || 'staging' }}
         path: orchestra
-        token: ${{ secrets.CLONE_TOKEN }}
+        token: ${{ steps.clone-token.outputs.token }}
         fetch-depth: 1
 
     - name: Authenticate to Google Cloud
