@@ -24,7 +24,7 @@ jobs:
       with:
         python-version: '3.12'
     - name: Install uv
-      uses: astral-sh/setup-uv@v5
+      uses: astral-sh/setup-uv@v7
     - name: Install deps
       run: uv sync --group dev
     - name: Run pre-commit checks
@@ -139,7 +139,7 @@ jobs:
         python-version: '3.12'
 
     - name: Install uv
-      uses: astral-sh/setup-uv@v5
+      uses: astral-sh/setup-uv@v7
 
     # Cache uv dependencies (key includes orchestra SHA in internal mode
     # for stricter invalidation; falls back to lockfile-only in external)
