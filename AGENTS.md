@@ -261,6 +261,25 @@ Forbidden unless explicitly approved by the user as a staging bypass:
 
 If a PR is already targeting `main`/`master` from a non-`staging` branch, stop before merging, disable auto-merge if it is enabled, and retarget/recreate the PR against `staging`.
 
+### Exception: `unifyai/global-agent-rules` has no `staging`
+
+That repo retired its `staging` branch (`e9d3e9c`, "Drop the branch that was
+standing in for a check"). Its default and only branch is `main`, which is
+unprotected. Commit shared-rule edits directly to `main`; staging-first does
+not apply.
+
+A stale clone still shows `origin/staging`, because a plain `git fetch` does
+not remove remote-tracking refs for deleted branches — and pushing that branch
+**recreates it on the remote** from stale content, while the usual "am I in
+sync?" check compares against the dead ref and cheerfully reports `0 0`. Run
+`git fetch --prune` (or `git ls-remote --heads origin`) before trusting any
+branch state there.
+
+After changing a rule, every consuming repo needs its submodule pointer bumped
+and `AGENTS.md` regenerated with
+`python3 .agents/global-rules/build_agents_md.py` — a pre-commit hook enforces
+freshness.
+
 ## Rule: Agent PR Approval (`magic-marty`)
 
 `unifyai/*` repos enforce branch protection: every PR to `main` or `staging`
@@ -378,16 +397,22 @@ gh pr create --base main --head staging \
   --body "Release PR from staging to main."
 gh pr merge <number> --auto --merge
 
-# 2. Approve as magic-marty (different reviewer than author)
-gh auth switch --user magic-marty
-gh pr review <number> --repo unifyai/<repo> --approve \
-  -b "Release approval: staging CI green."
+# 2. Approve as magic-marty, with a token scoped to this one command
+GH_TOKEN=$(gh auth token --user magic-marty) \
+  gh pr review <number> --repo unifyai/<repo> --approve \
+    -b "Release approval: staging CI green."
 
-# 3. Merge as author — auto-merge completes once CI + approval land
-gh auth switch --user "$AUTHOR"
+# 3. Merge as author — auth was never switched, so this is already the author
 gh pr view <number> --repo unifyai/<repo> \
   --json mergeStateStatus,reviewDecision
 ```
+
+**Scope the token; do not `gh auth switch`.** The switch is global machine
+state, so while it is active any *other* session on the machine authors under
+`magic-marty` — and several sessions routinely run in parallel across
+worktrees. A `GH_TOKEN=...` prefix applies to the single command and cannot
+leak into anyone else's work, and it removes the "always switch back" step
+that is the failure mode when a run dies midway.
 
 If auto-merge does not fire, merge explicitly as the author:
 
@@ -399,8 +424,14 @@ gh pr merge <number> --repo unifyai/<repo> --merge
 
 - **Never self-approve.** The author account must not `gh pr review --approve` on a PR
   it authored.
-- **Always switch back.** After approving as `magic-marty`, run
-  `gh auth switch --user "$AUTHOR"` before any further git/gh work.
+- **Scope the reviewer token to the approval command** rather than switching
+  auth globally (see above). Nothing then needs switching back.
+- **Approvals are perishable.** `dismiss_stale_reviews_on_push` is on
+  estate-wide, so any commit landing after an approval silently dismisses it.
+  A PR then sits green-but-`BLOCKED`, which looks exactly like a slow check.
+  On a branch several sessions push to, wait for the head to be quiet before
+  approving at all, and re-read `reviewDecision` rather than trusting that an
+  earlier approval still stands.
 - **Verify base/head** before approving or merging (see Staging-First Promotion).
 - **Approval is `magic-marty`; merge is the author.** If `magic-marty` cannot
   merge (e.g. unverified email), that is expected — only the approval must
@@ -660,6 +691,39 @@ condition alone a fix.
 
 In both cases: do not force-merge, disable the ruleset, or bypass the check
 to route around this — the real fix satisfies the gate on its own terms.
+
+## A gate that tests live infra races its own deploy
+
+Where the gate exercises a deployed stack rather than the checkout, pushing a
+fix does **not** mean the fix is under test. The `pull_request` run starts in
+about ninety seconds; the Cloud Build deploy that ships the change to staging
+takes minutes. Three unify-deploy gate runs on 2026-08-15/16 tested an image
+that predated the commit under test, twice sending the investigation after
+phantom regressions in a diff that was never running.
+
+Before reading a live-infra gate result as a verdict on the change, confirm
+the deploy landed first — the PR's own checks carry it (for unify-deploy,
+`unity-deploy-staging (responsive-city-458413-a2)`). A red gate whose deploy
+finished *after* the run started is not evidence about the change.
+
+## `repository_dispatch` runs the DEFAULT branch's workflow
+
+Not the ref in the payload, and not the branch that sent it. A dispatch-
+triggered workflow therefore keeps executing `main`'s copy of itself no matter
+what staging says, so a fix to one does nothing until it is promoted — and the
+breakage is entirely invisible from staging, where the push-triggered path
+passes. unify's self-host image publish failed on every dispatch for a day
+this way while staging looked green.
+
+When a dispatch-triggered workflow misbehaves, read the *default branch's*
+copy of it, and treat promotion as part of the fix rather than a follow-up.
+
+## Editing a ruleset: `PUT`, not `PATCH`
+
+`gh api -X PATCH repos/{o}/{r}/rulesets/{id}` returns a bare `404` that reads
+exactly like a permissions problem, and reproduces under a second account with
+`admin:org` — which is what makes it convincing. Use `PUT` with the full
+object (name, target, enforcement, bypass_actors, conditions, rules).
 
 # Python Formatting & Pre-commit
 
