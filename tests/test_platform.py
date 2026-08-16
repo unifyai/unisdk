@@ -5,15 +5,21 @@ import pytest
 import unisdk
 from unisdk.utils import http
 
+DESCRIPTION = "unisdk integration test"
+
 
 class TestDeductCredits:
-    """Tests for the deduct_credits function."""
+    """Tests for the deduct_credits function.
+
+    Orchestra refuses a usage debit that does not say what was used, so every
+    debit here carries a description.
+    """
 
     def test_deduct_credits_success(self):
         """Test successful credit deduction."""
         # Deduct a small amount
         deduct_amount = 0.001
-        result = unisdk.deduct_credits(deduct_amount)
+        result = unisdk.deduct_credits(deduct_amount, description=DESCRIPTION)
 
         # Verify response structure
         assert "previous_credits" in result
@@ -29,7 +35,7 @@ class TestDeductCredits:
 
     def test_deduct_credits_fractional_amount(self):
         """Test deducting fractional credit amounts."""
-        result = unisdk.deduct_credits(0.00123)
+        result = unisdk.deduct_credits(0.00123, description=DESCRIPTION)
 
         assert result["deducted"] == 0.00123
         assert "previous_credits" in result
@@ -38,14 +44,21 @@ class TestDeductCredits:
     def test_deduct_credits_zero_amount(self):
         """Test deduction fails with zero amount."""
         with pytest.raises(http.RequestError) as exc_info:
-            unisdk.deduct_credits(0)
+            unisdk.deduct_credits(0, description=DESCRIPTION)
 
         assert exc_info.value.response.status_code == 422
 
     def test_deduct_credits_negative_amount(self):
         """Test deduction fails with negative amount (cannot add credits)."""
         with pytest.raises(http.RequestError) as exc_info:
-            unisdk.deduct_credits(-5.0)
+            unisdk.deduct_credits(-5.0, description=DESCRIPTION)
+
+        assert exc_info.value.response.status_code == 422
+
+    def test_deduct_credits_requires_description_or_detail(self):
+        """A usage debit that does not say what was used is refused."""
+        with pytest.raises(http.RequestError) as exc_info:
+            unisdk.deduct_credits(0.001)
 
         assert exc_info.value.response.status_code == 422
 
@@ -54,7 +67,7 @@ class TestDeductCredits:
     )
     def test_deduct_credits_allows_overdraft(self):
         """Overdraft is allowed so spending-limit hooks can detect negative balances."""
-        result = unisdk.deduct_credits(999_999_999_999.0)
+        result = unisdk.deduct_credits(999_999_999_999.0, description=DESCRIPTION)
 
         assert result["deducted"] == 999_999_999_999.0
         assert result["current_credits"] < 0
