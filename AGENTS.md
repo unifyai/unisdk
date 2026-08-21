@@ -261,12 +261,19 @@ Forbidden unless explicitly approved by the user as a staging bypass:
 
 If a PR is already targeting `main`/`master` from a non-`staging` branch, stop before merging, disable auto-merge if it is enabled, and retarget/recreate the PR against `staging`.
 
-### Exception: `unifyai/global-agent-rules` has no `staging`
+### Exception: `global-agent-rules` and `branding` have no `staging`
 
-That repo retired its `staging` branch (`e9d3e9c`, "Drop the branch that was
-standing in for a check"). Its default and only branch is `main`, which is
-unprotected. Commit shared-rule edits directly to `main`; staging-first does
-not apply.
+Both repos retired the branch — `global-agent-rules` in `e9d3e9c` ("Drop the
+branch that was standing in for a check"), `branding` in August 2026. For each,
+`main` is the default and only branch, and is unprotected. Commit edits
+directly to `main`; staging-first does not apply, and neither does the
+`magic-marty` approval step, which exists to satisfy branch protection that
+these repos do not have.
+
+They are content repos consumed as submodules, not deployed services. A staging
+branch buys nothing when there is no environment to stage into: it only adds a
+promotion hop between writing a rule (or a brand spec) and the consuming repos
+being able to pin it.
 
 A stale clone still shows `origin/staging`, because a plain `git fetch` does
 not remove remote-tracking refs for deleted branches — and pushing that branch
@@ -278,7 +285,8 @@ branch state there.
 After changing a rule, every consuming repo needs its submodule pointer bumped
 and `AGENTS.md` regenerated with
 `python3 .agents/global-rules/build_agents_md.py` — a pre-commit hook enforces
-freshness.
+freshness. The same applies to a `branding` edit: the consuming repo picks it
+up only when its `branding` pointer moves.
 
 ## Rule: Agent PR Approval (`magic-marty`)
 
